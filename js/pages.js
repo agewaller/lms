@@ -7,7 +7,8 @@ var Pages = {
   // ─── Main render dispatcher ───
   render(page, domain) {
     switch (page) {
-      case 'home':     return this.renderHome(domain);
+      case 'home':         return this.renderHome(domain);
+      case 'integrations': return this.renderIntegrations(domain);
       case 'record':   return this.renderRecord(domain);
       case 'actions':  return this.renderActions(domain);
       case 'ask_ai':   return this.renderAskAI(domain);
@@ -783,6 +784,158 @@ var Pages = {
       </div>
       <button class="btn btn-primary" onclick="app.saveResume()">${i18n.t('save')}</button>
     </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  INTEGRATIONS PAGE (未病ダイアリー方式)
+  // ═══════════════════════════════════════════════════════════
+  renderIntegrations(domain) {
+    let html = `<div class="page-integrations">
+      <h2>🔗 連携・データ取り込み</h2>
+      <p>外部のアプリやファイルからデータを取り込めます。</p>
+
+      <!-- Plaud (文字起こし) -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>🎙️ Plaud（文字起こし）</h3>
+          <span class="status-badge">対応済み</span>
+        </div>
+        <div class="card-body">
+          <p>Plaudで録音した音声の文字起こしを取り込んで、AIが分析します。</p>
+
+          <div class="integration-steps">
+            <h4>取り込み方法</h4>
+            <ol>
+              <li>Plaudアプリで文字起こしを表示</li>
+              <li>テキストをコピー</li>
+              <li>下の入力欄に貼り付け</li>
+              <li>「分析する」を押す</li>
+            </ol>
+          </div>
+
+          <div class="form-group">
+            <label>文字起こしの内容</label>
+            <textarea id="plaudText" class="form-input" rows="6"
+              placeholder="ここにPlaudの文字起こしを貼り付けてください..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>日付</label>
+            <input type="date" id="plaudDate" class="form-input" value="${new Date().toISOString().slice(0,10)}">
+          </div>
+          <button class="btn btn-primary" onclick="app.importPlaud()">分析する</button>
+        </div>
+      </div>
+
+      <!-- Google Calendar -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>📅 カレンダー</h3>
+          <span class="status-badge">${(store.get('calendarEvents') || []).length > 0 ? store.get('calendarEvents').length + '件取込済' : '未接続'}</span>
+        </div>
+        <div class="card-body">
+          <p>Googleカレンダー・Outlook・iPhoneのカレンダーからスケジュールを取り込めます。</p>
+
+          <div class="integration-steps">
+            <h4>取り込み方法</h4>
+            <ol>
+              <li>カレンダーアプリの設定から「エクスポート」を選択</li>
+              <li>.ics ファイルをダウンロード</li>
+              <li>下のボタンからファイルを選択</li>
+            </ol>
+          </div>
+
+          <input type="file" id="calendarFile" accept=".ics" style="display:none" onchange="app.importCalendarFile(event)">
+          <button class="btn btn-primary" onclick="document.getElementById('calendarFile').click()">
+            📄 カレンダーファイルを取り込む（.ics）
+          </button>
+
+          ${(store.get('calendarEvents') || []).length > 0 ? `
+          <div style="margin-top:16px;">
+            <p>✅ ${store.get('calendarEvents').length}件の予定を取り込み済み</p>
+            <button class="btn btn-sm btn-secondary" onclick="store.set('calendarEvents',[]);app.renderApp()">リセット</button>
+          </div>` : ''}
+        </div>
+      </div>
+
+      <!-- Fitbit -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>⌚ Fitbit</h3>
+          <span class="status-badge">${localStorage.getItem('lms_fitbit_token') ? '接続済み' : '未接続'}</span>
+        </div>
+        <div class="card-body">
+          <p>Fitbitから歩数、心拍数、睡眠データを自動で取り込みます。</p>
+
+          ${localStorage.getItem('lms_fitbit_token') ? `
+          <p>✅ Fitbit接続済み</p>
+          <button class="btn btn-primary" onclick="app.fitbitImportToday()">今日のデータを取り込む</button>
+          <button class="btn btn-sm btn-secondary" onclick="localStorage.removeItem('lms_fitbit_token');app.renderApp()">接続解除</button>
+          ` : `
+          <div class="integration-steps">
+            <h4>接続方法</h4>
+            <ol>
+              <li><a href="https://dev.fitbit.com/apps/new" target="_blank">Fitbit開発者ページ</a>でアプリを登録</li>
+              <li>Client IDを下に入力</li>
+              <li>「接続する」を押す</li>
+            </ol>
+          </div>
+          <div class="form-group">
+            <label>Fitbit Client ID</label>
+            <input type="text" id="fitbitClientId" class="form-input" value="${localStorage.getItem('lms_fitbit_client_id') || ''}" placeholder="Client IDを入力">
+          </div>
+          <button class="btn btn-primary" onclick="app.connectFitbit()">接続する</button>
+          `}
+        </div>
+      </div>
+
+      <!-- Apple Health -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>🍎 Apple Health（iPhoneの方）</h3>
+        </div>
+        <div class="card-body">
+          <p>iPhoneの「ヘルスケア」アプリからデータを取り込みます。</p>
+
+          <div class="integration-steps">
+            <h4>取り込み方法</h4>
+            <ol>
+              <li>iPhoneの「ヘルスケア」アプリを開く</li>
+              <li>右上のプロフィールアイコン → 「すべてのヘルスケアデータを書き出す」</li>
+              <li>ZIPファイルをダウンロードして解凍</li>
+              <li>「export.xml」を下のボタンで選択</li>
+            </ol>
+          </div>
+
+          <input type="file" id="appleHealthFile" accept=".xml" style="display:none" onchange="app.importAppleHealth(event)">
+          <button class="btn btn-primary" onclick="document.getElementById('appleHealthFile').click()">
+            📄 Apple Healthファイルを取り込む（.xml）
+          </button>
+        </div>
+      </div>
+
+      <!-- ファイル取り込み -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>📎 ファイル取り込み</h3>
+        </div>
+        <div class="card-body">
+          <p>CSV、JSON、テキストファイルなど、いろいろなファイルからデータを取り込めます。</p>
+
+          <div class="file-drop-area" id="fileDropArea"
+            ondragover="event.preventDefault();this.classList.add('dragover')"
+            ondragleave="this.classList.remove('dragover')"
+            ondrop="app.handleFileDrop(event)">
+            <div class="upload-icon">📁</div>
+            <p>ここにファイルをドラッグ＆ドロップ</p>
+            <p>または</p>
+            <input type="file" id="generalFile" accept=".csv,.json,.xml,.txt,.pdf" style="display:none" onchange="app.handleFileUpload(event, '${domain}')">
+            <button class="btn btn-secondary" onclick="document.getElementById('generalFile').click()">ファイルを選択</button>
+          </div>
+        </div>
+      </div>
+
+    </div>`;
+    return html;
   },
 
   // ═══════════════════════════════════════════════════════════

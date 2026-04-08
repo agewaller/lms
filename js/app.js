@@ -9,6 +9,7 @@ var App = class App {
   // ─── Initialize ───
   async init(entryDomain) {
     this.entryDomain = entryDomain || null;
+    this.checkFitbitCallback();
 
     // Initialize Firebase
     await FirebaseBackend.init();
@@ -516,11 +517,11 @@ var App = class App {
     this.renderApp();
   }
 
-  // ─── Calendar import (Time domain) ───
+  // ─── Integration Handlers (未病ダイアリー方式) ───
+
   importCalendarFile(event) {
     const file = event.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (e) => {
       if (typeof CalendarIntegration !== 'undefined') {
@@ -529,6 +530,153 @@ var App = class App {
       }
     };
     reader.readAsText(file);
+  }
+
+  async importPlaud() {
+    const text = document.getElementById('plaudText')?.value?.trim();
+    const date = document.getElementById('plaudDate')?.value || new Date().toISOString().slice(0, 10);
+    if (!text) {
+      Components.showToast('文字起こしの内容を貼り付けてください', 'info');
+      return;
+    }
+
+    // Save as transcript
+    store.addDomainEntry('consciousness', 'transcript', {
+      source: 'plaud',
+      content: text,
+      date,
+      duration: Math.round(text.length / 200)
+    });
+
+    // Auto-analyze with Zen Track
+    Components.showToast('取り込みました。分析を開始します...', 'success');
+    try {
+      const result = await AIEngine.analyze('consciousness', 'transcript_analysis', {
+        text: `<<<TRANSCRIPT_START\n${text}\nTRANSCRIPT_END>>>`
+      });
+      this.parseAndSaveObservation(result);
+      this.openModal('分析結果', `<div class="analysis-content">${Components.formatMarkdown(result)}</div>`);
+    } catch (e) {
+      Components.showToast(e.message, 'error');
+    }
+    document.getElementById('plaudText').value = '';
+  }
+
+  connectFitbit() {
+    const clientId = document.getElementById('fitbitClientId')?.value?.trim();
+    if (!clientId) {
+      Components.showToast('Client IDを入力してください', 'info');
+      return;
+    }
+    localStorage.setItem('lms_fitbit_client_id', clientId);
+    const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+    const scope = encodeURIComponent('activity heartrate sleep profile weight nutrition');
+    window.location.href = `https://www.fitbit.com/oauth2/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&expires_in=31536000`;
+  }
+
+  async fitbitImportToday() {
+    const token = localStorage.getItem('lms_fitbit_token');
+    if (!token) { Components.showToast('Fitbitに接続してください', 'info'); return; }
+
+    Components.showToast('Fitbitからデータを取り込み中...', 'info');
+    const today = new Date().toISOString().slice(0, 10);
+
+    try {
+      const headers = { 'Authorization': 'Bearer ' + token };
+      const [actRes, sleepRes, hrRes] = await Promise.allSettled([
+        fetch(`https://api.fitbit.com/1/user/-/activities/date/${today}.json`, { headers }),
+        fetch(`https://api.fitbit.com/1.2/user/-/sleep/date/${today}.json`, { headers }),
+        fetch(`https://api.fitbit.com/1/user/-/activities/heart/date/${today}/1d.json`, { headers })
+      ]);
+
+      if (actRes.status === 'fulfilled' && actRes.value.ok) {
+        const data = await actRes.value.json();
+        store.addDomainEntry('health', 'activityData', {
+          activity_type: 'walking', source: 'fitbit',
+          steps: data.summary?.steps, calories: data.summary?.caloriesOut,
+          duration: data.summary?.activeMinutes || data.summary?.fairlyActiveMinutes
+        });
+      }
+      if (sleepRes.status === 'fulfilled' && sleepRes.value.ok) {
+        const data = await sleepRes.value.json();
+        const main = data.sleep?.[0];
+        if (main) {
+          store.addDomainEntry('health', 'sleepData', {
+            source: 'fitbit', quality: Math.round((main.efficiency || 80) / 10),
+            sleep_time: main.startTime, wake_time: main.endTime
+          });
+        }
+      }
+      Components.showToast('Fitbitデータを取り込みました', 'success');
+      this.renderApp();
+    } catch (e) {
+      Components.showToast('取り込みに失敗しました: ' + e.message, 'error');
+    }
+  }
+
+  importAppleHealth(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    Components.showToast('Apple Healthデータを読み込み中...', 'info');
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(e.target.result, 'text/xml');
+        const records = doc.querySelectorAll('Record');
+        let count = 0;
+
+        records.forEach(r => {
+          const type = r.getAttribute('type') || '';
+          const value = parseFloat(r.getAttribute('value')) || 0;
+          const date = r.getAttribute('startDate') || '';
+
+          if (type.includes('HeartRate') && value > 0) {
+            store.addDomainEntry('health', 'vitals', { heart_rate: value, source: 'apple_health', timestamp: date });
+            count++;
+          } else if (type.includes('BloodPressureSystolic')) {
+            store.addDomainEntry('health', 'vitals', { bp_systolic: value, source: 'apple_health', timestamp: date });
+            count++;
+          } else if (type.includes('BodyTemperature')) {
+            store.addDomainEntry('health', 'vitals', { temperature: value, source: 'apple_health', timestamp: date });
+            count++;
+          } else if (type.includes('StepCount') && value > 0) {
+            store.addDomainEntry('health', 'activityData', { activity_type: 'walking', steps: value, source: 'apple_health', timestamp: date });
+            count++;
+          } else if (type.includes('BodyMass') && value > 0) {
+            store.addDomainEntry('health', 'vitals', { weight: value, source: 'apple_health', timestamp: date });
+            count++;
+          }
+        });
+
+        Components.showToast(`${count}件のデータを取り込みました`, 'success');
+        this.renderApp();
+      } catch (err) {
+        Components.showToast('ファイルの読み込みに失敗しました', 'error');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  handleFileDrop(event) {
+    event.preventDefault();
+    document.getElementById('fileDropArea')?.classList.remove('dragover');
+    const file = event.dataTransfer?.files[0];
+    if (file) this.handleFileUpload({ target: { files: [file] } }, store.get('currentDomain'));
+  }
+
+  // Check Fitbit OAuth callback on page load
+  checkFitbitCallback() {
+    const hash = window.location.hash;
+    if (hash.includes('access_token=')) {
+      const token = hash.match(/access_token=([^&]+)/)?.[1];
+      if (token) {
+        localStorage.setItem('lms_fitbit_token', token);
+        window.location.hash = '';
+        Components.showToast('Fitbitに接続しました', 'success');
+      }
+    }
   }
 
   // ─── Consciousness Transcript Analysis ───
