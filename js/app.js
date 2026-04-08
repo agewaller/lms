@@ -126,7 +126,7 @@ var App = class App {
     store.set('currentPage', page);
   }
 
-  // ─── Main Render ───
+  // ─── Main Render (未病ダイアリー方式) ───
   renderApp() {
     const page = store.get('currentPage');
     const domain = store.get('currentDomain');
@@ -134,21 +134,35 @@ var App = class App {
     const mainContent = document.getElementById('mainContent');
     if (!mainContent) return;
 
-    // Update domain tabs
-    const tabsEl = document.getElementById('domainTabs');
-    if (tabsEl) tabsEl.innerHTML = Components.domainTabs(domain);
+    // Update top bar title
+    const titleEl = document.getElementById('top-bar-title');
+    const domainConfig = CONFIG.domains[domain];
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
-    // Update sub-navigation
-    const subNavEl = document.getElementById('subNav');
-    if (subNavEl) subNavEl.innerHTML = Components.subNav(page, domain);
+    // Update sidebar nav active states
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.page === page);
+    });
+    document.querySelectorAll('.domain-nav').forEach(el => {
+      el.classList.toggle('active', el.dataset.domain === domain);
+    });
 
-    // Update sidebar info
+    // Update sidebar user info
     this.updateSidebar();
 
     // Render page content
     mainContent.innerHTML = Pages.render(page, domain);
 
-    // Scroll chat to bottom if on ask_ai page
+    // Auto-close sidebar on mobile after navigation
+    if (window.innerWidth <= 768) {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      if (sidebar) sidebar.classList.remove('open');
+      if (overlay) overlay.classList.remove('active');
+    }
+
+    // Scroll chat to bottom
     if (page === 'ask_ai') {
       setTimeout(() => {
         const chat = document.getElementById('chatContainer');
@@ -156,12 +170,19 @@ var App = class App {
       }, 50);
     }
 
-    // Initialize PayPal buttons if on settings page
+    // Initialize PayPal
     if (page === 'settings') {
       setTimeout(() => {
         Object.keys(CONFIG.paypal.plans).forEach(key => {
           PayPalManager.renderButtons('paypal-btn-' + key, key);
         });
+      }, 100);
+    }
+
+    // Auto-calculate NISA on assets home
+    if (domain === 'assets' && page === 'home') {
+      setTimeout(() => {
+        if (typeof AssetsFeatures !== 'undefined') AssetsFeatures.calculateNISA();
       }, 100);
     }
   }
@@ -858,25 +879,30 @@ var App = class App {
     Components.showToast(i18n.t('saved'), 'success');
   }
 
-  // ─── Sidebar toggle ───
+  // ─── Sidebar toggle (未病ダイアリー方式) ───
   toggleSidebar() {
-    const open = !store.get('sidebarOpen');
-    store.set('sidebarOpen', open);
-    document.body.classList.toggle('sidebar-open', open);
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (!sidebar) return;
 
-    // スマホ: オーバーレイクリックで閉じる
-    if (open && window.innerWidth <= 768) {
-      setTimeout(() => {
-        const handler = (e) => {
-          if (!document.getElementById('sidebar')?.contains(e.target)) {
-            store.set('sidebarOpen', false);
-            document.body.classList.remove('sidebar-open');
-            document.removeEventListener('click', handler);
-          }
-        };
-        document.addEventListener('click', handler);
-      }, 100);
-    }
+    const isOpen = sidebar.classList.contains('open');
+    sidebar.classList.toggle('open', !isOpen);
+    if (overlay) overlay.classList.toggle('active', !isOpen);
+  }
+
+  // ─── Modal ───
+  openModal(title, bodyHtml) {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    if (titleEl) titleEl.textContent = title;
+    if (bodyEl) bodyEl.innerHTML = bodyHtml;
+    if (overlay) overlay.classList.add('active');
+  }
+
+  closeModal() {
+    const overlay = document.getElementById('modal-overlay');
+    if (overlay) overlay.classList.remove('active');
   }
 };
 
