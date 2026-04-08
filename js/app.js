@@ -40,10 +40,14 @@ var App = class App {
   }
 
   async loginWithEmail() {
-    const email = document.getElementById('loginEmail')?.value;
+    const email = document.getElementById('loginEmail')?.value?.trim();
     const password = document.getElementById('loginPassword')?.value;
-    if (!email || !password) {
-      Components.showToast(i18n.t('error'), 'error');
+    if (!email) {
+      Components.showToast('メールアドレスを入力してください', 'error');
+      return;
+    }
+    if (!password) {
+      Components.showToast('パスワードを入力してください', 'error');
       return;
     }
     try {
@@ -51,6 +55,55 @@ var App = class App {
     } catch (e) {
       Components.showToast(e.message, 'error');
     }
+  }
+
+  async registerWithEmail() {
+    const name = document.getElementById('registerName')?.value?.trim();
+    const email = document.getElementById('registerEmail')?.value?.trim();
+    const password = document.getElementById('registerPassword')?.value;
+    const confirm = document.getElementById('registerPasswordConfirm')?.value;
+
+    if (!email) {
+      Components.showToast('メールアドレスを入力してください', 'error');
+      return;
+    }
+    if (!password) {
+      Components.showToast('パスワードを入力してください', 'error');
+      return;
+    }
+    if (password.length < 6) {
+      Components.showToast('パスワードは6文字以上にしてください', 'error');
+      return;
+    }
+    if (password !== confirm) {
+      Components.showToast('パスワードが一致しません', 'error');
+      return;
+    }
+    try {
+      await FirebaseBackend.registerWithEmail(email, password, name);
+    } catch (e) {
+      Components.showToast(e.message, 'error');
+    }
+  }
+
+  async resetPassword() {
+    const email = document.getElementById('loginEmail')?.value?.trim() ||
+                  document.getElementById('resetEmail')?.value?.trim();
+    if (!email) {
+      Components.showToast('メールアドレスを入力してください', 'error');
+      return;
+    }
+    try {
+      await FirebaseBackend.sendPasswordReset(email);
+    } catch (e) {
+      Components.showToast(e.message, 'error');
+    }
+  }
+
+  toggleAuthMode(mode) {
+    document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+    const panel = document.getElementById('auth-' + mode);
+    if (panel) panel.classList.add('active');
   }
 
   async logout() {

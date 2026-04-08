@@ -80,7 +80,7 @@ var FirebaseBackend = {
   async signInWithEmail(email, password) {
     if (!this.auth) {
       store.update({
-        user: { uid: 'local', displayName: email, email },
+        user: { uid: 'local', displayName: email.split('@')[0], email },
         isAuthenticated: true,
         currentPage: 'home'
       });
@@ -91,9 +91,66 @@ var FirebaseBackend = {
       await this.auth.signInWithEmailAndPassword(email, password);
     } catch (e) {
       if (e.code === 'auth/user-not-found') {
-        await this.auth.createUserWithEmailAndPassword(email, password);
+        throw new Error('このメールアドレスは登録されていません。「新規登録」をお試しください。');
+      } else if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+        throw new Error('パスワードが正しくありません。もう一度お試しください。');
+      } else if (e.code === 'auth/invalid-email') {
+        throw new Error('メールアドレスの形式が正しくありません。');
+      } else if (e.code === 'auth/too-many-requests') {
+        throw new Error('ログイン試行回数が多すぎます。しばらく待ってからお試しください。');
       } else {
-        throw e;
+        throw new Error('ログインに失敗しました: ' + e.message);
+      }
+    }
+  },
+
+  // ─── Email/Password Registration ───
+  async registerWithEmail(email, password, displayName) {
+    if (!this.auth) {
+      store.update({
+        user: { uid: 'local', displayName: displayName || email.split('@')[0], email },
+        isAuthenticated: true,
+        currentPage: 'home'
+      });
+      return;
+    }
+
+    try {
+      const result = await this.auth.createUserWithEmailAndPassword(email, password);
+      // Set display name
+      if (displayName && result.user) {
+        await result.user.updateProfile({ displayName });
+      }
+    } catch (e) {
+      if (e.code === 'auth/email-already-in-use') {
+        throw new Error('このメールアドレスはすでに登録されています。ログインをお試しください。');
+      } else if (e.code === 'auth/weak-password') {
+        throw new Error('パスワードは6文字以上にしてください。');
+      } else if (e.code === 'auth/invalid-email') {
+        throw new Error('メールアドレスの形式が正しくありません。');
+      } else {
+        throw new Error('登録に失敗しました: ' + e.message);
+      }
+    }
+  },
+
+  // ─── Password Reset ───
+  async sendPasswordReset(email) {
+    if (!this.auth) {
+      Components.showToast('ローカルモードではパスワードリセットは不要です', 'info');
+      return;
+    }
+
+    try {
+      await this.auth.sendPasswordResetEmail(email);
+      Components.showToast('パスワード再設定メールを送信しました。メールをご確認ください。', 'success');
+    } catch (e) {
+      if (e.code === 'auth/user-not-found') {
+        throw new Error('このメールアドレスは登録されていません。');
+      } else if (e.code === 'auth/invalid-email') {
+        throw new Error('メールアドレスの形式が正しくありません。');
+      } else {
+        throw new Error('送信に失敗しました: ' + e.message);
       }
     }
   },

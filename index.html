@@ -109,23 +109,87 @@
   <!-- Login Section -->
   <section id="login" class="lp-section lp-login-section">
     <div class="login-card">
-      <h2>ログイン / 新規登録</h2>
-      <p>すべてのドメインに統合アクセス</p>
-
-      <button class="btn btn-google" onclick="app.loginWithGoogle()">
-        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-        Googleでログイン
-      </button>
-
-      <div class="login-divider"><span>または</span></div>
-
-      <div class="form-group">
-        <input type="email" id="loginEmail" class="form-input" placeholder="メールアドレス">
+      <!-- Auth mode tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="app.toggleAuthMode('login')">ログイン</button>
+        <button class="auth-tab" onclick="app.toggleAuthMode('register')">新規登録</button>
       </div>
-      <div class="form-group">
-        <input type="password" id="loginPassword" class="form-input" placeholder="パスワード">
+
+      <!-- Login Panel -->
+      <div class="auth-panel active" id="auth-login">
+        <button class="btn btn-google" onclick="app.loginWithGoogle()">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Googleでログイン
+        </button>
+
+        <div class="login-divider"><span>またはメールアドレスで</span></div>
+
+        <div class="form-group">
+          <label>メールアドレス</label>
+          <input type="email" id="loginEmail" class="form-input" placeholder="example@email.com">
+        </div>
+        <div class="form-group">
+          <label>パスワード</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="パスワード">
+        </div>
+        <button class="btn btn-primary btn-block" onclick="app.loginWithEmail()">ログイン</button>
+        <div class="auth-help">
+          <a href="javascript:void(0)" onclick="app.toggleAuthMode('reset')">パスワードをお忘れですか？</a>
+        </div>
+        <div class="auth-help">
+          <span>アカウントをお持ちでないですか？</span>
+          <a href="javascript:void(0)" onclick="app.toggleAuthMode('register')">新規登録はこちら</a>
+        </div>
       </div>
-      <button class="btn btn-primary btn-block" onclick="app.loginWithEmail()">ログイン</button>
+
+      <!-- Register Panel -->
+      <div class="auth-panel" id="auth-register">
+        <h3>新規登録</h3>
+        <p class="auth-desc">無料でアカウントを作成できます</p>
+
+        <button class="btn btn-google" onclick="app.loginWithGoogle()">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Googleで登録
+        </button>
+
+        <div class="login-divider"><span>またはメールアドレスで</span></div>
+
+        <div class="form-group">
+          <label>お名前</label>
+          <input type="text" id="registerName" class="form-input" placeholder="山田 花子">
+        </div>
+        <div class="form-group">
+          <label>メールアドレス</label>
+          <input type="email" id="registerEmail" class="form-input" placeholder="example@email.com">
+        </div>
+        <div class="form-group">
+          <label>パスワード（6文字以上）</label>
+          <input type="password" id="registerPassword" class="form-input" placeholder="6文字以上">
+        </div>
+        <div class="form-group">
+          <label>パスワード（確認）</label>
+          <input type="password" id="registerPasswordConfirm" class="form-input" placeholder="もう一度入力してください">
+        </div>
+        <button class="btn btn-primary btn-block" onclick="app.registerWithEmail()">アカウントを作成</button>
+        <div class="auth-help">
+          <span>すでにアカウントをお持ちですか？</span>
+          <a href="javascript:void(0)" onclick="app.toggleAuthMode('login')">ログインはこちら</a>
+        </div>
+      </div>
+
+      <!-- Password Reset Panel -->
+      <div class="auth-panel" id="auth-reset">
+        <h3>パスワードの再設定</h3>
+        <p class="auth-desc">ご登録のメールアドレスにパスワード再設定のリンクをお送りします</p>
+        <div class="form-group">
+          <label>メールアドレス</label>
+          <input type="email" id="resetEmail" class="form-input" placeholder="ご登録のメールアドレス">
+        </div>
+        <button class="btn btn-primary btn-block" onclick="app.resetPassword()">再設定メールを送信</button>
+        <div class="auth-help">
+          <a href="javascript:void(0)" onclick="app.toggleAuthMode('login')">ログインに戻る</a>
+        </div>
+      </div>
     </div>
   </section>
 
