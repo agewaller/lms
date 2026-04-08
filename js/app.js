@@ -572,6 +572,102 @@ var App = class App {
     if (textarea) textarea.value = '';
   }
 
+  // ─── Data Browser ───
+  filterDataBrowser(key, value) {
+    const filter = store.get('dataBrowserFilter') || { category: '', search: '', sort: 'desc' };
+    filter[key] = value;
+    store.set('dataBrowserFilter', filter);
+    this.renderApp();
+  }
+
+  clearDataFilter() {
+    store.set('dataBrowserFilter', { category: '', search: '', sort: 'desc' });
+    this.renderApp();
+  }
+
+  editDataEntry(domain, category, id) {
+    const key = `${domain}_${category}`;
+    const entries = store.get(key) || [];
+    const entry = entries.find(e => e.id === id);
+    if (!entry) return;
+
+    const fields = Object.entries(entry)
+      .filter(([k]) => !k.startsWith('_') && k !== 'timestamp' && k !== 'id' && k !== 'domain' && k !== 'category');
+
+    const formHtml = `<form id="editForm">
+      ${fields.map(([k, v]) => `
+        <div class="form-group">
+          <label>${i18n.t(k) || k}</label>
+          ${typeof v === 'string' && v.length > 50
+            ? `<textarea name="${k}" class="form-input" rows="3">${v}</textarea>`
+            : `<input type="${typeof v === 'number' ? 'number' : 'text'}" name="${k}" class="form-input" value="${v}">`}
+        </div>
+      `).join('')}
+      <div class="form-actions">
+        <button type="button" class="btn btn-primary" onclick="app.saveDataEntryEdit('${domain}','${category}','${id}')">保存</button>
+        <button type="button" class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    </form>`;
+
+    this.openModal('記録を編集', formHtml);
+  }
+
+  saveDataEntryEdit(domain, category, id) {
+    const form = document.getElementById('editForm');
+    if (!form) return;
+    const key = `${domain}_${category}`;
+    const entries = store.get(key) || [];
+    const idx = entries.findIndex(e => e.id === id);
+    if (idx < 0) return;
+
+    const data = new FormData(form);
+    data.forEach((value, name) => {
+      entries[idx][name] = isNaN(value) ? value : Number(value);
+    });
+    entries[idx]._synced = false; // trigger re-sync
+    entries[idx].updatedAt = new Date().toISOString();
+    store.set(key, [...entries]);
+
+    this.closeModal();
+    Components.showToast('保存しました', 'success');
+    this.renderApp();
+  }
+
+  deleteDataEntry(domain, category, id) {
+    if (!confirm('この記録を削除しますか？')) return;
+    const key = `${domain}_${category}`;
+    const entries = (store.get(key) || []).filter(e => e.id !== id);
+    store.set(key, entries);
+
+    // Also delete from Firestore if connected
+    if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.db) {
+      const uid = store.get('user')?.uid;
+      if (uid) {
+        FirebaseBackend.db.collection('users').doc(uid).collection(key).doc(id).delete().catch(e => console.warn(e));
+      }
+    }
+
+    Components.showToast('削除しました', 'info');
+    this.renderApp();
+  }
+
+  exportDomainData(domain) {
+    const domainConfig = CONFIG.domains[domain];
+    const categories = Object.keys(domainConfig?.categories || {});
+    const data = {};
+    categories.forEach(cat => {
+      data[cat] = store.get(`${domain}_${cat}`) || [];
+    });
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lms-${domain}-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   // ─── Fitbit ───
   fitbitConnect() {
     const clientId = document.getElementById('fitbitClientId')?.value?.trim();
@@ -889,36 +985,48 @@ var App = class App {
     if (form) form.classList.add('active');
   }
 
-  // ─── File Upload ───
+  // ─── File Upload (Firebase Storage + Firestore metadata) ───
   async handleFileUpload(event, domain) {
     const file = event.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target.result;
-      if (file.type.startsWith('image/')) {
-        // Store as base64 for image analysis
-        store.addDomainEntry(domain, 'photos' in CONFIG.domains[domain]?.categories ? 'photos' : 'entries', {
-          type: 'image',
-          filename: file.name,
-          data: content
-        });
-      } else {
-        // Store text-based files
-        store.addDomainEntry(domain, 'entries', {
-          type: 'file',
-          filename: file.name,
-          data: content
-        });
-      }
-      Components.showToast(i18n.t('saved'), 'success');
-    };
+    Components.showToast('ファイルをアップロード中...', 'info');
 
-    if (file.type.startsWith('image/')) {
-      reader.readAsDataURL(file);
+    // Upload to Firebase Storage (server-side storage, not localStorage)
+    let url = null;
+    if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.uploadFile) {
+      url = await FirebaseBackend.uploadFile(file, `${domain}/files`);
+    }
+
+    // Determine target category
+    const categories = CONFIG.domains[domain]?.categories || {};
+    const targetCat = 'photos' in categories ? 'photos' : Object.keys(categories)[0] || 'entries';
+
+    if (url) {
+      // File uploaded to Firebase Storage; save URL as metadata only
+      store.addDomainEntry(domain, targetCat, {
+        type: file.type.startsWith('image/') ? 'image' : 'file',
+        filename: file.name,
+        size: file.size,
+        mimeType: file.type,
+        url: url // Firebase Storage URL
+      });
+      Components.showToast('アップロードしました', 'success');
     } else {
-      reader.readAsText(file);
+      // Fallback: read content locally (used if Firebase Storage unavailable)
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        store.addDomainEntry(domain, targetCat, {
+          type: file.type.startsWith('image/') ? 'image' : 'file',
+          filename: file.name,
+          size: file.size,
+          mimeType: file.type,
+          data: e.target.result
+        });
+        Components.showToast('保存しました', 'success');
+      };
+      if (file.type.startsWith('image/')) reader.readAsDataURL(file);
+      else reader.readAsText(file);
     }
   }
 

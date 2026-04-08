@@ -8,6 +8,7 @@ var Pages = {
   render(page, domain) {
     switch (page) {
       case 'home':         return this.renderHome(domain);
+      case 'data':         return this.renderDataBrowser(domain);
       case 'integrations': return this.renderIntegrations(domain);
       case 'record':   return this.renderRecord(domain);
       case 'actions':  return this.renderActions(domain);
@@ -753,6 +754,165 @@ var Pages = {
   },
 
   // ═══════════════════════════════════════════════════════════
+  //  DATA BROWSER (全領域のデータを整理・閲覧)
+  // ═══════════════════════════════════════════════════════════
+  renderDataBrowser(domain) {
+    const filter = store.get('dataBrowserFilter') || { category: '', search: '', sort: 'desc' };
+    const domainConfig = CONFIG.domains[domain];
+    const categories = domainConfig?.categories || {};
+
+    // Gather all entries across all categories
+    let allEntries = [];
+    Object.keys(categories).forEach(cat => {
+      const data = store.getDomainData(domain, cat, 365 * 10); // all entries
+      data.forEach(entry => allEntries.push({ ...entry, _category: cat }));
+    });
+
+    // Filter
+    if (filter.category) {
+      allEntries = allEntries.filter(e => e._category === filter.category);
+    }
+    if (filter.search) {
+      const s = filter.search.toLowerCase();
+      allEntries = allEntries.filter(e =>
+        JSON.stringify(e).toLowerCase().includes(s)
+      );
+    }
+
+    // Sort
+    allEntries.sort((a, b) => {
+      const diff = new Date(b.timestamp) - new Date(a.timestamp);
+      return filter.sort === 'asc' ? -diff : diff;
+    });
+
+    // Count by category
+    const catCounts = {};
+    Object.keys(categories).forEach(cat => {
+      catCounts[cat] = store.getDomainData(domain, cat, 365 * 10).length;
+    });
+    const totalCount = Object.values(catCounts).reduce((a, b) => a + b, 0);
+
+    let html = `<div class="page-data-browser">
+      <div class="data-browser-header">
+        <h2>${i18n.t(domain)} のデータ</h2>
+        <p class="page-desc">これまで記録したすべてのデータを整理して見られます。</p>
+      </div>
+
+      <!-- Summary -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-body">
+          <div class="data-summary">
+            <div class="data-summary-total">
+              <div class="data-total-num">${totalCount}</div>
+              <div class="data-total-label">記録数</div>
+            </div>
+            <div class="data-summary-categories">
+              ${Object.entries(catCounts).map(([cat, count]) => `
+                <div class="data-cat-item ${filter.category === cat ? 'active' : ''}"
+                     onclick="app.filterDataBrowser('category','${cat}')">
+                  <div class="data-cat-count">${count}</div>
+                  <div class="data-cat-label">${i18n.t(categories[cat].label)}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-body">
+          <div class="data-filters">
+            <div class="form-group" style="flex:2;">
+              <label>検索</label>
+              <input type="text" id="dataSearch" class="form-input"
+                value="${filter.search}"
+                placeholder="記録の中身を検索..."
+                oninput="app.filterDataBrowser('search',this.value)">
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label>カテゴリ</label>
+              <select id="dataCategoryFilter" class="form-input" onchange="app.filterDataBrowser('category',this.value)">
+                <option value="">すべて</option>
+                ${Object.entries(categories).map(([key, cat]) => `
+                  <option value="${key}" ${filter.category === key ? 'selected' : ''}>${i18n.t(cat.label)}</option>
+                `).join('')}
+              </select>
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label>並び順</label>
+              <select id="dataSort" class="form-input" onchange="app.filterDataBrowser('sort',this.value)">
+                <option value="desc" ${filter.sort === 'desc' ? 'selected' : ''}>新しい順</option>
+                <option value="asc" ${filter.sort === 'asc' ? 'selected' : ''}>古い順</option>
+              </select>
+            </div>
+          </div>
+          <div class="data-actions">
+            <button class="btn btn-sm btn-secondary" onclick="app.exportDomainData('${domain}')">このデータを書き出す</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.clearDataFilter()">フィルタをクリア</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Records grouped by date -->
+      <div class="data-records">`;
+
+    if (allEntries.length === 0) {
+      html += `<div class="card"><div class="card-body">${Components.emptyState('', 'データがありません', 'まず「記録する」から入力してください')}</div></div>`;
+    } else {
+      // Group by date
+      const groups = {};
+      allEntries.forEach(entry => {
+        const date = (entry.timestamp || '').slice(0, 10);
+        if (!groups[date]) groups[date] = [];
+        groups[date].push(entry);
+      });
+
+      Object.entries(groups).forEach(([date, entries]) => {
+        const d = new Date(date);
+        const dateStr = isNaN(d) ? date : d.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+
+        html += `<div class="data-date-group">
+          <div class="data-date-header">
+            <span class="data-date-label">${dateStr}</span>
+            <span class="data-date-count">${entries.length}件</span>
+          </div>
+          <div class="data-entries-list">`;
+
+        entries.forEach(entry => {
+          const catLabel = entry._category ? i18n.t(categories[entry._category]?.label || entry._category) : '';
+          const fields = Object.entries(entry)
+            .filter(([k, v]) => !k.startsWith('_') && k !== 'timestamp' && k !== 'id' && k !== 'domain' && k !== 'category' && v !== null && v !== undefined && v !== '')
+            .slice(0, 6);
+
+          html += `<div class="data-entry-card">
+            <div class="data-entry-header">
+              <span class="data-entry-cat">${catLabel}</span>
+              <span class="data-entry-time">${new Date(entry.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
+              <div class="data-entry-actions">
+                <button class="btn-icon-sm" onclick="app.editDataEntry('${domain}','${entry._category}','${entry.id}')" title="編集">編集</button>
+                <button class="btn-icon-sm" onclick="app.deleteDataEntry('${domain}','${entry._category}','${entry.id}')" title="削除">削除</button>
+              </div>
+            </div>
+            <div class="data-entry-fields">
+              ${fields.map(([k, v]) => {
+                const label = i18n.t(k) || k;
+                const val = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
+                return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${val}</span></div>`;
+              }).join('')}
+            </div>
+          </div>`;
+        });
+
+        html += `</div></div>`;
+      });
+    }
+
+    html += `</div></div>`;
+    return html;
+  },
+
+  // ═══════════════════════════════════════════════════════════
   //  INTEGRATIONS PAGE (未病ダイアリー方式)
   // ═══════════════════════════════════════════════════════════
   renderIntegrations(domain) {
@@ -765,47 +925,63 @@ var Pages = {
       <h2>連携・データ取り込み</h2>
       <p class="page-desc">外部のアプリやファイルからデータを取り込めます。</p>
 
-      ${ingestEmail ? `
-      <div class="card" style="margin-bottom:20px;">
-        <div class="card-header">
-          <h3>あなた専用の受信メールアドレス</h3>
-        </div>
-        <div class="card-body">
-          <p>以下のメールアドレスにデータを送ると、自動で取り込まれます。</p>
-          <div class="ingest-email">${ingestEmail}</div>
-          <button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText('${ingestEmail}');Components.showToast('コピーしました','success')">コピー</button>
-        </div>
-      </div>` : ''}
-
-      <!-- Plaud -->
+      <!-- Plaud (自動フロー + 手動貼り付け) -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">
           <h3>Plaud（文字起こし）</h3>
-          <span class="status-badge">対応済み</span>
+          <span class="status-badge connected">自動取込対応</span>
         </div>
         <div class="card-body">
           <p>Plaudで録音した音声の文字起こしを取り込むと、七つの意識レイヤーで分析されます。</p>
 
-          <div class="integration-steps">
-            <h4>取り込み方法</h4>
-            <ol>
-              <li>Plaudアプリで文字起こしを表示</li>
-              <li>テキストをコピー</li>
-              <li>下の入力欄に貼り付け</li>
-              <li>「取り込む」を押す</li>
-            </ol>
+          <!-- 自動フロー（推奨） -->
+          <div class="integration-auto-flow">
+            <h4>自動で取り込む（おすすめ）</h4>
+            <p>Plaudの自動送信機能を使うと、録音するたびに文字起こしがあなた専用のメールアドレスに送られ、自動で取り込まれます。</p>
+
+            ${ingestEmail ? `
+            <div class="auto-flow-email">
+              <label>あなた専用の受信アドレス</label>
+              <div class="ingest-email-box">
+                <code class="ingest-email">${ingestEmail}</code>
+                <button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('${ingestEmail}');Components.showToast('コピーしました','success')">コピー</button>
+              </div>
+            </div>
+
+            <div class="integration-steps">
+              <h4>設定手順</h4>
+              <ol>
+                <li>Plaudアプリを開く</li>
+                <li>設定（歯車アイコン）→「自動送信」または「Auto Sync」</li>
+                <li>送信先メールアドレスに、上記の<strong>あなた専用アドレス</strong>を入力</li>
+                <li>「送信フォーマット」を「テキスト」または「文字起こしのみ」に設定</li>
+                <li>「自動送信を有効化」をオン</li>
+              </ol>
+              <p class="integration-note">これで、録音するたびに自動で意識レイヤー分析が実行されます。</p>
+            </div>
+            ` : `
+            <p class="integration-note">ログインすると専用のメールアドレスが発行されます。</p>
+            `}
           </div>
 
-          <div class="form-group">
-            <label>文字起こしの内容</label>
-            <textarea id="plaudText" class="form-input" rows="6"
-              placeholder="ここにPlaudの文字起こしを貼り付けてください..."></textarea>
+          <hr style="margin:20px 0;border:none;border-top:1px solid var(--border);">
+
+          <!-- 手動貼り付け（フォールバック） -->
+          <div class="integration-manual">
+            <h4>手動で取り込む</h4>
+            <p>自動フローを設定していない場合は、こちらから貼り付けて取り込めます。</p>
+
+            <div class="form-group">
+              <label>文字起こしの内容</label>
+              <textarea id="plaudText" class="form-input" rows="6"
+                placeholder="ここにPlaudの文字起こしを貼り付けてください..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>日付</label>
+              <input type="date" id="plaudDate" class="form-input" value="${new Date().toISOString().slice(0,10)}">
+            </div>
+            <button class="btn btn-primary" onclick="app.importPlaud()">取り込む</button>
           </div>
-          <div class="form-group">
-            <label>日付</label>
-            <input type="date" id="plaudDate" class="form-input" value="${new Date().toISOString().slice(0,10)}">
-          </div>
-          <button class="btn btn-primary" onclick="app.importPlaud()">取り込む</button>
         </div>
       </div>
 

@@ -11,6 +11,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 </head>
 <body>
   <div class="app-container">
@@ -34,6 +35,9 @@
         </a>
         <a class="nav-item" data-page="record" onclick="app.navigate('record')">
           <span class="nav-dot"></span><span>記録する</span>
+        </a>
+        <a class="nav-item" data-page="data" onclick="app.navigate('data')">
+          <span class="nav-dot"></span><span>データを見る</span>
         </a>
         <a class="nav-item" data-page="actions" onclick="app.navigate('actions')">
           <span class="nav-dot"></span><span>アクション</span>
