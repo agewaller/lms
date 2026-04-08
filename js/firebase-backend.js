@@ -248,13 +248,21 @@ var FirebaseBackend = {
   },
 
   // ─── Auto-sync store changes to Firestore ───
+  // All user data is stored in Firebase Firestore (未病ダイアリー pattern).
+  // localStorage is only used as an offline cache. Source of truth = Firestore.
   enableAutoSync(uid) {
     if (!this.db) return;
 
     const isAdmin = this.isAdmin();
 
-    // Per-user profile fields (all users)
-    const userProfileFields = ['userProfile', 'subscription', 'domainScores'];
+    // ─── Per-user profile fields (synced to users/{uid}) ───
+    const userProfileFields = [
+      'userProfile', 'subscription', 'domainScores',
+      'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
+      'workProvisionPrefs', 'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments',
+      'adminPromptFilter', 'dataBrowserFilter'
+    ];
     userProfileFields.forEach(key => {
       store.on(key, (value) => {
         this.db.collection('users').doc(uid).set(
@@ -265,7 +273,6 @@ var FirebaseBackend = {
     });
 
     // ─── ADMIN-ONLY: shared config (AI model, prompts, affiliate) ───
-    // These fields sync to admin/config and are read by all users
     if (isAdmin) {
       const adminFields = ['selectedModel', 'customPrompts', 'affiliateConfig'];
       adminFields.forEach(key => {
@@ -278,7 +285,7 @@ var FirebaseBackend = {
       });
     }
 
-    // Domain data collections (user-specific)
+    // ─── Domain data collections (stored as subcollections per category) ───
     Object.keys(CONFIG.domains).forEach(domain => {
       Object.keys(CONFIG.domains[domain].categories).forEach(cat => {
         const key = `${domain}_${cat}`;
@@ -295,6 +302,42 @@ var FirebaseBackend = {
         });
       });
     });
+
+    // ─── Shared collections (history, conversations, recommendations, actions) ───
+    ['analysisHistory', 'conversationHistory', 'recommendations', 'actionItems'].forEach(key => {
+      store.on(key, (entries) => {
+        if (!Array.isArray(entries)) return;
+        entries.filter(e => !e._synced).forEach(entry => {
+          const docId = entry.id || Date.now().toString(36);
+          entry.id = entry.id || docId;
+          this.db.collection('users').doc(uid).collection(key).doc(docId)
+            .set({ ...entry, _synced: true, syncedAt: firebase.firestore.FieldValue.serverTimestamp() })
+            .then(() => { entry._synced = true; })
+            .catch(e => console.warn('Shared sync error:', e));
+        });
+      });
+    });
+  },
+
+  // ─── Upload file to Firebase Storage (for photos, screenshots, transcripts, etc.) ───
+  async uploadFile(file, path) {
+    if (!firebase.storage) {
+      console.warn('Firebase Storage not available');
+      return null;
+    }
+    const uid = store.get('user')?.uid;
+    if (!uid) return null;
+
+    const storageRef = firebase.storage().ref();
+    const fileRef = storageRef.child(`users/${uid}/${path}/${Date.now()}_${file.name}`);
+    try {
+      const snapshot = await fileRef.put(file);
+      const url = await snapshot.ref.getDownloadURL();
+      return url;
+    } catch (e) {
+      console.error('Upload error:', e);
+      return null;
+    }
   },
 
   // ─── Save API Keys: admin writes to shared admin/secrets ───
