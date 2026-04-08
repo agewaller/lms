@@ -96,6 +96,9 @@ var Store = class Store {
       userResume: {},              // Resume data for work domain
       timeMarketplaceSettings: {}, // Time marketplace settings
       timeMarketplaceBookings: [], // Booking requests
+      autoTradingSettings: {},     // Auto trading configuration
+      autoTradePending: [],        // Pending trade orders
+      autoTradeHistory: [],        // Executed/rejected trade history
       calendarEvents: [],
       latestFeedback: null,
       cachedResearch: null,
@@ -174,7 +177,8 @@ var Store = class Store {
       'analysisHistory', 'recommendations', 'actionItems',
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
-      'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings'
+      'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
     ];
   }
 

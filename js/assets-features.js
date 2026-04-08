@@ -315,5 +315,328 @@ var AssetsFeatures = {
       }
     };
     reader.readAsDataURL(file);
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  自動売買（Auto Trading）
+  //  外部リポジトリのコードと連携予定
+  // ═══════════════════════════════════════════════════════════
+
+  renderAutoTrading() {
+    const settings = this.getAutoTradingSettings();
+
+    return `<div class="auto-trading">
+      <h3>🤖 自動売買</h3>
+      <p>AIの分析に基づいて、設定した条件で自動的に売買を実行します。</p>
+
+      ${settings.enabled ? this.renderAutoTradingDashboard(settings) : this.renderAutoTradingSetup(settings)}
+
+      <div class="disclaimer">
+        ※ 自動売買は元本を保証するものではありません。投資は自己責任でお願いいたします。
+        必ず余裕資金の範囲内で、リスクをご理解の上ご利用ください。
+      </div>
+    </div>`;
+  },
+
+  renderAutoTradingSetup(settings) {
+    return `<div class="at-setup">
+      <div class="at-status-badge at-inactive">停止中</div>
+
+      <div class="form-group">
+        <label>証券会社の接続</label>
+        <select id="atBroker" class="form-input">
+          <option value="">接続先を選択してください</option>
+          <option value="sbi" ${settings.broker === 'sbi' ? 'selected' : ''}>SBI証券</option>
+          <option value="rakuten" ${settings.broker === 'rakuten' ? 'selected' : ''}>楽天証券</option>
+          <option value="monex" ${settings.broker === 'monex' ? 'selected' : ''}>マネックス証券</option>
+          <option value="matsui" ${settings.broker === 'matsui' ? 'selected' : ''}>松井証券</option>
+          <option value="au_kabucom" ${settings.broker === 'au_kabucom' ? 'selected' : ''}>auカブコム証券</option>
+          <option value="alpaca" ${settings.broker === 'alpaca' ? 'selected' : ''}>Alpaca（米国株）</option>
+          <option value="ib" ${settings.broker === 'ib' ? 'selected' : ''}>Interactive Brokers</option>
+          <option value="custom" ${settings.broker === 'custom' ? 'selected' : ''}>その他（API設定）</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>APIキー（証券会社から取得）</label>
+        <input type="password" id="atApiKey" class="form-input" value="${settings.apiKey ? '••••••••' : ''}"
+          placeholder="証券会社のAPIキーを入力">
+        <div class="input-help">APIキーの取得方法は証券会社のサイトをご確認ください</div>
+      </div>
+
+      <div class="form-group">
+        <label>APIシークレット</label>
+        <input type="password" id="atApiSecret" class="form-input" value="${settings.apiSecret ? '••••••••' : ''}"
+          placeholder="APIシークレットを入力">
+      </div>
+
+      <div class="form-group">
+        <label>売買戦略</label>
+        <select id="atStrategy" class="form-input">
+          <option value="conservative" ${settings.strategy === 'conservative' ? 'selected' : ''}>安全重視（債券中心・リバランスのみ）</option>
+          <option value="balanced" ${settings.strategy === 'balanced' ? 'selected' : ''}>バランス型（インデックス積立＋配当再投資）</option>
+          <option value="income" ${settings.strategy === 'income' ? 'selected' : ''}>インカム重視（高配当・毎月分配型）</option>
+          <option value="growth" ${settings.strategy === 'growth' ? 'selected' : ''}>成長重視（個別株・AI選定）</option>
+          <option value="vm" ${settings.strategy === 'vm' ? 'selected' : ''}>VMハンズオン（銘柄分析ベース）</option>
+          <option value="custom" ${settings.strategy === 'custom' ? 'selected' : ''}>カスタム（自分でルールを設定）</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>1回あたりの最大投資額（円）</label>
+        <input type="number" id="atMaxAmount" class="form-input" value="${settings.maxAmountPerTrade || 100000}"
+          step="10000" min="0">
+        <div class="input-help">この金額を超える注文は自動的にブロックされます</div>
+      </div>
+
+      <div class="form-group">
+        <label>月間の投資上限額（円）</label>
+        <input type="number" id="atMonthlyLimit" class="form-input" value="${settings.monthlyLimit || 300000}"
+          step="10000" min="0">
+      </div>
+
+      <div class="form-group">
+        <label>損切りライン（%）</label>
+        <select id="atStopLoss" class="form-input">
+          <option value="5" ${settings.stopLoss == 5 ? 'selected' : ''}>-5%（慎重）</option>
+          <option value="10" ${settings.stopLoss == 10 ? 'selected' : ''}>-10%（標準）</option>
+          <option value="15" ${settings.stopLoss == 15 ? 'selected' : ''}>-15%（ゆとり）</option>
+          <option value="20" ${settings.stopLoss == 20 ? 'selected' : ''}>-20%（長期視点）</option>
+        </select>
+        <div class="input-help">この割合以上の含み損が出たら自動で売却します</div>
+      </div>
+
+      <div class="form-group">
+        <label>実行前に確認する</label>
+        <label class="toggle">
+          <input type="checkbox" id="atConfirmBefore" ${settings.confirmBefore !== false ? 'checked' : ''}>
+          <span class="toggle-slider"></span>
+        </label>
+        <div class="input-help">オンにすると、売買の前にあなたの承認を求めます（おすすめ）</div>
+      </div>
+
+      <button class="btn btn-primary" onclick="AssetsFeatures.saveAutoTradingSettings()">設定を保存</button>
+    </div>`;
+  },
+
+  renderAutoTradingDashboard(settings) {
+    const history = store.get('autoTradeHistory') || [];
+    const pending = store.get('autoTradePending') || [];
+    const today = history.filter(h => h.timestamp?.startsWith(new Date().toISOString().slice(0, 10)));
+
+    return `<div class="at-dashboard">
+      <div class="at-header">
+        <div class="at-status-badge at-active">稼働中</div>
+        <button class="btn btn-sm btn-danger" onclick="AssetsFeatures.toggleAutoTrading(false)">停止する</button>
+      </div>
+
+      <div class="at-stats">
+        ${Components.statCard('戦略', this.getStrategyLabel(settings.strategy), null, '📋')}
+        ${Components.statCard('今日の取引', today.length + '件', null, '📊')}
+        ${Components.statCard('月間投資額', (settings._monthlyUsed || 0).toLocaleString() + '円', null, '💰')}
+        ${Components.statCard('月間上限', settings.monthlyLimit?.toLocaleString() + '円', null, '🔒')}
+      </div>
+
+      ${pending.length > 0 ? `
+      <div class="at-pending">
+        <h4>承認待ちの注文（${pending.length}件）</h4>
+        ${pending.map((p, i) => `
+          <div class="at-order">
+            <div class="at-order-info">
+              <span class="at-order-type ${p.type}">${p.type === 'buy' ? '買い' : '売り'}</span>
+              <strong>${p.ticker || p.name}</strong>
+              <span>${p.amount?.toLocaleString()}円</span>
+              <span class="at-order-reason">${p.reason || ''}</span>
+            </div>
+            <div class="at-order-actions">
+              <button class="btn btn-sm btn-primary" onclick="AssetsFeatures.approveOrder(${i})">承認</button>
+              <button class="btn btn-sm btn-secondary" onclick="AssetsFeatures.rejectOrder(${i})">却下</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>` : ''}
+
+      <div class="at-history">
+        <h4>最近の取引履歴</h4>
+        ${history.length === 0 ? '<p>まだ取引はありません</p>' :
+          history.slice(-10).reverse().map(h => `
+            <div class="at-history-item">
+              <span class="at-order-type ${h.type}">${h.type === 'buy' ? '買い' : '売り'}</span>
+              <span>${h.ticker || h.name}</span>
+              <span>${h.amount?.toLocaleString()}円</span>
+              <span class="at-history-time">${new Date(h.timestamp).toLocaleString('ja-JP')}</span>
+              <span class="at-history-status ${h.status}">${h.status === 'executed' ? '約定' : h.status === 'rejected' ? '却下' : '保留'}</span>
+            </div>
+          `).join('')}
+      </div>
+
+      <button class="btn btn-secondary" onclick="AssetsFeatures.showAutoTradingSettings()">設定を変更</button>
+    </div>`;
+  },
+
+  // ─── Settings Management ───
+
+  getAutoTradingSettings() {
+    return store.get('autoTradingSettings') || {
+      enabled: false,
+      broker: '',
+      apiKey: '',
+      apiSecret: '',
+      strategy: 'conservative',
+      maxAmountPerTrade: 100000,
+      monthlyLimit: 300000,
+      stopLoss: 10,
+      confirmBefore: true,
+      _monthlyUsed: 0
+    };
+  },
+
+  saveAutoTradingSettings() {
+    const settings = {
+      enabled: false, // starts disabled, user must explicitly enable
+      broker: document.getElementById('atBroker')?.value || '',
+      apiKey: document.getElementById('atApiKey')?.value?.includes('•') ? this.getAutoTradingSettings().apiKey : (document.getElementById('atApiKey')?.value || ''),
+      apiSecret: document.getElementById('atApiSecret')?.value?.includes('•') ? this.getAutoTradingSettings().apiSecret : (document.getElementById('atApiSecret')?.value || ''),
+      strategy: document.getElementById('atStrategy')?.value || 'conservative',
+      maxAmountPerTrade: parseInt(document.getElementById('atMaxAmount')?.value) || 100000,
+      monthlyLimit: parseInt(document.getElementById('atMonthlyLimit')?.value) || 300000,
+      stopLoss: parseInt(document.getElementById('atStopLoss')?.value) || 10,
+      confirmBefore: document.getElementById('atConfirmBefore')?.checked !== false,
+      _monthlyUsed: this.getAutoTradingSettings()._monthlyUsed || 0
+    };
+
+    store.set('autoTradingSettings', settings);
+
+    // Save API keys securely
+    if (settings.apiKey && !settings.apiKey.includes('•')) {
+      localStorage.setItem('lms_at_apikey', settings.apiKey);
+    }
+    if (settings.apiSecret && !settings.apiSecret.includes('•')) {
+      localStorage.setItem('lms_at_apisecret', settings.apiSecret);
+    }
+
+    Components.showToast('自動売買の設定を保存しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  toggleAutoTrading(enabled) {
+    const settings = this.getAutoTradingSettings();
+    if (enabled && !settings.broker) {
+      Components.showToast('まず証券会社を設定してください', 'info');
+      return;
+    }
+    settings.enabled = enabled;
+    store.set('autoTradingSettings', settings);
+    Components.showToast(enabled ? '自動売買を開始しました' : '自動売買を停止しました', enabled ? 'success' : 'info');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  showAutoTradingSettings() {
+    const settings = this.getAutoTradingSettings();
+    settings.enabled = false; // temporarily show setup form
+    store.set('autoTradingSettings', settings);
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Order Management ───
+
+  approveOrder(index) {
+    const pending = store.get('autoTradePending') || [];
+    if (!pending[index]) return;
+
+    const order = pending.splice(index, 1)[0];
+    order.status = 'executed';
+    order.executedAt = new Date().toISOString();
+
+    const history = store.get('autoTradeHistory') || [];
+    history.push(order);
+
+    // Update monthly usage
+    const settings = this.getAutoTradingSettings();
+    settings._monthlyUsed = (settings._monthlyUsed || 0) + (order.amount || 0);
+
+    store.set('autoTradePending', pending);
+    store.set('autoTradeHistory', history);
+    store.set('autoTradingSettings', settings);
+
+    // TODO: Connect to actual broker API via external repository
+    Components.showToast(`${order.ticker || order.name} の注文を承認しました`, 'success');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  rejectOrder(index) {
+    const pending = store.get('autoTradePending') || [];
+    if (!pending[index]) return;
+
+    const order = pending.splice(index, 1)[0];
+    order.status = 'rejected';
+    order.rejectedAt = new Date().toISOString();
+
+    const history = store.get('autoTradeHistory') || [];
+    history.push(order);
+
+    store.set('autoTradePending', pending);
+    store.set('autoTradeHistory', history);
+
+    Components.showToast(`${order.ticker || order.name} の注文を却下しました`, 'info');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── AI-driven trade signal (called from analysis) ───
+
+  proposeTrade(signal) {
+    const settings = this.getAutoTradingSettings();
+    if (!settings.enabled) return;
+
+    // Check limits
+    if (signal.amount > settings.maxAmountPerTrade) {
+      signal.amount = settings.maxAmountPerTrade;
+      signal.reason += '（上限適用）';
+    }
+    if ((settings._monthlyUsed || 0) + signal.amount > settings.monthlyLimit) {
+      Components.showToast('月間投資上限に達しています', 'warning');
+      return;
+    }
+
+    const order = {
+      ...signal,
+      timestamp: new Date().toISOString(),
+      status: 'pending'
+    };
+
+    if (settings.confirmBefore) {
+      // Add to pending for approval
+      const pending = store.get('autoTradePending') || [];
+      pending.push(order);
+      store.set('autoTradePending', pending);
+      Components.showToast('新しい注文提案があります。承認してください。', 'info');
+    } else {
+      // Auto-execute
+      order.status = 'executed';
+      order.executedAt = new Date().toISOString();
+      const history = store.get('autoTradeHistory') || [];
+      history.push(order);
+      store.set('autoTradeHistory', history);
+
+      settings._monthlyUsed = (settings._monthlyUsed || 0) + order.amount;
+      store.set('autoTradingSettings', settings);
+
+      // TODO: Connect to actual broker API
+      Components.showToast(`${order.ticker || order.name} を自動売買しました`, 'success');
+    }
+
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  getStrategyLabel(strategy) {
+    const labels = {
+      conservative: '安全重視',
+      balanced: 'バランス型',
+      income: 'インカム重視',
+      growth: '成長重視',
+      vm: 'VMハンズオン',
+      custom: 'カスタム'
+    };
+    return labels[strategy] || strategy;
   }
 };

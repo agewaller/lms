@@ -131,12 +131,13 @@ var Pages = {
       html += this.renderUpcomingBirthdays();
     }
 
-    // Assets domain: NISA simulator + AI advisor + screenshot + stock analysis
+    // Assets domain: NISA simulator + AI advisor + screenshot + auto trading + stock analysis
     if (domain === 'assets') {
       if (typeof AssetsFeatures !== 'undefined') {
         html += AssetsFeatures.renderNISASimulator();
         html += AssetsFeatures.renderAIAdvisor();
         html += AssetsFeatures.renderScreenshotReader();
+        html += AssetsFeatures.renderAutoTrading();
       }
       html += this.renderStockAnalysisWidget();
     }
