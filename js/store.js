@@ -11,7 +11,7 @@ var Store = class Store {
 
       // Navigation
       currentPage: 'login',       // login | home | record | action | settings | admin | ask_ai
-      currentDomain: 'health',    // consciousness | health | time | contribution | trust | assets
+      currentDomain: 'health',    // consciousness | health | time | contribution | relationship | assets
       theme: 'light',
       sidebarOpen: window.innerWidth > 768,
 
@@ -21,7 +21,7 @@ var Store = class Store {
         health: 0,
         time: 0,
         contribution: 0,
-        trust: 0,
+        relationship: 0,
         assets: 0
       },
 
@@ -57,11 +57,11 @@ var Store = class Store {
       contribution_projects: [],  // projects
       contribution_reviews: [],   // performance reviews
 
-      // ─── Trust (信用) ───
-      trust_contacts: [],       // relationships with distance levels
-      trust_interactions: [],   // interaction logs
-      trust_gifts: [],          // gift tracking
-      trust_groups: [],         // relationship groups
+      // ─── Relationship (関係) ───
+      relationship_contacts: [],       // relationships with distance levels
+      relationship_interactions: [],   // interaction logs
+      relationship_gifts: [],          // gift tracking
+      relationship_groups: [],         // relationship groups
 
       // ─── Assets (資産) ───
       assets_overview: [],      // overall asset situation
@@ -165,8 +165,8 @@ var Store = class Store {
       // Contribution
       'contribution_tasks', 'contribution_goals', 'contribution_skills',
       'contribution_projects', 'contribution_reviews',
-      // Trust
-      'trust_contacts', 'trust_interactions', 'trust_gifts', 'trust_groups',
+      // Relationship
+      'relationship_contacts', 'relationship_interactions', 'relationship_gifts', 'relationship_groups',
       // Assets
       'assets_overview', 'assets_stocks', 'assets_portfolio',
       'assets_income', 'assets_expenses', 'assets_goals',

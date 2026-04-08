@@ -403,7 +403,7 @@ var App = class App {
 
       if (contacts.length > 0) {
         contacts.forEach(c => {
-          store.addDomainEntry('trust', 'contacts', {
+          store.addDomainEntry('relationship', 'contacts', {
             name: c.name || c.Name || '',
             furigana: c.furigana || c.Furigana || '',
             phone: c.phone || c.Phone || c.TEL || '',
@@ -464,7 +464,7 @@ var App = class App {
 
   // ─── Enrich Contacts via AI ───
   async enrichContacts() {
-    const contacts = store.get('trust_contacts') || [];
+    const contacts = store.get('relationship_contacts') || [];
     if (contacts.length === 0) {
       Components.showToast('まだ連絡先がありません', 'info');
       return;
@@ -481,7 +481,7 @@ var App = class App {
     for (const contact of unenriched) {
       try {
         const info = `名前: ${contact.name}, 会社: ${contact.company || '不明'}, 役職: ${contact.title || '不明'}, 住所: ${contact.address || '不明'}`;
-        const result = await AIEngine.analyze('trust', 'enrich_contact', { text: info });
+        const result = await AIEngine.analyze('relationship', 'enrich_contact', { text: info });
         contact._enriched = true;
         contact._enrichData = result;
         contact._enrichedAt = new Date().toISOString();
@@ -490,7 +490,7 @@ var App = class App {
       }
     }
 
-    store.set('trust_contacts', [...contacts]);
+    store.set('relationship_contacts', [...contacts]);
     Components.showToast('情報を更新しました', 'success');
     this.renderApp();
   }

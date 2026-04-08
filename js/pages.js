@@ -115,19 +115,29 @@ var Pages = {
       if (typeof TimeMarketplace !== 'undefined') html += TimeMarketplace.renderWidget();
     }
 
-    // Contribution domain: Resume + time marketplace link
+    // Contribution domain: Resume + side biz diagnosis + time marketplace link
     if (domain === 'contribution') {
+      if (typeof ContributionFeatures !== 'undefined') {
+        html += ContributionFeatures.renderSideBizDiagnosis();
+        html += ContributionFeatures.renderTimeSellingBanner();
+      }
       html += this.renderResumeWidget();
     }
 
-    // Trust domain: Social graph + upcoming birthdays
-    if (domain === 'trust') {
+    // Relationship domain: Isolation score + today contacts + social graph + birthdays
+    if (domain === 'relationship') {
+      if (typeof RelationshipFeatures !== 'undefined') html += RelationshipFeatures.renderDashboard();
       html += this.renderSocialGraph();
       html += this.renderUpcomingBirthdays();
     }
 
-    // Assets domain: Stock analysis quick input
+    // Assets domain: NISA simulator + AI advisor + screenshot + stock analysis
     if (domain === 'assets') {
+      if (typeof AssetsFeatures !== 'undefined') {
+        html += AssetsFeatures.renderNISASimulator();
+        html += AssetsFeatures.renderAIAdvisor();
+        html += AssetsFeatures.renderScreenshotReader();
+      }
       html += this.renderStockAnalysisWidget();
     }
 
@@ -240,9 +250,9 @@ var Pages = {
     </div>`;
   },
 
-  // ─── Social Graph (Trust domain) ───
+  // ─── Social Graph (Relationship domain) ───
   renderSocialGraph() {
-    const contacts = store.get('trust_contacts') || [];
+    const contacts = store.get('relationship_contacts') || [];
     if (contacts.length === 0) {
       return `<div class="social-graph-section">
         <h3>つながりの地図</h3>
@@ -250,7 +260,7 @@ var Pages = {
       </div>`;
     }
 
-    const levels = CONFIG.domains.trust.distanceLevels;
+    const levels = CONFIG.domains.relationship.distanceLevels;
     const grouped = { 1: [], 2: [], 3: [], 4: [], 5: [] };
     contacts.forEach(c => {
       const d = parseInt(c.distance) || 4;
@@ -279,9 +289,9 @@ var Pages = {
     return html;
   },
 
-  // ─── Upcoming Birthdays (Trust domain) ───
+  // ─── Upcoming Birthdays (Relationship domain) ───
   renderUpcomingBirthdays() {
-    const contacts = store.get('trust_contacts') || [];
+    const contacts = store.get('relationship_contacts') || [];
     const today = new Date();
     const upcoming = contacts
       .filter(c => c.birthday)
@@ -307,7 +317,7 @@ var Pages = {
       html += `<div class="birthday-item ${c.daysUntil <= 3 ? 'birthday-soon' : ''}">
         <span class="birthday-name">${c.name}</span>
         <span class="birthday-date">${dateStr}（${label}）</span>
-        <span class="birthday-distance">${CONFIG.domains.trust.distanceLevels[c.distance]?.description || ''}</span>
+        <span class="birthday-distance">${CONFIG.domains.relationship.distanceLevels[c.distance]?.description || ''}</span>
       </div>`;
     });
 
@@ -414,10 +424,10 @@ var Pages = {
         stats.push(Components.statCard(i18n.t('skills'), (store.get('contribution_skills') || []).length + i18n.t('items'), null, '📚'));
         break;
       }
-      case 'trust': {
-        const interactions = store.getDomainData('trust', 'interactions', 7);
-        const contacts = store.get('trust_contacts') || [];
-        const gifts = store.getDomainData('trust', 'gifts', 30);
+      case 'relationship': {
+        const interactions = store.getDomainData('relationship', 'interactions', 7);
+        const contacts = store.get('relationship_contacts') || [];
+        const gifts = store.getDomainData('relationship', 'gifts', 30);
         const close = contacts.filter(c => parseInt(c.distance) <= 2).length;
         stats.push(Components.statCard(i18n.t('contacts'), contacts.length + '人', null, '👤'));
         stats.push(Components.statCard('親しい方', close + '人', null, '💕'));
@@ -485,8 +495,8 @@ var Pages = {
         `).join('')}
       </div>
 
-      <!-- Trust domain: Contact import -->
-      ${domain === 'trust' ? `
+      <!-- Relationship domain: Contact import -->
+      ${domain === 'relationship' ? `
       <div class="contact-import-section">
         <h3>📥 ${i18n.t('import_contacts')}</h3>
         <p>電話帳やCSVファイル、名刺データなどから連絡先をまとめて取り込めます。</p>
