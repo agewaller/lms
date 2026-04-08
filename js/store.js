@@ -26,8 +26,10 @@ var Store = class Store {
       },
 
       // ─── Consciousness (意識) ───
-      consciousness_entries: [],    // journal, meditation logs, gratitude
-      consciousness_practices: [],  // spiritual practices, mindfulness
+      consciousness_observation: [], // daily 7-layer observations
+      consciousness_transcript: [],  // Plaud / voice memo transcripts
+      consciousness_entries: [],     // journal, gratitude
+      consciousness_practices: [],   // meditation, breathwork
 
       // ─── Health (健康) ───
       health_symptoms: [],
@@ -152,6 +154,7 @@ var Store = class Store {
       'selectedModel', 'customPrompts', 'dashboardLayout', 'affiliateConfig',
       'domainScores', 'userProfile', 'subscription',
       // Consciousness
+      'consciousness_observation', 'consciousness_transcript',
       'consciousness_entries', 'consciousness_practices',
       // Health
       'health_symptoms', 'health_vitals', 'health_bloodTests',

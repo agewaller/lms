@@ -66,12 +66,23 @@ var i18n = {
       gym: 'ジム', swimming: '水泳', cycling: 'サイクリング',
       stretching: 'ストレッチ', other: 'その他',
 
-      // Consciousness
+      // Consciousness (七つの意識レイヤー)
+      daily_observation: '定点観測', transcript: '文字起こし分析',
       journal: '日記', practice: 'プラクティス',
       mood: '気分', gratitude: '感謝', reflection: '振り返り',
       intention: '今日の意図', practice_type: 'プラクティスの種類',
       quality: '質', meditation: '瞑想', breathwork: '呼吸法',
       prayer: '祈り', journaling: 'ジャーナリング', visualization: 'ビジュアライゼーション',
+      layer_1: '1 - 計測', layer_2: '2 - 関係', layer_3: '3 - 現場',
+      layer_35: '3.5 - 心身', layer_4: '4 - 構想', layer_5: '5 - 可能性',
+      layer_6: '6 - 統合', layer_7: '7 - 空',
+      layer_1_pct: '計測（%）', layer_2_pct: '関係（%）', layer_3_pct: '現場（%）',
+      layer_35_pct: '心身（%）', layer_4_pct: '構想（%）', layer_5_pct: '可能性（%）',
+      layer_6_pct: '統合（%）', layer_7_pct: '空（%）',
+      desire_count: '欲の出現', virtue_count: '徳の出現', energy_count: 'エネルギーの出現',
+      net_value: '純価値', transcript_source: '入力元',
+      transcript_content: '文字起こし内容',
+      plaud: 'Plaud', voice_memo: 'ボイスメモ', manual: '手入力',
 
       // Time
       time_log: '時間記録', schedule: 'スケジュール',

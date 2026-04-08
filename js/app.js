@@ -457,6 +457,93 @@ var App = class App {
     reader.readAsText(file);
   }
 
+  // ─── Consciousness Transcript Analysis ───
+  async analyzeTranscript() {
+    const textarea = document.getElementById('transcriptText');
+    const source = document.getElementById('transcriptSource')?.value || 'manual';
+    if (!textarea || !textarea.value.trim()) {
+      Components.showToast('文字起こしの��容を入力してください', 'info');
+      return;
+    }
+
+    const text = textarea.value.trim();
+    const resultEl = document.getElementById('transcriptResult');
+
+    // Save transcript entry
+    store.addDomainEntry('consciousness', 'transcript', {
+      source,
+      content: text,
+      duration: Math.round(text.length / 200) // rough estimate
+    });
+
+    if (resultEl) resultEl.innerHTML = Components.loading('七つのレイヤーで分析中...');
+
+    try {
+      const prompt = CONFIG.prompts.consciousness.transcript_analysis || CONFIG.prompts.consciousness.daily;
+      const result = await AIEngine.analyze('consciousness', 'transcript_analysis', {
+        text: `<<<TRANSCRIPT_START\n${text}\nTRANSCRIPT_END>>>`
+      });
+
+      // Try to extract JSON from response for auto-populating observation
+      this.parseAndSaveObservation(result);
+
+      if (resultEl) {
+        resultEl.innerHTML = `<div class="transcript-result">
+          <h3>分析結果</h3>
+          <div class="analysis-content">${Components.formatMarkdown(result)}</div>
+        </div>`;
+      }
+
+      textarea.value = '';
+      Components.showToast('分析が完了しました', 'success');
+    } catch (e) {
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+    }
+  }
+
+  parseAndSaveObservation(aiResponse) {
+    // Try to extract JSON from AI response to auto-populate observation
+    try {
+      const jsonMatch = aiResponse.match(/\{[\s\S]*"conscious_focus"[\s\S]*\}/);
+      if (jsonMatch) {
+        const data = JSON.parse(jsonMatch[0]);
+        const dims = data.conscious_focus?.dims_pct || {};
+        const signals = data.signals || {};
+
+        store.addDomainEntry('consciousness', 'observation', {
+          layer_1: dims['1'] || 0,
+          layer_2: dims['2'] || 0,
+          layer_3: dims['3'] || 0,
+          layer_35: dims['3.5'] || 0,
+          layer_4: dims['4'] || 0,
+          layer_5: dims['5'] || 0,
+          layer_6: dims['6'] || 0,
+          layer_7: dims['7'] || 0,
+          desire_count: signals.desire_count || 0,
+          virtue_count: signals.virtue_count || 0,
+          energy_count: signals.energy_count || 0,
+          net_value: data.summary?.net_value?.value || 0,
+          auto_generated: true
+        });
+      }
+    } catch (e) {
+      // JSON parsing failed, observation can be entered manually
+      console.warn('Auto-observation parse failed:', e);
+    }
+  }
+
+  loadTranscriptFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const textarea = document.getElementById('transcriptText');
+      if (textarea) textarea.value = e.target.result;
+      Components.showToast('ファイルを読み込みました', 'success');
+    };
+    reader.readAsText(file);
+  }
+
   // ─── Resume Management (Contribution domain) ───
   saveResume() {
     const resume = {

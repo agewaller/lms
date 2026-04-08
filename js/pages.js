@@ -103,6 +103,12 @@ var Pages = {
 
     // ─── Domain-specific widgets ───
 
+    // Consciousness domain: 7-layer visualization + transcript input
+    if (domain === 'consciousness') {
+      html += this.renderConsciousnessLayers();
+      html += this.renderTranscriptInput();
+    }
+
     // Time domain: Calendar widget + Marketplace widget
     if (domain === 'time') {
       if (typeof CalendarIntegration !== 'undefined') html += CalendarIntegration.renderWidget();
@@ -134,6 +140,104 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Consciousness 7-Layer Visualization ───
+  renderConsciousnessLayers() {
+    const observations = store.getDomainData('consciousness', 'observation', 7);
+    const layers = CONFIG.domains.consciousness.layers;
+    const layerKeys = ['1', '2', '3', '3.5', '4', '5', '6', '7'];
+
+    // Get latest observation or defaults
+    const latest = observations.length > 0 ? observations[observations.length - 1] : null;
+
+    let html = `<div class="consciousness-layers-section">
+      <h3>七つの意識レイヤー</h3>
+      <p>今日、あなたの意識はどのレイヤーに多く向いていましたか？</p>
+      <div class="layers-chart">`;
+
+    layerKeys.forEach(key => {
+      const storeKey = key === '3.5' ? 'layer_35' : 'layer_' + key;
+      const pct = latest ? (latest[storeKey] || 0) : 0;
+      const layer = layers[key];
+      html += `<div class="layer-bar">
+        <div class="layer-label">
+          <span class="layer-num" style="background:${layer.color}">${key}</span>
+          <span class="layer-name">${layer.name}</span>
+        </div>
+        <div class="layer-track">
+          <div class="layer-fill" style="width:${pct}%;background:${layer.color}"></div>
+        </div>
+        <span class="layer-pct">${pct > 0 ? pct + '%' : '—'}</span>
+      </div>`;
+    });
+
+    html += `</div>`;
+
+    // Net value (純価値)
+    if (latest) {
+      const nv = latest.net_value || 0;
+      const nvColor = nv >= 70 ? '#27AE60' : nv >= 40 ? '#F39C12' : '#E74C3C';
+      html += `<div class="net-value-display">
+        <div class="nv-label">純価値（エネルギー＋徳−欲）</div>
+        <div class="nv-score" style="color:${nvColor}">${nv}/100</div>
+        <div class="nv-details">
+          欲: ${latest.desire_count || 0}回
+          徳: ${latest.virtue_count || 0}回
+          エネルギー: ${latest.energy_count || 0}回
+        </div>
+      </div>`;
+    }
+
+    // Layer descriptions (collapsible)
+    html += `<details class="layer-legend">
+      <summary>レイヤーの説明</summary>
+      <div class="legend-list">
+        ${layerKeys.map(key => {
+          const l = layers[key];
+          return `<div class="legend-item">
+            <span class="layer-num" style="background:${l.color}">${key}</span>
+            <strong>${l.name}</strong> — ${l.description}
+          </div>`;
+        }).join('')}
+      </div>
+    </details>`;
+
+    html += `</div>`;
+    return html;
+  },
+
+  // ─── Transcript Input (Plaud / Voice) ───
+  renderTranscriptInput() {
+    return `<div class="transcript-section">
+      <h3>🎙️ 文字起こしの分析</h3>
+      <p>Plaudや音声メモの文字起こしを貼り付けると、七つのレイヤーで分析します。</p>
+      <div class="form-group">
+        <label>文字起こしの入力元</label>
+        <select id="transcriptSource" class="form-input">
+          <option value="plaud">Plaud</option>
+          <option value="voice_memo">ボイスメモ</option>
+          <option value="manual">手入力</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>文字起こし内容</label>
+        <textarea id="transcriptText" class="form-input" rows="8"
+          placeholder="ここに文字起こしの全文を貼り付けてください..."></textarea>
+      </div>
+      <div class="form-group">
+        <input type="file" id="transcriptFile" accept=".txt,.json,.csv" style="display:none"
+          onchange="app.loadTranscriptFile(event)">
+        <button class="btn btn-secondary" onclick="document.getElementById('transcriptFile').click()">
+          📄 ファイルから読み込む
+        </button>
+      </div>
+      <button class="btn btn-primary btn-lg" onclick="app.analyzeTranscript()">
+        🧠 意識レイヤー分析を実行
+      </button>
+      <div id="transcriptResult"></div>
+    </div>`;
   },
 
   // ─── Social Graph (Trust domain) ───
@@ -265,13 +369,15 @@ var Pages = {
 
     switch (domain) {
       case 'consciousness': {
+        const obs = store.getDomainData('consciousness', 'observation', 7);
         const entries = store.getDomainData('consciousness', 'entries', 7);
-        const practices = store.getDomainData('consciousness', 'practices', 7);
-        const avgMood = entries.length > 0 ?
-          (entries.reduce((s, e) => s + (e.mood_level || 0), 0) / entries.length).toFixed(1) : '-';
+        const transcripts = store.getDomainData('consciousness', 'transcript', 7);
+        const latestObs = obs.length > 0 ? obs[obs.length - 1] : null;
+        const nv = latestObs?.net_value || '-';
+        stats.push(Components.statCard('純価値', nv + (nv !== '-' ? '/100' : ''), null, '✨'));
+        stats.push(Components.statCard('定点観測', obs.length + i18n.t('items'), null, '👁️'));
+        stats.push(Components.statCard('文字起こし', transcripts.length + i18n.t('items'), null, '🎙️'));
         stats.push(Components.statCard(i18n.t('journal'), entries.length + i18n.t('items'), null, '📝'));
-        stats.push(Components.statCard(i18n.t('practice'), practices.length + i18n.t('items'), null, '🧘'));
-        stats.push(Components.statCard(i18n.t('mood'), avgMood + '/10', null, '😊'));
         break;
       }
       case 'health': {

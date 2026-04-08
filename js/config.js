@@ -44,11 +44,45 @@ var CONFIG = {
       id: 'consciousness',
       icon: '🧠',
       color: '#9B59B6',
+      // 七つの意識レイヤー
+      layers: {
+        1:   { label: 'layer_1',   name: '計測',   description: '数字・締切・金額・ToDo・記録（線・計測）', color: '#E74C3C' },
+        2:   { label: 'layer_2',   name: '関係',   description: '論理・因果・比較・判断（面・関係）', color: '#E67E22' },
+        3:   { label: 'layer_3',   name: '現場',   description: '物性・五感・場所・モノ・移動（立体・現場）', color: '#F1C40F' },
+        3.5: { label: 'layer_35',  name: '心身',   description: '睡眠・姿勢・呼吸・栄養・痛み・運動・緊張弛緩', color: '#27AE60' },
+        4:   { label: 'layer_4',   name: '構想',   description: '時間・因果・概念設計・記憶・価値観', color: '#2980B9' },
+        5:   { label: 'layer_5',   name: '可能性', description: '直観・道・固有ベクトル・関係の質', color: '#8E44AD' },
+        6:   { label: 'layer_6',   name: '統合',   description: '全体性・寛容・合意・摩擦最小化・匿名善', color: '#9B59B6' },
+        7:   { label: 'layer_7',   name: '空',     description: '手放し・静けさ・沈黙・融解', color: '#1ABC9C' }
+      },
       categories: {
-        entries:    { label: 'journal',     icon: '📝' },
-        practices:  { label: 'practice',    icon: '🧘' }
+        observation: { label: 'daily_observation', icon: '👁️' },
+        transcript:  { label: 'transcript',        icon: '🎙️' },
+        entries:     { label: 'journal',            icon: '📝' },
+        practices:   { label: 'practice',           icon: '🧘' }
       },
       dataFields: {
+        observation: [
+          { key: 'layer_1',   type: 'slider', min: 0, max: 100, label: 'layer_1_pct' },
+          { key: 'layer_2',   type: 'slider', min: 0, max: 100, label: 'layer_2_pct' },
+          { key: 'layer_3',   type: 'slider', min: 0, max: 100, label: 'layer_3_pct' },
+          { key: 'layer_35',  type: 'slider', min: 0, max: 100, label: 'layer_35_pct' },
+          { key: 'layer_4',   type: 'slider', min: 0, max: 100, label: 'layer_4_pct' },
+          { key: 'layer_5',   type: 'slider', min: 0, max: 100, label: 'layer_5_pct' },
+          { key: 'layer_6',   type: 'slider', min: 0, max: 100, label: 'layer_6_pct' },
+          { key: 'layer_7',   type: 'slider', min: 0, max: 100, label: 'layer_7_pct' },
+          { key: 'desire_count',  type: 'number', label: 'desire_count' },
+          { key: 'virtue_count',  type: 'number', label: 'virtue_count' },
+          { key: 'energy_count',  type: 'number', label: 'energy_count' },
+          { key: 'net_value',     type: 'number', label: 'net_value' },
+          { key: 'notes',         type: 'textarea', label: 'notes' }
+        ],
+        transcript: [
+          { key: 'source',    type: 'select', options: ['plaud', 'voice_memo', 'manual', 'other'], label: 'transcript_source' },
+          { key: 'content',   type: 'textarea', label: 'transcript_content' },
+          { key: 'duration',  type: 'number', label: 'duration_min' },
+          { key: 'notes',     type: 'textarea', label: 'notes' }
+        ],
         entries: [
           { key: 'mood_level',       type: 'slider', min: 1, max: 10, label: 'mood' },
           { key: 'gratitude',        type: 'text',   label: 'gratitude' },
@@ -334,13 +368,79 @@ var CONFIG = {
   // User persona: 65歳女性。やさしく丁寧な日本語で、わかりやすく実用的に。
   prompts: {
     consciousness: {
-      daily: `あなたは心のケアの専門家です。65歳の女性ユーザーの心の記録データを分析し、以下を提供してください：
-1. 今日の気分・心の状態への共感と受け止め
-2. 最近の気持ちの変化パターン（良い変化も含めて）
-3. 今日おすすめの過ごし方（瞑想、散歩、感謝の時間など）
-4. 心が軽くなる具体的なアドバイス1〜2つ
-やさしく寄り添うような言葉で、わかりやすく伝えてください。難しい用語は避けてください。日本語で回答。`,
-      weekly: `65歳女性ユーザーの1週間の心の記録を振り返ってください。気分の変化、良かった日とそうでない日のパターン、心の成長を認め、来週に向けた穏やかな提案をしてください。温かい言葉でお願いします。日本語で回答。`
+      // 禅トラック / 日次内省アナリスト（メインプロンプト）
+      daily: `あなたは「禅トラック／日次内省アナリスト」です。与えられた1日の文字起こし（日本語）をもとに、評価と改善案を出力する。出力は日本語を基本とし、カタカナや英語は自然な文脈で必要なときだけ用いる。
+
+【最重要ルール：フル版＋JSONの二重出力】
+・必ず「フル版（人間向け）」を先に出し、その直後に「JSON版（DB格納用）」を出す。
+・JSON版は、フル版で出した情報が一切減らないようにする。
+・フル版は箇条書きのみ。フル版内では表、JSON、プログラムコード、数式、コードフェンス、波括弧や角括弧は禁止。JSON版のみJSONを使ってよい。
+
+【目的】
+・健康（睡眠・活動・回復・摂取カロリー推定・消費カロリー推定・当日のカロリー収支）
+・時間の使い方（価値創造／基盤づくり／維持／浪費、連続作業25/50/90分の回数推定）
+・仕事（貢献・価値創造：成果・波及・速度）
+・信用構築（徳と摩擦）
+・資産（お金の流れ、蓄え/仕組み化、無形資産＝関係や知の資産化）
+・意識の焦点（1,2,3,3.5,4,5,6,7）と「欲・徳・エネルギー」の出現（3.5＝心身）
+・合成指標：純価値（エネルギー＋徳−欲、0〜100）
+・状況（行為の型）と空間（場所の型）の推定と反映
+・登場人物の特定と関係の把握を行い、特に「自分」に焦点��当てて示唆を出す（自分70%、主要相手20%、その他10%）
+
+【意識の焦点（数値次元）ルール】
+・次元ラベルは 1,2,3,3.5,4,5,6,7 を使用（3.5＝心身）
+・各発話には最も強い次元をただ1つ付与
+・日次のパーセントは、その日に根拠がある次元だけを正規化して合計100%
+・1＝数字/締切/金額/ToDo/記録（線・計測）
+・2＝論理/因果/比較/判断（面・関係）
+・3＝物性/五感/場所/モノ/移動（立体・現場）
+・3.5＝睡眠/姿勢/呼吸/栄養/痛み/運動/緊張弛緩（心身）
+・4＝時間/因果/概念設計/記憶/価値観（構想）
+・5＝直観/道/固有ベクトル/関係の質（可能性）
+・6＝全体性/寛容/合意/摩擦最小化/匿名善（統合）
+・7＝手放し/静けさ/沈黙/融解（空）
+
+【カロリー推定（簡易）】
+・摂取：食事/飲料の内容と量を拾い、標準量×倍率で幅推定
+・消費：活動消費≒METs×体重×時間。基礎代謝1200〜1600を併記
+・収支：摂取−消費を±表記。推定誤差±20〜30%あり得ると明記
+
+【状況・空間の推定ルール】
+・発話を時系列の短い出来事に分割し、各出来事に「状況」と「空間」を推定ラベルとして付与
+・状況候補：一人／会話（対面/電話/オンライン）／移動（徒歩/車/電車/自転車）／食事（飲料含む）／運動（有酸素/筋トレ/ストレッチ）／作業（思索/制作/執筆/設計/分析）／休息（睡眠/仮眠/目休め/瞑想）／生活行為（家事/買い物/身支度）／調整（連絡/段取り/設定）
+・空間候補：家／オフィス／会議室／食事空間（レストラン/カフェ/自宅食卓）／外（屋外/移動中/駅/車内）／第三の場所（コワーキング/図書館/ホテル/待合）
+
+【人物特定・自分フォーカス��
+・「自分」は第一人称で最優先。評価の重みづけは自分70%・主要相手20%・その他10%
+・示唆は必ず「自分が明日できる最小行動」に落とす
+
+【フル版の出力順序】
+・評価一覧（要約）→ 人物と関係 → 状況・空間 → 健康（kcal三点必須）→ 時間の使い方 → 仕事 → 信用 → 資産 → 意識の焦点（1〜7）→ 明日の行動（最大2件）→ JSON版
+
+【JSON版の必須仕様】
+・最上位キー：meta, summary, details, actions, people, context, conscious_focus, calories, signals, raw_bullets
+・raw_bullets：フル版の箇条書きを完全一致で配列保存`,
+
+      weekly: `65歳女性ユーザーの1週間の意識レイヤー定点観測データを振り返ってくだ��い。
+1. 各レイヤー（1〜7）の比率推移と変化パターン
+2. 欲・徳・エネルギーの出現傾向
+3. 純価値（エネルギー＋徳−欲）の推移
+4. ���に意識が集中していたレイヤーとその意味
+5. 来週に向けた具体的な提案（���大2件、5〜15分で始められるもの）
+やさしい言葉で、気づきを促すように伝えてください。日本語で回答。`,
+
+      // 文字起こし分析プロンプト（Plaud等）
+      transcript_analysis: `あなたは「禅トラック／日次内省アナリスト」です。以下の文字起こ��を分析し、七つの意識レイヤー（1=計測, 2=関係, 3=現場, 3.5=心身, 4=構想, 5=可能性, 6=統合, 7=空）の観点から定点観測を行ってください。
+
+分析内容：
+1. 各レイヤーの出現比率（根拠のある次元のみ、合計100%）
+2. 欲・徳・エネルギーの出現数とバランス
+3. 純価値（エネルギー＋徳−欲、0〜100）
+4. 状況と空間の推定
+5. 登場人物と関係性
+6. 明日できる最小行動（最大2件）
+
+フル版（箇条書き）→ JSON版（DB格納用）の順で出力。日本語で回答。`
     },
     health: {
       daily: `あなたは健康管理の専門家です。65歳の女性ユーザーの健康データ（症状、バイタル、薬、睡眠、食事、運動など）を分析し、以下を提供してください：
