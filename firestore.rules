@@ -1,12 +1,29 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Per-user data: only the owner can read/write
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
       match /{subcollection}/{docId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
+
+    // Admin shared config: all authenticated users can READ (inherit AI model,
+    // prompts, affiliate). Only admin can WRITE.
+    match /admin/config {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.token.email == 'agewaller@gmail.com';
+    }
+
+    // Admin secrets (API keys): readable by all authenticated users so they can
+    // use the admin-provided AI. Only admin can write.
+    match /admin/secrets {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.token.email == 'agewaller@gmail.com';
+    }
+
+    // Other admin docs (prompts history, etc.)
     match /admin/{docId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.token.email == 'agewaller@gmail.com';

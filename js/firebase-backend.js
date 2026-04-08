@@ -174,17 +174,33 @@ var FirebaseBackend = {
       if (profileDoc.exists) {
         const data = profileDoc.data();
         if (data.userProfile) store.set('userProfile', data.userProfile);
-        if (data.selectedModel) store.set('selectedModel', data.selectedModel);
-        if (data.customPrompts) store.set('customPrompts', data.customPrompts);
-        if (data.affiliateConfig) store.set('affiliateConfig', data.affiliateConfig);
         if (data.subscription) store.set('subscription', data.subscription);
         if (data.domainScores) store.set('domainScores', data.domainScores);
       }
 
-      // Load API keys from secrets subcollection
-      const secretsDoc = await this.db.collection('users').doc(uid).collection('secrets').doc('apikeys').get();
-      if (secretsDoc.exists) {
-        store.state._apiKeys = secretsDoc.data();
+      // ─── Load ADMIN-SHARED config (AI model, prompts, API keys) ───
+      // All users inherit the admin's configuration (未病ダイアリー pattern)
+      try {
+        const adminConfigDoc = await this.db.collection('admin').doc('config').get();
+        if (adminConfigDoc.exists) {
+          const cfg = adminConfigDoc.data();
+          if (cfg.selectedModel) store.set('selectedModel', cfg.selectedModel);
+          if (cfg.customPrompts) store.set('customPrompts', cfg.customPrompts);
+          if (cfg.affiliateConfig) store.set('affiliateConfig', cfg.affiliateConfig);
+        }
+
+        // Load admin API keys (shared across all users)
+        const adminSecretsDoc = await this.db.collection('admin').doc('secrets').get();
+        if (adminSecretsDoc.exists) {
+          const keys = adminSecretsDoc.data();
+          store.state._apiKeys = keys;
+          // Cache in localStorage for offline use
+          if (keys.anthropic) localStorage.setItem('lms_apikey_anthropic', keys.anthropic);
+          if (keys.openai) localStorage.setItem('lms_apikey_openai', keys.openai);
+          if (keys.google) localStorage.setItem('lms_apikey_google', keys.google);
+        }
+      } catch (e) {
+        console.warn('Admin config load error:', e);
       }
 
       // Load domain data collections in parallel
@@ -235,11 +251,11 @@ var FirebaseBackend = {
   enableAutoSync(uid) {
     if (!this.db) return;
 
-    // Profile fields to sync to the main user doc
-    const profileFields = ['userProfile', 'selectedModel', 'customPrompts',
-      'affiliateConfig', 'subscription', 'domainScores'];
+    const isAdmin = this.isAdmin();
 
-    profileFields.forEach(key => {
+    // Per-user profile fields (all users)
+    const userProfileFields = ['userProfile', 'subscription', 'domainScores'];
+    userProfileFields.forEach(key => {
       store.on(key, (value) => {
         this.db.collection('users').doc(uid).set(
           { [key]: value, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
@@ -248,13 +264,26 @@ var FirebaseBackend = {
       });
     });
 
-    // Domain data collections
+    // ─── ADMIN-ONLY: shared config (AI model, prompts, affiliate) ───
+    // These fields sync to admin/config and are read by all users
+    if (isAdmin) {
+      const adminFields = ['selectedModel', 'customPrompts', 'affiliateConfig'];
+      adminFields.forEach(key => {
+        store.on(key, (value) => {
+          this.db.collection('admin').doc('config').set(
+            { [key]: value, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
+            { merge: true }
+          ).catch(e => console.warn('Admin config sync error:', e));
+        });
+      });
+    }
+
+    // Domain data collections (user-specific)
     Object.keys(CONFIG.domains).forEach(domain => {
       Object.keys(CONFIG.domains[domain].categories).forEach(cat => {
         const key = `${domain}_${cat}`;
         store.on(key, (entries) => {
           if (!Array.isArray(entries)) return;
-          // Sync only unsynced entries
           entries.filter(e => !e._synced).forEach(entry => {
             const docId = entry.id || entry._docId;
             this.db.collection('users').doc(uid)
@@ -268,11 +297,14 @@ var FirebaseBackend = {
     });
   },
 
-  // ─── Save API Keys to Firestore secrets ───
+  // ─── Save API Keys: admin writes to shared admin/secrets ───
   async saveApiKeys(keys) {
-    const uid = store.get('user')?.uid;
-    if (!this.db || !uid) return;
-    await this.db.collection('users').doc(uid).collection('secrets').doc('apikeys').set(keys);
+    if (!this.db) return;
+    if (!this.isAdmin()) {
+      console.warn('Only admin can save API keys');
+      return;
+    }
+    await this.db.collection('admin').doc('secrets').set(keys, { merge: true });
   },
 
   // ─── Check if user is admin ───

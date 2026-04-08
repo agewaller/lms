@@ -9,7 +9,7 @@ var i18n = {
     ja: {
       // App
       app_name: 'LMS', app_full_name: 'Life Management System',
-      app_subtitle: '〜年金だけでは足りない時代。6つの領域を、AIがまるごとサポート〜',
+      app_subtitle: '〜年金だけでは足りない時代。6つの領域を、まるごとサポート〜',
       login: 'ログイン', logout: 'ログアウト',
       login_google: 'Googleでログイン',
       email: 'メールアドレス', password: 'パスワード', or: 'または',
@@ -17,29 +17,29 @@ var i18n = {
       // Domains
       consciousness: '意識', health: '健康', time: '時間',
       work: '仕事', relationship: '関係', assets: '資産',
-      consciousness_sub: 'AIが仕事を代わる時代。自分を毎日定点観測',
+      consciousness_sub: '仕事が機械に代わる時代。自分を毎日定点観測',
       health_sub: '「治す」から「支える」へ。在宅時代の健康管理',
-      time_sub: '面倒はAIに任せて。あなたの時間をあなたのために',
-      work_sub: 'AI時代、あなたの経験が価値になる',
+      time_sub: '面倒はおまかせで。あなたの時間をあなたのために',
+      work_sub: '新しい時代、あなたの経験が価値になる',
       relationship_sub: '孤独は喫煙より危険。つながりを見える化して命を守る',
-      assets_sub: 'プラチナNISA元年。年金+αをAIがガイド',
+      assets_sub: 'プラチナNISA元年。年金+αをやさしくガイド',
 
       // Navigation
       home: 'ホーム', record: '記録する', actions: 'アクション',
-      settings: '設定', admin: '管理パネル', ask_ai: 'AIに相談',
+      settings: '設定', admin: '管理パネル', ask_ai: '相談する',
 
       // Sub-site LP
-      lp_hero_consciousness: 'AIが仕事を代わる時代。「自分は何者か」を毎日定点観測',
+      lp_hero_consciousness: '仕事が機械に代わる時代。「自分は何者か」を毎日定点観測',
       lp_hero_health: '「治す」から「支える」へ。在宅時代の健康管理パートナー',
-      lp_hero_time: '面倒なことはAIに任せて。あなたの時間を、あなたのために',
-      lp_hero_work: 'AI時代、あなたの経験が価値になる。月5万円の第一歩',
+      lp_hero_time: '面倒なことはおまかせで。あなたの時間を、あなたのために',
+      lp_hero_work: '新しい時代、あなたの経験が価値になる。月5万円の第一歩',
       lp_hero_relationship: '孤独は喫煙より危険。つながりを"見える化"して、命を守る',
-      lp_hero_assets: 'プラチナNISA元年。年金+αの毎月収入を、AIがやさしくガイド',
+      lp_hero_assets: 'プラチナNISA元年。年金+αの毎月収入を、やさしくガイド',
       lp_start: '無料で始める', lp_learn_more: '詳しく見る',
 
       // Common
       save: '保存', cancel: 'キャンセル', delete: '削除', edit: '編集',
-      loading: '読み込み中...', analyzing: 'AI分析中...',
+      loading: '読み込み中...', analyzing: '分析中...',
       saved: '保存しました', error: 'エラー', send: '送信', clear: 'クリア',
       date: '日付', title: 'タイトル', content: '内容',
       notes: 'メモ', category: 'カテゴリ',
@@ -181,8 +181,8 @@ var i18n = {
       subscription: 'サブスクリプション', subscribe: '登録する',
       plan_basic: 'ベーシック', plan_premium: 'プレミアム',
 
-      // AI
-      ai_analysis: 'AI分析', holistic_analysis: '総合分析',
+      // Analysis
+      ai_analysis: '分析', holistic_analysis: '総合分析',
       cross_domain: 'ドメイン横断分析',
       disclaimer_health: '※こちらは参考情報です。健康に関するご判断は、必ずかかりつけ医にご相談ください。',
       disclaimer_assets: '※こちらは参考情報です。投資に関するご判断は、必ず専門家にご相談ください。',
@@ -194,7 +194,7 @@ var i18n = {
       // Misc
       items: '件', selected: '選択中',
       file_upload: 'ファイルアップロード',
-      save_and_analyze: '保存してAI分析'
+      save_and_analyze: '保存して分析'
     },
 
     en: {
@@ -209,7 +209,7 @@ var i18n = {
       time_sub: 'Time Optimization', work_sub: 'Work & Career',
       relationship_sub: 'Relationships & Network', assets_sub: 'Investment & Wealth',
       home: 'Home', record: 'Record', actions: 'Actions',
-      settings: 'Settings', admin: 'Admin', ask_ai: 'Ask AI',
+      settings: 'Settings', admin: 'Admin', ask_ai: 'Consult',
       lp_hero_consciousness: 'Elevate your consciousness, transform your life',
       lp_hero_health: 'From prevention to vitality. AI-powered health optimization',
       lp_hero_time: 'Master your time, master your life',
@@ -308,7 +308,7 @@ var i18n = {
       data_export: 'Export Data', data_import: 'Import Data',
       subscription: 'Subscription', subscribe: 'Subscribe',
       plan_basic: 'Basic', plan_premium: 'Premium',
-      ai_analysis: 'AI Analysis', holistic_analysis: 'Holistic Analysis',
+      ai_analysis: 'Analysis', holistic_analysis: 'Holistic Analysis',
       cross_domain: 'Cross-Domain Analysis',
       disclaimer_health: 'This is for reference only. Consult a physician for health decisions.',
       disclaimer_assets: 'This is for reference only. Consult a financial advisor for investment decisions.',
@@ -327,7 +327,7 @@ var i18n = {
       time_sub: '时间优化', work_sub: '工作与职业',
       relationship_sub: '关系与网络', assets_sub: '投资与财富',
       home: '首页', record: '记录', actions: '行动',
-      settings: '设置', admin: '管理', ask_ai: '咨询AI',
+      settings: '设置', admin: '管理', ask_ai: '咨询',
       lp_start: '免费开始', lp_learn_more: '了解更多',
       save: '保存', cancel: '取消', delete: '删除', edit: '编辑',
       loading: '加载中...', analyzing: '分析中...',
@@ -353,7 +353,7 @@ var i18n = {
       time_sub: '시간 최적화', work_sub: '업무와 경력',
       relationship_sub: '관계와 네트워크', assets_sub: '투자와 자산',
       home: '홈', record: '기록', actions: '액션',
-      settings: '설정', admin: '관리', ask_ai: 'AI 상담',
+      settings: '설정', admin: '관리', ask_ai: '상담',
       lp_start: '무료 시작', lp_learn_more: '자세히 보기',
       save: '저장', cancel: '취소', delete: '삭제', edit: '수정',
       loading: '로딩 중...', analyzing: '분석 중...',

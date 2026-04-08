@@ -1,6 +1,6 @@
 /* ============================================================
    LMS - Assets Feature Modules
-   プラチナNISA シミュレーター / AIアドバイザー / スクショ読取
+   プラチナNISA シミュレーター / アドバイザー / スクショ読取
    ============================================================ */
 var AssetsFeatures = {
 
@@ -104,13 +104,13 @@ var AssetsFeatures = {
   },
 
   // ═══════════════════════════════════════════════════════════
-  //  「何を買えばいいか」AIアドバイザー
+  //  「何を買えばいいか」アドバイザー
   // ═══════════════════════════════════════════════════════════
 
   renderAIAdvisor() {
     return `<div class="ai-advisor">
-      <h3>🤖 「何を買えばいいか」AIアドバイザー</h3>
-      <p>あなたの状況に合わせて、投資の方向性をAIがわかりやすくご提案します。</p>
+      <h3>「何を買えばいいか」アドバイザー</h3>
+      <p>あなたの状況に合わせて、投資の方向性をわかりやすくご提案します。</p>
 
       <div class="advisor-questions">
         <div class="form-group">
@@ -173,7 +173,7 @@ var AssetsFeatures = {
       </div>
 
       <button class="btn btn-primary btn-lg" onclick="AssetsFeatures.getAIAdvice()">
-        🤖 AIにアドバイスをもらう
+        アドバイスをもらう
       </button>
 
       <div id="advisorResult"></div>
@@ -224,13 +224,13 @@ var AssetsFeatures = {
   },
 
   // ═══════════════════════════════════════════════════════════
-  //  証券口座スクリーンショット AI読み取り
+  //  証券口座スクリーンショット 読み取り
   // ═══════════════════════════════════════════════════════════
 
   renderScreenshotReader() {
     return `<div class="screenshot-reader">
-      <h3>📸 証券口座の画面を読み取り</h3>
-      <p>証券会社や銀行のアプリの画面をスクリーンショットで撮影して、アップロードしてください。AIが内容を読み取って分析します。</p>
+      <h3>証券口座の画面を読み取り</h3>
+      <p>証券会社や銀行のアプリの画面をスクリーンショットで撮影して、アップロードしてください。自動で内容を読み取って分析します。</p>
 
       <div class="screenshot-upload-area" id="screenshotArea"
         ondragover="event.preventDefault();this.classList.add('dragover')"
@@ -326,8 +326,8 @@ var AssetsFeatures = {
     const settings = this.getAutoTradingSettings();
 
     return `<div class="auto-trading">
-      <h3>🤖 自動売買</h3>
-      <p>AIの分析に基づいて、設定した条件で自動的に売買を実行します。</p>
+      <h3>自動売買</h3>
+      <p>分析結果に基づいて、設定した条件で自動的に売買を実行します。</p>
 
       ${settings.enabled ? this.renderAutoTradingDashboard(settings) : this.renderAutoTradingSetup(settings)}
 
@@ -376,7 +376,7 @@ var AssetsFeatures = {
           <option value="conservative" ${settings.strategy === 'conservative' ? 'selected' : ''}>安全重視（債券中心・リバランスのみ）</option>
           <option value="balanced" ${settings.strategy === 'balanced' ? 'selected' : ''}>バランス型（インデックス積立＋配当再投資）</option>
           <option value="income" ${settings.strategy === 'income' ? 'selected' : ''}>インカム重視（高配当・毎月分配型）</option>
-          <option value="growth" ${settings.strategy === 'growth' ? 'selected' : ''}>成長重視（個別株・AI選定）</option>
+          <option value="growth" ${settings.strategy === 'growth' ? 'selected' : ''}>成長重視（個別株・自動選定）</option>
           <option value="vm" ${settings.strategy === 'vm' ? 'selected' : ''}>VMハンズオン（銘柄分析ベース）</option>
           <option value="custom" ${settings.strategy === 'custom' ? 'selected' : ''}>カスタム（自分でルールを設定）</option>
         </select>
