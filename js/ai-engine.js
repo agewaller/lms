@@ -1,0 +1,239 @@
+/* ============================================================
+   LMS - AI Engine
+   Multi-model AI integration (Claude, GPT-4o, Gemini)
+   ============================================================ */
+var AIEngine = {
+
+  // ─── Main analysis entry point ───
+  async analyze(domain, promptType, userData, options = {}) {
+    const model = options.model || store.get('selectedModel') || 'claude-sonnet-4-6';
+    const modelConfig = CONFIG.aiModels[model];
+    if (!modelConfig) throw new Error('Unknown model: ' + model);
+
+    store.set('isAnalyzing', true);
+
+    try {
+      // Build the prompt
+      const systemPrompt = this.buildSystemPrompt(domain, promptType);
+      const userMessage = this.buildUserMessage(domain, userData);
+
+      let result;
+      switch (modelConfig.provider) {
+        case 'anthropic':
+          result = await this.callAnthropic(model, systemPrompt, userMessage, modelConfig.maxTokens);
+          break;
+        case 'openai':
+          result = await this.callOpenAI(model, systemPrompt, userMessage, modelConfig.maxTokens);
+          break;
+        case 'google':
+          result = await this.callGemini(model, systemPrompt, userMessage, modelConfig.maxTokens);
+          break;
+        default:
+          throw new Error('Unknown provider: ' + modelConfig.provider);
+      }
+
+      // Save to history
+      const entry = {
+        id: Date.now().toString(36),
+        timestamp: new Date().toISOString(),
+        domain,
+        promptType,
+        model,
+        response: result,
+        userData: userData
+      };
+      const history = [...(store.get('analysisHistory') || []), entry];
+      store.set('analysisHistory', history);
+      store.set('latestAnalysis', entry);
+
+      return result;
+    } finally {
+      store.set('isAnalyzing', false);
+    }
+  },
+
+  // ─── Build system prompt ───
+  buildSystemPrompt(domain, promptType) {
+    // Check for admin custom prompts first
+    const custom = store.get('customPrompts') || {};
+    if (custom[domain]?.[promptType]) return custom[domain][promptType];
+
+    // Use config prompts
+    if (promptType === 'holistic') return CONFIG.prompts.holistic;
+    if (promptType === 'quickInput') return CONFIG.inlinePrompts.quickInput;
+    if (promptType === 'imageAnalysis') return CONFIG.inlinePrompts.imageAnalysis;
+
+    return CONFIG.prompts[domain]?.[promptType] || CONFIG.prompts[domain]?.daily || '';
+  },
+
+  // ─── Build user message with context ───
+  buildUserMessage(domain, userData) {
+    const profile = store.get('userProfile') || {};
+    const lang = i18n.currentLang;
+
+    let msg = `[User Profile] Language: ${lang}`;
+    if (profile.age) msg += `, Age: ${profile.age}`;
+    if (profile.gender) msg += `, Gender: ${profile.gender}`;
+    if (profile.location) msg += `, Location: ${profile.location}`;
+    msg += '\n\n';
+
+    if (domain === 'holistic' || !domain) {
+      // Cross-domain: gather recent data from all domains
+      Object.keys(CONFIG.domains).forEach(d => {
+        const domainData = this.gatherDomainData(d, 7);
+        if (domainData) msg += `[${i18n.t(d)}]\n${domainData}\n\n`;
+      });
+    } else {
+      // Single domain
+      const domainData = this.gatherDomainData(domain, 7);
+      if (domainData) msg += `[${i18n.t(domain)} Data]\n${domainData}\n\n`;
+    }
+
+    // Append user's direct input if any
+    if (userData?.text) msg += `[User Input]\n${userData.text}\n`;
+    if (userData?.raw) msg += `\n${JSON.stringify(userData.raw, null, 2)}`;
+
+    return msg;
+  },
+
+  // ─── Gather recent data for a domain ───
+  gatherDomainData(domain, days) {
+    const categories = CONFIG.domains[domain]?.categories || {};
+    const parts = [];
+
+    Object.keys(categories).forEach(cat => {
+      const data = store.getDomainData(domain, cat, days);
+      if (data.length > 0) {
+        parts.push(`${i18n.t(categories[cat].label)}: ${JSON.stringify(data.slice(-10))}`);
+      }
+    });
+
+    return parts.length > 0 ? parts.join('\n') : null;
+  },
+
+  // ─── API Calls ───
+
+  async callAnthropic(model, system, userMsg, maxTokens) {
+    const apiKey = this.getApiKey('anthropic');
+    if (!apiKey) throw new Error('Anthropic API key not set');
+
+    const endpoint = CONFIG.endpoints.anthropic;
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey
+      },
+      body: JSON.stringify({
+        model: model,
+        max_tokens: maxTokens,
+        system: system,
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('Anthropic API error: ' + err);
+    }
+    const data = await res.json();
+    return data.content?.[0]?.text || '';
+  },
+
+  async callOpenAI(model, system, userMsg, maxTokens) {
+    const apiKey = this.getApiKey('openai');
+    if (!apiKey) throw new Error('OpenAI API key not set');
+
+    const res = await fetch(CONFIG.endpoints.openai, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + apiKey
+      },
+      body: JSON.stringify({
+        model: model,
+        max_tokens: maxTokens,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: userMsg }
+        ]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('OpenAI API error: ' + err);
+    }
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || '';
+  },
+
+  async callGemini(model, system, userMsg, maxTokens) {
+    const apiKey = this.getApiKey('google');
+    if (!apiKey) throw new Error('Google API key not set');
+
+    const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: system }] },
+        contents: [{ parts: [{ text: userMsg }] }],
+        generationConfig: { maxOutputTokens: maxTokens }
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('Gemini API error: ' + err);
+    }
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  },
+
+  // ─── API Key Management ───
+  getApiKey(provider) {
+    // Try Firebase-stored keys first, then localStorage
+    const keys = store.get('_apiKeys') || {};
+    return keys[provider] || localStorage.getItem(`lms_apikey_${provider}`) || '';
+  },
+
+  setApiKey(provider, key) {
+    const keys = store.get('_apiKeys') || {};
+    keys[provider] = key;
+    store.state._apiKeys = keys;
+    localStorage.setItem(`lms_apikey_${provider}`, key);
+  },
+
+  // ─── Quick Input Analysis ───
+  async quickAnalyze(text) {
+    return await this.analyze(null, 'quickInput', { text });
+  },
+
+  // ─── Conversation (chat) ───
+  async chat(domain, userMessage) {
+    const history = store.get('conversationHistory') || [];
+
+    // Add user message
+    history.push({
+      role: 'user',
+      content: userMessage,
+      timestamp: new Date().toISOString(),
+      domain
+    });
+
+    // Get AI response
+    const response = await this.analyze(domain, 'daily', { text: userMessage });
+
+    // Add AI response
+    history.push({
+      role: 'assistant',
+      content: response,
+      timestamp: new Date().toISOString(),
+      domain
+    });
+
+    store.set('conversationHistory', history);
+    return response;
+  }
+};
