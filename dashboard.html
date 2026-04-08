@@ -8,7 +8,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
-<body class="dashboard-page sidebar-open">
+<body class="dashboard-page">
+
+  <!-- Mobile Header -->
+  <div class="mobile-header">
+    <button class="mobile-menu-btn" onclick="app.toggleSidebar()">☰</button>
+    <span class="logo-text">LMS</span>
+    <span id="mobileCurrentDomain"></span>
+  </div>
 
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">

@@ -213,7 +213,12 @@ select.form-input { appearance: auto; }
    DASHBOARD
    ═══════════════════════════════════════════════════════════ */
 
-.dashboard-page { display: flex; min-height: 100vh; }
+.dashboard-page { display: flex; min-height: 100vh; flex-direction: column; }
+.mobile-header { display: none; }
+
+@media (min-width: 769px) {
+  .dashboard-page { flex-direction: row; }
+}
 
 /* Sidebar */
 .sidebar {
@@ -811,30 +816,75 @@ select.form-input { appearance: auto; }
 @media (max-width: 768px) {
   .sidebar { transform: translateX(-100%); }
   .sidebar-open .sidebar { transform: translateX(0); }
-  .main-area { margin-left: 0; }
-  .sidebar-open .main-area { margin-left: var(--sidebar-w); }
+  .main-area { margin-left: 0 !important; }
+
+  /* サイドバーはオーバーレイ（未病ダイアリー方式） */
+  .sidebar-open .sidebar {
+    box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+    z-index: 200;
+  }
+  .sidebar-open::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 150;
+  }
+
+  /* ハンバーガーを常に表示 */
+  .mobile-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .mobile-header .logo-text { font-size: 18px; font-weight: 700; }
+  .mobile-menu-btn {
+    background: none; border: none; font-size: 28px;
+    cursor: pointer; padding: 8px; color: var(--text);
+  }
 
   .lp-nav { padding: 12px 20px; }
   .lp-section { padding: 40px 20px; }
   .lp-section-alt { padding-left: 20px; padding-right: 20px; }
   .hero-content { padding: 20px; }
   .main-content { padding: 16px; }
-  .domain-tabs-container, .sub-nav-container { padding: 0 16px; }
+  .domain-tabs-container, .sub-nav-container { padding: 0 8px; }
+  .domain-tabs { gap: 0; }
+  .domain-tab { padding: 10px 12px; }
+  .sub-nav { overflow-x: auto; }
+  .sub-nav-btn { padding: 10px 14px; white-space: nowrap; }
 
   .home-overview { flex-direction: column; align-items: center; }
   .quick-input-bar { flex-direction: column; }
   .action-generate { flex-direction: column; }
   .chat-input-bar { flex-direction: column; }
+  .stock-input-bar { flex-direction: column; }
+  .form-actions { flex-direction: column; }
+  .diary-actions { flex-direction: column; }
+  .import-buttons { flex-direction: column; }
+
+  .overview-stats { justify-content: center; }
+  .stat-card { min-width: 120px; }
+  .domain-scores-grid { gap: 8px; }
 
   .domain-cards { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
   .feature-grid { grid-template-columns: 1fr; }
   .plan-cards { flex-direction: column; }
+  .sim-cards { grid-template-columns: 1fr 1fr; }
+  .at-order { flex-direction: column; align-items: flex-start; }
+  .at-stats { flex-direction: column; }
+  .contact-suggest { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .cs-actions { width: 100%; }
+  .provision-cards { flex-direction: column; }
+  .jd-platform-link { flex-direction: column; }
+  .booking-slot { flex-direction: column; align-items: flex-start; }
 
   .lp-nav-links a:not(.btn) { display: none; }
+  .login-card { padding: 24px 16px; }
 }
 
 @media (max-width: 480px) {
-  .domain-tab { padding: 10px 12px; }
   .tab-label { display: none; }
   .sub-nav-btn span:last-child { display: none; }
+  .sim-cards { grid-template-columns: 1fr; }
 }
