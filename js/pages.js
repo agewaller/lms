@@ -1128,6 +1128,9 @@ var Pages = {
     const currentTab = store.get('adminTab') || 'prompts';
     const promptCount = Object.keys(CONFIG.prompts || {}).length;
 
+    const adminEmails = (store.get('adminEmails') || ['agewaller@gmail.com']);
+    const userCount = store.get('_allUsersCount') || 0;
+
     let html = `<div class="page-admin">
       <div class="admin-tabs">
         <button class="admin-tab ${currentTab === 'prompts' ? 'active' : ''}" onclick="app.setAdminTab('prompts')">
@@ -1138,6 +1141,9 @@ var Pages = {
         </button>
         <button class="admin-tab ${currentTab === 'apikeys' ? 'active' : ''}" onclick="app.setAdminTab('apikeys')">
           APIキー
+        </button>
+        <button class="admin-tab ${currentTab === 'users' ? 'active' : ''}" onclick="app.setAdminTab('users')">
+          ユーザー管理<span class="tab-count">${adminEmails.length}</span>
         </button>
         <button class="admin-tab ${currentTab === 'affiliate' ? 'active' : ''}" onclick="app.setAdminTab('affiliate')">
           アフィリエイト
@@ -1267,9 +1273,10 @@ var Pages = {
 
   // ─── Admin Tab: API Keys ───
   renderAdminTab_apikeys() {
-    return `<div class="card">
+    return `<div class="card" style="margin-bottom:16px;">
       <div class="card-header"><h3>APIキー設定</h3></div>
       <div class="card-body">
+        <p class="page-desc">ここで設定したキーは、すべてのユーザーが利用します。</p>
         <div class="form-group">
           <label>APIプロキシURL（必須）</label>
           <input type="text" id="workerUrl" class="form-input" value="${CONFIG.endpoints.anthropic}" placeholder="https://...workers.dev">
@@ -1296,6 +1303,108 @@ var Pages = {
           <button class="btn btn-danger" onclick="app.clearApiKeys()">すべて削除</button>
         </div>
         <div id="connectionResult"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>Plaud メール取込 Worker</h3></div>
+      <div class="card-body">
+        <p class="page-desc">Plaudが自動送信する文字起こしを受信するためのCloudflare Workerを設定します。</p>
+
+        <div class="form-group">
+          <label>メール取込 Worker URL</label>
+          <input type="text" id="emailIngestUrl" class="form-input"
+            value="${CONFIG.endpoints.emailIngest || ''}" placeholder="https://lms-email-ingest.your-account.workers.dev">
+          <div class="input-help">Cloudflare Email WorkerのHTTPエンドポイントURLです</div>
+        </div>
+
+        <div class="form-group">
+          <label>取込用ドメイン</label>
+          <input type="text" id="emailIngestDomain" class="form-input"
+            value="${CONFIG.emailIngestDomain || 'inbox.lms-life.com'}" placeholder="inbox.lms-life.com">
+          <div class="input-help">ユーザー固有アドレスに使うドメイン（data-xxx@このドメイン）</div>
+        </div>
+
+        <div class="integration-steps">
+          <h4>セットアップ手順</h4>
+          <ol>
+            <li>Cloudflare Dashboard → Email → Email Routing で上記ドメインを認証</li>
+            <li>Workers → KV → 「EMAIL_INBOX」名前空間を作成</li>
+            <li><code>wrangler deploy -c wrangler.email.toml</code> で Email Worker をデプロイ</li>
+            <li>Email Routing でキャッチオール（<code>data-*@ドメイン</code>）を Worker にルーティング</li>
+            <li>このページの Worker URL を入力して保存</li>
+          </ol>
+        </div>
+
+        <button class="btn btn-primary" onclick="app.saveEmailIngestConfig()">保存</button>
+      </div>
+    </div>`;
+  },
+
+  // ─── Admin Tab: ユーザー管理 (未病ダイアリー準拠) ───
+  renderAdminTab_users() {
+    const currentUser = store.get('user');
+    const adminEmails = store.get('adminEmails') || ['agewaller@gmail.com'];
+    const allUsers = store.get('_allUsers') || [];
+
+    return `<div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <h3>管理者（${adminEmails.length}）</h3>
+        <button class="btn btn-sm btn-primary" onclick="app.addAdminEmail()">管理者を追加</button>
+      </div>
+      <div class="card-body">
+        <p class="page-desc">管理者権限を持つユーザーのリストです。管理者はAIモデル・プロンプト・APIキーを変更できます。</p>
+        <div class="admin-users-list">
+          ${adminEmails.map(email => {
+            const isOwner = email === 'agewaller@gmail.com';
+            const isSelf = currentUser?.email === email;
+            return `<div class="admin-user-item">
+              <div class="admin-user-info">
+                <div class="admin-user-avatar">${email.charAt(0).toUpperCase()}</div>
+                <div>
+                  <div class="admin-user-email">${email}${isSelf ? ' <span class="you-badge">あなた</span>' : ''}</div>
+                  <div class="admin-user-role">${isOwner ? 'オーナー（削除不可）' : '管理者'}</div>
+                </div>
+              </div>
+              ${isOwner ? '<span class="status-badge">オーナー</span>' : `
+                <button class="btn btn-sm btn-danger" onclick="app.removeAdminEmail('${email}')">削除</button>
+              `}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>登録ユーザー一覧</h3>
+        <button class="btn btn-sm btn-secondary" onclick="app.loadAllUsers()">更新</button>
+      </div>
+      <div class="card-body">
+        <p class="page-desc">システムに登録されているすべてのユーザーです。</p>
+        ${allUsers.length === 0 ? `
+          <p style="color:var(--text-muted);font-size:13px;">ユーザー一覧を読み込むには「更新」ボタンを押してください。</p>
+        ` : `
+          <div class="admin-users-list">
+            ${allUsers.map(u => `
+              <div class="admin-user-item">
+                <div class="admin-user-info">
+                  <div class="admin-user-avatar">${(u.displayName || u.email || '?').charAt(0).toUpperCase()}</div>
+                  <div>
+                    <div class="admin-user-email">${u.displayName || u.email || '不明'}</div>
+                    <div class="admin-user-role">
+                      ${u.email || ''} ${u.lastActive ? ' · 最終ログイン ' + new Date(u.lastActive).toLocaleDateString('ja-JP') : ''}
+                    </div>
+                  </div>
+                </div>
+                <div class="admin-user-stats">
+                  ${u.entryCount ? `<span class="stat-chip">${u.entryCount}件</span>` : ''}
+                  ${adminEmails.includes(u.email) ? '<span class="status-badge">管理者</span>' : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `}
       </div>
     </div>`;
   },

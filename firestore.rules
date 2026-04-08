@@ -1,32 +1,46 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Helper: check if user is an admin (owner or in admin/config.adminEmails)
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.email == 'agewaller@gmail.com' ||
+        (
+          exists(/databases/$(database)/documents/admin/config) &&
+          request.auth.token.email in
+            get(/databases/$(database)/documents/admin/config).data.adminEmails
+        )
+      );
+    }
+
     // Per-user data: only the owner can read/write
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Admins can list users for user management
+      allow list: if isAdmin();
+
       match /{subcollection}/{docId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
 
-    // Admin shared config: all authenticated users can READ (inherit AI model,
-    // prompts, affiliate). Only admin can WRITE.
+    // Admin shared config: all authenticated users can READ, only admin WRITE
     match /admin/config {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.email == 'agewaller@gmail.com';
+      allow write: if isAdmin();
     }
 
-    // Admin secrets (API keys): readable by all authenticated users so they can
-    // use the admin-provided AI. Only admin can write.
+    // Admin secrets (API keys): readable by all authenticated users
     match /admin/secrets {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.email == 'agewaller@gmail.com';
+      allow write: if isAdmin();
     }
 
     // Other admin docs (prompts history, etc.)
     match /admin/{docId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.email == 'agewaller@gmail.com';
+      allow write: if isAdmin();
     }
   }
 }
