@@ -860,8 +860,23 @@ var App = class App {
 
   // ─── Sidebar toggle ───
   toggleSidebar() {
-    store.set('sidebarOpen', !store.get('sidebarOpen'));
-    document.body.classList.toggle('sidebar-open', store.get('sidebarOpen'));
+    const open = !store.get('sidebarOpen');
+    store.set('sidebarOpen', open);
+    document.body.classList.toggle('sidebar-open', open);
+
+    // スマホ: オーバーレイクリックで閉じる
+    if (open && window.innerWidth <= 768) {
+      setTimeout(() => {
+        const handler = (e) => {
+          if (!document.getElementById('sidebar')?.contains(e.target)) {
+            store.set('sidebarOpen', false);
+            document.body.classList.remove('sidebar-open');
+            document.removeEventListener('click', handler);
+          }
+        };
+        document.addEventListener('click', handler);
+      }, 100);
+    }
   }
 };
 
