@@ -19,7 +19,7 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <a class="sidebar-logo" onclick="app.navigate('home')">
-          <div class="sidebar-logo-icon">◈</div>
+          <div class="sidebar-logo-icon">L</div>
           <div>
             <div class="sidebar-logo-text">LMS</div>
             <div class="sidebar-logo-sub">Life Management System</div>
@@ -30,45 +30,45 @@
       <nav class="sidebar-nav">
         <div class="nav-section-title">メニュー</div>
         <a class="nav-item active" data-page="home" onclick="app.navigate('home')">
-          <span class="nav-icon">🏠</span><span>ホーム</span>
+          <span class="nav-dot"></span><span>ホーム</span>
         </a>
         <a class="nav-item" data-page="record" onclick="app.navigate('record')">
-          <span class="nav-icon">📝</span><span>記録する</span>
+          <span class="nav-dot"></span><span>記録する</span>
         </a>
         <a class="nav-item" data-page="actions" onclick="app.navigate('actions')">
-          <span class="nav-icon">⚡</span><span>アクション</span>
+          <span class="nav-dot"></span><span>アクション</span>
         </a>
         <a class="nav-item" data-page="ask_ai" onclick="app.navigate('ask_ai')">
-          <span class="nav-icon">🤖</span><span>AIに相談</span>
+          <span class="nav-dot"></span><span>相談する</span>
         </a>
         <a class="nav-item" data-page="integrations" onclick="app.navigate('integrations')">
-          <span class="nav-icon">🔗</span><span>連携</span>
+          <span class="nav-dot"></span><span>連携</span>
         </a>
         <a class="nav-item" data-page="settings" onclick="app.navigate('settings')">
-          <span class="nav-icon">⚙️</span><span>設定</span>
+          <span class="nav-dot"></span><span>設定</span>
         </a>
         <a class="nav-item admin-only" data-page="admin" onclick="app.navigate('admin')" id="adminLink" style="display:none">
-          <span class="nav-icon">🔧</span><span>管理</span>
+          <span class="nav-dot"></span><span>管理</span>
         </a>
 
         <div class="nav-section-title">領域</div>
         <a class="nav-item domain-nav" data-domain="consciousness" onclick="app.switchDomain('consciousness')">
-          <span class="nav-icon">🧠</span><span>意識</span>
+          <span class="nav-num">一</span><span>意識</span>
         </a>
         <a class="nav-item domain-nav" data-domain="health" onclick="app.switchDomain('health')">
-          <span class="nav-icon">💚</span><span>健康</span>
+          <span class="nav-num">二</span><span>健康</span>
         </a>
         <a class="nav-item domain-nav" data-domain="time" onclick="app.switchDomain('time')">
-          <span class="nav-icon">⏰</span><span>時間</span>
+          <span class="nav-num">三</span><span>時間</span>
         </a>
         <a class="nav-item domain-nav" data-domain="work" onclick="app.switchDomain('work')">
-          <span class="nav-icon">💼</span><span>仕事</span>
+          <span class="nav-num">四</span><span>仕事</span>
         </a>
         <a class="nav-item domain-nav" data-domain="relationship" onclick="app.switchDomain('relationship')">
-          <span class="nav-icon">🤝</span><span>関係</span>
+          <span class="nav-num">五</span><span>関係</span>
         </a>
         <a class="nav-item domain-nav" data-domain="assets" onclick="app.switchDomain('assets')">
-          <span class="nav-icon">💰</span><span>資産</span>
+          <span class="nav-num">六</span><span>資産</span>
         </a>
       </nav>
 

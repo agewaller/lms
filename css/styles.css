@@ -424,14 +424,6 @@ select.form-input { appearance: auto; }
   cursor: pointer;
   color: var(--text-primary);
 }
-.sidebar-logo-icon {
-  width: 40px; height: 40px;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
-  color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px; font-weight: 700;
-  border-radius: 10px;
-}
 .sidebar-logo-text {
   font-size: 18px;
   font-weight: 700;
@@ -481,9 +473,52 @@ select.form-input { appearance: auto; }
   font-weight: 600;
 }
 .nav-icon {
-  font-size: 18px;
-  width: 24px;
+  font-size: 16px;
+  width: 20px;
   text-align: center;
+  color: var(--text-muted);
+}
+.nav-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  margin: 0 9px 0 3px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.nav-item:hover .nav-dot { background: var(--accent); }
+.nav-item.active .nav-dot { background: var(--accent); }
+.nav-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.nav-item.active .nav-num { color: var(--accent); border-color: var(--accent); background: var(--accent-bg); }
+.domain-nav.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+
+.sidebar-logo-icon {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+  border-radius: 8px;
+  font-family: 'Inter', -apple-system, sans-serif;
 }
 
 .sidebar-user {
@@ -520,6 +555,170 @@ select.form-input { appearance: auto; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ─── Admin Page (未病ダイアリー準拠) ─── */
+.page-admin { max-width: 1100px; margin: 0 auto; }
+
+.admin-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  padding: 0 4px;
+}
+.admin-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 18px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: var(--font-main);
+  margin-bottom: -1px;
+  transition: all 0.2s;
+}
+.admin-tab:hover { color: var(--text-primary); }
+.admin-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+.tab-count {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.admin-tab.active .tab-count { background: var(--accent-bg); color: var(--accent); }
+
+.admin-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.admin-filters .form-input { margin: 0; }
+
+/* Prompt List */
+.prompt-list { display: flex; flex-direction: column; gap: 8px; }
+.prompt-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  background: var(--bg-secondary);
+  transition: all 0.2s;
+}
+.prompt-item:hover { border-color: var(--border-light); }
+.prompt-item.inactive { opacity: 0.5; }
+.prompt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.prompt-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+.prompt-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.prompt-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.prompt-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.prompt-badge.domain { background: var(--accent-bg); color: var(--accent); }
+.prompt-badge.schedule { background: var(--info-bg); color: var(--info); }
+.prompt-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  padding-left: 32px;
+}
+.prompt-edit {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.prompt-textarea {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 12px;
+  min-height: 300px;
+}
+
+/* Model Grid */
+.model-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.model-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.model-card:hover { border-color: var(--accent-border); }
+.model-card.selected {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+.model-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.model-provider { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+.model-tokens { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+.model-active {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 2px 8px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.status-badge.connected { background: var(--success-bg); color: var(--success); }
+.status-badge.disconnected { background: var(--danger-bg); color: var(--danger); }
+
+.admin-user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
 }
 
 /* Main Content */

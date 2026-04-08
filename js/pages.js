@@ -939,77 +939,270 @@ var Pages = {
   },
 
   // ═══════════════════════════════════════════════════════════
-  //  ADMIN PAGE
+  //  ADMIN PAGE (未病ダイアリー準拠: tabbed interface)
   // ═══════════════════════════════════════════════════════════
   renderAdmin() {
     if (!FirebaseBackend.isAdmin()) {
-      return '<div class="page-admin"><h2>Access Denied</h2></div>';
+      return '<div class="page-admin"><div class="card"><div class="card-body"><h2>Access Denied</h2><p>管理権限がありません。</p></div></div></div>';
     }
 
+    const currentTab = store.get('adminTab') || 'prompts';
+    const promptCount = Object.keys(CONFIG.prompts || {}).length;
+
     let html = `<div class="page-admin">
-      <h2>🔧 ${i18n.t('admin')}</h2>
-
-      <!-- Custom Prompts Editor -->
-      <div class="settings-section">
-        <h3>📝 AI Prompt Editor</h3>
-        <div class="form-group">
-          <label>Domain</label>
-          <select id="adminPromptDomain" class="form-input" onchange="app.loadAdminPrompt()">
-            ${Object.keys(CONFIG.domains).map(d => `<option value="${d}">${i18n.t(d)}</option>`).join('')}
-            <option value="holistic">${i18n.t('holistic_analysis')}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Prompt Type</label>
-          <select id="adminPromptType" class="form-input" onchange="app.loadAdminPrompt()">
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-          </select>
-        </div>
-        <textarea id="adminPromptText" class="form-input" rows="12" placeholder="Enter custom prompt..."></textarea>
-        <button class="btn btn-primary" onclick="app.saveAdminPrompt()">${i18n.t('save')}</button>
+      <div class="admin-tabs">
+        <button class="admin-tab ${currentTab === 'prompts' ? 'active' : ''}" onclick="app.setAdminTab('prompts')">
+          プロンプト<span class="tab-count">${promptCount}</span>
+        </button>
+        <button class="admin-tab ${currentTab === 'models' ? 'active' : ''}" onclick="app.setAdminTab('models')">
+          AIモデル
+        </button>
+        <button class="admin-tab ${currentTab === 'apikeys' ? 'active' : ''}" onclick="app.setAdminTab('apikeys')">
+          APIキー
+        </button>
+        <button class="admin-tab ${currentTab === 'affiliate' ? 'active' : ''}" onclick="app.setAdminTab('affiliate')">
+          アフィリエイト
+        </button>
+        <button class="admin-tab ${currentTab === 'firebase' ? 'active' : ''}" onclick="app.setAdminTab('firebase')">
+          Firebase
+        </button>
+        <button class="admin-tab ${currentTab === 'data' ? 'active' : ''}" onclick="app.setAdminTab('data')">
+          データ管理
+        </button>
       </div>
 
-      <!-- Affiliate Settings -->
-      <div class="settings-section">
-        <h3>🏷️ Affiliate Settings</h3>
-        ${Object.entries(CONFIG.affiliate).map(([store_name, config]) => `
-          <div class="form-group">
-            <label>${store_name}</label>
-            <input type="text" class="form-input" id="aff_${store_name}"
-              value="${config.tag || config.id || config.code || ''}"
-              placeholder="Affiliate ID/Tag">
-          </div>
-        `).join('')}
-        <button class="btn btn-primary" onclick="app.saveAffiliateConfig()">${i18n.t('save')}</button>
-      </div>
-
-      <!-- Firebase Config -->
-      <div class="settings-section">
-        <h3>🔥 Firebase Config</h3>
-        <div class="form-group">
-          <label>API Key</label>
-          <input type="text" id="fbApiKey" class="form-input" value="${CONFIG.firebase.apiKey}">
-        </div>
-        <div class="form-group">
-          <label>Auth Domain</label>
-          <input type="text" id="fbAuthDomain" class="form-input" value="${CONFIG.firebase.authDomain}">
-        </div>
-        <div class="form-group">
-          <label>Project ID</label>
-          <input type="text" id="fbProjectId" class="form-input" value="${CONFIG.firebase.projectId}">
-        </div>
-        <button class="btn btn-primary" onclick="app.saveFirebaseConfig()">${i18n.t('save')}</button>
-      </div>
-
-      <!-- Worker URL -->
-      <div class="settings-section">
-        <h3>☁️ API Proxy URL</h3>
-        <input type="text" id="workerUrl" class="form-input" value="${CONFIG.endpoints.anthropic}">
-        <button class="btn btn-primary" onclick="app.saveWorkerUrl()">${i18n.t('save')}</button>
+      <div class="admin-content">
+        ${this['renderAdminTab_' + currentTab] ? this['renderAdminTab_' + currentTab]() : this.renderAdminTab_prompts()}
       </div>
     </div>`;
 
     return html;
+  },
+
+  // ─── Admin Tab: Prompts ───
+  renderAdminTab_prompts() {
+    const prompts = CONFIG.prompts || {};
+    const filter = store.get('adminPromptFilter') || { search: '', domain: '' };
+
+    let html = `<div class="card">
+      <div class="card-header">
+        <h3>AIプロンプト管理</h3>
+        <button class="btn btn-sm btn-primary" onclick="app.addNewPrompt()">新規追加</button>
+      </div>
+      <div class="card-body">
+        <div class="admin-filters">
+          <input type="text" id="promptSearch" class="form-input" placeholder="プロンプト名で検索"
+            value="${filter.search}" oninput="app.filterPrompts()">
+          <select id="promptDomainFilter" class="form-input" onchange="app.filterPrompts()">
+            <option value="">すべての領域</option>
+            ${Object.keys(CONFIG.domains).map(d => `<option value="${d}" ${filter.domain === d ? 'selected' : ''}>${i18n.t(d)}</option>`).join('')}
+            <option value="universal">共通</option>
+          </select>
+        </div>
+
+        <div class="prompt-list">`;
+
+    const filtered = Object.entries(prompts).filter(([key, p]) => {
+      if (filter.search && !key.toLowerCase().includes(filter.search.toLowerCase()) && !(p.name || '').includes(filter.search)) return false;
+      if (filter.domain && p.domain !== filter.domain) return false;
+      return true;
+    });
+
+    filtered.forEach(([key, p], i) => {
+      const schedule = p.schedule || 'manual';
+      const scheduleLabel = { daily: '毎日', weekly: '毎週', on_data_update: 'データ更新時', manual: '手動' }[schedule] || schedule;
+      html += `<div class="prompt-item ${p.active === false ? 'inactive' : ''}" data-key="${key}">
+        <div class="prompt-header">
+          <div class="prompt-meta">
+            <span class="prompt-num">${i + 1}</span>
+            <span class="prompt-name">${p.name || key}</span>
+            <span class="prompt-badge domain">${p.domain ? i18n.t(p.domain) : '共通'}</span>
+            <span class="prompt-badge schedule">${scheduleLabel}</span>
+          </div>
+          <div class="prompt-actions">
+            <button class="btn btn-sm btn-secondary" onclick="app.editPrompt('${key}')">編集</button>
+          </div>
+        </div>
+        <div class="prompt-desc">${p.description || ''}</div>
+        <div class="prompt-edit" id="edit-${key}" style="display:none;">
+          <div class="form-group">
+            <label>名前</label>
+            <input type="text" class="form-input" value="${p.name || ''}" data-field="name">
+          </div>
+          <div class="form-group">
+            <label>領域</label>
+            <select class="form-input" data-field="domain">
+              <option value="">共通</option>
+              ${Object.keys(CONFIG.domains).map(d => `<option value="${d}" ${p.domain === d ? 'selected' : ''}>${i18n.t(d)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>スケジュール</label>
+            <select class="form-input" data-field="schedule">
+              <option value="daily" ${schedule === 'daily' ? 'selected' : ''}>毎日</option>
+              <option value="weekly" ${schedule === 'weekly' ? 'selected' : ''}>毎週</option>
+              <option value="on_data_update" ${schedule === 'on_data_update' ? 'selected' : ''}>データ更新時</option>
+              <option value="manual" ${schedule === 'manual' ? 'selected' : ''}>手動</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>説明</label>
+            <input type="text" class="form-input" value="${p.description || ''}" data-field="description">
+          </div>
+          <div class="form-group">
+            <label>プロンプト本文</label>
+            <textarea class="form-input prompt-textarea" rows="16" data-field="prompt">${p.prompt || ''}</textarea>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="app.savePrompt('${key}')">保存</button>
+            <button class="btn btn-secondary" onclick="app.cancelPromptEdit('${key}')">キャンセル</button>
+            <button class="btn btn-danger" onclick="app.deletePrompt('${key}')">削除</button>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    html += `</div></div></div>`;
+    return html;
+  },
+
+  // ─── Admin Tab: Models ───
+  renderAdminTab_models() {
+    const current = store.get('selectedModel') || 'claude-sonnet-4-6';
+    return `<div class="card">
+      <div class="card-header"><h3>AIモデル選択</h3></div>
+      <div class="card-body">
+        <div class="model-grid">
+          ${Object.entries(CONFIG.aiModels).map(([id, m]) => `
+            <div class="model-card ${current === id ? 'selected' : ''}" onclick="app.selectModel('${id}')">
+              <div class="model-name">${m.name}</div>
+              <div class="model-provider">${m.provider}</div>
+              <div class="model-tokens">最大 ${m.maxTokens?.toLocaleString() || '-'} トークン</div>
+              ${current === id ? '<div class="model-active">使用中</div>' : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>`;
+  },
+
+  // ─── Admin Tab: API Keys ───
+  renderAdminTab_apikeys() {
+    return `<div class="card">
+      <div class="card-header"><h3>APIキー設定</h3></div>
+      <div class="card-body">
+        <div class="form-group">
+          <label>APIプロキシURL（必須）</label>
+          <input type="text" id="workerUrl" class="form-input" value="${CONFIG.endpoints.anthropic}" placeholder="https://...workers.dev">
+          <div class="input-help">CloudflareワーカーのURLを入力してください</div>
+        </div>
+        <div class="form-group">
+          <label>Anthropic API Key (Claude)</label>
+          <input type="password" id="apiKeyAnthropic" class="form-input"
+            value="${AIEngine.getApiKey('anthropic') ? '••••••••' : ''}" placeholder="sk-ant-...">
+        </div>
+        <div class="form-group">
+          <label>OpenAI API Key (GPT)</label>
+          <input type="password" id="apiKeyOpenAI" class="form-input"
+            value="${AIEngine.getApiKey('openai') ? '••••••••' : ''}" placeholder="sk-...">
+        </div>
+        <div class="form-group">
+          <label>Google API Key (Gemini)</label>
+          <input type="password" id="apiKeyGoogle" class="form-input"
+            value="${AIEngine.getApiKey('google') ? '••••••••' : ''}" placeholder="AI...">
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="app.saveApiKeys();app.saveWorkerUrl()">保存</button>
+          <button class="btn btn-secondary" onclick="app.testConnection()">接続テスト</button>
+          <button class="btn btn-danger" onclick="app.clearApiKeys()">すべて削除</button>
+        </div>
+        <div id="connectionResult"></div>
+      </div>
+    </div>`;
+  },
+
+  // ─── Admin Tab: Affiliate ───
+  renderAdminTab_affiliate() {
+    return `<div class="card">
+      <div class="card-header"><h3>アフィリエイト設定</h3></div>
+      <div class="card-body">
+        ${Object.entries(CONFIG.affiliate).map(([name, config]) => `
+          <div class="form-group">
+            <label>${name}</label>
+            <input type="text" class="form-input" id="aff_${name}"
+              value="${config.tag || config.id || config.code || ''}" placeholder="アフィリエイトID / タグ">
+          </div>
+        `).join('')}
+        <button class="btn btn-primary" onclick="app.saveAffiliateConfig()">保存</button>
+      </div>
+    </div>`;
+  },
+
+  // ─── Admin Tab: Firebase ───
+  renderAdminTab_firebase() {
+    const connected = FirebaseBackend.initialized;
+    return `<div class="card">
+      <div class="card-header">
+        <h3>Firebase設定</h3>
+        <span class="status-badge ${connected ? 'connected' : 'disconnected'}">${connected ? '接続済' : '未接続'}</span>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label>API Key</label>
+          <input type="text" id="fbApiKey" class="form-input" value="${CONFIG.firebase.apiKey || ''}">
+        </div>
+        <div class="form-group">
+          <label>Auth Domain</label>
+          <input type="text" id="fbAuthDomain" class="form-input" value="${CONFIG.firebase.authDomain || ''}">
+        </div>
+        <div class="form-group">
+          <label>Project ID</label>
+          <input type="text" id="fbProjectId" class="form-input" value="${CONFIG.firebase.projectId || ''}">
+        </div>
+        <div class="form-group">
+          <label>Storage Bucket</label>
+          <input type="text" id="fbStorageBucket" class="form-input" value="${CONFIG.firebase.storageBucket || ''}">
+        </div>
+        <div class="form-group">
+          <label>Messaging Sender ID</label>
+          <input type="text" id="fbMessagingSenderId" class="form-input" value="${CONFIG.firebase.messagingSenderId || ''}">
+        </div>
+        <div class="form-group">
+          <label>App ID</label>
+          <input type="text" id="fbAppId" class="form-input" value="${CONFIG.firebase.appId || ''}">
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="app.saveFirebaseConfig()">保存</button>
+          <button class="btn btn-danger" onclick="app.clearFirebaseConfig()">削除</button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  // ─── Admin Tab: Data Management ───
+  renderAdminTab_data() {
+    const user = store.get('user');
+    return `<div class="card" style="margin-bottom:16px;">
+      <div class="card-header"><h3>管理者</h3></div>
+      <div class="card-body">
+        <div class="admin-user-item">
+          <div>
+            <strong>${user?.email || '未ログイン'}</strong>
+            <span class="status-badge">オーナー</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>データ管理</h3></div>
+      <div class="card-body">
+        <div class="form-actions">
+          <button class="btn btn-secondary" onclick="app.generateDemoData()">デモデータを生成</button>
+          <button class="btn btn-secondary" onclick="app.exportData()">データを書き出す</button>
+          <button class="btn btn-danger" onclick="app.deleteAllData()">すべてのデータを削除</button>
+        </div>
+      </div>
+    </div>`;
   }
 };
