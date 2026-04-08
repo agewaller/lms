@@ -457,6 +457,96 @@ var App = class App {
     reader.readAsText(file);
   }
 
+  // ─── Resume Management (Contribution domain) ───
+  saveResume() {
+    const resume = {
+      name: document.getElementById('resumeName')?.value || '',
+      summary: document.getElementById('resumeSummary')?.value || '',
+      skills: (document.getElementById('resumeSkills')?.value || '').split(',').map(s => s.trim()).filter(Boolean),
+      history: document.getElementById('resumeHistory')?.value || '',
+      workStyle: document.getElementById('resumeWorkStyle')?.value || '',
+      updatedAt: new Date().toISOString()
+    };
+    store.set('userResume', resume);
+    Components.showToast(i18n.t('saved'), 'success');
+  }
+
+  sendResumeToPortals() {
+    const resume = store.get('userResume');
+    if (!resume || !resume.name) {
+      Components.showToast('まずレジュメを登録してください', 'info');
+      return;
+    }
+
+    // Generate resume text for clipboard
+    const text = `【レジュメ】
+氏名: ${resume.name}
+職務要約: ${resume.summary}
+スキル・資格: ${(resume.skills || []).join(', ')}
+職務経歴: ${resume.history}
+希望する働き方: ${resume.workStyle}`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      Components.showToast('レジュメをコピーしました。求人サイトに貼り付けてください。', 'success');
+    }).catch(() => {
+      // Fallback: show in a textarea
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `<div class="modal-content">
+        <h3>レジュメをコピー</h3>
+        <textarea class="form-input" rows="10" readonly>${text}</textarea>
+        <p>上のテキストをコピーして、求人サイトに貼り付けてください。</p>
+        <button class="btn btn-primary" onclick="this.parentElement.parentElement.remove()">閉じる</button>
+      </div>`;
+      document.body.appendChild(modal);
+    });
+  }
+
+  // ─── Time Marketplace Settings ───
+  saveMarketplaceSettings() {
+    if (typeof TimeMarketplace === 'undefined') return;
+
+    const days = [];
+    document.querySelectorAll('input[name="mpDays"]:checked').forEach(cb => {
+      days.push(parseInt(cb.value));
+    });
+
+    const skillsStr = document.getElementById('mpSkills')?.value || '';
+    const skills = skillsStr.split(',').map(s => s.trim()).filter(Boolean).map(name => ({ name }));
+
+    const settings = {
+      enabled: document.getElementById('mpEnabled')?.checked || false,
+      skills,
+      location: {
+        type: document.getElementById('mpLocationType')?.value || 'remote',
+        address: document.getElementById('mpAddress')?.value || '',
+        canTravel: false
+      },
+      rate: {
+        amount: parseInt(document.getElementById('mpRate')?.value) || 3000,
+        currency: 'JPY',
+        minimumMinutes: parseInt(document.getElementById('mpMinTime')?.value) || 30
+      },
+      availability: {
+        daysOfWeek: days,
+        startHour: parseInt(document.getElementById('mpStartHour')?.value) || 9,
+        endHour: parseInt(document.getElementById('mpEndHour')?.value) || 17,
+        bufferMinutes: 30
+      },
+      paypal: {
+        email: document.getElementById('mpPaypal')?.value || ''
+      },
+      profile: {
+        displayName: document.getElementById('mpDisplayName')?.value || '',
+        bio: document.getElementById('mpBio')?.value || '',
+        experience: ''
+      }
+    };
+
+    TimeMarketplace.saveSettings(settings);
+    Components.showToast(i18n.t('saved'), 'success');
+  }
+
   // ─── Category Tab Switching ───
   showCategory(category, btn) {
     // Update tab active state

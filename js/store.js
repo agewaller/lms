@@ -91,6 +91,9 @@ var Store = class Store {
 
       // User Profile
       userProfile: {},
+      userResume: {},              // Resume data for contribution domain
+      timeMarketplaceSettings: {}, // Time marketplace settings
+      timeMarketplaceBookings: [], // Booking requests
       calendarEvents: [],
       latestFeedback: null,
       cachedResearch: null,
@@ -167,7 +170,8 @@ var Store = class Store {
       // Shared
       'analysisHistory', 'recommendations', 'actionItems',
       'conversationHistory', 'calendarEvents', 'latestFeedback',
-      'cachedResearch', 'aiComments'
+      'cachedResearch', 'aiComments',
+      'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings'
     ];
   }
 

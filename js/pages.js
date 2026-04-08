@@ -103,9 +103,15 @@ var Pages = {
 
     // ─── Domain-specific widgets ───
 
-    // Time domain: Calendar widget
-    if (domain === 'time' && typeof CalendarIntegration !== 'undefined') {
-      html += CalendarIntegration.renderWidget();
+    // Time domain: Calendar widget + Marketplace widget
+    if (domain === 'time') {
+      if (typeof CalendarIntegration !== 'undefined') html += CalendarIntegration.renderWidget();
+      if (typeof TimeMarketplace !== 'undefined') html += TimeMarketplace.renderWidget();
+    }
+
+    // Contribution domain: Resume + time marketplace link
+    if (domain === 'contribution') {
+      html += this.renderResumeWidget();
     }
 
     // Trust domain: Social graph + upcoming birthdays
@@ -217,6 +223,39 @@ var Pages = {
         </button>
       </div>
       <div id="stockResult"></div>
+    </div>`;
+  },
+
+  // ─── Resume Widget (Contribution domain) ───
+  renderResumeWidget() {
+    const resume = store.get('userResume') || {};
+    const hasResume = resume.name || resume.summary;
+
+    if (!hasResume) {
+      return `<div class="resume-widget">
+        <h3>📄 レジュメ・職務経歴</h3>
+        <p>あなたの経験やスキルを登録しておくと、求人プラットフォームへワンクリックで送信できます。</p>
+        <button class="btn btn-secondary" onclick="app.navigate('settings')">レジュメを登録する</button>
+      </div>`;
+    }
+
+    return `<div class="resume-widget">
+      <h3>📄 レジュメ</h3>
+      <div class="resume-summary">
+        <p><strong>${resume.name || ''}</strong></p>
+        <p>${resume.summary || ''}</p>
+        <p>スキル: ${(resume.skills || []).join(', ')}</p>
+      </div>
+      <div class="resume-actions">
+        <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')">編集</button>
+        <button class="btn btn-sm btn-primary" onclick="app.sendResumeToPortals()">求人サイトに送信</button>
+      </div>
+      ${typeof TimeMarketplace !== 'undefined' ? `
+      <div class="time-sell-link" style="margin-top:16px;">
+        <h4>⏰ 空き時間を販売する</h4>
+        <p>あなたのスキルを空き時間で提供できます。</p>
+        <button class="btn btn-sm btn-secondary" onclick="app.switchDomain('time');app.navigate('settings')">時間販売の設定へ</button>
+      </div>` : ''}
     </div>`;
   },
 
@@ -568,6 +607,21 @@ var Pages = {
         <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">${i18n.t('data_import')}</button>
       </div>
 
+      <!-- Time Marketplace Settings (Time domain) -->
+      ${domain === 'time' && typeof TimeMarketplace !== 'undefined' ? TimeMarketplace.renderSettings() : ''}
+
+      <!-- Resume Settings (Contribution domain) -->
+      ${domain === 'contribution' ? this.renderResumeSettings() : ''}
+
+      <!-- Calendar Import (Time domain) -->
+      ${domain === 'time' ? `
+      <div class="settings-section">
+        <h3>📅 カレンダー連携</h3>
+        <p>ICSファイル（Googleカレンダー/Outlook等からエクスポート）を取り込めます。</p>
+        <input type="file" id="calImport" accept=".ics" style="display:none" onchange="app.importCalendarFile(event)">
+        <button class="btn btn-secondary" onclick="document.getElementById('calImport').click()">カレンダーファイルを取り込む</button>
+      </div>` : ''}
+
       <!-- Logout -->
       <div class="settings-section">
         <button class="btn btn-danger" onclick="app.logout()">🚪 ${i18n.t('logout')}</button>
@@ -575,6 +629,43 @@ var Pages = {
     </div>`;
 
     return html;
+  },
+
+  // ─── Resume Settings (Contribution domain) ───
+  renderResumeSettings() {
+    const r = store.get('userResume') || {};
+    return `<div class="settings-section">
+      <h3>📄 レジュメ・職務経歴</h3>
+      <p>ここに登録した内容を求人プラットフォームにワンクリックで送信できます。</p>
+      <div class="form-group">
+        <label>お名前</label>
+        <input type="text" id="resumeName" class="form-input" value="${r.name || ''}" placeholder="山田花子">
+      </div>
+      <div class="form-group">
+        <label>職務要約・自己PR</label>
+        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${r.summary || ''}</textarea>
+      </div>
+      <div class="form-group">
+        <label>スキル・資格（カンマ区切り）</label>
+        <input type="text" id="resumeSkills" class="form-input" value="${(r.skills || []).join(', ')}" placeholder="例：看護師免許, 英検2級, Excel">
+      </div>
+      <div class="form-group">
+        <label>職務経歴</label>
+        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${r.history || ''}</textarea>
+      </div>
+      <div class="form-group">
+        <label>希望する働き方</label>
+        <select id="resumeWorkStyle" class="form-input">
+          <option value="" ${!r.workStyle ? 'selected' : ''}>選択してください</option>
+          <option value="fulltime" ${r.workStyle === 'fulltime' ? 'selected' : ''}>フルタイム</option>
+          <option value="parttime" ${r.workStyle === 'parttime' ? 'selected' : ''}>パートタイム</option>
+          <option value="freelance" ${r.workStyle === 'freelance' ? 'selected' : ''}>フリーランス・業務委託</option>
+          <option value="volunteer" ${r.workStyle === 'volunteer' ? 'selected' : ''}>ボランティア</option>
+          <option value="timesell" ${r.workStyle === 'timesell' ? 'selected' : ''}>空き時間だけ</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="app.saveResume()">${i18n.t('save')}</button>
+    </div>`;
   },
 
   // ═══════════════════════════════════════════════════════════
