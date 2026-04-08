@@ -71,9 +71,9 @@ var WorkFeatures = {
     } else {
       html += `<p>「${location}」の近くで見つかるお仕事やボランティアです。</p>`;
 
-      // AI検索ボタン
+      // 検索ボタン
       html += `<button class="btn btn-primary btn-lg" onclick="WorkFeatures.searchOpportunities()" style="margin-bottom:20px;">
-        🤖 AIで近くのお仕事を探す
+        近くのお仕事を探す
       </button>
       <div id="jobSearchResult"></div>`;
 
@@ -220,13 +220,13 @@ var WorkFeatures = {
   },
 
   // ═══════════════════════════════════════════════════════════
-  //  あなたの経験 × AI 診断（シンプル化）
+  //  あなたの経験診断（シンプル化）
   // ═══════════════════════════════════════════════════════════
 
   renderSideBizDiagnosis() {
     return `<div class="sidebiz-diagnosis">
-      <h3>✨ あなたにできること診断</h3>
-      <p>これまでの経験や好きなことを教えてください。あなたに合った活動をAIが見つけます。</p>
+      <h3>あなたにできること診断</h3>
+      <p>これまでの経験や好きなことを教えてください。あなたに合った活動を見つけます。</p>
 
       <div class="diagnosis-form">
         <div class="form-group">
@@ -262,7 +262,7 @@ var WorkFeatures = {
       </div>
 
       <button class="btn btn-primary btn-lg" onclick="WorkFeatures.diagnose()">
-        🤖 見つけてもらう
+        見つけてもらう
       </button>
 
       <div id="diagnosisResult"></div>
@@ -386,7 +386,7 @@ var WorkFeatures = {
         </div>
 
         <div class="form-group">
-          <label>AIツールの使用について</label>
+          <label>パソコン・スマホアプリの使用について</label>
           <select id="diagAI" class="form-input">
             <option value="never">まったく使ったことがない</option>
             <option value="beginner" selected>少し興味がある / 使ってみたい</option>
@@ -397,7 +397,7 @@ var WorkFeatures = {
       </div>
 
       <button class="btn btn-primary btn-lg" onclick="WorkFeatures.diagnose()">
-        🤖 診断する
+        診断する
       </button>
 
       <div id="diagnosisResult"></div>

@@ -83,7 +83,7 @@ var Pages = {
 
     html += `</div></div>`;
 
-    // AI Recommendations
+    // Recommendations
     const recs = (store.get('recommendations') || []).filter(r => r.domain === domain || !r.domain);
     if (recs.length > 0) {
       html += `<div class="recommendations-section">
@@ -96,7 +96,7 @@ var Pages = {
     const latest = store.get('latestAnalysis');
     if (latest && latest.domain === domain) {
       html += `<div class="analysis-section">
-        <h3>${i18n.t('ai_analysis')}</h3>
+        <h3>分析結果</h3>
         <div class="analysis-content">${Components.formatMarkdown(latest.response)}</div>
         <div class="analysis-meta">${latest.model} | ${new Date(latest.timestamp).toLocaleString()}</div>
       </div>`;
@@ -552,15 +552,15 @@ var Pages = {
     const actions = (store.get('actionItems') || []).filter(a => a.domain === domain || !a.domain);
 
     let html = `<div class="page-actions">
-      <h2>⚡ ${i18n.t(domain)} - ${i18n.t('actions')}</h2>
+      <h2>${i18n.t(domain)} - ${i18n.t('actions')}</h2>
 
-      <!-- Generate AI recommendations -->
+      <!-- Generate recommendations -->
       <div class="action-generate">
         <button class="btn btn-primary btn-lg" onclick="app.generateRecommendations('${domain}')">
-          🤖 ${i18n.t('ai_analysis')} - ${i18n.t(domain)}
+          ${i18n.t(domain)}の分析を実行
         </button>
         <button class="btn btn-secondary btn-lg" onclick="app.generateRecommendations('holistic')">
-          🌐 ${i18n.t('holistic_analysis')}
+          6領域の総合分析
         </button>
       </div>`;
 
@@ -577,7 +577,7 @@ var Pages = {
       </div>`;
     } else {
       html += Components.emptyState('⚡', i18n.t('no_data'),
-        `${i18n.t('ai_analysis')}ボタンを押して推奨を生成してください`);
+        '上の「分析を実行」ボタンを押してみてください');
     }
 
     // Action items (todos)
@@ -605,7 +605,7 @@ var Pages = {
   },
 
   // ═══════════════════════════════════════════════════════════
-  //  ASK AI (Chat) PAGE
+  //  CHAT PAGE (相談する)
   // ═══════════════════════════════════════════════════════════
   renderAskAI(domain) {
     const history = (store.get('conversationHistory') || [])
@@ -613,11 +613,11 @@ var Pages = {
       .slice(-50);
 
     let html = `<div class="page-ask-ai">
-      <h2>🤖 ${i18n.t('ask_ai')} - ${i18n.t(domain)}</h2>
+      <h2>${i18n.t(domain)} - 相談する</h2>
 
       <div class="chat-container" id="chatContainer">
         ${history.length === 0 ?
-          Components.emptyState('🤖', i18n.t('ask_ai'), i18n.t('quick_input_placeholder')) :
+          Components.emptyState('💬', '相談する', i18n.t('quick_input_placeholder')) :
           history.map(m => Components.chatMessage(m)).join('')
         }
       </div>
@@ -681,40 +681,6 @@ var Pages = {
       <div class="settings-section">
         <h3>💳 ${i18n.t('subscription')}</h3>
         ${PayPalManager.renderStatus()}
-      </div>
-
-      <!-- AI Model Selection -->
-      <div class="settings-section">
-        <h3>🤖 AI Model</h3>
-        <select id="aiModel" class="form-input" onchange="store.set('selectedModel', this.value)">
-          ${Object.entries(CONFIG.aiModels).map(([id, m]) => `
-            <option value="${id}" ${store.get('selectedModel') === id ? 'selected' : ''}>${m.name}</option>
-          `).join('')}
-        </select>
-      </div>
-
-      <!-- API Keys -->
-      <div class="settings-section">
-        <h3>🔑 API Keys</h3>
-        <div class="form-group">
-          <label>Anthropic (Claude)</label>
-          <input type="password" id="apiKeyAnthropic" class="form-input"
-            value="${AIEngine.getApiKey('anthropic') ? '••••••••' : ''}"
-            placeholder="sk-ant-...">
-        </div>
-        <div class="form-group">
-          <label>OpenAI (GPT)</label>
-          <input type="password" id="apiKeyOpenAI" class="form-input"
-            value="${AIEngine.getApiKey('openai') ? '••••••••' : ''}"
-            placeholder="sk-...">
-        </div>
-        <div class="form-group">
-          <label>Google (Gemini)</label>
-          <input type="password" id="apiKeyGoogle" class="form-input"
-            value="${AIEngine.getApiKey('google') ? '••••••••' : ''}"
-            placeholder="AI...">
-        </div>
-        <button class="btn btn-primary" onclick="app.saveApiKeys()">${i18n.t('save')}</button>
       </div>
 
       <!-- Data Export/Import -->
@@ -790,18 +756,35 @@ var Pages = {
   //  INTEGRATIONS PAGE (未病ダイアリー方式)
   // ═══════════════════════════════════════════════════════════
   renderIntegrations(domain) {
-    let html = `<div class="page-integrations">
-      <h2>🔗 連携・データ取り込み</h2>
-      <p>外部のアプリやファイルからデータを取り込めます。</p>
+    const ingestEmail = typeof generateUserEmail === 'function' ? generateUserEmail() : null;
+    const calendarCount = (store.get('calendarEvents') || []).length;
+    const fitbitConnected = typeof fitbit !== 'undefined' && fitbit.isConnected();
+    const gcalConnected = typeof googleCalendar !== 'undefined' && googleCalendar.isConnected();
 
-      <!-- Plaud (文字起こし) -->
+    let html = `<div class="page-integrations">
+      <h2>連携・データ取り込み</h2>
+      <p class="page-desc">外部のアプリやファイルからデータを取り込めます。</p>
+
+      ${ingestEmail ? `
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">
-          <h3>🎙️ Plaud（文字起こし）</h3>
+          <h3>あなた専用の受信メールアドレス</h3>
+        </div>
+        <div class="card-body">
+          <p>以下のメールアドレスにデータを送ると、自動で取り込まれます。</p>
+          <div class="ingest-email">${ingestEmail}</div>
+          <button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText('${ingestEmail}');Components.showToast('コピーしました','success')">コピー</button>
+        </div>
+      </div>` : ''}
+
+      <!-- Plaud -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>Plaud（文字起こし）</h3>
           <span class="status-badge">対応済み</span>
         </div>
         <div class="card-body">
-          <p>Plaudで録音した音声の文字起こしを取り込んで、AIが分析します。</p>
+          <p>Plaudで録音した音声の文字起こしを取り込むと、七つの意識レイヤーで分析されます。</p>
 
           <div class="integration-steps">
             <h4>取り込み方法</h4>
@@ -809,7 +792,7 @@ var Pages = {
               <li>Plaudアプリで文字起こしを表示</li>
               <li>テキストをコピー</li>
               <li>下の入力欄に貼り付け</li>
-              <li>「分析する」を押す</li>
+              <li>「取り込む」を押す</li>
             </ol>
           </div>
 
@@ -822,54 +805,67 @@ var Pages = {
             <label>日付</label>
             <input type="date" id="plaudDate" class="form-input" value="${new Date().toISOString().slice(0,10)}">
           </div>
-          <button class="btn btn-primary" onclick="app.importPlaud()">分析する</button>
+          <button class="btn btn-primary" onclick="app.importPlaud()">取り込む</button>
         </div>
       </div>
 
       <!-- Google Calendar -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">
-          <h3>📅 カレンダー</h3>
-          <span class="status-badge">${(store.get('calendarEvents') || []).length > 0 ? store.get('calendarEvents').length + '件取込済' : '未接続'}</span>
+          <h3>Googleカレンダー</h3>
+          <span class="status-badge ${gcalConnected ? 'connected' : ''}">${gcalConnected ? '接続済み' : '未接続'}</span>
         </div>
         <div class="card-body">
-          <p>Googleカレンダー・Outlook・iPhoneのカレンダーからスケジュールを取り込めます。</p>
+          <p>Googleカレンダーから予定を直接同期します。iPhoneやOutlookのカレンダーは .icsファイルでも取り込めます。</p>
 
+          ${gcalConnected ? `
+          <p>${calendarCount}件の予定を取り込み済み</p>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="app.gcalSync()">今すぐ同期する</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.gcalDisconnect()">接続解除</button>
+          </div>
+          ` : `
           <div class="integration-steps">
-            <h4>取り込み方法</h4>
+            <h4>接続方法</h4>
             <ol>
-              <li>カレンダーアプリの設定から「エクスポート」を選択</li>
-              <li>.ics ファイルをダウンロード</li>
-              <li>下のボタンからファイルを選択</li>
+              <li><a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a>でOAuthクライアントIDを作成</li>
+              <li>Client IDを下に入力</li>
+              <li>「接続する」を押す</li>
             </ol>
           </div>
+          <div class="form-group">
+            <label>Google Client ID</label>
+            <input type="text" id="gcalClientId" class="form-input" value="${localStorage.getItem('lms_gcal_client_id') || ''}" placeholder="xxx.apps.googleusercontent.com">
+          </div>
+          <button class="btn btn-primary" onclick="app.gcalConnect()">接続する</button>
+          `}
 
+          <hr style="margin:20px 0;border:none;border-top:1px solid var(--border);">
+
+          <div class="integration-steps">
+            <h4>ICSファイルから取り込み</h4>
+            <p style="font-size:13px;color:var(--text-secondary);">カレンダーアプリの設定から.icsファイルをエクスポートして取り込めます。</p>
+          </div>
           <input type="file" id="calendarFile" accept=".ics" style="display:none" onchange="app.importCalendarFile(event)">
-          <button class="btn btn-primary" onclick="document.getElementById('calendarFile').click()">
-            📄 カレンダーファイルを取り込む（.ics）
-          </button>
-
-          ${(store.get('calendarEvents') || []).length > 0 ? `
-          <div style="margin-top:16px;">
-            <p>✅ ${store.get('calendarEvents').length}件の予定を取り込み済み</p>
-            <button class="btn btn-sm btn-secondary" onclick="store.set('calendarEvents',[]);app.renderApp()">リセット</button>
-          </div>` : ''}
+          <button class="btn btn-secondary" onclick="document.getElementById('calendarFile').click()">ICSファイルを選択</button>
         </div>
       </div>
 
       <!-- Fitbit -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">
-          <h3>⌚ Fitbit</h3>
-          <span class="status-badge">${localStorage.getItem('lms_fitbit_token') ? '接続済み' : '未接続'}</span>
+          <h3>Fitbit</h3>
+          <span class="status-badge ${fitbitConnected ? 'connected' : ''}">${fitbitConnected ? '接続済み' : '未接続'}</span>
         </div>
         <div class="card-body">
-          <p>Fitbitから歩数、心拍数、睡眠データを自動で取り込みます。</p>
+          <p>Fitbitから歩数・心拍数・睡眠データを自動で取り込みます。</p>
 
-          ${localStorage.getItem('lms_fitbit_token') ? `
-          <p>✅ Fitbit接続済み</p>
-          <button class="btn btn-primary" onclick="app.fitbitImportToday()">今日のデータを取り込む</button>
-          <button class="btn btn-sm btn-secondary" onclick="localStorage.removeItem('lms_fitbit_token');app.renderApp()">接続解除</button>
+          ${fitbitConnected ? `
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="app.fitbitImportToday()">今日のデータを取り込む</button>
+            <button class="btn btn-secondary" onclick="app.fitbitImportHistory()">過去7日分を取り込む</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.fitbitDisconnect()">接続解除</button>
+          </div>
           ` : `
           <div class="integration-steps">
             <h4>接続方法</h4>
@@ -883,7 +879,7 @@ var Pages = {
             <label>Fitbit Client ID</label>
             <input type="text" id="fitbitClientId" class="form-input" value="${localStorage.getItem('lms_fitbit_client_id') || ''}" placeholder="Client IDを入力">
           </div>
-          <button class="btn btn-primary" onclick="app.connectFitbit()">接続する</button>
+          <button class="btn btn-primary" onclick="app.fitbitConnect()">接続する</button>
           `}
         </div>
       </div>
@@ -891,13 +887,13 @@ var Pages = {
       <!-- Apple Health -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">
-          <h3>🍎 Apple Health（iPhoneの方）</h3>
+          <h3>Apple Health（iPhoneの方）</h3>
         </div>
         <div class="card-body">
           <p>iPhoneの「ヘルスケア」アプリからデータを取り込みます。</p>
 
           <div class="integration-steps">
-            <h4>取り込み方法</h4>
+            <h4>方法1: XMLファイルから</h4>
             <ol>
               <li>iPhoneの「ヘルスケア」アプリを開く</li>
               <li>右上のプロフィールアイコン → 「すべてのヘルスケアデータを書き出す」</li>
@@ -907,9 +903,16 @@ var Pages = {
           </div>
 
           <input type="file" id="appleHealthFile" accept=".xml" style="display:none" onchange="app.importAppleHealth(event)">
-          <button class="btn btn-primary" onclick="document.getElementById('appleHealthFile').click()">
-            📄 Apple Healthファイルを取り込む（.xml）
-          </button>
+          <button class="btn btn-primary" onclick="document.getElementById('appleHealthFile').click()">Apple Healthファイルを選択</button>
+
+          <hr style="margin:20px 0;border:none;border-top:1px solid var(--border);">
+
+          <div class="integration-steps">
+            <h4>方法2: ショートカットで毎日自動送信</h4>
+            <ol>
+              ${(typeof appleHealth !== 'undefined' ? appleHealth.getShortcutInstructions() : []).map(s => `<li>${s}</li>`).join('')}
+            </ol>
+          </div>
         </div>
       </div>
 

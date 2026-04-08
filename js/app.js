@@ -546,16 +546,19 @@ var App = class App {
       return;
     }
 
-    // Save as transcript
-    store.addDomainEntry('consciousness', 'transcript', {
-      source: 'plaud',
-      content: text,
-      date,
-      duration: Math.round(text.length / 200)
-    });
+    // Use integrations.js plaud module
+    const parsed = typeof plaud !== 'undefined' ? plaud.parseTranscript(text) : { entries: [{ text }], wordCount: 0 };
+    if (typeof plaud !== 'undefined') {
+      await plaud.saveTranscript(parsed, { date });
+    } else {
+      store.addDomainEntry('consciousness', 'transcript', {
+        source: 'plaud', content: text, date
+      });
+    }
+
+    Components.showToast('取り込みました。分析を開始します...', 'success');
 
     // Auto-analyze with Zen Track
-    Components.showToast('取り込みました。分析を開始します...', 'success');
     try {
       const result = await AIEngine.analyze('consciousness', 'transcript_analysis', {
         text: `<<<TRANSCRIPT_START\n${text}\nTRANSCRIPT_END>>>`
@@ -565,58 +568,92 @@ var App = class App {
     } catch (e) {
       Components.showToast(e.message, 'error');
     }
-    document.getElementById('plaudText').value = '';
+    const textarea = document.getElementById('plaudText');
+    if (textarea) textarea.value = '';
   }
 
-  connectFitbit() {
+  // ─── Fitbit ───
+  fitbitConnect() {
     const clientId = document.getElementById('fitbitClientId')?.value?.trim();
     if (!clientId) {
       Components.showToast('Client IDを入力してください', 'info');
       return;
     }
-    localStorage.setItem('lms_fitbit_client_id', clientId);
-    const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
-    const scope = encodeURIComponent('activity heartrate sleep profile weight nutrition');
-    window.location.href = `https://www.fitbit.com/oauth2/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&expires_in=31536000`;
+    if (typeof fitbit !== 'undefined') {
+      fitbit.setClientId(clientId);
+      fitbit.connect();
+    }
+  }
+
+  fitbitDisconnect() {
+    if (!confirm('Fitbit接続を解除しますか？')) return;
+    if (typeof fitbit !== 'undefined') fitbit.disconnect();
+    Components.showToast('接続を解除しました', 'info');
+    this.renderApp();
   }
 
   async fitbitImportToday() {
-    const token = localStorage.getItem('lms_fitbit_token');
-    if (!token) { Components.showToast('Fitbitに接続してください', 'info'); return; }
-
-    Components.showToast('Fitbitからデータを取り込み中...', 'info');
-    const today = new Date().toISOString().slice(0, 10);
-
+    if (typeof fitbit === 'undefined' || !fitbit.isConnected()) {
+      Components.showToast('Fitbitに接続してください', 'info');
+      return;
+    }
+    Components.showToast('今日のデータを取り込み中...', 'info');
     try {
-      const headers = { 'Authorization': 'Bearer ' + token };
-      const [actRes, sleepRes, hrRes] = await Promise.allSettled([
-        fetch(`https://api.fitbit.com/1/user/-/activities/date/${today}.json`, { headers }),
-        fetch(`https://api.fitbit.com/1.2/user/-/sleep/date/${today}.json`, { headers }),
-        fetch(`https://api.fitbit.com/1/user/-/activities/heart/date/${today}/1d.json`, { headers })
-      ]);
-
-      if (actRes.status === 'fulfilled' && actRes.value.ok) {
-        const data = await actRes.value.json();
-        store.addDomainEntry('health', 'activityData', {
-          activity_type: 'walking', source: 'fitbit',
-          steps: data.summary?.steps, calories: data.summary?.caloriesOut,
-          duration: data.summary?.activeMinutes || data.summary?.fairlyActiveMinutes
-        });
-      }
-      if (sleepRes.status === 'fulfilled' && sleepRes.value.ok) {
-        const data = await sleepRes.value.json();
-        const main = data.sleep?.[0];
-        if (main) {
-          store.addDomainEntry('health', 'sleepData', {
-            source: 'fitbit', quality: Math.round((main.efficiency || 80) / 10),
-            sleep_time: main.startTime, wake_time: main.endTime
-          });
-        }
-      }
-      Components.showToast('Fitbitデータを取り込みました', 'success');
+      const count = await fitbit.importToday();
+      Components.showToast(`${count}件のデータを取り込みました`, 'success');
       this.renderApp();
     } catch (e) {
       Components.showToast('取り込みに失敗しました: ' + e.message, 'error');
+    }
+  }
+
+  async fitbitImportHistory() {
+    if (typeof fitbit === 'undefined' || !fitbit.isConnected()) {
+      Components.showToast('Fitbitに接続してください', 'info');
+      return;
+    }
+    Components.showToast('過去7日分を取り込み中...', 'info');
+    try {
+      const count = await fitbit.importHistory(7);
+      Components.showToast(`${count}件のデータを取り込みました`, 'success');
+      this.renderApp();
+    } catch (e) {
+      Components.showToast('取り込みに失敗しました: ' + e.message, 'error');
+    }
+  }
+
+  // ─── Google Calendar ───
+  gcalConnect() {
+    const clientId = document.getElementById('gcalClientId')?.value?.trim();
+    if (!clientId) {
+      Components.showToast('Client IDを入力してください', 'info');
+      return;
+    }
+    if (typeof googleCalendar !== 'undefined') {
+      googleCalendar.setClientId(clientId);
+      googleCalendar.connect();
+    }
+  }
+
+  gcalDisconnect() {
+    if (!confirm('Googleカレンダー接続を解除しますか？')) return;
+    if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
+    Components.showToast('接続を解除しました', 'info');
+    this.renderApp();
+  }
+
+  async gcalSync() {
+    if (typeof googleCalendar === 'undefined' || !googleCalendar.isConnected()) {
+      Components.showToast('Googleカレンダーに接続してください', 'info');
+      return;
+    }
+    Components.showToast('カレンダーを同期中...', 'info');
+    try {
+      const count = await googleCalendar.sync();
+      Components.showToast(`${count}件の予定を取り込みました`, 'success');
+      this.renderApp();
+    } catch (e) {
+      Components.showToast('同期に失敗しました: ' + e.message, 'error');
     }
   }
 
@@ -628,33 +665,11 @@ var App = class App {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(e.target.result, 'text/xml');
-        const records = doc.querySelectorAll('Record');
         let count = 0;
-
-        records.forEach(r => {
-          const type = r.getAttribute('type') || '';
-          const value = parseFloat(r.getAttribute('value')) || 0;
-          const date = r.getAttribute('startDate') || '';
-
-          if (type.includes('HeartRate') && value > 0) {
-            store.addDomainEntry('health', 'vitals', { heart_rate: value, source: 'apple_health', timestamp: date });
-            count++;
-          } else if (type.includes('BloodPressureSystolic')) {
-            store.addDomainEntry('health', 'vitals', { bp_systolic: value, source: 'apple_health', timestamp: date });
-            count++;
-          } else if (type.includes('BodyTemperature')) {
-            store.addDomainEntry('health', 'vitals', { temperature: value, source: 'apple_health', timestamp: date });
-            count++;
-          } else if (type.includes('StepCount') && value > 0) {
-            store.addDomainEntry('health', 'activityData', { activity_type: 'walking', steps: value, source: 'apple_health', timestamp: date });
-            count++;
-          } else if (type.includes('BodyMass') && value > 0) {
-            store.addDomainEntry('health', 'vitals', { weight: value, source: 'apple_health', timestamp: date });
-            count++;
-          }
-        });
+        if (typeof appleHealth !== 'undefined') {
+          const parsed = appleHealth.parseExport(e.target.result);
+          count = appleHealth.importData(parsed);
+        }
 
         Components.showToast(`${count}件のデータを取り込みました`, 'success');
         this.renderApp();

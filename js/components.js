@@ -107,7 +107,7 @@ var Components = {
   // ─── Chat Message ───
   chatMessage(msg) {
     const cls = msg.role === 'user' ? 'chat-user' : 'chat-ai';
-    const icon = msg.role === 'user' ? '👤' : '🤖';
+    const icon = msg.role === 'user' ? 'あ' : 'S';
     return `<div class="chat-msg ${cls}">
       <div class="chat-icon">${icon}</div>
       <div class="chat-content">${this.formatMarkdown(msg.content || '')}</div>
@@ -181,7 +181,7 @@ var Components = {
       { id: 'home', icon: '🏠' },
       { id: 'record', icon: '📝' },
       { id: 'actions', icon: '⚡' },
-      { id: 'ask_ai', icon: '🤖' },
+      { id: 'ask_ai', icon: '' },
       { id: 'settings', icon: '⚙️' }
     ];
     const color = CONFIG.domains[domain]?.color || '#6C63FF';
