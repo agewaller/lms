@@ -83,6 +83,9 @@ var Store = class Store {
 
       // Admin
       adminMode: false,
+      adminTab: 'prompts',
+      adminEmails: ['agewaller@gmail.com'],
+      adminPromptFilter: { search: '', domain: '' },
       selectedModel: 'claude-sonnet-4-6',
       customPrompts: {},
       dashboardLayout: 'default',
@@ -155,6 +158,7 @@ var Store = class Store {
     return [
       'user', 'isAuthenticated', 'theme', 'currentDomain',
       'selectedModel', 'customPrompts', 'dashboardLayout', 'affiliateConfig',
+      'adminEmails', 'adminTab', 'adminPromptFilter',
       'domainScores', 'userProfile', 'subscription',
       // Consciousness
       'consciousness_observation', 'consciousness_transcript',

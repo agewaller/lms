@@ -19,6 +19,7 @@ var App = class App {
       store.set('currentDomain', entryDomain || store.get('currentDomain') || 'health');
       store.set('currentPage', 'home');
       this.renderApp();
+      this.startInboxPolling();
     }
 
     // Listen for auth changes
@@ -27,12 +28,52 @@ var App = class App {
         store.set('currentDomain', this.entryDomain || store.get('currentDomain') || 'health');
         store.set('currentPage', 'home');
         this.renderApp();
+        this.startInboxPolling();
+      } else {
+        this.stopInboxPolling();
       }
     });
 
     // Listen for navigation changes
     store.on('currentPage', () => this.renderApp());
     store.on('currentDomain', () => this.renderApp());
+  }
+
+  // ─── Inbox polling: fetch Plaud auto-sent transcripts ───
+  startInboxPolling() {
+    if (this._inboxPollTimer) return;
+
+    // Poll immediately, then every 2 minutes
+    this.pollPlaudInbox();
+    this._inboxPollTimer = setInterval(() => this.pollPlaudInbox(), 2 * 60 * 1000);
+  }
+
+  stopInboxPolling() {
+    if (this._inboxPollTimer) {
+      clearInterval(this._inboxPollTimer);
+      this._inboxPollTimer = null;
+    }
+  }
+
+  async pollPlaudInbox() {
+    if (typeof plaud === 'undefined' || !plaud.pollInbox) return;
+    try {
+      const result = await plaud.pollInbox();
+      if (result?.processed > 0) {
+        Components.showToast(
+          `Plaudから${result.processed}件の文字起こしを取り込みました`,
+          'success'
+        );
+        // Re-render if on consciousness domain or integrations page
+        const page = store.get('currentPage');
+        const domain = store.get('currentDomain');
+        if (domain === 'consciousness' || page === 'integrations') {
+          this.renderApp();
+        }
+      }
+    } catch (e) {
+      console.warn('Inbox poll error:', e);
+    }
   }
 
   // ─── Login Methods ───
@@ -1241,6 +1282,117 @@ var App = class App {
     CONFIG.endpoints.anthropic = url;
     localStorage.setItem('lms_workerUrl', url);
     Components.showToast('保存しました', 'success');
+  }
+
+  saveEmailIngestConfig() {
+    const url = document.getElementById('emailIngestUrl')?.value || '';
+    const domain = document.getElementById('emailIngestDomain')?.value || '';
+    CONFIG.endpoints.emailIngest = url;
+    CONFIG.emailIngestDomain = domain;
+    localStorage.setItem('lms_emailIngestUrl', url);
+    localStorage.setItem('lms_emailIngestDomain', domain);
+
+    // Sync to admin/config if admin
+    if (FirebaseBackend.isAdmin() && FirebaseBackend.db) {
+      FirebaseBackend.db.collection('admin').doc('config').set(
+        {
+          emailIngestUrl: url,
+          emailIngestDomain: domain,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        },
+        { merge: true }
+      ).catch(e => console.warn(e));
+    }
+
+    Components.showToast('メール取込設定を保存しました', 'success');
+  }
+
+  // ─── Admin User Management ───
+  async addAdminEmail() {
+    const email = prompt('管理者として追加するメールアドレスを入力してください');
+    if (!email || !email.trim()) return;
+
+    const trimmed = email.trim().toLowerCase();
+    if (!/^[^@]+@[^@]+\.[^@]+$/.test(trimmed)) {
+      Components.showToast('有効なメールアドレスを入力してください', 'error');
+      return;
+    }
+
+    const list = store.get('adminEmails') || ['agewaller@gmail.com'];
+    if (list.includes(trimmed)) {
+      Components.showToast('すでに管理者です', 'info');
+      return;
+    }
+
+    list.push(trimmed);
+    store.set('adminEmails', list);
+
+    // Sync to Firestore admin/config
+    if (FirebaseBackend.db) {
+      await FirebaseBackend.db.collection('admin').doc('config').set(
+        {
+          adminEmails: list,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        },
+        { merge: true }
+      ).catch(e => console.warn(e));
+    }
+
+    Components.showToast(`${trimmed} を管理者に追加しました`, 'success');
+    this.renderApp();
+  }
+
+  async removeAdminEmail(email) {
+    if (email === 'agewaller@gmail.com') {
+      Components.showToast('オーナーアカウントは削除できません', 'error');
+      return;
+    }
+    if (!confirm(`${email} を管理者から外しますか？`)) return;
+
+    const list = (store.get('adminEmails') || ['agewaller@gmail.com']).filter(e => e !== email);
+    store.set('adminEmails', list);
+
+    if (FirebaseBackend.db) {
+      await FirebaseBackend.db.collection('admin').doc('config').set(
+        {
+          adminEmails: list,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        },
+        { merge: true }
+      ).catch(e => console.warn(e));
+    }
+
+    Components.showToast('管理者から削除しました', 'info');
+    this.renderApp();
+  }
+
+  async loadAllUsers() {
+    if (!FirebaseBackend.db) {
+      Components.showToast('Firebaseに接続してください', 'error');
+      return;
+    }
+
+    Components.showToast('ユーザー一覧を読み込み中...', 'info');
+    try {
+      const snap = await FirebaseBackend.db.collection('users').limit(100).get();
+      const users = [];
+      snap.forEach(doc => {
+        const data = doc.data();
+        users.push({
+          uid: doc.id,
+          email: data.userProfile?.email || '',
+          displayName: data.userProfile?.displayName || '',
+          lastActive: data.updatedAt?.toDate?.()?.toISOString() || null,
+          entryCount: 0
+        });
+      });
+      store.set('_allUsers', users);
+      store.set('_allUsersCount', users.length);
+      Components.showToast(`${users.length}人のユーザーを読み込みました`, 'success');
+      this.renderApp();
+    } catch (e) {
+      Components.showToast('読み込みに失敗しました: ' + e.message, 'error');
+    }
   }
 
   generateDemoData() {

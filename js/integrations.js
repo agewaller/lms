@@ -17,7 +17,8 @@ function generateUserEmail() {
   const user = store.get('user');
   if (!user) return null;
   const hash = simpleHash(user.uid || user.email || 'anon');
-  return `data-${hash}@inbox.lms-life.com`;
+  const domain = CONFIG?.emailIngestDomain || 'inbox.lms-life.com';
+  return `data-${hash}@${domain}`;
 }
 
 // ─── Plaud Integration (未病ダイアリー準拠) ───
@@ -95,6 +96,77 @@ var plaud = {
     store.set('conversationHistory', history.slice(-500));
 
     return id;
+  },
+
+  // ─── Auto-ingest: poll the email ingest worker for new messages ───
+  // Called on login and periodically. Fetches any pending emails sent to
+  // this user's unique address, processes them, runs AI analysis,
+  // and saves results to Firestore.
+  async pollInbox() {
+    const email = generateUserEmail();
+    if (!email) return { fetched: 0, processed: 0 };
+
+    const hash = simpleHash((store.get('user')?.uid || store.get('user')?.email || 'anon'));
+    const endpoint = CONFIG.endpoints?.emailIngest;
+    if (!endpoint) return { fetched: 0, processed: 0 };
+
+    try {
+      const res = await fetch(`${endpoint}/pending?hash=${hash}`, { method: 'GET' });
+      if (!res.ok) return { fetched: 0, processed: 0 };
+
+      const { messages } = await res.json();
+      if (!messages || messages.length === 0) return { fetched: 0, processed: 0 };
+
+      const processedIds = [];
+      let analyzed = 0;
+
+      for (const msg of messages) {
+        try {
+          // Parse the email body as a Plaud transcript
+          const text = msg.text || msg.html?.replace(/<[^>]*>/g, '') || '';
+          if (!text.trim()) { processedIds.push(msg.id); continue; }
+
+          const parsed = this.parseTranscript(text);
+          await this.saveTranscript(parsed, {
+            date: msg.receivedAt?.slice(0, 10),
+            title: msg.subject || 'Plaud自動取込',
+            source: 'plaud_email'
+          });
+
+          // Auto-analyze with Zen Track prompt
+          try {
+            const result = await AIEngine.analyze('consciousness', 'transcript_analysis', {
+              text: `<<<TRANSCRIPT_START\n${text}\nTRANSCRIPT_END>>>`
+            });
+            // Parse and save observation (7-layer analysis)
+            if (typeof app !== 'undefined' && app.parseAndSaveObservation) {
+              app.parseAndSaveObservation(result);
+            }
+            analyzed++;
+          } catch (e) {
+            console.warn('Auto-analysis failed for message', msg.id, e);
+          }
+
+          processedIds.push(msg.id);
+        } catch (e) {
+          console.warn('Process message error', e);
+        }
+      }
+
+      // Acknowledge processed messages (delete from KV)
+      if (processedIds.length > 0) {
+        await fetch(`${endpoint}/acknowledge`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: processedIds })
+        }).catch(() => {});
+      }
+
+      return { fetched: messages.length, processed: processedIds.length, analyzed };
+    } catch (e) {
+      console.warn('Inbox poll error:', e);
+      return { fetched: 0, processed: 0, error: e.message };
+    }
   }
 };
 

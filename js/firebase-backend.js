@@ -178,7 +178,7 @@ var FirebaseBackend = {
         if (data.domainScores) store.set('domainScores', data.domainScores);
       }
 
-      // ─── Load ADMIN-SHARED config (AI model, prompts, API keys) ───
+      // ─── Load ADMIN-SHARED config (AI model, prompts, API keys, admin list) ───
       // All users inherit the admin's configuration (未病ダイアリー pattern)
       try {
         const adminConfigDoc = await this.db.collection('admin').doc('config').get();
@@ -187,6 +187,9 @@ var FirebaseBackend = {
           if (cfg.selectedModel) store.set('selectedModel', cfg.selectedModel);
           if (cfg.customPrompts) store.set('customPrompts', cfg.customPrompts);
           if (cfg.affiliateConfig) store.set('affiliateConfig', cfg.affiliateConfig);
+          if (cfg.adminEmails) store.set('adminEmails', cfg.adminEmails);
+          if (cfg.emailIngestUrl) CONFIG.endpoints.emailIngest = cfg.emailIngestUrl;
+          if (cfg.emailIngestDomain) CONFIG.emailIngestDomain = cfg.emailIngestDomain;
         }
 
         // Load admin API keys (shared across all users)
@@ -272,9 +275,9 @@ var FirebaseBackend = {
       });
     });
 
-    // ─── ADMIN-ONLY: shared config (AI model, prompts, affiliate) ───
+    // ─── ADMIN-ONLY: shared config (AI model, prompts, affiliate, admin list) ───
     if (isAdmin) {
-      const adminFields = ['selectedModel', 'customPrompts', 'affiliateConfig'];
+      const adminFields = ['selectedModel', 'customPrompts', 'affiliateConfig', 'adminEmails'];
       adminFields.forEach(key => {
         store.on(key, (value) => {
           this.db.collection('admin').doc('config').set(
@@ -350,9 +353,14 @@ var FirebaseBackend = {
     await this.db.collection('admin').doc('secrets').set(keys, { merge: true });
   },
 
-  // ─── Check if user is admin ───
+  // ─── Check if user is admin (owner or dynamic list) ───
   isAdmin() {
     const user = store.get('user');
-    return user?.email === 'agewaller@gmail.com';
+    if (!user?.email) return false;
+    // Owner is always admin
+    if (user.email === 'agewaller@gmail.com') return true;
+    // Check dynamic admin list (loaded from Firestore admin/config)
+    const list = store.get('adminEmails') || ['agewaller@gmail.com'];
+    return list.includes(user.email.toLowerCase());
   }
 };

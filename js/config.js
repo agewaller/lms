@@ -35,8 +35,14 @@ var CONFIG = {
   endpoints: {
     anthropic: 'https://lms-api-proxy.your-account.workers.dev',
     openai: 'https://api.openai.com/v1/chat/completions',
-    google: 'https://generativelanguage.googleapis.com/v1beta/models'
+    google: 'https://generativelanguage.googleapis.com/v1beta/models',
+    emailIngest: 'https://lms-email-ingest.your-account.workers.dev'
   },
+
+  // ─── Email Ingest Domain ───
+  // User-specific ingest addresses use this domain
+  // Format: data-{hash}@{emailIngestDomain}
+  emailIngestDomain: 'inbox.lms-life.com',
 
   // ─── 6 Life Domains ───
   domains: {
