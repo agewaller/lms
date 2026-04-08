@@ -9,6 +9,7 @@ var App = class App {
   // ─── Initialize ───
   async init(entryDomain) {
     this.entryDomain = entryDomain || null;
+    this.checkFitbitCallback();
 
     // Initialize Firebase
     await FirebaseBackend.init();
@@ -126,7 +127,7 @@ var App = class App {
     store.set('currentPage', page);
   }
 
-  // ─── Main Render ───
+  // ─── Main Render (未病ダイアリー方式) ───
   renderApp() {
     const page = store.get('currentPage');
     const domain = store.get('currentDomain');
@@ -134,21 +135,35 @@ var App = class App {
     const mainContent = document.getElementById('mainContent');
     if (!mainContent) return;
 
-    // Update domain tabs
-    const tabsEl = document.getElementById('domainTabs');
-    if (tabsEl) tabsEl.innerHTML = Components.domainTabs(domain);
+    // Update top bar title
+    const titleEl = document.getElementById('top-bar-title');
+    const domainConfig = CONFIG.domains[domain];
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
-    // Update sub-navigation
-    const subNavEl = document.getElementById('subNav');
-    if (subNavEl) subNavEl.innerHTML = Components.subNav(page, domain);
+    // Update sidebar nav active states
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.page === page);
+    });
+    document.querySelectorAll('.domain-nav').forEach(el => {
+      el.classList.toggle('active', el.dataset.domain === domain);
+    });
 
-    // Update sidebar info
+    // Update sidebar user info
     this.updateSidebar();
 
     // Render page content
     mainContent.innerHTML = Pages.render(page, domain);
 
-    // Scroll chat to bottom if on ask_ai page
+    // Auto-close sidebar on mobile after navigation
+    if (window.innerWidth <= 768) {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      if (sidebar) sidebar.classList.remove('open');
+      if (overlay) overlay.classList.remove('active');
+    }
+
+    // Scroll chat to bottom
     if (page === 'ask_ai') {
       setTimeout(() => {
         const chat = document.getElementById('chatContainer');
@@ -156,12 +171,19 @@ var App = class App {
       }, 50);
     }
 
-    // Initialize PayPal buttons if on settings page
+    // Initialize PayPal
     if (page === 'settings') {
       setTimeout(() => {
         Object.keys(CONFIG.paypal.plans).forEach(key => {
           PayPalManager.renderButtons('paypal-btn-' + key, key);
         });
+      }, 100);
+    }
+
+    // Auto-calculate NISA on assets home
+    if (domain === 'assets' && page === 'home') {
+      setTimeout(() => {
+        if (typeof AssetsFeatures !== 'undefined') AssetsFeatures.calculateNISA();
       }, 100);
     }
   }
@@ -495,11 +517,11 @@ var App = class App {
     this.renderApp();
   }
 
-  // ─── Calendar import (Time domain) ───
+  // ─── Integration Handlers (未病ダイアリー方式) ───
+
   importCalendarFile(event) {
     const file = event.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (e) => {
       if (typeof CalendarIntegration !== 'undefined') {
@@ -508,6 +530,153 @@ var App = class App {
       }
     };
     reader.readAsText(file);
+  }
+
+  async importPlaud() {
+    const text = document.getElementById('plaudText')?.value?.trim();
+    const date = document.getElementById('plaudDate')?.value || new Date().toISOString().slice(0, 10);
+    if (!text) {
+      Components.showToast('文字起こしの内容を貼り付けてください', 'info');
+      return;
+    }
+
+    // Save as transcript
+    store.addDomainEntry('consciousness', 'transcript', {
+      source: 'plaud',
+      content: text,
+      date,
+      duration: Math.round(text.length / 200)
+    });
+
+    // Auto-analyze with Zen Track
+    Components.showToast('取り込みました。分析を開始します...', 'success');
+    try {
+      const result = await AIEngine.analyze('consciousness', 'transcript_analysis', {
+        text: `<<<TRANSCRIPT_START\n${text}\nTRANSCRIPT_END>>>`
+      });
+      this.parseAndSaveObservation(result);
+      this.openModal('分析結果', `<div class="analysis-content">${Components.formatMarkdown(result)}</div>`);
+    } catch (e) {
+      Components.showToast(e.message, 'error');
+    }
+    document.getElementById('plaudText').value = '';
+  }
+
+  connectFitbit() {
+    const clientId = document.getElementById('fitbitClientId')?.value?.trim();
+    if (!clientId) {
+      Components.showToast('Client IDを入力してください', 'info');
+      return;
+    }
+    localStorage.setItem('lms_fitbit_client_id', clientId);
+    const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+    const scope = encodeURIComponent('activity heartrate sleep profile weight nutrition');
+    window.location.href = `https://www.fitbit.com/oauth2/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&expires_in=31536000`;
+  }
+
+  async fitbitImportToday() {
+    const token = localStorage.getItem('lms_fitbit_token');
+    if (!token) { Components.showToast('Fitbitに接続してください', 'info'); return; }
+
+    Components.showToast('Fitbitからデータを取り込み中...', 'info');
+    const today = new Date().toISOString().slice(0, 10);
+
+    try {
+      const headers = { 'Authorization': 'Bearer ' + token };
+      const [actRes, sleepRes, hrRes] = await Promise.allSettled([
+        fetch(`https://api.fitbit.com/1/user/-/activities/date/${today}.json`, { headers }),
+        fetch(`https://api.fitbit.com/1.2/user/-/sleep/date/${today}.json`, { headers }),
+        fetch(`https://api.fitbit.com/1/user/-/activities/heart/date/${today}/1d.json`, { headers })
+      ]);
+
+      if (actRes.status === 'fulfilled' && actRes.value.ok) {
+        const data = await actRes.value.json();
+        store.addDomainEntry('health', 'activityData', {
+          activity_type: 'walking', source: 'fitbit',
+          steps: data.summary?.steps, calories: data.summary?.caloriesOut,
+          duration: data.summary?.activeMinutes || data.summary?.fairlyActiveMinutes
+        });
+      }
+      if (sleepRes.status === 'fulfilled' && sleepRes.value.ok) {
+        const data = await sleepRes.value.json();
+        const main = data.sleep?.[0];
+        if (main) {
+          store.addDomainEntry('health', 'sleepData', {
+            source: 'fitbit', quality: Math.round((main.efficiency || 80) / 10),
+            sleep_time: main.startTime, wake_time: main.endTime
+          });
+        }
+      }
+      Components.showToast('Fitbitデータを取り込みました', 'success');
+      this.renderApp();
+    } catch (e) {
+      Components.showToast('取り込みに失敗しました: ' + e.message, 'error');
+    }
+  }
+
+  importAppleHealth(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    Components.showToast('Apple Healthデータを読み込み中...', 'info');
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(e.target.result, 'text/xml');
+        const records = doc.querySelectorAll('Record');
+        let count = 0;
+
+        records.forEach(r => {
+          const type = r.getAttribute('type') || '';
+          const value = parseFloat(r.getAttribute('value')) || 0;
+          const date = r.getAttribute('startDate') || '';
+
+          if (type.includes('HeartRate') && value > 0) {
+            store.addDomainEntry('health', 'vitals', { heart_rate: value, source: 'apple_health', timestamp: date });
+            count++;
+          } else if (type.includes('BloodPressureSystolic')) {
+            store.addDomainEntry('health', 'vitals', { bp_systolic: value, source: 'apple_health', timestamp: date });
+            count++;
+          } else if (type.includes('BodyTemperature')) {
+            store.addDomainEntry('health', 'vitals', { temperature: value, source: 'apple_health', timestamp: date });
+            count++;
+          } else if (type.includes('StepCount') && value > 0) {
+            store.addDomainEntry('health', 'activityData', { activity_type: 'walking', steps: value, source: 'apple_health', timestamp: date });
+            count++;
+          } else if (type.includes('BodyMass') && value > 0) {
+            store.addDomainEntry('health', 'vitals', { weight: value, source: 'apple_health', timestamp: date });
+            count++;
+          }
+        });
+
+        Components.showToast(`${count}件のデータを取り込みました`, 'success');
+        this.renderApp();
+      } catch (err) {
+        Components.showToast('ファイルの読み込みに失敗しました', 'error');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  handleFileDrop(event) {
+    event.preventDefault();
+    document.getElementById('fileDropArea')?.classList.remove('dragover');
+    const file = event.dataTransfer?.files[0];
+    if (file) this.handleFileUpload({ target: { files: [file] } }, store.get('currentDomain'));
+  }
+
+  // Check Fitbit OAuth callback on page load
+  checkFitbitCallback() {
+    const hash = window.location.hash;
+    if (hash.includes('access_token=')) {
+      const token = hash.match(/access_token=([^&]+)/)?.[1];
+      if (token) {
+        localStorage.setItem('lms_fitbit_token', token);
+        window.location.hash = '';
+        Components.showToast('Fitbitに接続しました', 'success');
+      }
+    }
   }
 
   // ─── Consciousness Transcript Analysis ───
@@ -858,25 +1027,30 @@ var App = class App {
     Components.showToast(i18n.t('saved'), 'success');
   }
 
-  // ─── Sidebar toggle ───
+  // ─── Sidebar toggle (未病ダイアリー方式) ───
   toggleSidebar() {
-    const open = !store.get('sidebarOpen');
-    store.set('sidebarOpen', open);
-    document.body.classList.toggle('sidebar-open', open);
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (!sidebar) return;
 
-    // スマホ: オーバーレイクリックで閉じる
-    if (open && window.innerWidth <= 768) {
-      setTimeout(() => {
-        const handler = (e) => {
-          if (!document.getElementById('sidebar')?.contains(e.target)) {
-            store.set('sidebarOpen', false);
-            document.body.classList.remove('sidebar-open');
-            document.removeEventListener('click', handler);
-          }
-        };
-        document.addEventListener('click', handler);
-      }, 100);
-    }
+    const isOpen = sidebar.classList.contains('open');
+    sidebar.classList.toggle('open', !isOpen);
+    if (overlay) overlay.classList.toggle('active', !isOpen);
+  }
+
+  // ─── Modal ───
+  openModal(title, bodyHtml) {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    if (titleEl) titleEl.textContent = title;
+    if (bodyEl) bodyEl.innerHTML = bodyHtml;
+    if (overlay) overlay.classList.add('active');
+  }
+
+  closeModal() {
+    const overlay = document.getElementById('modal-overlay');
+    if (overlay) overlay.classList.remove('active');
   }
 };
 

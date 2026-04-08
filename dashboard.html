@@ -2,82 +2,124 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LMS - Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LMS - Life Management System</title>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
-<body class="dashboard-page">
+<body>
+  <div class="app-container">
 
-  <!-- Mobile Header -->
-  <div class="mobile-header">
-    <button class="mobile-menu-btn" onclick="app.toggleSidebar()">☰</button>
-    <span class="logo-text">LMS</span>
-    <span id="mobileCurrentDomain"></span>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a class="sidebar-logo" onclick="app.navigate('home')">
+          <div class="sidebar-logo-icon">◈</div>
+          <div>
+            <div class="sidebar-logo-text">LMS</div>
+            <div class="sidebar-logo-sub">Life Management System</div>
+          </div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">メニュー</div>
+        <a class="nav-item active" data-page="home" onclick="app.navigate('home')">
+          <span class="nav-icon">🏠</span><span>ホーム</span>
+        </a>
+        <a class="nav-item" data-page="record" onclick="app.navigate('record')">
+          <span class="nav-icon">📝</span><span>記録する</span>
+        </a>
+        <a class="nav-item" data-page="actions" onclick="app.navigate('actions')">
+          <span class="nav-icon">⚡</span><span>アクション</span>
+        </a>
+        <a class="nav-item" data-page="ask_ai" onclick="app.navigate('ask_ai')">
+          <span class="nav-icon">🤖</span><span>AIに相談</span>
+        </a>
+        <a class="nav-item" data-page="integrations" onclick="app.navigate('integrations')">
+          <span class="nav-icon">🔗</span><span>連携</span>
+        </a>
+        <a class="nav-item" data-page="settings" onclick="app.navigate('settings')">
+          <span class="nav-icon">⚙️</span><span>設定</span>
+        </a>
+        <a class="nav-item admin-only" data-page="admin" onclick="app.navigate('admin')" id="adminLink" style="display:none">
+          <span class="nav-icon">🔧</span><span>管理</span>
+        </a>
+
+        <div class="nav-section-title">領域</div>
+        <a class="nav-item domain-nav" data-domain="consciousness" onclick="app.switchDomain('consciousness')">
+          <span class="nav-icon">🧠</span><span>意識</span>
+        </a>
+        <a class="nav-item domain-nav" data-domain="health" onclick="app.switchDomain('health')">
+          <span class="nav-icon">💚</span><span>健康</span>
+        </a>
+        <a class="nav-item domain-nav" data-domain="time" onclick="app.switchDomain('time')">
+          <span class="nav-icon">⏰</span><span>時間</span>
+        </a>
+        <a class="nav-item domain-nav" data-domain="work" onclick="app.switchDomain('work')">
+          <span class="nav-icon">💼</span><span>仕事</span>
+        </a>
+        <a class="nav-item domain-nav" data-domain="relationship" onclick="app.switchDomain('relationship')">
+          <span class="nav-icon">🤝</span><span>関係</span>
+        </a>
+        <a class="nav-item domain-nav" data-domain="assets" onclick="app.switchDomain('assets')">
+          <span class="nav-icon">💰</span><span>資産</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-user" id="sidebar-user">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <div class="user-info">
+          <div class="user-name" id="userName">ゲスト</div>
+          <div class="user-domain" id="currentDomainLabel">未設定</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="top-bar" id="top-bar">
+        <div class="top-bar-left">
+          <button class="btn btn-icon btn-secondary" id="menu-toggle" onclick="app.toggleSidebar()">☰</button>
+          <h2 class="top-bar-title" id="top-bar-title">ホーム</h2>
+        </div>
+        <div class="top-bar-right">
+          <div id="domainTabs"></div>
+          <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')">⚙️</button>
+        </div>
+      </div>
+
+      <div class="page-content" id="mainContent"></div>
+    </main>
+
   </div>
 
-  <!-- Sidebar -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-logo">
-        <span class="logo-icon">◈</span>
-        <span class="logo-text">LMS</span>
+  <!-- Sidebar Overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="app.toggleSidebar()"></div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-title"></h3>
+        <button class="modal-close" onclick="app.closeModal()">&times;</button>
       </div>
-      <button class="sidebar-toggle" onclick="app.toggleSidebar()">☰</button>
+      <div class="modal-body" id="modal-body"></div>
     </div>
+  </div>
 
-    <!-- User Info -->
-    <div class="sidebar-user">
-      <img id="userAvatar" class="user-avatar" src="" alt="" onerror="this.style.display='none'">
-      <div id="userName" class="user-name"></div>
-      <div id="currentDomainLabel" class="current-domain"></div>
-    </div>
+  <!-- Toast -->
+  <div class="toast-container" id="toast-container"></div>
 
-    <!-- Sidebar Navigation -->
-    <nav class="sidebar-nav">
-      <a class="nav-item" onclick="app.navigate('home')">🏠 <span data-i18n="home">ホーム</span></a>
-      <a class="nav-item" onclick="app.navigate('record')">📝 <span data-i18n="record">記録する</span></a>
-      <a class="nav-item" onclick="app.navigate('actions')">⚡ <span data-i18n="actions">アクション</span></a>
-      <a class="nav-item" onclick="app.navigate('ask_ai')">🤖 <span data-i18n="ask_ai">AIに相談</span></a>
-      <a class="nav-item" onclick="app.navigate('settings')">⚙️ <span data-i18n="settings">設定</span></a>
-      <a class="nav-item" id="adminLink" onclick="app.navigate('admin')" style="display:none">🔧 <span data-i18n="admin">管理パネル</span></a>
-    </nav>
-
-    <!-- Domain Quick Switch (sidebar) -->
-    <div class="sidebar-domains">
-      <div class="sd-label">Domains</div>
-      <a class="sd-item" onclick="app.switchDomain('consciousness')" data-domain="consciousness">🧠 <span>意識</span></a>
-      <a class="sd-item" onclick="app.switchDomain('health')" data-domain="health">💚 <span>健康</span></a>
-      <a class="sd-item" onclick="app.switchDomain('time')" data-domain="time">⏰ <span>時間</span></a>
-      <a class="sd-item" onclick="app.switchDomain('work')" data-domain="work">💼 <span>仕事</span></a>
-      <a class="sd-item" onclick="app.switchDomain('relationship')" data-domain="relationship">🤝 <span>関係</span></a>
-      <a class="sd-item" onclick="app.switchDomain('assets')" data-domain="assets">💰 <span>資産</span></a>
-    </div>
-  </aside>
-
-  <!-- Main Content Area -->
-  <main class="main-area">
-    <!-- Domain Tabs (top) -->
-    <div id="domainTabs" class="domain-tabs-container"></div>
-
-    <!-- Sub Navigation -->
-    <div id="subNav" class="sub-nav-container"></div>
-
-    <!-- Page Content -->
-    <div id="mainContent" class="main-content"></div>
-  </main>
-
-  <!-- Toast Container -->
-  <div id="toastContainer"></div>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Footer -->
+  <div style="text-align:center;padding:20px 16px;font-size:11px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">
+    &copy; 2026 LMS - Life Management System
+  </div>
 
   <!-- LMS Scripts -->
   <script src="js/config.js"></script>
@@ -104,11 +146,9 @@
       if (savedWorker) CONFIG.endpoints.anthropic = savedWorker;
     } catch (e) {}
 
-    // Check entry domain from URL param or referrer
     const params = new URLSearchParams(window.location.search);
     const entryDomain = params.get('domain') || null;
 
-    // Redirect to login if not authenticated
     if (!store.get('isAuthenticated')) {
       window.location.href = entryDomain ? entryDomain + '.html' : 'index.html';
     } else {
