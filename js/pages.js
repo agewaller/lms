@@ -115,11 +115,11 @@ var Pages = {
       if (typeof TimeMarketplace !== 'undefined') html += TimeMarketplace.renderWidget();
     }
 
-    // Contribution domain: Resume + side biz diagnosis + time marketplace link
-    if (domain === 'contribution') {
-      if (typeof ContributionFeatures !== 'undefined') {
-        html += ContributionFeatures.renderSideBizDiagnosis();
-        html += ContributionFeatures.renderTimeSellingBanner();
+    // Work domain: Resume + side biz diagnosis + time marketplace link
+    if (domain === 'work') {
+      if (typeof WorkFeatures !== 'undefined') {
+        html += WorkFeatures.renderSideBizDiagnosis();
+        html += WorkFeatures.renderTimeSellingBanner();
       }
       html += this.renderResumeWidget();
     }
@@ -414,14 +414,14 @@ var Pages = {
         stats.push(Components.statCard(i18n.t('habits'), habits.length + i18n.t('items'), null, '🔄'));
         break;
       }
-      case 'contribution': {
-        const tasks = store.getDomainData('contribution', 'tasks', 7);
+      case 'work': {
+        const tasks = store.getDomainData('work', 'tasks', 7);
         const done = tasks.filter(t => t.status === 'done').length;
-        const projects = store.get('contribution_projects') || [];
+        const projects = store.get('work_projects') || [];
         const active = projects.filter(p => p.status === 'active').length;
         stats.push(Components.statCard(i18n.t('tasks'), `${done}/${tasks.length}`, null, '✅'));
         stats.push(Components.statCard(i18n.t('projects'), active + ' ' + i18n.t('active'), null, '📊'));
-        stats.push(Components.statCard(i18n.t('skills'), (store.get('contribution_skills') || []).length + i18n.t('items'), null, '📚'));
+        stats.push(Components.statCard(i18n.t('skills'), (store.get('work_skills') || []).length + i18n.t('items'), null, '📚'));
         break;
       }
       case 'relationship': {
@@ -726,8 +726,8 @@ var Pages = {
       <!-- Time Marketplace Settings (Time domain) -->
       ${domain === 'time' && typeof TimeMarketplace !== 'undefined' ? TimeMarketplace.renderSettings() : ''}
 
-      <!-- Resume Settings (Contribution domain) -->
-      ${domain === 'contribution' ? this.renderResumeSettings() : ''}
+      <!-- Resume Settings (Work domain) -->
+      ${domain === 'work' ? this.renderResumeSettings() : ''}
 
       <!-- Calendar Import (Time domain) -->
       ${domain === 'time' ? `

@@ -11,7 +11,7 @@ var Store = class Store {
 
       // Navigation
       currentPage: 'login',       // login | home | record | action | settings | admin | ask_ai
-      currentDomain: 'health',    // consciousness | health | time | contribution | relationship | assets
+      currentDomain: 'health',    // consciousness | health | time | work | relationship | assets
       theme: 'light',
       sidebarOpen: window.innerWidth > 768,
 
@@ -20,7 +20,7 @@ var Store = class Store {
         consciousness: 0,
         health: 0,
         time: 0,
-        contribution: 0,
+        work: 0,
         relationship: 0,
         assets: 0
       },
@@ -50,12 +50,12 @@ var Store = class Store {
       time_habits: [],        // habit tracking
       time_goals: [],         // time-related goals
 
-      // ─── Contribution (貢献) ───
-      contribution_tasks: [],     // work tasks
-      contribution_goals: [],     // career/work goals
-      contribution_skills: [],    // skill development
-      contribution_projects: [],  // projects
-      contribution_reviews: [],   // performance reviews
+      // ─── Work (仕事) ───
+      work_tasks: [],     // work tasks
+      work_goals: [],     // career/work goals
+      work_skills: [],    // skill development
+      work_projects: [],  // projects
+      work_reviews: [],   // performance reviews
 
       // ─── Relationship (関係) ───
       relationship_contacts: [],       // relationships with distance levels
@@ -93,7 +93,7 @@ var Store = class Store {
 
       // User Profile
       userProfile: {},
-      userResume: {},              // Resume data for contribution domain
+      userResume: {},              // Resume data for work domain
       timeMarketplaceSettings: {}, // Time marketplace settings
       timeMarketplaceBookings: [], // Booking requests
       calendarEvents: [],
@@ -162,9 +162,9 @@ var Store = class Store {
       'health_sleepData', 'health_activityData', 'health_photos',
       // Time
       'time_entries', 'time_schedules', 'time_habits', 'time_goals',
-      // Contribution
-      'contribution_tasks', 'contribution_goals', 'contribution_skills',
-      'contribution_projects', 'contribution_reviews',
+      // Work
+      'work_tasks', 'work_goals', 'work_skills',
+      'work_projects', 'work_reviews',
       // Relationship
       'relationship_contacts', 'relationship_interactions', 'relationship_gifts', 'relationship_groups',
       // Assets

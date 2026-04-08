@@ -1,8 +1,8 @@
 /* ============================================================
-   LMS - Contribution Feature Modules
+   LMS - Work Feature Modules
    「あなたの経験 × AI = 副業」診断 / 空き時間販売の導線強化
    ============================================================ */
-var ContributionFeatures = {
+var WorkFeatures = {
 
   // ═══════════════════════════════════════════════════════════
   //  「あなたの経験 × AI = 副業」診断
@@ -66,7 +66,7 @@ var ContributionFeatures = {
         </div>
       </div>
 
-      <button class="btn btn-primary btn-lg" onclick="ContributionFeatures.diagnose()">
+      <button class="btn btn-primary btn-lg" onclick="WorkFeatures.diagnose()">
         🤖 診断する
       </button>
 
@@ -111,7 +111,7 @@ AIが怖くない方にも、まったくの初心者にも伝わるよう、や
 難しい用語には必ず（　）で説明を添えてください。日本語で回答。`;
 
     try {
-      const result = await AIEngine.analyze('contribution', 'daily', { text: prompt });
+      const result = await AIEngine.analyze('work', 'daily', { text: prompt });
       if (resultEl) {
         resultEl.innerHTML = `<div class="diagnosis-result">
           <h3>🎯 あなたにおすすめの副業プラン</h3>

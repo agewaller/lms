@@ -168,7 +168,7 @@ var CalendarIntegration = {
     if (/会議|ミーティング|打ち合わせ|仕事|mtg/.test(text)) return 'work';
     if (/趣味|習い事|教室|レッスン|サークル/.test(text)) return 'leisure';
     if (/ランチ|食事|ディナー|お茶/.test(text)) return 'social';
-    if (/ボランティア|地域|自治会/.test(text)) return 'contribution';
+    if (/ボランティア|地域|自治会/.test(text)) return 'work';
     if (/誕生日|記念日|お祝い/.test(text)) return 'family';
     if (/運動|散歩|ヨガ|プール|体操/.test(text)) return 'exercise';
     return 'other';
