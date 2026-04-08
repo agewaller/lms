@@ -220,33 +220,53 @@ var CONFIG = {
       categories: {
         contacts:     { label: 'contacts',     icon: '👤' },
         interactions: { label: 'interactions',  icon: '💬' },
-        networks:     { label: 'networks',      icon: '🌐' },
-        goals:        { label: 'relation_goals', icon: '🎯' }
+        gifts:        { label: 'gifts',         icon: '🎁' },
+        groups:       { label: 'groups',        icon: '👥' }
       },
+      // 距離感レベル（5段階）
+      distanceLevels: {
+        1: { label: 'distance_1', description: 'パートナー・家族', color: '#E74C3C' },
+        2: { label: 'distance_2', description: '親族・親友・近い同僚', color: '#E67E22' },
+        3: { label: 'distance_3', description: '同僚・友人', color: '#F1C40F' },
+        4: { label: 'distance_4', description: '知人', color: '#27AE60' },
+        5: { label: 'distance_5', description: 'ゆるいつながり', color: '#2980B9' }
+      },
+      // インポート可能なソース
+      importSources: ['contacts_phone', 'contacts_csv', 'contacts_eight', 'contacts_sns', 'contacts_nenga'],
       dataFields: {
         contacts: [
           { key: 'name',           type: 'text', label: 'person_name' },
-          { key: 'relationship',   type: 'select', options: ['family', 'friend', 'colleague', 'mentor', 'mentee', 'business', 'community', 'other'], label: 'relationship_type' },
-          { key: 'trust_level',    type: 'slider', min: 1, max: 10, label: 'trust_level' },
+          { key: 'furigana',       type: 'text', label: 'furigana' },
+          { key: 'distance',       type: 'select', options: ['1', '2', '3', '4', '5'], label: 'distance_level' },
+          { key: 'relationship',   type: 'select', options: ['partner', 'family', 'relative', 'close_friend', 'friend', 'colleague', 'neighbor', 'community', 'other'], label: 'relationship_type' },
+          { key: 'birthday',       type: 'date', label: 'birthday' },
+          { key: 'phone',          type: 'text', label: 'phone' },
+          { key: 'email',          type: 'text', label: 'email' },
+          { key: 'address',        type: 'text', label: 'address' },
+          { key: 'company',        type: 'text', label: 'company_name' },
+          { key: 'title',          type: 'text', label: 'job_title' },
+          { key: 'sns',            type: 'text', label: 'sns_account' },
           { key: 'notes',          type: 'textarea', label: 'notes' }
         ],
         interactions: [
           { key: 'person',         type: 'text', label: 'person_name' },
-          { key: 'type',           type: 'select', options: ['meeting', 'call', 'message', 'email', 'social', 'gift', 'help_given', 'help_received'], label: 'interaction_type' },
-          { key: 'quality',        type: 'slider', min: 1, max: 10, label: 'quality' },
+          { key: 'type',           type: 'select', options: ['meeting', 'call', 'message', 'letter', 'email', 'gift_sent', 'gift_received', 'visit', 'event', 'other'], label: 'interaction_type' },
+          { key: 'quality',        type: 'slider', min: 1, max: 5, label: 'quality' },
           { key: 'notes',          type: 'textarea', label: 'notes' }
         ],
-        networks: [
-          { key: 'network_name',   type: 'text', label: 'network_name' },
-          { key: 'type',           type: 'select', options: ['professional', 'personal', 'community', 'online', 'other'], label: 'network_type' },
-          { key: 'member_count',   type: 'number', label: 'member_count' },
-          { key: 'your_role',      type: 'text', label: 'your_role' }
+        gifts: [
+          { key: 'person',         type: 'text', label: 'person_name' },
+          { key: 'occasion',       type: 'select', options: ['birthday', 'new_year', 'obon', 'okaeshi', 'celebration', 'sympathy', 'souvenir', 'other'], label: 'occasion' },
+          { key: 'direction',      type: 'select', options: ['sent', 'received'], label: 'direction' },
+          { key: 'item',           type: 'text', label: 'gift_item' },
+          { key: 'amount',         type: 'number', label: 'amount', step: 100 },
+          { key: 'notes',          type: 'textarea', label: 'notes' }
         ],
-        goals: [
-          { key: 'goal',           type: 'text', label: 'goal' },
-          { key: 'target_person',  type: 'text', label: 'target_person' },
-          { key: 'progress',       type: 'slider', min: 0, max: 100, label: 'progress_pct' },
-          { key: 'deadline',       type: 'date', label: 'deadline' }
+        groups: [
+          { key: 'group_name',     type: 'text', label: 'group_name' },
+          { key: 'type',           type: 'select', options: ['family_group', 'friend_group', 'community_group', 'work_group', 'hobby_group', 'other'], label: 'group_type' },
+          { key: 'members',        type: 'textarea', label: 'member_list' },
+          { key: 'notes',          type: 'textarea', label: 'notes' }
         ]
       }
     },
@@ -256,46 +276,53 @@ var CONFIG = {
       icon: '💰',
       color: '#F1C40F',
       categories: {
-        portfolio:    { label: 'portfolio',    icon: '📈' },
-        transactions: { label: 'transactions', icon: '💳' },
-        income:       { label: 'income',       icon: '💵' },
-        expenses:     { label: 'expenses',     icon: '🧾' },
-        goals:        { label: 'financial_goals', icon: '🎯' }
+        overview:      { label: 'asset_overview',  icon: '💰' },
+        stocks:        { label: 'stock_investment', icon: '📈' },
+        portfolio:     { label: 'portfolio',        icon: '📊' },
+        income:        { label: 'income',           icon: '💵' },
+        expenses:      { label: 'expenses',         icon: '🧾' },
+        goals:         { label: 'financial_goals',  icon: '🎯' }
       },
       dataFields: {
-        portfolio: [
-          { key: 'asset_name',  type: 'text', label: 'asset_name' },
-          { key: 'asset_type',  type: 'select', options: ['stock', 'bond', 'crypto', 'real_estate', 'fund', 'commodity', 'cash', 'other'], label: 'asset_type' },
-          { key: 'quantity',    type: 'number', label: 'quantity', step: 0.0001 },
+        overview: [
+          { key: 'description', type: 'textarea', label: 'asset_description' },
+          { key: 'total_assets', type: 'number', label: 'total_assets', step: 1 },
+          { key: 'total_debt', type: 'number', label: 'total_debt', step: 1 },
+          { key: 'notes',      type: 'textarea', label: 'notes' }
+        ],
+        stocks: [
+          { key: 'ticker',      type: 'text', label: 'stock_ticker' },
+          { key: 'company',     type: 'text', label: 'company_name' },
+          { key: 'shares',      type: 'number', label: 'shares', step: 1 },
           { key: 'buy_price',   type: 'number', label: 'buy_price', step: 0.01 },
           { key: 'current_price', type: 'number', label: 'current_price', step: 0.01 },
-          { key: 'currency',    type: 'select', options: ['JPY', 'USD', 'EUR', 'GBP', 'CNY', 'KRW'], label: 'currency' }
+          { key: 'currency',    type: 'select', options: ['JPY', 'USD', 'EUR', 'GBP'], label: 'currency' },
+          { key: 'notes',       type: 'textarea', label: 'notes' }
         ],
-        transactions: [
-          { key: 'type',        type: 'select', options: ['buy', 'sell', 'dividend', 'interest', 'transfer'], label: 'transaction_type' },
+        portfolio: [
           { key: 'asset_name',  type: 'text', label: 'asset_name' },
-          { key: 'amount',      type: 'number', label: 'amount', step: 0.01 },
-          { key: 'price',       type: 'number', label: 'price', step: 0.01 },
-          { key: 'currency',    type: 'select', options: ['JPY', 'USD', 'EUR', 'GBP', 'CNY', 'KRW'], label: 'currency' }
+          { key: 'asset_type',  type: 'select', options: ['stock', 'bond', 'real_estate', 'fund', 'insurance', 'deposit', 'pension', 'other'], label: 'asset_type' },
+          { key: 'value',       type: 'number', label: 'current_price', step: 1 },
+          { key: 'currency',    type: 'select', options: ['JPY', 'USD', 'EUR', 'GBP'], label: 'currency' },
+          { key: 'notes',       type: 'textarea', label: 'notes' }
         ],
         income: [
           { key: 'source',      type: 'text', label: 'income_source' },
-          { key: 'type',        type: 'select', options: ['salary', 'freelance', 'investment', 'rental', 'business', 'other'], label: 'income_type' },
-          { key: 'amount',      type: 'number', label: 'amount', step: 0.01 },
-          { key: 'currency',    type: 'select', options: ['JPY', 'USD', 'EUR', 'GBP', 'CNY', 'KRW'], label: 'currency' },
+          { key: 'type',        type: 'select', options: ['pension', 'salary', 'investment', 'rental', 'other'], label: 'income_type' },
+          { key: 'amount',      type: 'number', label: 'amount', step: 1 },
+          { key: 'currency',    type: 'select', options: ['JPY', 'USD', 'EUR', 'GBP'], label: 'currency' },
           { key: 'recurring',   type: 'toggle', label: 'recurring' }
         ],
         expenses: [
           { key: 'item',        type: 'text', label: 'expense_item' },
-          { key: 'category',    type: 'select', options: ['housing', 'food', 'transport', 'health', 'education', 'entertainment', 'insurance', 'tax', 'other'], label: 'category' },
-          { key: 'amount',      type: 'number', label: 'amount', step: 0.01 },
-          { key: 'currency',    type: 'select', options: ['JPY', 'USD', 'EUR', 'GBP', 'CNY', 'KRW'], label: 'currency' }
+          { key: 'category',    type: 'select', options: ['housing', 'food', 'health', 'transport', 'insurance', 'tax', 'entertainment', 'other'], label: 'category' },
+          { key: 'amount',      type: 'number', label: 'amount', step: 1 },
+          { key: 'currency',    type: 'select', options: ['JPY', 'USD', 'EUR', 'GBP'], label: 'currency' }
         ],
         goals: [
           { key: 'goal',        type: 'text', label: 'financial_goal' },
-          { key: 'target_amount', type: 'number', label: 'target_amount', step: 0.01 },
-          { key: 'current_amount', type: 'number', label: 'current_amount', step: 0.01 },
-          { key: 'currency',    type: 'select', options: ['JPY', 'USD', 'EUR', 'GBP', 'CNY', 'KRW'], label: 'currency' },
+          { key: 'target_amount', type: 'number', label: 'target_amount', step: 1 },
+          { key: 'current_amount', type: 'number', label: 'current_amount', step: 1 },
           { key: 'deadline',    type: 'date', label: 'deadline' }
         ]
       }
@@ -303,83 +330,142 @@ var CONFIG = {
   },
 
   // ─── AI Prompts (per domain) ───
-  // These are starter prompts; admin can customize via settings
+  // Admin (agewaller@gmail.com) can customize via admin panel
+  // User persona: 65歳女性。やさしく丁寧な日本語で、わかりやすく実用的に。
   prompts: {
     consciousness: {
-      daily: `You are an expert life coach and mindfulness advisor. Analyze the user's consciousness/mindfulness data and provide:
-1. Emotional pattern recognition
-2. Mental state assessment
-3. Personalized mindfulness recommendations
-4. Actionable practices for today
-Respond in the user's language. Be compassionate yet practical.`,
-      weekly: `Review the past week's consciousness and mindfulness data. Provide a weekly reflection covering emotional trends, spiritual growth indicators, and recommended practices for the coming week.`
+      daily: `あなたは心のケアの専門家です。65歳の女性ユーザーの心の記録データを分析し、以下を提供してください：
+1. 今日の気分・心の状態への共感と受け止め
+2. 最近の気持ちの変化パターン（良い変化も含めて）
+3. 今日おすすめの過ごし方（瞑想、散歩、感謝の時間など）
+4. 心が軽くなる具体的なアドバイス1〜2つ
+やさしく寄り添うような言葉で、わかりやすく伝えてください。難しい用語は避けてください。日本語で回答。`,
+      weekly: `65歳女性ユーザーの1週間の心の記録を振り返ってください。気分の変化、良かった日とそうでない日のパターン、心の成長を認め、来週に向けた穏やかな提案をしてください。温かい言葉でお願いします。日本語で回答。`
     },
     health: {
-      daily: `You are a medical knowledge specialist. Analyze the user's health data and provide:
-1. Health status assessment based on reported symptoms and vitals
-2. Pattern recognition (triggers, correlations)
-3. Evidence-based recommendations
-4. Specific actionable steps (supplements, lifestyle changes, when to see a doctor)
-IMPORTANT: Always note that this is informational only - consult a physician for medical decisions.
-Respond in the user's language.`,
-      weekly: `Review the past week's health data comprehensively. Identify trends in symptoms, vital signs, sleep, nutrition, and activity. Provide a weekly health report with specific recommendations.`
+      daily: `あなたは健康管理の専門家です。65歳の女性ユーザーの健康データ（症状、バイタル、薬、睡眠、食事、運動など）を分析し、以下を提供してください：
+1. 今日の体調の評価とお声がけ
+2. 気になる症状やバイタルの変化
+3. かかりつけ医に相談すべきポイント（あれば）
+4. 今日できる具体的な健康アクション1〜3つ（食事、運動、休息など）
+※これは参考情報です。健康上の判断は必ずかかりつけ医にご相談ください。
+やさしくわかりやすい日本語で回答してください。`,
+      weekly: `65歳女性ユーザーの1週間の健康データを総合的に振り返ってください。症状・バイタル・睡眠・食事・運動の傾向を分析し、良かった点を褒め、改善点をやさしく提案してください。かかりつけ医に相談すべき事項があれば明記。日本語で回答。`
     },
     time: {
-      daily: `You are a productivity and time management expert. Analyze the user's time usage data and provide:
-1. Time allocation analysis
-2. Productivity patterns
-3. Optimization suggestions
-4. Specific scheduling recommendations for tomorrow
-Respond in the user's language. Be practical and actionable.`,
-      weekly: `Review the past week's time usage data. Provide analysis of time allocation across categories, identify time wasters, and suggest an optimized schedule template for the coming week.`
+      daily: `あなたは暮らしのアドバイザーです。65歳の女性ユーザーの1日の過ごし方データを見て、以下を提供してください：
+1. 今日の過ごし方への感想（頑張りを認める）
+2. 休息と活動のバランスについて
+3. 明日のおすすめの過ごし方
+4. 楽しみや生きがいにつながる提案1つ
+無理のない範囲で、心豊かな毎日を過ごすためのアドバイスをお願いします。日本語で回答。`,
+      weekly: `65歳女性ユーザーの1週間の時間の使い方を振り返ってください。休息・趣味・外出・家事などのバランスを分析し、充実した日々のための提案をやさしくしてください。日本語で回答。`
     },
     contribution: {
-      daily: `You are a career and professional development advisor. Analyze the user's work/contribution data and provide:
-1. Task prioritization recommendations
-2. Skill development suggestions
-3. Career trajectory insights
-4. Specific action items for today
-Respond in the user's language.`,
-      weekly: `Review the past week's work and contribution data. Assess progress on goals and projects, identify bottlenecks, and provide strategic recommendations for the coming week.`
+      daily: `あなたは生きがいアドバイザーです。65歳の女性ユーザーの活動・貢献データを見て、以下を提供してください：
+1. 今日の活動や頑張りへの共感
+2. 経験と知恵を活かせる場面の提案
+3. 社会とのつながりを感じられるアクション1つ
+4. 新しい発見や学びの機会の提案
+人生経験を尊重し、温かい言葉で励ましてください。日本語で回答。`,
+      weekly: `65歳女性ユーザーの1週間の活動と社会貢献を振り返ってください。達成したことを称え、来週の生きがいにつながる提案をしてください。日本語で回答。`
     },
     trust: {
-      daily: `You are a relationship and communication expert. Analyze the user's relationship/trust data and provide:
-1. Relationship health assessment
-2. Communication pattern insights
-3. Network development suggestions
-4. Specific relationship-building actions for today
-Respond in the user's language. Be emotionally intelligent and practical.`,
-      weekly: `Review the past week's relationship interactions and trust-building activities. Identify patterns, suggest improvements in communication, and recommend specific actions for deepening key relationships.`
+      daily: `あなたは65歳女性ユーザーの人間関係をサポートするアドバイザーです。ユーザーの連絡先リスト、距離感レベル（1=パートナー・家族〜5=ゆるいつながり）、やりとり履歴、ギフト履歴を分析し：
+1. 今日連絡を取るべき人（誕生日が近い、しばらく会っていないなど）
+2. 最近のやりとりで良かった点
+3. 関係を深めるための具体的なアクション1つ（手紙、電話、贈り物など）
+4. 距離感レベルに応じた適切なコミュニケーション提案
+やさしく、押しつけがましくない言葉でお願いします。日本語で回答。`,
+      weekly: `65歳女性ユーザーの1週間の人間関係を振り返ってください。誰とどんなやりとりがあったか、来週誕生日を迎える方はいるか、しばらく連絡していない大切な方はいるか分析し、具体的な連絡・贈り物の提案をしてください。日本語で回答。`,
+      // 連絡先情報リッチ化プロンプト
+      enrich_contact: `ユーザーの連絡先リストに以下の方がいます。名前、住所、会社名、役職などの情報から、ウェブ上の公開情報（LinkedIn、会社HP、ニュース記事、SNSなど）を使って、この方についてわかる情報を補完してください。
+提供する情報：
+1. 推定される現在の役職・所属
+2. 公開されているプロフィール情報
+3. 最近のニュースや活動（あれば）
+4. この方との関係を深めるためのヒント
+※プライバシーに配慮し、公開情報のみを使用してください。不確かな情報は「推定」と明記してください。日本語で回答。`
     },
     assets: {
-      daily: `You are a financial advisor and investment analyst. Analyze the user's financial data and provide:
-1. Portfolio performance summary
-2. Risk assessment
-3. Investment opportunity suggestions
-4. Specific financial actions to consider
-IMPORTANT: This is informational only - consult a licensed financial advisor for investment decisions.
-Respond in the user's language.`,
-      weekly: `Review the past week's financial activities and portfolio performance. Provide a comprehensive financial report with trend analysis, risk assessment, and strategic recommendations.`
+      daily: `あなたは資産管理の相談相手です。65歳の女性ユーザーの資産・収支データを見て、以下を提供してください：
+1. 現在の資産状況の簡潔なまとめ
+2. 収入と支出のバランスについて
+3. 老後の安心に向けた具体的なアドバイス1〜2つ
+4. 注意すべきポイント（あれば）
+※これは参考情報です。投資判断は必ず専門家にご相談ください。
+難しい金融用語は避けて、わかりやすい日本語で回答してください。`,
+      weekly: `65歳女性ユーザーの1週間の資産・収支を振り返ってください。収支バランス、資産の変動、注意点をわかりやすくまとめ、安心できる資産管理のアドバイスをしてください。日本語で回答。`,
+      // VMハンズオン銘柄分析プロンプト（管理者設定・更新可能）
+      stock_analysis: `あなたはVMハンズオン（Valuation Matrix）の統合分析エージェント。データ収集から分析まで一気通貫で実行し、最終成果物として【フルレポート（0〜⑩章）＋可視化グラフ8枚】を出力せよ。データ羅列は不可。投資判断に使えるレポートとグラフが唯一の納品物。分析は一次資料と四半期系列に厳格に基づき、推測・楽観バイアスを排除する。出力はすべて日本語。
+
+COMPANY: <ユーザーが入力した銘柄名/ティッカー>
+TIME_NOW: <現在日付>
+
+━━ STEP 1：データ収集（推論なし・一次資料優先）━━
+【実行順序の厳守】STEP1完了後にSTEP2へ。STEP2中に不足が判明した場合のみ追加収集する。
+
+【絶対ルール】推測禁止（不明=null）。正本はFIN_DATA、不足時はEDINET/TDnet/SEC/公式IR PDF/XBRLを最優先し出典を必ず残す。四半期ベース（標準5年分＝20Q、最低3年分＝12Q）最優先。不可なら半期→年次で代替し欠損フラグを立てる。会計基準（J-GAAP/IFRS/US-GAAP）の差異を注記。FCF＝CFO+CFI。国別規制不明はfail-closed。優先順：決算短信/説明資料→有報/10-K→補足資料/Q&A→株式情報→ニュース。根拠一次資料3件未満の項目はconfidence≤3。
+
+【収集項目】
+A) 企業基本：legal_name/ticker/exchange/status/IR_URL/peers3〜10社（財務指標も収集）
+B) 財務（四半期5年分＝20Q標準、最低12Q）P/L：revenue/gross_profit/SG&A/operating_income/net_income/EBITDA。B/S：総資産/純資産/現金/有利子負債/AR/在庫/AP/のれん・無形資産。C/F：CFO/CFI/CFF/CAPEX（欠損フラグ必須）・希薄化後株数（四半期）
+C) 市場：株価/時価総額/出来高/beta/配当・自社株買い実績
+D) KPI：説明資料記載のKPI（ARR/NRR/ARPU等）。「語るKPI」vs「本質KPI」を出典付きで列挙
+E) コーポレートアクション（時系列）：増資/CB・ワラント/自社株買い/M&A/監査変更/訂正等・希薄化影響
+F) ガバナンス/株主：役員構成・持株・顔出し有無（true/false/unknown）・主要株主比率
+G) ビジネスモデル根拠：顧客/提供価値/課金/競合/規制・制度（一次資料優先）
+H) ニュース素材（直近5〜15件）：価値影響（FCF/ROIC）/株価影響（需給）で分類・重要度付記
+
+━━ STEP 2：フルレポート（0〜⑩）+ グラフ出力 ━━
+
+【最重要ルール】根拠のない推測禁止。粉飾は断定しない（✅/⚠/⛔）。計算式・途中式を省略しない。計算不能は「算出不可」+不足データ列挙。定性70%：財務30%。各章「定性→指標→反証」の順。「株価＝価値+相場+信用」で分解。ニュース二軸（価値影響×株価影響）を必ず含める。confidence：代替時は上限8・C/F欠損は上限6。初出専門用語は（日本語注釈）付き。
+
+【絶対省略禁止の3論点】①誠実さ（粉飾・チート可能性）②割安度（DCF+マルチプル+ピア比較）③進化可能性（7領域+ティッピングポイント）
+
+0) スコアカード：①〜⑧を★1〜★10で一覧。valueスコア（①〜④）・changeスコア（⑤〜⑦）を明示。
+① 粉飾可能性【省略禁止】：四半期系列でCFO<NI/資産増>利益増/DSO・DIO・DPO・CCC/無形膨張/特損の繰り返し/監査変更/訂正を確認。✅/⚠/⛔判定。
+② 割安度【省略禁止】：P/FCF/EV・EBITDA/P/E/P/B/配当・自社株。ピア比較。正規DCF（FCFF・5年Base/Bull/Bear・WACC=CAPMベース・3×3感度表）。
+③ 事業構造：BMラベル。ROIC/WACC5年・スプレッド推移。ビジネスシステム。CFM四象限。
+④ 経営者分析：CEO/役員/取締役会独立性/報酬/持株/顔出し/後継リスク。
+⑤ 進化・退化【省略禁止】：7領域（プロダクト/VC/顧客/BM/組織/経営力/社格）+経営民度で評価。自走化点を四半期単位で予測。
+⑥ 株価触媒：上昇・下落3〜10個ずつ。ニュース二軸で整理。
+⑦ 価値創造（MECE）：各施策がROIC↑/WACC↓/Spread↑のどれか明記。
+⑧ 会社への提案：M&A分析。IR質問10問。監視KPI3つ+撤退トリガー2つ。
+⑨ 事業の本質【500字厳守】
+⑩ 投資家向けレポート【1000〜3000字】
+
+【最終スコア】value/change/confidence各0〜10。total=value50%+change50%。
+【最終ACTION】BUY/HOLD/SELL/WATCHを1つに確定。
+
+【可視化グラフ8枚】ROICツリー/CFMマップ/PL推移/BS推移/CF推移/ROIC・WACC・スプレッド/DCF感度ヒートマップ/スコアカードレーダーチャート`
     },
-    // Cross-domain holistic analysis
-    holistic: `You are a life optimization advisor. Review data across all 6 life domains (Consciousness, Health, Time, Contribution, Trust, Assets) and provide:
-1. Overall life balance assessment
-2. Cross-domain correlations (e.g., sleep affecting productivity)
-3. Priority recommendations across domains
-4. A unified action plan for the coming week
-Respond in the user's language. Be holistic yet practical.`
+    // Cross-domain holistic analysis（65歳女性向け）
+    holistic: `あなたは人生の総合アドバイザーです。65歳の女性ユーザーの6つの領域（心の健康、体の健康、日々の過ごし方、生きがい・社会貢献、人間関係、資産管理）のデータを総合的に見て、以下を提供してください：
+1. 全体的な生活バランスの評価（良い点を先に伝える）
+2. 領域間の関連性（例：睡眠の質が気分に影響しているなど）
+3. 今最も大切にすべきこと1〜2つ
+4. 来週に向けた具体的な提案
+温かく寄り添いながら、わかりやすい言葉でお伝えください。日本語で回答。`
   },
 
   // ─── Inline Analysis Prompts ───
   inlinePrompts: {
-    quickInput: `The user has entered the following text about their life. Determine which domain(s) it relates to (consciousness, health, time, contribution, trust, assets) and provide:
-1. Brief acknowledgment
-2. Key insights
-3. 1-3 specific actionable recommendations
-Keep response concise (under 200 words). Respond in the user's language.
+    quickInput: `65歳の女性ユーザーがメッセージを入力しました。内容がどの領域（意識・健康・時間・貢献・信用・資産）に関するか判断し、以下を提供してください：
+1. 共感を込めた受け止め
+2. 気づきやアドバイス
+3. 具体的にできること1〜2つ
+200文字以内で、やさしい日本語で回答してください。
 Format as JSON: { "domains": [...], "response": "...", "actions": [...] }`,
 
-    imageAnalysis: `Analyze this image in the context of life management. It could be a meal photo, medical report, schedule, financial statement, etc. Provide relevant analysis and recommendations based on the content. Respond in the user's language.`
+    imageAnalysis: `65歳の女性ユーザーが画像をアップロードしました。食事の写真、薬の写真、健康診断結果、証券会社の画面、レシートなど、内容を分析してわかりやすくアドバイスしてください。専門用語には説明を添えてください。日本語で回答。`,
+
+    stockAnalysis: `ユーザーが銘柄名を入力しました。その銘柄についてVMハンズオン分析フレームワークに基づいた簡易分析を提供してください。フル分析はアクションページから実行できます。ここでは以下の概要を提供：
+1. 企業概要（何をしている会社か、わかりやすく）
+2. 直近の業績トレンド
+3. 投資判断の要点3つ
+4. リスク要因
+※投資は自己責任です。必ず専門家にご相談ください。日本語で回答。`
   },
 
   // ─── Affiliate Config ───

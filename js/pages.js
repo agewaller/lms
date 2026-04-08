@@ -101,6 +101,24 @@ var Pages = {
       </div>`;
     }
 
+    // ─── Domain-specific widgets ───
+
+    // Time domain: Calendar widget
+    if (domain === 'time' && typeof CalendarIntegration !== 'undefined') {
+      html += CalendarIntegration.renderWidget();
+    }
+
+    // Trust domain: Social graph + upcoming birthdays
+    if (domain === 'trust') {
+      html += this.renderSocialGraph();
+      html += this.renderUpcomingBirthdays();
+    }
+
+    // Assets domain: Stock analysis quick input
+    if (domain === 'assets') {
+      html += this.renderStockAnalysisWidget();
+    }
+
     // Domain disclaimers
     if (domain === 'health') {
       html += `<div class="disclaimer">${i18n.t('disclaimer_health')}</div>`;
@@ -110,6 +128,96 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Social Graph (Trust domain) ───
+  renderSocialGraph() {
+    const contacts = store.get('trust_contacts') || [];
+    if (contacts.length === 0) {
+      return `<div class="social-graph-section">
+        <h3>つながりの地図</h3>
+        ${Components.emptyState('🤝', 'まだ連絡先がありません', '「記録する」から連絡先を追加、または取り込んでください')}
+      </div>`;
+    }
+
+    const levels = CONFIG.domains.trust.distanceLevels;
+    const grouped = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+    contacts.forEach(c => {
+      const d = parseInt(c.distance) || 4;
+      if (grouped[d]) grouped[d].push(c);
+    });
+
+    let html = `<div class="social-graph-section">
+      <h3>つながりの地図（${contacts.length}人）</h3>
+      <div class="social-graph">
+        <div class="graph-center">あなた</div>`;
+
+    // Concentric rings
+    [1, 2, 3, 4, 5].forEach(level => {
+      const people = grouped[level] || [];
+      if (people.length === 0) return;
+      html += `<div class="graph-ring ring-${level}" style="--ring-color: ${levels[level].color}">
+        <div class="ring-label">${levels[level].description}（${people.length}人）</div>
+        <div class="ring-people">
+          ${people.slice(0, 8).map(p => `<span class="ring-person" title="${p.name}">${(p.name || '').substring(0, 3)}</span>`).join('')}
+          ${people.length > 8 ? `<span class="ring-more">+${people.length - 8}</span>` : ''}
+        </div>
+      </div>`;
+    });
+
+    html += `</div></div>`;
+    return html;
+  },
+
+  // ─── Upcoming Birthdays (Trust domain) ───
+  renderUpcomingBirthdays() {
+    const contacts = store.get('trust_contacts') || [];
+    const today = new Date();
+    const upcoming = contacts
+      .filter(c => c.birthday)
+      .map(c => {
+        const bd = new Date(c.birthday);
+        const next = new Date(today.getFullYear(), bd.getMonth(), bd.getDate());
+        if (next < today) next.setFullYear(next.getFullYear() + 1);
+        const daysUntil = Math.ceil((next - today) / (1000 * 60 * 60 * 24));
+        return { ...c, daysUntil, nextBirthday: next };
+      })
+      .filter(c => c.daysUntil <= 30)
+      .sort((a, b) => a.daysUntil - b.daysUntil);
+
+    if (upcoming.length === 0) return '';
+
+    let html = `<div class="birthdays-section">
+      <h3>🎂 ${i18n.t('upcoming_birthdays')}</h3>
+      <div class="birthday-list">`;
+
+    upcoming.forEach(c => {
+      const dateStr = c.nextBirthday.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
+      const label = c.daysUntil === 0 ? '今日！' : `あと${c.daysUntil}日`;
+      html += `<div class="birthday-item ${c.daysUntil <= 3 ? 'birthday-soon' : ''}">
+        <span class="birthday-name">${c.name}</span>
+        <span class="birthday-date">${dateStr}（${label}）</span>
+        <span class="birthday-distance">${CONFIG.domains.trust.distanceLevels[c.distance]?.description || ''}</span>
+      </div>`;
+    });
+
+    html += `</div></div>`;
+    return html;
+  },
+
+  // ─── Stock Analysis Widget (Assets domain) ───
+  renderStockAnalysisWidget() {
+    return `<div class="stock-analysis-section">
+      <h3>📈 ${i18n.t('stock_investment')}</h3>
+      <p>銘柄名またはティッカーを入力すると、詳しい分析をご覧いただけます。</p>
+      <div class="stock-input-bar">
+        <input type="text" id="stockTicker" class="form-input" placeholder="例：トヨタ、7203、AAPL">
+        <button class="btn btn-primary" onclick="app.analyzeStock()">
+          ${i18n.t('analyze_stock')}
+        </button>
+      </div>
+      <div id="stockResult"></div>
+    </div>`;
   },
 
   // ─── Domain-specific stat cards ───
@@ -164,22 +272,25 @@ var Pages = {
       case 'trust': {
         const interactions = store.getDomainData('trust', 'interactions', 7);
         const contacts = store.get('trust_contacts') || [];
-        const avgQuality = interactions.length > 0 ?
-          (interactions.reduce((s, e) => s + (e.quality || 0), 0) / interactions.length).toFixed(1) : '-';
-        stats.push(Components.statCard(i18n.t('contacts'), contacts.length, null, '👤'));
+        const gifts = store.getDomainData('trust', 'gifts', 30);
+        const close = contacts.filter(c => parseInt(c.distance) <= 2).length;
+        stats.push(Components.statCard(i18n.t('contacts'), contacts.length + '人', null, '👤'));
+        stats.push(Components.statCard('親しい方', close + '人', null, '💕'));
         stats.push(Components.statCard(i18n.t('interactions'), interactions.length + i18n.t('items'), null, '💬'));
-        stats.push(Components.statCard(i18n.t('quality'), avgQuality + '/10', null, '⭐'));
+        stats.push(Components.statCard(i18n.t('gifts'), gifts.length + i18n.t('items'), null, '🎁'));
         break;
       }
       case 'assets': {
+        const stocks = store.get('assets_stocks') || [];
         const portfolio = store.get('assets_portfolio') || [];
         const income = store.getDomainData('assets', 'income', 30);
         const expenses = store.getDomainData('assets', 'expenses', 30);
         const totalIncome = income.reduce((s, e) => s + (e.amount || 0), 0);
         const totalExpenses = expenses.reduce((s, e) => s + (e.amount || 0), 0);
-        stats.push(Components.statCard(i18n.t('portfolio'), portfolio.length + i18n.t('items'), null, '📈'));
-        stats.push(Components.statCard(i18n.t('income'), totalIncome.toLocaleString(), null, '💵'));
-        stats.push(Components.statCard(i18n.t('expenses'), totalExpenses.toLocaleString(), null, '🧾'));
+        stats.push(Components.statCard(i18n.t('stock_investment'), stocks.length + '銘柄', null, '📈'));
+        stats.push(Components.statCard(i18n.t('portfolio'), portfolio.length + i18n.t('items'), null, '📊'));
+        stats.push(Components.statCard(i18n.t('income'), totalIncome.toLocaleString() + '円', null, '💵'));
+        stats.push(Components.statCard(i18n.t('expenses'), totalExpenses.toLocaleString() + '円', null, '🧾'));
         break;
       }
     }
@@ -229,9 +340,26 @@ var Pages = {
         `).join('')}
       </div>
 
-      <!-- File upload -->
+      <!-- Trust domain: Contact import -->
+      ${domain === 'trust' ? `
+      <div class="contact-import-section">
+        <h3>📥 ${i18n.t('import_contacts')}</h3>
+        <p>電話帳やCSVファイル、名刺データなどから連絡先をまとめて取り込めます。</p>
+        <div class="import-buttons">
+          <input type="file" id="contactImport" accept=".csv,.vcf,.json,.xlsx" style="display:none" onchange="app.importContacts(event)">
+          <button class="btn btn-secondary" onclick="document.getElementById('contactImport').click()">
+            📄 CSV / vCard / Excelから取り込む
+          </button>
+          <button class="btn btn-secondary" onclick="app.enrichContacts()">
+            🔍 ${i18n.t('enrich_contact')}
+          </button>
+        </div>
+      </div>` : ''}
+
+      <!-- File upload (photos, documents, screenshots) -->
       <div class="file-upload-section">
-        <h3>📎 ${i18n.t('file_upload')}</h3>
+        <h3>📎 ${i18n.t('file_upload')}（写真・書類など）</h3>
+        <p>写真や画面キャプチャ、PDFなどをアップロードできます。</p>
         <input type="file" id="fileUpload" accept="image/*,.csv,.json,.xml,.pdf" onchange="app.handleFileUpload(event, '${domain}')">
       </div>
 

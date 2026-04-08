@@ -56,14 +56,15 @@ var Store = class Store {
       contribution_reviews: [],   // performance reviews
 
       // ─── Trust (信用) ───
-      trust_contacts: [],       // relationships
+      trust_contacts: [],       // relationships with distance levels
       trust_interactions: [],   // interaction logs
-      trust_networks: [],       // network maps
-      trust_goals: [],          // relationship goals
+      trust_gifts: [],          // gift tracking
+      trust_groups: [],         // relationship groups
 
       // ─── Assets (資産) ───
-      assets_portfolio: [],     // investment holdings
-      assets_transactions: [],  // buy/sell/income/expense
+      assets_overview: [],      // overall asset situation
+      assets_stocks: [],        // stock investments
+      assets_portfolio: [],     // all assets
       assets_income: [],        // income streams
       assets_expenses: [],      // expense tracking
       assets_goals: [],         // financial goals
@@ -159,10 +160,10 @@ var Store = class Store {
       'contribution_tasks', 'contribution_goals', 'contribution_skills',
       'contribution_projects', 'contribution_reviews',
       // Trust
-      'trust_contacts', 'trust_interactions', 'trust_networks', 'trust_goals',
+      'trust_contacts', 'trust_interactions', 'trust_gifts', 'trust_groups',
       // Assets
-      'assets_portfolio', 'assets_transactions', 'assets_income',
-      'assets_expenses', 'assets_goals',
+      'assets_overview', 'assets_stocks', 'assets_portfolio',
+      'assets_income', 'assets_expenses', 'assets_goals',
       // Shared
       'analysisHistory', 'recommendations', 'actionItems',
       'conversationHistory', 'calendarEvents', 'latestFeedback',

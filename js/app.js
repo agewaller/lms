@@ -303,6 +303,160 @@ var App = class App {
     Components.showToast('Action: ' + type, 'info');
   }
 
+  // ─── Stock Analysis (Assets domain) ───
+  async analyzeStock() {
+    const input = document.getElementById('stockTicker');
+    if (!input || !input.value.trim()) return;
+
+    const ticker = input.value.trim();
+    const resultEl = document.getElementById('stockResult');
+    if (resultEl) resultEl.innerHTML = Components.loading('銘柄を分析中です...');
+
+    try {
+      const prompt = CONFIG.prompts.assets.stock_analysis || CONFIG.inlinePrompts.stockAnalysis;
+      const result = await AIEngine.analyze('assets', 'stock_analysis', {
+        text: `銘柄: ${ticker}\n日付: ${new Date().toISOString().slice(0, 10)}`
+      });
+
+      if (resultEl) {
+        resultEl.innerHTML = `<div class="stock-result">
+          <h3>📊 ${ticker} の分析結果</h3>
+          <div class="analysis-content">${Components.formatMarkdown(result)}</div>
+          <div class="disclaimer">${i18n.t('disclaimer_assets')}</div>
+        </div>`;
+      }
+    } catch (e) {
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+    }
+  }
+
+  // ─── Contact Import (Trust domain) ───
+  async importContacts(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target.result;
+      let contacts = [];
+
+      if (file.name.endsWith('.csv')) {
+        contacts = this.parseCSVContacts(content);
+      } else if (file.name.endsWith('.vcf')) {
+        contacts = this.parseVCardContacts(content);
+      } else if (file.name.endsWith('.json')) {
+        try { contacts = JSON.parse(content); } catch (err) { /* ignore */ }
+      }
+
+      if (contacts.length > 0) {
+        contacts.forEach(c => {
+          store.addDomainEntry('trust', 'contacts', {
+            name: c.name || c.Name || '',
+            furigana: c.furigana || c.Furigana || '',
+            phone: c.phone || c.Phone || c.TEL || '',
+            email: c.email || c.Email || '',
+            address: c.address || c.Address || '',
+            company: c.company || c.Company || c.Organization || '',
+            title: c.title || c.Title || '',
+            birthday: c.birthday || c.Birthday || '',
+            distance: c.distance || '4',
+            relationship: c.relationship || 'other',
+            notes: c.notes || ''
+          });
+        });
+        Components.showToast(`${contacts.length}件の連絡先を取り込みました`, 'success');
+        this.renderApp();
+      } else {
+        Components.showToast('取り込める連絡先が見つかりませんでした', 'error');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  parseCSVContacts(csv) {
+    const lines = csv.split('\n').filter(l => l.trim());
+    if (lines.length < 2) return [];
+
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    return lines.slice(1).map(line => {
+      const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = values[i] || ''; });
+      return obj;
+    });
+  }
+
+  parseVCardContacts(vcf) {
+    const contacts = [];
+    const cards = vcf.split('BEGIN:VCARD');
+
+    cards.forEach(card => {
+      if (!card.trim()) return;
+      const contact = {};
+      const lines = card.split('\n');
+      lines.forEach(line => {
+        const l = line.trim();
+        if (l.startsWith('FN:') || l.startsWith('FN;')) contact.name = l.split(':').slice(1).join(':');
+        else if (l.startsWith('TEL')) contact.phone = l.split(':').slice(1).join(':');
+        else if (l.startsWith('EMAIL')) contact.email = l.split(':').slice(1).join(':');
+        else if (l.startsWith('ADR')) contact.address = l.split(':').slice(1).join(':').replace(/;/g, ' ');
+        else if (l.startsWith('ORG')) contact.company = l.split(':').slice(1).join(':');
+        else if (l.startsWith('TITLE')) contact.title = l.split(':').slice(1).join(':');
+        else if (l.startsWith('BDAY')) contact.birthday = l.split(':').slice(1).join(':');
+      });
+      if (contact.name) contacts.push(contact);
+    });
+    return contacts;
+  }
+
+  // ─── Enrich Contacts via AI ───
+  async enrichContacts() {
+    const contacts = store.get('trust_contacts') || [];
+    if (contacts.length === 0) {
+      Components.showToast('まだ連絡先がありません', 'info');
+      return;
+    }
+
+    const unenriched = contacts.filter(c => !c._enriched).slice(0, 5);
+    if (unenriched.length === 0) {
+      Components.showToast('すべての連絡先の情報は最新です', 'info');
+      return;
+    }
+
+    Components.showToast(`${unenriched.length}名の情報を調べています...`, 'info');
+
+    for (const contact of unenriched) {
+      try {
+        const info = `名前: ${contact.name}, 会社: ${contact.company || '不明'}, 役職: ${contact.title || '不明'}, 住所: ${contact.address || '不明'}`;
+        const result = await AIEngine.analyze('trust', 'enrich_contact', { text: info });
+        contact._enriched = true;
+        contact._enrichData = result;
+        contact._enrichedAt = new Date().toISOString();
+      } catch (e) {
+        console.warn('Enrich failed for', contact.name, e);
+      }
+    }
+
+    store.set('trust_contacts', [...contacts]);
+    Components.showToast('情報を更新しました', 'success');
+    this.renderApp();
+  }
+
+  // ─── Calendar import (Time domain) ───
+  importCalendarFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (typeof CalendarIntegration !== 'undefined') {
+        CalendarIntegration.importICS(e.target.result);
+        this.renderApp();
+      }
+    };
+    reader.readAsText(file);
+  }
+
   // ─── Category Tab Switching ───
   showCategory(category, btn) {
     // Update tab active state
