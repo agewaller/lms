@@ -52,18 +52,34 @@ var AIEngine = {
     }
   },
 
-  // ─── Build system prompt ───
+  // ─── Build system prompt (未病ダイアリー準拠: flat key lookup) ───
   buildSystemPrompt(domain, promptType) {
-    // Check for admin custom prompts first
+    // Custom prompts override (from admin panel)
     const custom = store.get('customPrompts') || {};
-    if (custom[domain]?.[promptType]) return custom[domain][promptType];
 
-    // Use config prompts
-    if (promptType === 'holistic') return CONFIG.prompts.holistic;
-    if (promptType === 'quickInput') return CONFIG.inlinePrompts.quickInput;
-    if (promptType === 'imageAnalysis') return CONFIG.inlinePrompts.imageAnalysis;
+    // Build the flat key: {domain}_{type}
+    // Legacy aliases for backward compatibility
+    let key;
+    if (promptType === 'holistic') key = 'universal_holistic';
+    else if (promptType === 'quickInput' || promptType === 'text_analysis') key = 'text_analysis';
+    else if (promptType === 'imageAnalysis' || promptType === 'image_analysis') key = 'image_analysis';
+    else if (promptType === 'transcript_analysis') key = 'consciousness_transcript';
+    else if (promptType === 'stock_analysis') key = 'assets_stock';
+    else if (promptType === 'enrich_contact') key = 'relationship_enrich';
+    else if (domain && promptType) key = `${domain}_${promptType}`;
+    else if (domain) key = `${domain}_daily`;
+    else key = 'universal_daily';
 
-    return CONFIG.prompts[domain]?.[promptType] || CONFIG.prompts[domain]?.daily || '';
+    // Custom admin-edited prompt
+    if (custom[key]?.prompt) return custom[key].prompt;
+
+    // Config prompts (object shape with .prompt)
+    const p = CONFIG.prompts[key] || CONFIG.inlinePrompts[key];
+    if (p && typeof p === 'object') return p.prompt || '';
+    if (typeof p === 'string') return p;  // backward compat
+
+    // Fallback to universal daily
+    return CONFIG.prompts.universal_daily?.prompt || '';
   },
 
   // ─── Build user message with context ───

@@ -194,18 +194,24 @@ var App = class App {
     const avatarEl = document.getElementById('userAvatar');
     const domainLabel = document.getElementById('currentDomainLabel');
 
-    if (nameEl) nameEl.textContent = user?.displayName || user?.email || '';
-    if (avatarEl && user?.photoURL) avatarEl.src = user.photoURL;
+    if (nameEl) nameEl.textContent = user?.displayName || user?.email || 'ゲスト';
+    if (avatarEl) {
+      if (user?.photoURL) {
+        avatarEl.innerHTML = `<img src="${user.photoURL}" alt="">`;
+      } else {
+        avatarEl.textContent = (user?.displayName || user?.email || '?').charAt(0).toUpperCase();
+      }
+    }
     if (domainLabel) {
       const d = store.get('currentDomain');
-      domainLabel.textContent = `${CONFIG.domains[d]?.icon || ''} ${i18n.t(d)}`;
+      domainLabel.textContent = i18n.t(d);
     }
 
-    // Admin link
+    // Admin mode: show admin nav items via body class
+    const isAdmin = FirebaseBackend.isAdmin();
+    document.body.classList.toggle('is-admin', isAdmin);
     const adminLink = document.getElementById('adminLink');
-    if (adminLink) {
-      adminLink.style.display = FirebaseBackend.isAdmin() ? 'block' : 'none';
-    }
+    if (adminLink) adminLink.style.display = isAdmin ? 'flex' : 'none';
   }
 
   // ─── Quick Input ───
@@ -974,28 +980,106 @@ var App = class App {
     reader.readAsText(file);
   }
 
-  // ─── Admin Methods ───
-  loadAdminPrompt() {
-    const domain = document.getElementById('adminPromptDomain')?.value;
-    const type = document.getElementById('adminPromptType')?.value;
-    const custom = store.get('customPrompts') || {};
-    const textarea = document.getElementById('adminPromptText');
+  // ─── Admin Methods (未病ダイアリー準拠: tabbed) ───
 
-    if (textarea) {
-      textarea.value = custom[domain]?.[type] || CONFIG.prompts[domain]?.[type] || '';
+  setAdminTab(tab) {
+    store.set('adminTab', tab);
+    this.renderApp();
+  }
+
+  filterPrompts() {
+    const search = document.getElementById('promptSearch')?.value || '';
+    const domain = document.getElementById('promptDomainFilter')?.value || '';
+    store.set('adminPromptFilter', { search, domain });
+    this.renderApp();
+  }
+
+  editPrompt(key) {
+    const el = document.getElementById('edit-' + key);
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+
+  cancelPromptEdit(key) {
+    const el = document.getElementById('edit-' + key);
+    if (el) el.style.display = 'none';
+  }
+
+  savePrompt(key) {
+    const editEl = document.getElementById('edit-' + key);
+    if (!editEl) return;
+
+    const fields = editEl.querySelectorAll('[data-field]');
+    const current = CONFIG.prompts[key] || {};
+    const updated = { ...current };
+    fields.forEach(f => { updated[f.dataset.field] = f.value; });
+    updated.active = current.active !== false;
+
+    // Update in-memory CONFIG
+    CONFIG.prompts[key] = updated;
+
+    // Save as custom (overrides)
+    const custom = store.get('customPrompts') || {};
+    custom[key] = updated;
+    store.set('customPrompts', custom);
+
+    Components.showToast('保存しました', 'success');
+    editEl.style.display = 'none';
+    this.renderApp();
+  }
+
+  deletePrompt(key) {
+    if (!confirm('このプロンプトを削除しますか？')) return;
+    delete CONFIG.prompts[key];
+    const custom = store.get('customPrompts') || {};
+    delete custom[key];
+    store.set('customPrompts', custom);
+    Components.showToast('削除しました', 'info');
+    this.renderApp();
+  }
+
+  addNewPrompt() {
+    const key = prompt('プロンプトのキー名を入力（例: work_custom）');
+    if (!key) return;
+    if (CONFIG.prompts[key]) {
+      Components.showToast('そのキーは既に存在します', 'error');
+      return;
+    }
+    CONFIG.prompts[key] = {
+      name: '新しいプロンプト',
+      domain: 'universal',
+      description: '',
+      schedule: 'manual',
+      active: true,
+      prompt: ''
+    };
+    this.renderApp();
+  }
+
+  selectModel(modelId) {
+    store.set('selectedModel', modelId);
+    Components.showToast('モデルを変更しました', 'success');
+    this.renderApp();
+  }
+
+  async testConnection() {
+    const resultEl = document.getElementById('connectionResult');
+    if (resultEl) resultEl.innerHTML = '<div style="padding:10px;">接続テスト中...</div>';
+    try {
+      const result = await AIEngine.analyze(null, 'text_analysis', { text: 'テスト' });
+      if (resultEl) resultEl.innerHTML = '<div class="toast toast-success" style="position:static;opacity:1;margin-top:10px;">✓ 接続成功</div>';
+    } catch (e) {
+      if (resultEl) resultEl.innerHTML = '<div class="toast toast-error" style="position:static;opacity:1;margin-top:10px;">✗ ' + e.message + '</div>';
     }
   }
 
-  saveAdminPrompt() {
-    const domain = document.getElementById('adminPromptDomain')?.value;
-    const type = document.getElementById('adminPromptType')?.value;
-    const text = document.getElementById('adminPromptText')?.value;
-
-    const custom = store.get('customPrompts') || {};
-    if (!custom[domain]) custom[domain] = {};
-    custom[domain][type] = text;
-    store.set('customPrompts', custom);
-    Components.showToast(i18n.t('saved'), 'success');
+  clearApiKeys() {
+    if (!confirm('すべてのAPIキーを削除しますか？')) return;
+    ['anthropic', 'openai', 'google'].forEach(p => {
+      localStorage.removeItem('lms_apikey_' + p);
+    });
+    store.state._apiKeys = {};
+    Components.showToast('削除しました', 'info');
+    this.renderApp();
   }
 
   saveAffiliateConfig() {
@@ -1009,22 +1093,53 @@ var App = class App {
       }
     });
     store.set('affiliateConfig', CONFIG.affiliate);
-    Components.showToast(i18n.t('saved'), 'success');
+    Components.showToast('保存しました', 'success');
   }
 
   saveFirebaseConfig() {
     CONFIG.firebase.apiKey = document.getElementById('fbApiKey')?.value || '';
     CONFIG.firebase.authDomain = document.getElementById('fbAuthDomain')?.value || '';
     CONFIG.firebase.projectId = document.getElementById('fbProjectId')?.value || '';
+    CONFIG.firebase.storageBucket = document.getElementById('fbStorageBucket')?.value || '';
+    CONFIG.firebase.messagingSenderId = document.getElementById('fbMessagingSenderId')?.value || '';
+    CONFIG.firebase.appId = document.getElementById('fbAppId')?.value || '';
     localStorage.setItem('lms_firebaseConfig', JSON.stringify(CONFIG.firebase));
-    Components.showToast(i18n.t('saved') + ' (reload required)', 'success');
+    Components.showToast('保存しました（再読み込みが必要です）', 'success');
+  }
+
+  clearFirebaseConfig() {
+    if (!confirm('Firebase設定を削除しますか？')) return;
+    localStorage.removeItem('lms_firebaseConfig');
+    Components.showToast('削除しました（再読み込みが必要です）', 'info');
   }
 
   saveWorkerUrl() {
     const url = document.getElementById('workerUrl')?.value || '';
     CONFIG.endpoints.anthropic = url;
     localStorage.setItem('lms_workerUrl', url);
-    Components.showToast(i18n.t('saved'), 'success');
+    Components.showToast('保存しました', 'success');
+  }
+
+  generateDemoData() {
+    if (!confirm('デモデータを生成しますか？既存データに追加されます。')) return;
+    // Generate sample entries for each domain
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      store.addDomainEntry('health', 'symptoms', { condition_level: 5 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
+      store.addDomainEntry('health', 'sleepData', { quality: 6 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
+    }
+    Components.showToast('デモデータを生成しました', 'success');
+    this.renderApp();
+  }
+
+  deleteAllData() {
+    if (!confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
+    if (!confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
+    store.clearAll();
+    Components.showToast('すべてのデータを削除しました', 'info');
+    window.location.reload();
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───
