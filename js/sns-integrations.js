@@ -235,7 +235,156 @@ var snsImport = {
     }).filter(c => c.name);
   },
 
+  // WhatsApp: チャットエクスポート (.txt)
+  // Format: [日付, 時刻] 名前: メッセージ
+  // または 日付, 時刻 - 名前: メッセージ
+  parseWhatsAppChat(text) {
+    const contactFreq = {};
+    const lines = text.split('\n');
+
+    // Common patterns across WhatsApp exports:
+    // [2026/04/09, 12:34:56] 山田太郎: こんにちは
+    // 09/04/2026, 12:34 - 山田太郎: こんにちは
+    const patterns = [
+      /^\[\d{2,4}[/.-]\d{1,2}[/.-]\d{1,4},?\s+\d{1,2}:\d{2}(?::\d{2})?\]\s+([^:]+?):/,
+      /^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4},?\s+\d{1,2}:\d{2}(?::\d{2})?\s+[-–]\s+([^:]+?):/
+    ];
+
+    lines.forEach(line => {
+      for (const pattern of patterns) {
+        const m = line.match(pattern);
+        if (m) {
+          const name = m[1].trim();
+          // Skip system messages / self
+          if (!name || name.length > 50 || /joined|left|changed/i.test(name)) continue;
+          contactFreq[name] = (contactFreq[name] || 0) + 1;
+          break;
+        }
+      }
+    });
+
+    return Object.entries(contactFreq)
+      .filter(([n, c]) => c >= 3) // 3+ messages to qualify
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 100)
+      .map(([name, count]) => ({
+        name,
+        source: 'whatsapp',
+        interactionCount: count,
+        distance: count >= 20 ? '2' : count >= 10 ? '3' : '4',
+        notes: `WhatsAppで${count}回やり取り`
+      }));
+  },
+
+  // LINE: チャットエクスポート (.txt)
+  // LINEの公式エクスポート形式はトーク単位なので、1ファイル=1人との会話
+  // フォーマット: [LINE] 山田太郎とのトーク 保存日時：...
+  // 日時 名前 メッセージ
+  parseLINEChat(text) {
+    const contactFreq = {};
+    const lines = text.split('\n');
+
+    // First line usually: "[LINE] 山田太郎とのトーク履歴" or "[LINE] Chat with 山田太郎"
+    let primaryContact = null;
+    const header = lines[0] || '';
+    const headerMatch = header.match(/\[LINE\]\s*(.+?)とのトーク|\[LINE\]\s*Chat with\s*(.+)/);
+    if (headerMatch) {
+      primaryContact = (headerMatch[1] || headerMatch[2] || '').trim();
+    }
+
+    // Tally names from message lines
+    // Format: "12:34\t名前\tメッセージ" or "12:34  名前  メッセージ"
+    const msgPattern = /^\d{1,2}:\d{2}[\s\t]+([^\s\t]+)[\s\t]+/;
+    lines.forEach(line => {
+      const m = line.match(msgPattern);
+      if (m) {
+        const name = m[1].trim();
+        if (!name) return;
+        contactFreq[name] = (contactFreq[name] || 0) + 1;
+      }
+    });
+
+    const results = [];
+    if (primaryContact) {
+      const count = contactFreq[primaryContact] || lines.length;
+      results.push({
+        name: primaryContact,
+        source: 'line',
+        interactionCount: count,
+        distance: count >= 50 ? '2' : '3',
+        notes: `LINEで${count}回やり取り（トークファイルから取り込み）`
+      });
+    }
+
+    // Also add other contacts found in the log (for group chats)
+    Object.entries(contactFreq)
+      .filter(([n]) => n !== primaryContact)
+      .filter(([n, c]) => c >= 3)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 50)
+      .forEach(([name, count]) => {
+        results.push({
+          name,
+          source: 'line',
+          interactionCount: count,
+          distance: count >= 20 ? '3' : '4',
+          notes: `LINEで${count}回やり取り`
+        });
+      });
+
+    return results;
+  },
+
+  // Telegram: JSON export from Telegram Desktop
+  parseTelegramExport(jsonText) {
+    try {
+      const data = JSON.parse(jsonText);
+      const results = [];
+
+      // Contacts list
+      if (data.contacts?.list) {
+        data.contacts.list.forEach(c => {
+          const name = [c.first_name, c.last_name].filter(Boolean).join(' ');
+          if (!name) return;
+          results.push({
+            name,
+            phone: c.phone_number || '',
+            source: 'telegram',
+            addedAt: c.date || null
+          });
+        });
+      }
+
+      // Chat participants (if this is a chats export)
+      if (data.chats?.list) {
+        const chatFreq = {};
+        data.chats.list.forEach(chat => {
+          if (chat.type === 'personal_chat' && chat.name) {
+            chatFreq[chat.name] = (chat.messages || []).length;
+          }
+        });
+        Object.entries(chatFreq).forEach(([name, count]) => {
+          if (!results.find(r => r.name === name)) {
+            results.push({
+              name,
+              source: 'telegram',
+              interactionCount: count,
+              distance: count >= 50 ? '2' : count >= 10 ? '3' : '4',
+              notes: `Telegramで${count}回やり取り`
+            });
+          }
+        });
+      }
+
+      return results;
+    } catch (e) {
+      return [];
+    }
+  },
+
   // Generic: import any SNS parser result to relationship_contacts
+  // Preserves per-entry distance/notes if provided by the parser,
+  // falls back to defaults otherwise.
   importContacts(contacts, sourceName) {
     if (!Array.isArray(contacts) || contacts.length === 0) return 0;
 
@@ -249,10 +398,10 @@ var snsImport = {
       const key = (c.name || '').toLowerCase() + '::' + (c.email || c.sns_account || '');
       if (existingKeys.has(key)) return;
       store.addDomainEntry('relationship', 'contacts', {
-        ...c,
         distance: '4',
         relationship: 'other',
-        notes: `${sourceName}から取り込み`
+        notes: `${sourceName}から取り込み`,
+        ...c  // parser-provided values override defaults
       });
       added++;
     });
@@ -270,6 +419,7 @@ var snsImport = {
         let source = 'unknown';
 
         try {
+          // Explicit filename-based detection
           if (name.includes('friends') && name.endsWith('.json')) {
             contacts = this.parseFacebookFriends(content);
             source = 'facebook';
@@ -282,13 +432,34 @@ var snsImport = {
           } else if (name.includes('connection') && name.endsWith('.csv')) {
             contacts = this.parseLinkedInConnections(content);
             source = 'linkedin';
+          } else if (name.includes('whatsapp') && name.endsWith('.txt')) {
+            contacts = this.parseWhatsAppChat(content);
+            source = 'whatsapp';
+          } else if ((name.includes('line') || name.includes('トーク')) && name.endsWith('.txt')) {
+            contacts = this.parseLINEChat(content);
+            source = 'line';
+          } else if (name.includes('telegram') && name.endsWith('.json')) {
+            contacts = this.parseTelegramExport(content);
+            source = 'telegram';
           } else if (name.endsWith('.json')) {
-            // Try Facebook first, then Instagram
-            contacts = this.parseFacebookFriends(content);
-            source = 'facebook';
+            // Try multiple JSON formats
+            contacts = this.parseTelegramExport(content);
+            source = 'telegram';
+            if (contacts.length === 0) {
+              contacts = this.parseFacebookFriends(content);
+              source = 'facebook';
+            }
             if (contacts.length === 0) {
               contacts = this.parseInstagramFollowing(content);
               source = 'instagram';
+            }
+          } else if (name.endsWith('.txt')) {
+            // Generic text: try WhatsApp, then LINE
+            contacts = this.parseWhatsAppChat(content);
+            source = 'whatsapp';
+            if (contacts.length === 0) {
+              contacts = this.parseLINEChat(content);
+              source = 'line';
             }
           } else if (name.endsWith('.csv')) {
             contacts = this.parseLinkedInConnections(content);

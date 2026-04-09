@@ -1308,13 +1308,13 @@ var Pages = {
         </div>
       </div>
 
-      <!-- Facebook / Instagram / X / LinkedIn (手動エクスポート取込) -->
+      <!-- SNS 連絡先の取り込み (Facebook/Instagram/X/LinkedIn/WhatsApp/LINE/Telegram) -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">
           <h3>SNS連絡先の取り込み</h3>
         </div>
         <div class="card-body">
-          <p>各SNSからダウンロードした友達リストを取り込み、連絡先に追加します。</p>
+          <p>各SNSからダウンロードした友達リストや会話ログを取り込み、連絡先に追加します。</p>
 
           <div class="integration-steps">
             <h4>取り込み方法</h4>
@@ -1323,13 +1323,16 @@ var Pages = {
               <li><strong>Instagram</strong>: 設定 → アカウント → データのダウンロード → JSON形式</li>
               <li><strong>X (Twitter)</strong>: 設定 → アカウント → データのアーカイブをリクエスト</li>
               <li><strong>LinkedIn</strong>: Settings → Get a copy of your data → Connections → CSV</li>
+              <li><strong>WhatsApp</strong>: トーク画面 → メニュー → その他 → チャットをエクスポート → メディアなし（.txt）</li>
+              <li><strong>LINE</strong>: トーク画面 → メニュー → 設定 → トーク履歴を送信（.txt）</li>
+              <li><strong>Telegram</strong>: Telegram Desktop → Settings → Advanced → Export Telegram data → JSON</li>
               <li>ダウンロードしたファイルを下のボタンで選択</li>
             </ol>
           </div>
 
-          <input type="file" id="snsFile" accept=".json,.csv,.js" style="display:none" onchange="app.importSnsFile(event)">
+          <input type="file" id="snsFile" accept=".json,.csv,.js,.txt" style="display:none" onchange="app.importSnsFile(event)">
           <button class="btn btn-primary" onclick="document.getElementById('snsFile').click()">SNSエクスポートファイルを選択</button>
-          <p class="integration-note">ファイル名から自動的にどのSNSかを判別します。</p>
+          <p class="integration-note">ファイル名から自動的にどのSNSかを判別します。会話ログからは3回以上やり取りした相手のみを追加します。</p>
         </div>
       </div>
 
@@ -1611,32 +1614,42 @@ var Pages = {
 
     <div class="card">
       <div class="card-header">
-        <h3>登録ユーザー一覧</h3>
+        <h3>登録ユーザー一覧${allUsers.length > 0 ? `（${allUsers.length}名）` : ''}</h3>
         <button class="btn btn-sm btn-secondary" onclick="app.loadAllUsers()">更新</button>
       </div>
       <div class="card-body">
-        <p class="page-desc">システムに登録されているすべてのユーザーです。</p>
+        <p class="page-desc">システムに登録されているすべてのユーザーです。タップすると詳細情報（プロフィール・疾患・資産・目標）が見られます。</p>
         ${allUsers.length === 0 ? `
           <p style="color:var(--text-muted);font-size:13px;">ユーザー一覧を読み込むには「更新」ボタンを押してください。</p>
         ` : `
           <div class="admin-users-list">
-            ${allUsers.map(u => `
-              <div class="admin-user-item">
+            ${allUsers.map(u => {
+              const diseaseCount = (u.diseases || []).length;
+              const initial = (u.displayName || u.email || '?').charAt(0).toUpperCase();
+              const meta = [];
+              if (u.age) meta.push(u.age + '歳');
+              if (u.gender) meta.push(u.gender === 'male' ? '男性' : u.gender === 'female' ? '女性' : 'その他');
+              if (u.location) meta.push(u.location);
+              const metaText = meta.join(' · ');
+
+              return `<div class="admin-user-item clickable" onclick="app.showUserDetail('${u.uid}')">
                 <div class="admin-user-info">
-                  <div class="admin-user-avatar">${(u.displayName || u.email || '?').charAt(0).toUpperCase()}</div>
+                  <div class="admin-user-avatar">${initial}</div>
                   <div>
                     <div class="admin-user-email">${u.displayName || u.email || '不明'}</div>
                     <div class="admin-user-role">
-                      ${u.email || ''} ${u.lastActive ? ' · 最終ログイン ' + new Date(u.lastActive).toLocaleDateString('ja-JP') : ''}
+                      ${u.email ? u.email + '<br>' : ''}${metaText || 'プロフィール未設定'}
+                      ${u.lastActive ? ' · 最終: ' + new Date(u.lastActive).toLocaleDateString('ja-JP') : ''}
                     </div>
                   </div>
                 </div>
                 <div class="admin-user-stats">
-                  ${u.entryCount ? `<span class="stat-chip">${u.entryCount}件</span>` : ''}
+                  ${diseaseCount > 0 ? `<span class="stat-chip">持病${diseaseCount}</span>` : ''}
+                  ${u.subscription && u.subscription !== 'free' ? `<span class="stat-chip">${u.subscription}</span>` : ''}
                   ${adminEmails.includes(u.email) ? '<span class="status-badge">管理者</span>' : ''}
                 </div>
-              </div>
-            `).join('')}
+              </div>`;
+            }).join('')}
           </div>
         `}
       </div>

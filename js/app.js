@@ -1649,14 +1649,30 @@ var App = class App {
       const users = [];
       snap.forEach(doc => {
         const data = doc.data();
+        const profile = data.userProfile || {};
         users.push({
           uid: doc.id,
-          email: data.userProfile?.email || '',
-          displayName: data.userProfile?.displayName || '',
+          email: profile.email || '',
+          displayName: profile.displayName || profile.name || '',
+          age: profile.age || null,
+          gender: profile.gender || '',
+          location: profile.location || '',
+          occupation: profile.occupation || '',
+          diseases: Array.isArray(profile.diseases) ? profile.diseases : [],
+          medications: profile.medications || '',
+          monthlyIncome: profile.monthlyIncome || '',
+          savings: profile.savings || '',
+          lifeGoals: profile.lifeGoals || '',
+          concerns: profile.concerns || '',
+          subscription: data.subscription?.plan || 'free',
           lastActive: data.updatedAt?.toDate?.()?.toISOString() || null,
-          entryCount: 0
+          domainScores: data.domainScores || {}
         });
       });
+
+      // Sort: most recently active first
+      users.sort((a, b) => (b.lastActive || '').localeCompare(a.lastActive || ''));
+
       store.set('_allUsers', users);
       store.set('_allUsersCount', users.length);
       Components.showToast(`${users.length}人のユーザーを読み込みました`, 'success');
@@ -1664,6 +1680,64 @@ var App = class App {
     } catch (e) {
       Components.showToast('読み込みに失敗しました: ' + e.message, 'error');
     }
+  }
+
+  // Show a modal with detailed profile info for one user
+  showUserDetail(uid) {
+    const users = store.get('_allUsers') || [];
+    const user = users.find(u => u.uid === uid);
+    if (!user) return;
+
+    const scores = user.domainScores || {};
+    const scoreHtml = Object.entries(scores).map(([d, s]) =>
+      `<div class="user-score-item"><span>${i18n.t(d)}</span><strong>${s}</strong></div>`
+    ).join('');
+
+    const body = `
+      <div class="user-detail">
+        <div class="user-detail-section">
+          <h4>基本情報</h4>
+          <p><strong>お名前:</strong> ${user.displayName || '-'}</p>
+          <p><strong>メール:</strong> ${user.email || '-'}</p>
+          <p><strong>年齢:</strong> ${user.age || '-'}</p>
+          <p><strong>性別:</strong> ${user.gender || '-'}</p>
+          <p><strong>居住地:</strong> ${user.location || '-'}</p>
+          <p><strong>職業:</strong> ${user.occupation || '-'}</p>
+        </div>
+
+        <div class="user-detail-section">
+          <h4>健康</h4>
+          <p><strong>持病・症状:</strong> ${user.diseases.length > 0 ? user.diseases.join(', ') : 'なし'}</p>
+          <p><strong>服薬:</strong> ${user.medications || 'なし'}</p>
+        </div>
+
+        <div class="user-detail-section">
+          <h4>資産・収入</h4>
+          <p><strong>月収:</strong> ${user.monthlyIncome || '-'}</p>
+          <p><strong>貯蓄:</strong> ${user.savings || '-'}</p>
+          <p><strong>プラン:</strong> ${user.subscription}</p>
+        </div>
+
+        <div class="user-detail-section">
+          <h4>人生目標・悩み</h4>
+          <p><strong>目標:</strong> ${user.lifeGoals || '-'}</p>
+          <p><strong>悩み:</strong> ${user.concerns || '-'}</p>
+        </div>
+
+        ${scoreHtml ? `
+        <div class="user-detail-section">
+          <h4>6領域スコア</h4>
+          <div class="user-scores-grid">${scoreHtml}</div>
+        </div>` : ''}
+
+        <div class="user-detail-section" style="font-size:11px;color:var(--text-muted);">
+          UID: ${user.uid}<br>
+          最終アクティビティ: ${user.lastActive ? new Date(user.lastActive).toLocaleString('ja-JP') : '-'}
+        </div>
+      </div>
+    `;
+
+    this.openModal(user.displayName || user.email || 'ユーザー詳細', body);
   }
 
   generateDemoData() {
