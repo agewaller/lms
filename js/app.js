@@ -464,10 +464,11 @@ var App = class App {
   }
 
   // ─── Stock Analysis (Assets domain) ───
-  // Uses the VM Hands-on prompt (assets_stock) configured by admin.
-  // The prompt is loaded via AIEngine.buildSystemPrompt which maps
-  // promptType 'stock_analysis' to the flat key 'assets_stock'.
-  async analyzeStock() {
+  // Two modes:
+  //  - 'short' → CONFIG.inlinePrompts.stock_analysis（3論点の簡易分析）
+  //  - 'full'  → CONFIG.prompts.assets_stock（VMハンズオン フルレポート）
+  // Mapping is handled in AIEngine.buildSystemPrompt via promptType alias.
+  async analyzeStock(mode = 'short') {
     const input = document.getElementById('stockTicker');
     const ticker = input?.value?.trim();
     if (!ticker) {
@@ -476,7 +477,8 @@ var App = class App {
     }
 
     const resultEl = document.getElementById('stockResult');
-    if (resultEl) resultEl.innerHTML = Components.loading(`${ticker} を分析中です...`);
+    const modeLabel = mode === 'full' ? 'VMハンズオン 深い分析' : '簡易分析（3論点）';
+    if (resultEl) resultEl.innerHTML = Components.loading(`${ticker} を${modeLabel}で分析中です...`);
 
     // Pre-check: admin must have configured an API key
     if (!AIEngine.getApiKey('anthropic') && !AIEngine.getApiKey('openai') && !AIEngine.getApiKey('google')) {
@@ -490,9 +492,8 @@ var App = class App {
     }
 
     try {
-      // promptType='stock_analysis' is mapped to config key 'assets_stock'
-      // (VM Hands-on prompt) via ai-engine's buildSystemPrompt legacy alias.
-      const result = await AIEngine.analyze('assets', 'stock_analysis', {
+      const promptType = mode === 'full' ? 'stock_full' : 'stock_analysis';
+      const result = await AIEngine.analyze('assets', promptType, {
         text: `COMPANY: ${ticker}\nTIME_NOW: ${new Date().toISOString().slice(0, 10)}`
       });
 
@@ -502,7 +503,7 @@ var App = class App {
 
       if (resultEl) {
         resultEl.innerHTML = `<div class="stock-result">
-          <h3>${ticker} の分析結果</h3>
+          <h3>${ticker} の分析結果（${modeLabel}）</h3>
           <div class="analysis-content">${Components.formatMarkdown(result)}</div>
           <div class="disclaimer">${i18n.t('disclaimer_assets')}</div>
         </div>`;
