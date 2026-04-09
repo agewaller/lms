@@ -1343,10 +1343,24 @@ var App = class App {
   }
 
   saveWorkerUrl() {
-    const url = document.getElementById('workerUrl')?.value || '';
+    let url = (document.getElementById('workerUrl')?.value || '').trim();
+    // Normalize: strip trailing slash(es), strip whitespace
+    url = url.replace(/\/+$/, '');
     CONFIG.endpoints.anthropic = url;
     localStorage.setItem('lms_workerUrl', url);
-    Components.showToast('保存しました', 'success');
+
+    // Sync to Firestore so all users inherit the admin's Worker URL
+    if (FirebaseBackend.isAdmin() && FirebaseBackend.db) {
+      FirebaseBackend.db.collection('admin').doc('config').set(
+        {
+          anthropicProxyUrl: url,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        },
+        { merge: true }
+      ).catch(e => console.warn('Worker URL sync error:', e));
+    }
+
+    Components.showToast('保存しました: ' + url, 'success');
   }
 
   // ─── Admin User Management ───

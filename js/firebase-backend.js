@@ -195,6 +195,10 @@ var FirebaseBackend = {
           if (cfg.customPrompts) store.set('customPrompts', cfg.customPrompts);
           if (cfg.affiliateConfig) store.set('affiliateConfig', cfg.affiliateConfig);
           if (cfg.adminEmails) store.set('adminEmails', cfg.adminEmails);
+          if (cfg.anthropicProxyUrl) {
+            CONFIG.endpoints.anthropic = cfg.anthropicProxyUrl;
+            localStorage.setItem('lms_workerUrl', cfg.anthropicProxyUrl);
+          }
           if (cfg.emailIngestUrl) CONFIG.endpoints.emailIngest = cfg.emailIngestUrl;
           if (cfg.emailIngestDomain) CONFIG.emailIngestDomain = cfg.emailIngestDomain;
         }
