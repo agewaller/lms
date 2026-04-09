@@ -638,5 +638,569 @@ var AssetsFeatures = {
       custom: 'カスタム'
     };
     return labels[strategy] || strategy;
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  楽天証券 MS2 RSS + Excel/VBA 連携ダッシュボード
+  //  日本株 半自動売買支援システム (Phase 1 / Phase 2 相当)
+  //
+  //  ※ Web 上は「監視ダッシュボード」として動作するシミュレータ。
+  //     実際の発注は Excel/VBA 側から MS2 RSS 経由で行われる。
+  //     本UIは ローカル state を CSV/JSON で橋渡しする想定で
+  //     設計されている (docs/japanese-stock-trading-system/ 参照)。
+  // ═══════════════════════════════════════════════════════════
+
+  renderMS2Trading() {
+    const state = this.getMS2State();
+    const risk = state.risk;
+    const realized = this.computeMS2RealizedPnl();
+    const unrealized = this.computeMS2UnrealizedPnl();
+    const dailyLoss = Math.max(0, -(realized + unrealized));
+    const lossPct = Math.min(100, Math.round((dailyLoss / (risk.maxLossPerDay || 1)) * 100));
+
+    const hbAge = this.computeMS2HeartbeatAge(state);
+    const hbOk = hbAge != null && hbAge <= (risk.rssHeartbeatMaxSec || 10);
+    const running = state.tradingEnabled && !state.killSwitch && hbOk;
+    const statusClass = state.killSwitch ? 'ms2-halted' : running ? 'ms2-running' : 'ms2-stopped';
+    const statusLabel = state.killSwitch ? 'HALTED' : running ? 'RUNNING' : 'STOPPED';
+
+    return `<div class="ms2-trading">
+      <div class="ms2-header">
+        <div>
+          <h3>楽天証券 MS2 RSS 日本株トレード</h3>
+          <p class="ms2-sub">Marketspeed II RSS × Excel/VBA 連携の監視ダッシュボード</p>
+        </div>
+        <span class="ms2-mode ms2-mode-${(state.tradingMode || 'paper').toLowerCase()}">${state.tradingMode || 'PAPER'}</span>
+      </div>
+
+      <!-- 稼働バー -->
+      <div class="ms2-statusbar ${statusClass}">
+        <span class="ms2-status-led"></span>
+        <strong>${statusLabel}</strong>
+        <span class="ms2-status-reason">${state.haltReason ? '停止理由: ' + state.haltReason : hbOk ? 'RSS healthy' : 'RSS stale'}</span>
+        <span class="ms2-status-time">最終更新 ${state.lastRssUpdate ? new Date(state.lastRssUpdate).toLocaleTimeString('ja-JP') : '—'}</span>
+      </div>
+
+      <!-- KPI カード -->
+      <div class="ms2-kpi">
+        ${Components.statCard('実現損益(本日)', this.fmtYen(realized), null, '💴')}
+        ${Components.statCard('含み損益', this.fmtYen(unrealized), null, '📈')}
+        ${Components.statCard('本日発注', (state.todayOrderCount || 0) + ' / ' + (risk.maxOrdersPerDay || 10), null, '📤')}
+        ${Components.statCard('同時保有', (state.positions?.length || 0) + ' / ' + (risk.maxConcurrentPositions || 3), null, '🧺')}
+        ${Components.statCard('承認待ち', (state.signals?.filter(s => s.state === 'WAIT').length || 0) + ' 件', null, '⏳')}
+        ${Components.statCard('エラー(本日)', (state.todayErrorCount || 0) + ' 件', null, '⚠️')}
+      </div>
+
+      <!-- 日次損失ゲージ -->
+      <div class="ms2-loss-gauge">
+        <div class="ms2-loss-label">
+          <span>日次損失上限の使用率</span>
+          <span>${this.fmtYen(dailyLoss)} / ${this.fmtYen(risk.maxLossPerDay)}</span>
+        </div>
+        <div class="ms2-loss-track">
+          <div class="ms2-loss-fill" style="width:${lossPct}%; background:${lossPct >= 80 ? '#E74C3C' : lossPct >= 50 ? '#F39C12' : '#27AE60'}"></div>
+        </div>
+        <div class="ms2-loss-sub">${lossPct >= 100 ? '⛔ 上限到達。新規発注は全停止' : lossPct >= 80 ? '⚠️ 80% 到達。残り枠わずか' : '残り ' + this.fmtYen(risk.maxLossPerDay - dailyLoss)}</div>
+      </div>
+
+      <!-- 制御ボタン -->
+      <div class="ms2-controls">
+        <label class="ms2-switch">
+          <input type="checkbox" ${state.tradingEnabled ? 'checked' : ''} onchange="AssetsFeatures.toggleMS2Trading(this.checked)">
+          <span class="ms2-switch-slider"></span>
+          <span>取引ON/OFF</span>
+        </label>
+        <label class="ms2-switch">
+          <input type="checkbox" ${state.approvalRequired !== false ? 'checked' : ''} onchange="AssetsFeatures.toggleMS2Approval(this.checked)">
+          <span class="ms2-switch-slider"></span>
+          <span>承認必須</span>
+        </label>
+        <select class="form-input ms2-mode-select" onchange="AssetsFeatures.setMS2Mode(this.value)">
+          <option value="PAPER" ${state.tradingMode === 'PAPER' ? 'selected' : ''}>PAPER (模擬)</option>
+          <option value="OBSERVE" ${state.tradingMode === 'OBSERVE' ? 'selected' : ''}>OBSERVE (通知のみ)</option>
+          <option value="LIVE" ${state.tradingMode === 'LIVE' ? 'selected' : ''}>LIVE (実発注)</option>
+        </select>
+        <button class="btn btn-sm btn-secondary" onclick="AssetsFeatures.simulateMS2Tick()">⏱ シグナル生成</button>
+        <button class="btn btn-sm btn-secondary" onclick="AssetsFeatures.resetMS2Heartbeat()">♻ RSS 再接続</button>
+        <button class="btn btn-danger ms2-kill" onclick="AssetsFeatures.ms2KillSwitch()">🛑 緊急停止</button>
+        ${state.killSwitch ? `<button class="btn btn-sm btn-primary" onclick="AssetsFeatures.ms2Resume()">停止解除</button>` : ''}
+      </div>
+
+      <!-- シグナル承認リスト -->
+      <div class="ms2-section">
+        <h4>シグナル（承認待ち / 処理済）</h4>
+        ${this.renderMS2Signals(state)}
+      </div>
+
+      <!-- 建玉管理 -->
+      <div class="ms2-section">
+        <h4>建玉（現物）</h4>
+        ${this.renderMS2Positions(state)}
+      </div>
+
+      <!-- リスクパラメータ -->
+      <div class="ms2-section">
+        <h4>リスクパラメータ</h4>
+        <div class="ms2-risk-grid">
+          <label>1回最大損失(円)<input type="number" class="form-input" value="${risk.maxLossPerTrade}" onchange="AssetsFeatures.updateMS2Risk('maxLossPerTrade', this.value)"></label>
+          <label>1日最大損失(円)<input type="number" class="form-input" value="${risk.maxLossPerDay}" onchange="AssetsFeatures.updateMS2Risk('maxLossPerDay', this.value)"></label>
+          <label>1銘柄最大投資(円)<input type="number" class="form-input" value="${risk.maxPositionPerSymbol}" onchange="AssetsFeatures.updateMS2Risk('maxPositionPerSymbol', this.value)"></label>
+          <label>同時保有数上限<input type="number" class="form-input" value="${risk.maxConcurrentPositions}" onchange="AssetsFeatures.updateMS2Risk('maxConcurrentPositions', this.value)"></label>
+          <label>1日最大発注数<input type="number" class="form-input" value="${risk.maxOrdersPerDay}" onchange="AssetsFeatures.updateMS2Risk('maxOrdersPerDay', this.value)"></label>
+          <label>RSS死活TO(秒)<input type="number" class="form-input" value="${risk.rssHeartbeatMaxSec}" onchange="AssetsFeatures.updateMS2Risk('rssHeartbeatMaxSec', this.value)"></label>
+          <label>成行許可
+            <select class="form-input" onchange="AssetsFeatures.updateMS2Risk('allowedOrderType', this.value)">
+              <option value="LIMIT" ${risk.allowedOrderType === 'LIMIT' ? 'selected' : ''}>指値のみ</option>
+              <option value="ANY" ${risk.allowedOrderType === 'ANY' ? 'selected' : ''}>指値・成行</option>
+            </select>
+          </label>
+          <label>二重クリック防止(ms)<input type="number" class="form-input" value="${risk.minTickIntervalMs}" onchange="AssetsFeatures.updateMS2Risk('minTickIntervalMs', this.value)"></label>
+        </div>
+      </div>
+
+      <!-- 最近のログ -->
+      <div class="ms2-section">
+        <h4>最近のログ (直近 ${(state.logs?.length || 0)} 件)</h4>
+        <div class="ms2-log">
+          ${(state.logs || []).slice(-15).reverse().map(l => `
+            <div class="ms2-log-row ms2-log-${(l.severity || 'info').toLowerCase()}">
+              <span class="ms2-log-time">${new Date(l.timestamp).toLocaleTimeString('ja-JP')}</span>
+              <span class="ms2-log-kind">${l.kind || ''}</span>
+              <span class="ms2-log-text">${l.text || ''}</span>
+            </div>`).join('') || '<div class="ms2-empty">ログはまだありません</div>'}
+        </div>
+      </div>
+
+      <div class="ms2-export">
+        <button class="btn btn-sm btn-secondary" onclick="AssetsFeatures.exportMS2State()">状態を JSON で書き出し</button>
+        <button class="btn btn-sm btn-secondary" onclick="AssetsFeatures.clearMS2State()">今日の状態をリセット</button>
+        <span class="ms2-export-help">設計書: <code>docs/japanese-stock-trading-system/</code></span>
+      </div>
+
+      <div class="disclaimer">
+        ※ 本 Web UI は楽天証券 MS2 RSS × Excel/VBA の「監視ダッシュボードのミラー」です。
+          実際の発注は Excel ブック側で行われ、本 UI は状態の可視化と操作トリガーに徹します。
+          PAPER モードでは一切の実発注を行いません。投資は自己責任で行ってください。
+      </div>
+    </div>`;
+  },
+
+  renderMS2Signals(state) {
+    const sigs = (state.signals || []).slice(-12).reverse();
+    if (!sigs.length) return '<div class="ms2-empty">シグナルはまだありません。「シグナル生成」を押すと PAPER モードで擬似シグナルが生成されます。</div>';
+
+    return `<div class="ms2-table">
+      <div class="ms2-thead">
+        <span>時刻</span><span>コード</span><span>戦略</span><span>売買</span>
+        <span>数量</span><span>参考価格</span><span>損切</span><span>状態</span><span>操作</span>
+      </div>
+      ${sigs.map(s => `
+        <div class="ms2-trow ms2-state-${(s.state || '').toLowerCase()}">
+          <span>${new Date(s.timestamp).toLocaleTimeString('ja-JP')}</span>
+          <span class="ms2-code">${s.code}</span>
+          <span>${s.strategy || '-'}</span>
+          <span class="ms2-side-${(s.side || '').toLowerCase()}">${s.side}</span>
+          <span>${(s.qty || 0).toLocaleString()}</span>
+          <span>${this.fmtYen(s.refPrice)}</span>
+          <span>${this.fmtYen(s.stopPrice)}</span>
+          <span class="ms2-state-badge">${s.state}${s.reason ? ' (' + s.reason + ')' : ''}</span>
+          <span class="ms2-actions">
+            ${s.state === 'WAIT' ? `
+              <button class="btn btn-xs btn-primary" onclick="AssetsFeatures.ms2Approve('${s.id}')">承認</button>
+              <button class="btn btn-xs btn-secondary" onclick="AssetsFeatures.ms2Reject('${s.id}')">却下</button>` : ''}
+            ${s.state === 'SENT' || s.state === 'PART' ? `<button class="btn btn-xs btn-secondary" onclick="AssetsFeatures.ms2Cancel('${s.id}')">取消</button>` : ''}
+          </span>
+        </div>`).join('')}
+    </div>`;
+  },
+
+  renderMS2Positions(state) {
+    const pos = state.positions || [];
+    if (!pos.length) return '<div class="ms2-empty">建玉はありません</div>';
+    return `<div class="ms2-table">
+      <div class="ms2-thead">
+        <span>コード</span><span>銘柄名</span><span>数量</span><span>平均取得</span>
+        <span>現在値</span><span>評価額</span><span>含み損益</span><span>損切/利確</span><span></span>
+      </div>
+      ${pos.map(p => {
+        const pnl = (p.lastPrice - p.avgPrice) * p.qty;
+        const cls = pnl >= 0 ? 'ms2-pnl-plus' : 'ms2-pnl-minus';
+        return `<div class="ms2-trow">
+          <span class="ms2-code">${p.code}</span>
+          <span>${p.name || ''}</span>
+          <span>${p.qty.toLocaleString()}</span>
+          <span>${this.fmtYen(p.avgPrice)}</span>
+          <span>${this.fmtYen(p.lastPrice)}</span>
+          <span>${this.fmtYen(p.lastPrice * p.qty)}</span>
+          <span class="${cls}">${this.fmtYen(pnl)}</span>
+          <span>${this.fmtYen(p.stopPrice)} / ${this.fmtYen(p.takePrice)}</span>
+          <span><button class="btn btn-xs btn-secondary" onclick="AssetsFeatures.ms2CloseManual('${p.code}')">手動決済</button></span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  },
+
+  // ─── MS2 state management ─────────────────────────────────
+
+  getMS2State() {
+    const defaults = {
+      tradingEnabled: false,
+      killSwitch: false,
+      haltReason: '',
+      approvalRequired: true,
+      tradingMode: 'PAPER',
+      lastRssUpdate: Date.now(),
+      todayOrderCount: 0,
+      todayErrorCount: 0,
+      signals: [],
+      orders: [],
+      positions: [],
+      logs: [],
+      todayRealizedPnl: 0,
+      day: new Date().toISOString().slice(0, 10),
+      risk: {
+        maxLossPerTrade: 5000,
+        maxLossPerDay: 20000,
+        maxPositionPerSymbol: 300000,
+        maxConcurrentPositions: 3,
+        maxOrdersPerDay: 10,
+        rssHeartbeatMaxSec: 10,
+        allowedOrderType: 'LIMIT',
+        minTickIntervalMs: 500
+      }
+    };
+    const saved = store.get('ms2TradingState');
+    if (!saved || typeof saved !== 'object') return defaults;
+    // Day rollover: reset counters if a new day
+    if (saved.day !== defaults.day) {
+      return { ...defaults, positions: saved.positions || [], risk: { ...defaults.risk, ...(saved.risk || {}) } };
+    }
+    return { ...defaults, ...saved, risk: { ...defaults.risk, ...(saved.risk || {}) } };
+  },
+
+  saveMS2State(state) {
+    store.set('ms2TradingState', state);
+  },
+
+  ms2Log(state, kind, text, severity = 'INFO') {
+    const logs = state.logs || [];
+    logs.push({ timestamp: Date.now(), kind, text, severity });
+    state.logs = logs.slice(-200);
+    if (severity === 'ERROR' || severity === 'FATAL') state.todayErrorCount = (state.todayErrorCount || 0) + 1;
+  },
+
+  computeMS2RealizedPnl() {
+    return (this.getMS2State().todayRealizedPnl || 0);
+  },
+
+  computeMS2UnrealizedPnl() {
+    const st = this.getMS2State();
+    return (st.positions || []).reduce((sum, p) => sum + (p.lastPrice - p.avgPrice) * p.qty, 0);
+  },
+
+  computeMS2HeartbeatAge(state) {
+    if (!state.lastRssUpdate) return null;
+    return Math.round((Date.now() - state.lastRssUpdate) / 1000);
+  },
+
+  fmtYen(n) {
+    if (n == null || isNaN(n)) return '—';
+    const sign = n < 0 ? '-' : '';
+    return sign + '¥' + Math.abs(Math.round(n)).toLocaleString('ja-JP');
+  },
+
+  // ─── Controls ─────────────────────────────────────────────
+
+  toggleMS2Trading(on) {
+    const st = this.getMS2State();
+    if (on && st.killSwitch) {
+      Components.showToast('緊急停止中です。先に停止解除してください', 'warning');
+      return;
+    }
+    st.tradingEnabled = !!on;
+    this.ms2Log(st, 'SYSTEM', on ? 'TradingEnabled=TRUE' : 'TradingEnabled=FALSE');
+    this.saveMS2State(st);
+    Components.showToast(on ? '取引を有効化しました' : '取引を無効化しました', 'info');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  toggleMS2Approval(on) {
+    const st = this.getMS2State();
+    st.approvalRequired = !!on;
+    this.ms2Log(st, 'SYSTEM', 'ApprovalRequired=' + on);
+    this.saveMS2State(st);
+  },
+
+  setMS2Mode(mode) {
+    const st = this.getMS2State();
+    st.tradingMode = mode;
+    this.ms2Log(st, 'SYSTEM', 'TradingMode=' + mode);
+    if (mode === 'LIVE') {
+      Components.showToast('LIVE モードは Excel/VBA 側の実装が必要です', 'warning');
+    }
+    this.saveMS2State(st);
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  resetMS2Heartbeat() {
+    const st = this.getMS2State();
+    st.lastRssUpdate = Date.now();
+    this.ms2Log(st, 'SYSTEM', 'RSS heartbeat reset');
+    this.saveMS2State(st);
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  ms2KillSwitch() {
+    if (!confirm('緊急停止します。よろしいですか？\n(取引 OFF・停止フラグ ON)')) return;
+    const st = this.getMS2State();
+    st.killSwitch = true;
+    st.tradingEnabled = false;
+    st.haltReason = 'MANUAL';
+    this.ms2Log(st, 'SYSTEM', 'KILLSWITCH activated', 'FATAL');
+    this.saveMS2State(st);
+    Components.showToast('🛑 緊急停止しました', 'warning');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  ms2Resume() {
+    if (!confirm('停止状態を解除します。再発防止の確認は済んでいますか？')) return;
+    const st = this.getMS2State();
+    st.killSwitch = false;
+    st.haltReason = '';
+    this.ms2Log(st, 'SYSTEM', 'Resumed by user');
+    this.saveMS2State(st);
+    Components.showToast('停止を解除しました。取引を再開するには ON にしてください', 'info');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  updateMS2Risk(key, value) {
+    const st = this.getMS2State();
+    st.risk[key] = isNaN(value) ? value : Number(value);
+    this.ms2Log(st, 'CONFIG', `${key}=${value}`);
+    this.saveMS2State(st);
+  },
+
+  // ─── Signal / Order simulation (PAPER only) ───────────────
+
+  simulateMS2Tick() {
+    const st = this.getMS2State();
+    if (st.killSwitch) {
+      Components.showToast('緊急停止中。シグナル生成は実行されません', 'warning');
+      return;
+    }
+
+    // simulate RSS heartbeat
+    st.lastRssUpdate = Date.now();
+
+    // pick a random Japanese blue-chip
+    const universe = [
+      { code: '7203', name: 'トヨタ自動車', px: 2540 },
+      { code: '9984', name: 'ソフトバンクG', px: 9800 },
+      { code: '6758', name: 'ソニーG',       px: 3250 },
+      { code: '8306', name: '三菱UFJ',       px: 1720 },
+      { code: '7974', name: '任天堂',         px: 7600 },
+      { code: '9432', name: 'NTT',           px: 158  },
+      { code: '6861', name: 'キーエンス',     px: 63000 }
+    ];
+    const u = universe[Math.floor(Math.random() * universe.length)];
+    const jitter = (Math.random() - 0.3) * 0.02;          // slightly bullish-biased
+    const ref = Math.round(u.px * (1 + jitter));
+    const unit = 100;
+    let qty = Math.floor((st.risk.maxPositionPerSymbol / ref) / unit) * unit;
+    if (qty < unit) qty = unit;
+    const stop = Math.round(ref * 0.995);
+    const take = Math.round(ref * 1.01);
+
+    const sig = {
+      id: 'SIG-' + Date.now().toString(36).toUpperCase(),
+      timestamp: Date.now(),
+      code: u.code, name: u.name, strategy: 'breakout_v1',
+      side: 'BUY', qty, refPrice: ref, stopPrice: stop, takePrice: take,
+      reason: '当日高値ブレイク+VWAP上',
+      state: 'WAIT'
+    };
+
+    // Pre-check (risk)
+    const check = this.ms2PreCheck(st, sig);
+    if (check !== 'OK') {
+      sig.state = 'REJECTED';
+      sig.reason = check;
+      this.ms2Log(st, 'SIGNAL', `REJECT ${sig.id} ${sig.code} ${check}`, 'WARN');
+    } else {
+      this.ms2Log(st, 'SIGNAL', `NEW ${sig.id} ${sig.side} ${sig.code} x${qty} @${ref}`);
+      // If approval not required and PAPER mode: auto-send
+      if (!st.approvalRequired && st.tradingEnabled && st.tradingMode === 'PAPER') {
+        this.ms2SendOrder(st, sig);
+      }
+    }
+
+    st.signals = [...(st.signals || []), sig].slice(-100);
+    this.saveMS2State(st);
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  ms2PreCheck(st, sig) {
+    if (st.killSwitch) return 'NG: KILLSWITCH';
+    if (!st.tradingEnabled) return 'NG: TRADING_DISABLED';
+    const hbAge = this.computeMS2HeartbeatAge(st);
+    if (hbAge == null || hbAge > st.risk.rssHeartbeatMaxSec) return 'NG: RSS_STALE';
+
+    const estLoss = Math.abs(sig.refPrice - sig.stopPrice) * sig.qty;
+    if (estLoss > st.risk.maxLossPerTrade) return 'NG: LOSS_PER_TRADE_OVER';
+
+    const posYen = sig.refPrice * sig.qty;
+    if (posYen > st.risk.maxPositionPerSymbol) return 'NG: POSITION_PER_SYMBOL_OVER';
+
+    if (sig.side === 'BUY' && (st.positions || []).length >= st.risk.maxConcurrentPositions) {
+      return 'NG: CONCURRENT_MAX';
+    }
+
+    if ((st.todayOrderCount || 0) >= st.risk.maxOrdersPerDay) return 'NG: DAILY_ORDER_COUNT';
+
+    // Duplicate orders on same symbol
+    const dup = (st.signals || []).some(s =>
+      s.code === sig.code && (s.state === 'SENT' || s.state === 'PART' || s.state === 'WAIT')
+    );
+    if (dup) return 'NG: SYMBOL_HAS_OPEN_ORDER';
+
+    // Daily loss gate
+    const dailyLoss = Math.max(0, -(this.computeMS2RealizedPnl() + this.computeMS2UnrealizedPnl()));
+    if (dailyLoss >= st.risk.maxLossPerDay) return 'NG: DAILY_LOSS_LIMIT';
+
+    return 'OK';
+  },
+
+  ms2Approve(sigId) {
+    const st = this.getMS2State();
+    const sig = (st.signals || []).find(s => s.id === sigId);
+    if (!sig || sig.state !== 'WAIT') return;
+    if (!st.tradingEnabled) {
+      Components.showToast('取引が無効です。取引 ON にしてから承認してください', 'warning');
+      return;
+    }
+    // Double-check at approval time
+    const check = this.ms2PreCheck(st, sig);
+    if (check !== 'OK') {
+      sig.state = 'REJECTED';
+      sig.reason = check;
+      this.ms2Log(st, 'ORDER', `REJECT ${sig.id} ${check}`, 'WARN');
+      this.saveMS2State(st);
+      if (typeof app !== 'undefined') app.renderApp();
+      return;
+    }
+    if (!confirm(`本当に発注しますか？\n${sig.side} ${sig.code} x${sig.qty} @${sig.refPrice}`)) return;
+    this.ms2SendOrder(st, sig);
+    this.saveMS2State(st);
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  ms2Reject(sigId) {
+    const st = this.getMS2State();
+    const sig = (st.signals || []).find(s => s.id === sigId);
+    if (!sig) return;
+    sig.state = 'REJECTED';
+    sig.reason = 'MANUAL';
+    this.ms2Log(st, 'SIGNAL', `REJECTED ${sig.id} MANUAL`);
+    this.saveMS2State(st);
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  ms2Cancel(sigId) {
+    const st = this.getMS2State();
+    const sig = (st.signals || []).find(s => s.id === sigId);
+    if (!sig) return;
+    if (sig.state === 'SENT' || sig.state === 'PART') {
+      sig.state = 'CANCEL';
+      this.ms2Log(st, 'ORDER', `CANCEL ${sig.id}`);
+    }
+    this.saveMS2State(st);
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  ms2SendOrder(st, sig) {
+    sig.state = 'SENT';
+    sig.sentAt = Date.now();
+    st.todayOrderCount = (st.todayOrderCount || 0) + 1;
+    this.ms2Log(st, 'ORDER', `SENT ${sig.id} ${sig.code} ${sig.side} x${sig.qty} @${sig.refPrice}`);
+
+    if (st.tradingMode === 'PAPER') {
+      // Simulate immediate fill in PAPER mode
+      setTimeout(() => this.ms2SimulateFill(sig.id), 300);
+    }
+  },
+
+  ms2SimulateFill(sigId) {
+    const st = this.getMS2State();
+    const sig = (st.signals || []).find(s => s.id === sigId);
+    if (!sig || sig.state !== 'SENT') return;
+    // 90% full fill, 10% rejected
+    if (Math.random() < 0.1) {
+      sig.state = 'REJECTED';
+      sig.reason = 'SIM_ERR';
+      this.ms2Log(st, 'ORDER', `REJECT ${sig.id} SIM_ERR`, 'WARN');
+      this.saveMS2State(st);
+      if (typeof app !== 'undefined') app.renderApp();
+      return;
+    }
+    sig.state = 'FILLED';
+    sig.fillPrice = sig.refPrice;
+    sig.fillQty = sig.qty;
+    this.ms2Log(st, 'FILL', `${sig.id} ${sig.code} x${sig.qty} @${sig.refPrice}`);
+
+    if (sig.side === 'BUY') {
+      st.positions = [...(st.positions || []), {
+        code: sig.code, name: sig.name,
+        qty: sig.qty, avgPrice: sig.refPrice, lastPrice: sig.refPrice,
+        stopPrice: sig.stopPrice, takePrice: sig.takePrice,
+        openedAt: Date.now(), sourceSignalId: sig.id
+      }];
+    } else {
+      // close matching long
+      const pos = (st.positions || []).find(p => p.code === sig.code);
+      if (pos) {
+        const pnl = (sig.refPrice - pos.avgPrice) * Math.min(pos.qty, sig.qty);
+        st.todayRealizedPnl = (st.todayRealizedPnl || 0) + pnl;
+        st.positions = (st.positions || []).filter(p => p.code !== sig.code);
+      }
+    }
+    this.saveMS2State(st);
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  ms2CloseManual(code) {
+    const st = this.getMS2State();
+    const pos = (st.positions || []).find(p => p.code === code);
+    if (!pos) return;
+    if (!confirm(`${code} ${pos.name} を手動決済します。よろしいですか？`)) return;
+    const pnl = (pos.lastPrice - pos.avgPrice) * pos.qty;
+    st.todayRealizedPnl = (st.todayRealizedPnl || 0) + pnl;
+    st.positions = (st.positions || []).filter(p => p.code !== code);
+    this.ms2Log(st, 'FILL', `MANUAL_CLOSE ${code} pnl=${Math.round(pnl)}`);
+    this.saveMS2State(st);
+    Components.showToast(`${code} を決済しました (損益 ${this.fmtYen(pnl)})`, pnl >= 0 ? 'success' : 'info');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  exportMS2State() {
+    const st = this.getMS2State();
+    const blob = new Blob([JSON.stringify(st, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ms2_state_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  clearMS2State() {
+    if (!confirm('本日の状態をリセットしますか？(建玉以外)')) return;
+    const st = this.getMS2State();
+    st.signals = [];
+    st.logs = [];
+    st.todayOrderCount = 0;
+    st.todayErrorCount = 0;
+    st.todayRealizedPnl = 0;
+    this.saveMS2State(st);
+    if (typeof app !== 'undefined') app.renderApp();
   }
 };

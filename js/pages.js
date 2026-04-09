@@ -138,10 +138,11 @@ var Pages = {
       html += this.renderUpcomingBirthdays();
     }
 
-    // Assets domain: NISA simulator + advisor + screenshot + auto trading
+    // Assets domain: NISA simulator + advisor + screenshot + auto trading + MS2 RSS trading
     // (Stock analysis widget is rendered at the top of the page.)
     if (domain === 'assets') {
       if (typeof AssetsFeatures !== 'undefined') {
+        html += AssetsFeatures.renderMS2Trading();
         html += AssetsFeatures.renderNISASimulator();
         html += AssetsFeatures.renderAIAdvisor();
         html += AssetsFeatures.renderScreenshotReader();

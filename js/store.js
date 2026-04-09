@@ -102,6 +102,7 @@ var Store = class Store {
       autoTradingSettings: {},     // Auto trading configuration
       autoTradePending: [],        // Pending trade orders
       autoTradeHistory: [],        // Executed/rejected trade history
+      ms2TradingState: null,       // Rakuten MS2 RSS (日本株) monitoring dashboard state
       calendarEvents: [],
       latestFeedback: null,
       cachedResearch: null,
@@ -182,7 +183,8 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'ms2TradingState'
     ];
   }
 
