@@ -64,7 +64,8 @@ var AIEngine = {
     else if (promptType === 'quickInput' || promptType === 'text_analysis') key = 'text_analysis';
     else if (promptType === 'imageAnalysis' || promptType === 'image_analysis') key = 'image_analysis';
     else if (promptType === 'transcript_analysis') key = 'consciousness_transcript';
-    else if (promptType === 'stock_analysis') key = 'assets_stock';
+    else if (promptType === 'stock_analysis') key = 'stock_analysis'; // short inline prompt
+    else if (promptType === 'stock_full') key = 'assets_stock';      // full VM Hands-on
     else if (promptType === 'enrich_contact') key = 'relationship_enrich';
     else if (domain && promptType) key = `${domain}_${promptType}`;
     else if (domain) key = `${domain}_daily`;
