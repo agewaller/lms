@@ -151,6 +151,11 @@
       if (savedFb) Object.assign(CONFIG.firebase, JSON.parse(savedFb));
       const savedWorker = localStorage.getItem('lms_workerUrl');
       if (savedWorker) CONFIG.endpoints.anthropic = savedWorker;
+      // OAuth Client IDs (cached before Firestore load)
+      const savedOAuth = localStorage.getItem('lms_oauthClientIds');
+      if (savedOAuth) {
+        CONFIG.oauthClientIds = { ...CONFIG.oauthClientIds, ...JSON.parse(savedOAuth) };
+      }
     } catch (e) {}
 
     const params = new URLSearchParams(window.location.search);
