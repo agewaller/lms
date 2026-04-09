@@ -5,3 +5,10 @@
 !.env.example
 node_modules/
 .DS_Store
+
+# Japanese stock trading system (secrets & local artifacts)
+docs/japanese-stock-trading-system/python/secrets.ini
+docs/japanese-stock-trading-system/python/config.yaml
+docs/japanese-stock-trading-system/python/python_errors.log
+docs/japanese-stock-trading-system/**/.venv/
+docs/japanese-stock-trading-system/**/__pycache__/

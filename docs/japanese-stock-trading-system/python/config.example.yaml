@@ -1,0 +1,18 @@
+excel:
+  workbook: "C:/Trading/trading.xlsm"
+  backup_dir: "C:/Trading/backups"
+
+logs:
+  root_dir: "C:/Trading/logs"
+  format: "both"              # csv | sqlite | both
+  sqlite_path: "C:/Trading/logs/trades.sqlite"
+
+notify:
+  enabled: true
+  channel: "#trading"
+  paper_prefix: "[PAPER]"
+  dedupe_seconds: 30
+
+import:
+  screening_csv: "C:/Trading/inbound/screening.csv"
+  min_volume: 100000
