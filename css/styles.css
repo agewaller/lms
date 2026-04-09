@@ -396,6 +396,164 @@ select.form-input { appearance: auto; }
   align-self: center;
 }
 
+/* ─── Plaud Settings Card (意識ドメイン) ─── */
+.plaud-settings-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 4px solid #9B59B6;
+  border-radius: var(--radius-sm);
+  padding: 18px 20px;
+  margin: 20px 0;
+}
+.plaud-settings-card .ps-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.plaud-settings-card .ps-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.plaud-settings-card .ps-title h3 { margin: 0; font-size: 16px; }
+.plaud-settings-card .ps-icon { font-size: 22px; }
+.plaud-settings-card .ps-warning {
+  background: #FFF4D6;
+  color: #7a5b00;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.plaud-settings-card .ps-email {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+.plaud-settings-card .ps-email label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+.plaud-settings-card .ps-email-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.plaud-settings-card .ps-email-box code {
+  flex: 1;
+  font-size: 13px;
+  padding: 6px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  word-break: break-all;
+}
+.plaud-settings-card .ps-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 6px 0 0;
+  line-height: 1.5;
+}
+.plaud-settings-card .ps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.plaud-settings-card .ps-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: 6px;
+}
+.plaud-settings-card .ps-field .ps-hint { margin-top: 4px; }
+.plaud-settings-card .ps-interval { max-width: 180px; }
+.plaud-settings-card .ps-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.plaud-settings-card .ps-switch input { display: none; }
+.plaud-settings-card .ps-switch-slider {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  background: var(--border);
+  border-radius: 11px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.plaud-settings-card .ps-switch-slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.plaud-settings-card .ps-switch input:checked + .ps-switch-slider {
+  background: #9B59B6;
+}
+.plaud-settings-card .ps-switch input:checked + .ps-switch-slider::after {
+  transform: translateX(18px);
+}
+.plaud-settings-card .ps-switch-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.plaud-settings-card .ps-status {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-top: 1px dashed var(--border);
+  font-size: 12px;
+}
+.plaud-settings-card .ps-status-item { display: flex; gap: 6px; }
+.plaud-settings-card .ps-status-label { color: var(--text-secondary); }
+.plaud-settings-card .ps-status-value { font-weight: 600; }
+.plaud-settings-card .ps-status-error .ps-status-value { color: #c0392b; }
+.plaud-settings-card .ps-log {
+  margin-top: 8px;
+  font-size: 12px;
+}
+.plaud-settings-card .ps-log summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 4px 0;
+}
+.plaud-settings-card .ps-log ul {
+  list-style: none;
+  padding: 8px 0 0;
+  margin: 0;
+}
+.plaud-settings-card .ps-log li {
+  padding: 4px 0;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 11px;
+}
+.plaud-settings-card .ps-log .log-error { color: #c0392b; }
+.plaud-settings-card .ps-log .log-empty { color: var(--text-secondary); }
+.plaud-settings-card .ps-log .log-ok { color: #27ae60; }
+
 /* ─── Consciousness Trend (時系列 積み上げグラフ) ─── */
 .consciousness-trend-section {
   background: var(--bg-secondary);
@@ -406,11 +564,22 @@ select.form-input { appearance: auto; }
 }
 .consciousness-trend-section .trend-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 4px;
   flex-wrap: wrap;
+}
+.consciousness-trend-section .trend-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.consciousness-trend-section .trend-source {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin: 2px 0 0;
 }
 .consciousness-trend-section h3 { margin: 0; }
 .consciousness-trend-section .trend-hint {

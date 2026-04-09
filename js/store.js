@@ -107,6 +107,18 @@ var Store = class Store {
       cachedResearch: null,
       aiComments: [],
 
+      // Plaud / Zen Track settings (consciousness domain)
+      plaudSettings: {
+        autoSync: true,            // poll inbox automatically
+        intervalMinutes: 5,        // how often to poll (minutes)
+        autoAnalyze: true,         // run Zen Track after ingest
+        promptKey: 'consciousness_transcript', // 禅トラック prompt
+        notifyOnSync: true,        // toast notifications on new data
+        lastSyncAt: null,          // ISO timestamp of last successful poll
+        lastError: null,           // last error message (if any)
+        syncLog: []                // last N sync results {at, fetched, processed, analyzed, error}
+      },
+
       // Notifications
       notifications: [],
       unreadCount: 0
@@ -182,7 +194,8 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'plaudSettings', 'consciousnessTrendRange'
     ];
   }
 

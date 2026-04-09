@@ -40,12 +40,21 @@ var App = class App {
   }
 
   // ─── Inbox polling: fetch Plaud auto-sent transcripts ───
+  // Interval and on/off are driven by plaudSettings (user-configurable
+  // via the Plaud設定 card on the consciousness home page).
   startInboxPolling() {
-    if (this._inboxPollTimer) return;
+    this.stopInboxPolling(); // ensure clean slate
 
-    // Poll immediately, then every 2 minutes
+    const settings = (typeof plaud !== 'undefined' && plaud.getSettings)
+      ? plaud.getSettings()
+      : { autoSync: true, intervalMinutes: 5 };
+
+    if (!settings.autoSync) return;
+
+    // Poll immediately, then on the configured interval
     this.pollPlaudInbox();
-    this._inboxPollTimer = setInterval(() => this.pollPlaudInbox(), 2 * 60 * 1000);
+    const intervalMs = Math.max(1, settings.intervalMinutes || 5) * 60 * 1000;
+    this._inboxPollTimer = setInterval(() => this.pollPlaudInbox(), intervalMs);
   }
 
   stopInboxPolling() {
@@ -53,6 +62,11 @@ var App = class App {
       clearInterval(this._inboxPollTimer);
       this._inboxPollTimer = null;
     }
+  }
+
+  restartInboxPolling() {
+    this.stopInboxPolling();
+    this.startInboxPolling();
   }
 
   async pollPlaudInbox() {
@@ -69,10 +83,15 @@ var App = class App {
       }
 
       if (totalProcessed > 0) {
-        Components.showToast(
-          `意識データを${totalProcessed}件取り込みました`,
-          'success'
-        );
+        const notify = (typeof plaud !== 'undefined' && plaud.getSettings)
+          ? plaud.getSettings().notifyOnSync !== false
+          : true;
+        if (notify) {
+          Components.showToast(
+            `意識データを${totalProcessed}件取り込みました（禅トラック分析も完了）`,
+            'success'
+          );
+        }
         const page = store.get('currentPage');
         const domain = store.get('currentDomain');
         if (domain === 'consciousness' || page === 'integrations') {
@@ -886,6 +905,85 @@ var App = class App {
     localStorage.removeItem('lms_whisper_proxy');
     Components.showToast('Whisper設定を解除しました', 'success');
     this.renderApp();
+  }
+
+  // ─── Plaud Settings handlers (Plaud設定カード) ───
+  plaudToggleAutoSync(enabled) {
+    plaud.updateSettings({ autoSync: !!enabled });
+    if (enabled) {
+      this.restartInboxPolling();
+      Components.showToast('自動同期を有効にしました', 'success');
+    } else {
+      this.stopInboxPolling();
+      Components.showToast('自動同期を停止しました', 'info');
+    }
+    this.renderApp();
+  }
+
+  plaudSetInterval(minutes) {
+    const m = parseInt(minutes, 10);
+    if (!m || m < 1) return;
+    plaud.updateSettings({ intervalMinutes: m });
+    this.restartInboxPolling();
+    Components.showToast(`${m}分ごとに同期します`, 'success');
+    this.renderApp();
+  }
+
+  plaudToggleAutoAnalyze(enabled) {
+    plaud.updateSettings({ autoAnalyze: !!enabled });
+    Components.showToast(
+      enabled ? '禅トラック自動分析を有効にしました' : '禅トラック自動分析を停止しました',
+      'success'
+    );
+    this.renderApp();
+  }
+
+  plaudToggleNotify(enabled) {
+    plaud.updateSettings({ notifyOnSync: !!enabled });
+    this.renderApp();
+  }
+
+  async plaudRunSyncNow() {
+    Components.showToast('Plaud受信箱を同期しています...', 'info');
+    const result = await this.pollPlaudInbox();
+    this.renderApp();
+    return result;
+  }
+
+  async plaudRunZenTrackNow() {
+    const btn = document.getElementById('btnZenTrackNow');
+    if (btn) { btn.disabled = true; btn.textContent = '🧠 禅トラック分析中...'; }
+    try {
+      const res = await plaud.reanalyzeLatestTranscript();
+      if (!res.ok) {
+        Components.showToast(res.error, 'warning');
+        return;
+      }
+      Components.showToast(`禅トラック分析が完了しました（${res.transcriptTitle}）`, 'success');
+      // Rerender so the chart picks up the new observation
+      this.renderApp();
+      // Optional: show the analysis result
+      if (res.result) {
+        this.openModal('禅トラック分析結果', `<div class="analysis-content">${Components.formatMarkdown(res.result)}</div>`);
+      }
+    } catch (e) {
+      Components.showToast(e.message || '分析に失敗しました', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '🧠 禅トラックいま実行'; }
+    }
+  }
+
+  plaudCopyIngestEmail() {
+    const email = (typeof plaud !== 'undefined' && plaud.getIngestEmail) ? plaud.getIngestEmail() : null;
+    if (!email) {
+      Components.showToast('ログインすると専用アドレスが発行されます', 'info');
+      return;
+    }
+    navigator.clipboard.writeText(email).then(() => {
+      Components.showToast('コピーしました', 'success');
+    }).catch(() => {
+      Components.showToast(email, 'info');
+    });
   }
 
   async importPlaud() {

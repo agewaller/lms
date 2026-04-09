@@ -110,8 +110,9 @@ var Pages = {
 
     // ─── Domain-specific widgets ───
 
-    // Consciousness domain: 7-layer visualization + trend chart + transcript input
+    // Consciousness domain: Plaud settings + 7-layer + trend chart + transcript input
     if (domain === 'consciousness') {
+      html += this.renderPlaudSettingsCard();
       html += this.renderConsciousnessLayers();
       html += this.renderConsciousnessTrend();
       html += this.renderTranscriptInput();
@@ -226,31 +227,187 @@ var Pages = {
     return html;
   },
 
+  // ─── Plaud Settings Card (意識ドメイン ホーム用) ───
+  // 自動同期ON/OFF / 間隔 / 禅トラック自動分析 / 受信アドレス / 同期ログ
+  renderPlaudSettingsCard() {
+    const settings = (typeof plaud !== 'undefined' && plaud.getSettings) ? plaud.getSettings() : null;
+    if (!settings) return '';
+    const ingestEmail = (typeof plaud !== 'undefined' && plaud.getIngestEmail) ? plaud.getIngestEmail() : null;
+
+    const intervals = [1, 2, 5, 15, 30, 60];
+    const lastSync = settings.lastSyncAt
+      ? new Date(settings.lastSyncAt).toLocaleString('ja-JP', { hour12: false })
+      : '未同期';
+    const endpointConfigured = !!(CONFIG.endpoints?.emailIngest);
+    const statusBadge = !endpointConfigured
+      ? '<span class="status-badge warning">メールingest未設定</span>'
+      : settings.autoSync
+        ? '<span class="status-badge connected">自動同期ON</span>'
+        : '<span class="status-badge">自動同期OFF</span>';
+
+    const recentLog = (settings.syncLog || []).slice(-3).reverse();
+
+    return `<div class="plaud-settings-card">
+      <div class="ps-header">
+        <div class="ps-title">
+          <span class="ps-icon">🎙️</span>
+          <h3>Plaud自動取込設定</h3>
+          ${statusBadge}
+        </div>
+        <div class="ps-actions">
+          <button class="btn btn-sm btn-primary"
+            onclick="app.plaudRunSyncNow()">
+            ⟳ いますぐ同期
+          </button>
+        </div>
+      </div>
+
+      ${!endpointConfigured ? `
+        <div class="ps-warning">
+          ⚠️ メール取込エンドポイントが設定されていません。管理者に <code>CONFIG.endpoints.emailIngest</code> の設定を依頼してください。
+        </div>
+      ` : ''}
+
+      <div class="ps-email">
+        <label>あなた専用の受信アドレス（Plaud自動送信先）</label>
+        <div class="ps-email-box">
+          <code>${ingestEmail || 'ログイン後に発行されます'}</code>
+          ${ingestEmail ? `
+            <button class="btn btn-sm" onclick="app.plaudCopyIngestEmail()">コピー</button>
+          ` : ''}
+        </div>
+        <p class="ps-hint">Plaudアプリ → 設定 → 自動送信先にこのアドレスを登録すると、録音するたびに自動で取り込まれます。</p>
+      </div>
+
+      <div class="ps-grid">
+
+        <div class="ps-field">
+          <label class="ps-switch">
+            <input type="checkbox" ${settings.autoSync ? 'checked' : ''}
+              onchange="app.plaudToggleAutoSync(this.checked)">
+            <span class="ps-switch-slider"></span>
+            <span class="ps-switch-label">受信箱を自動同期</span>
+          </label>
+          <p class="ps-hint">ONにすると指定した間隔でメールを取り込みます</p>
+        </div>
+
+        <div class="ps-field">
+          <label>同期間隔</label>
+          <select class="form-input ps-interval"
+            onchange="app.plaudSetInterval(this.value)"
+            ${!settings.autoSync ? 'disabled' : ''}>
+            ${intervals.map(m => `
+              <option value="${m}" ${settings.intervalMinutes === m ? 'selected' : ''}>${m}分ごと</option>
+            `).join('')}
+          </select>
+        </div>
+
+        <div class="ps-field">
+          <label class="ps-switch">
+            <input type="checkbox" ${settings.autoAnalyze ? 'checked' : ''}
+              onchange="app.plaudToggleAutoAnalyze(this.checked)">
+            <span class="ps-switch-slider"></span>
+            <span class="ps-switch-label">禅トラック 自動分析</span>
+          </label>
+          <p class="ps-hint">取込後に自動で七つの意識レイヤー分析を実行し、グラフに反映します</p>
+        </div>
+
+        <div class="ps-field">
+          <label class="ps-switch">
+            <input type="checkbox" ${settings.notifyOnSync ? 'checked' : ''}
+              onchange="app.plaudToggleNotify(this.checked)">
+            <span class="ps-switch-slider"></span>
+            <span class="ps-switch-label">同期時に通知</span>
+          </label>
+          <p class="ps-hint">新しいデータが届いたらトーストで知らせます</p>
+        </div>
+
+      </div>
+
+      <div class="ps-status">
+        <div class="ps-status-item">
+          <span class="ps-status-label">最終同期</span>
+          <span class="ps-status-value">${lastSync}</span>
+        </div>
+        ${settings.lastError ? `
+          <div class="ps-status-item ps-status-error">
+            <span class="ps-status-label">直近のエラー</span>
+            <span class="ps-status-value">${settings.lastError}</span>
+          </div>
+        ` : ''}
+      </div>
+
+      ${recentLog.length > 0 ? `
+        <details class="ps-log">
+          <summary>同期ログ（直近 ${recentLog.length} 件）</summary>
+          <ul>
+            ${recentLog.map(l => {
+              const when = new Date(l.at).toLocaleString('ja-JP', { hour12: false });
+              if (l.error) {
+                return `<li class="log-error">❌ ${when} — エラー: ${l.error}</li>`;
+              }
+              if (l.fetched === 0) {
+                return `<li class="log-empty">· ${when} — 新着なし</li>`;
+              }
+              return `<li class="log-ok">✓ ${when} — 受信${l.fetched}件 / 取込${l.processed} / 禅トラック分析${l.analyzed || 0}</li>`;
+            }).join('')}
+          </ul>
+        </details>
+      ` : ''}
+    </div>`;
+  },
+
   // ─── Consciousness Trend (時系列 積み上げグラフ) ───
   // 七つの意識レイヤーの日次比率を、欠損日は線形補間で滑らかに繋げて表示。
   // Chart.js の stacked area (line+fill) を後から app.renderApp が初期化する。
+  // データ源: 禅トラック プロンプト → parseAndSaveObservation → consciousness_observation
   renderConsciousnessTrend() {
     const observations = store.getDomainData('consciousness', 'observation', 60) || [];
+    const transcripts = store.get('consciousness_transcript') || [];
+    const hasTranscript = transcripts.length > 0;
 
     if (observations.length === 0) {
       return `<div class="consciousness-trend-section">
-        <h3>📈 時系列 積み上げグラフ</h3>
-        ${Components.emptyState('📊', 'まだ記録がありません',
-          '文字起こしを分析するか「記録する」から定点観測を入力すると、ここに時系列グラフが表示されます')}
+        <div class="trend-header">
+          <h3>📈 時系列 積み上げグラフ</h3>
+          ${hasTranscript ? `
+            <button id="btnZenTrackNow" class="btn btn-sm btn-primary"
+              onclick="app.plaudRunZenTrackNow()">🧠 禅トラックいま実行</button>
+          ` : ''}
+        </div>
+        ${Components.emptyState('📊', 'まだ観測データがありません',
+          hasTranscript
+            ? '文字起こしは取り込み済みです。「禅トラックいま実行」でAI分析を走らせるとグラフが表示されます。'
+            : 'Plaudで録音するか文字起こしを取り込むと、禅トラック（七つの意識レイヤー）で自動分析されてここに時系列グラフが表示されます。')}
       </div>`;
     }
 
     // Range selector defaults to 30 days
     const range = store.get('consciousnessTrendRange') || 30;
 
+    // Show when the most recent Zen Track observation was generated
+    const latestObs = observations[observations.length - 1];
+    const latestObsAt = latestObs?.timestamp
+      ? new Date(latestObs.timestamp).toLocaleString('ja-JP', { hour12: false })
+      : null;
+
     return `<div class="consciousness-trend-section">
       <div class="trend-header">
-        <h3>📈 時系列 積み上げグラフ</h3>
-        <div class="trend-range-tabs">
-          ${[7, 30, 60].map(d => `
-            <button class="trend-range-btn ${range === d ? 'active' : ''}"
-              onclick="app.setConsciousnessTrendRange(${d})">${d}日</button>
-          `).join('')}
+        <div>
+          <h3>📈 時系列 積み上げグラフ</h3>
+          <p class="trend-source">禅トラック (Zen Track) 分析結果を可視化 ${latestObsAt ? `· 最終分析: ${latestObsAt}` : ''}</p>
+        </div>
+        <div class="trend-header-actions">
+          <div class="trend-range-tabs">
+            ${[7, 30, 60].map(d => `
+              <button class="trend-range-btn ${range === d ? 'active' : ''}"
+                onclick="app.setConsciousnessTrendRange(${d})">${d}日</button>
+            `).join('')}
+          </div>
+          ${hasTranscript ? `
+            <button id="btnZenTrackNow" class="btn btn-sm btn-primary"
+              onclick="app.plaudRunZenTrackNow()">🧠 禅トラックいま実行</button>
+          ` : ''}
         </div>
       </div>
       <p class="trend-hint">七つのレイヤーの比率を時系列で積み上げ表示。記録のない日は前後の値を線形補間で滑らかに繋いでいます。</p>
@@ -258,7 +415,7 @@ var Pages = {
         <canvas id="consciousnessTrendChart" height="260"></canvas>
       </div>
       <div class="trend-netvalue-wrap">
-        <h4>純価値の推移</h4>
+        <h4>純価値の推移（エネルギー＋徳−欲）</h4>
         <canvas id="consciousnessNetValueChart" height="120"></canvas>
       </div>
     </div>`;

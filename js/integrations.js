@@ -27,6 +27,43 @@ var plaud = {
     return generateUserEmail();
   },
 
+  // ─── Settings (store.plaudSettings) ───
+  defaultSettings: {
+    autoSync: true,
+    intervalMinutes: 5,
+    autoAnalyze: true,
+    promptKey: 'consciousness_transcript', // 禅トラック
+    notifyOnSync: true,
+    lastSyncAt: null,
+    lastError: null,
+    syncLog: []
+  },
+
+  getSettings() {
+    const s = store.get('plaudSettings') || {};
+    return { ...this.defaultSettings, ...s };
+  },
+
+  updateSettings(patch) {
+    const current = this.getSettings();
+    const next = { ...current, ...patch };
+    store.set('plaudSettings', next);
+    return next;
+  },
+
+  logSync(entry) {
+    const current = this.getSettings();
+    const log = [...(current.syncLog || []), {
+      at: new Date().toISOString(),
+      ...entry
+    }].slice(-10); // keep last 10
+    this.updateSettings({
+      syncLog: log,
+      lastSyncAt: new Date().toISOString(),
+      lastError: entry.error || null
+    });
+  },
+
   // Parse Plaud transcript format: [HH:MM:SS] Speaker: text
   parseTranscript(text) {
     if (!text) return { entries: [], wordCount: 0, speakers: [] };
@@ -100,22 +137,35 @@ var plaud = {
 
   // ─── Auto-ingest: poll the email ingest worker for new messages ───
   // Called on login and periodically. Fetches any pending emails sent to
-  // this user's unique address, processes them, runs AI analysis,
-  // and saves results to Firestore.
+  // this user's unique address, processes them, runs Zen Track analysis,
+  // and saves results (observation row) to drive the trend chart.
   async pollInbox() {
+    const settings = this.getSettings();
     const email = generateUserEmail();
     if (!email) return { fetched: 0, processed: 0 };
 
     const hash = simpleHash((store.get('user')?.uid || store.get('user')?.email || 'anon'));
     const endpoint = CONFIG.endpoints?.emailIngest;
-    if (!endpoint) return { fetched: 0, processed: 0 };
+    if (!endpoint) {
+      const result = { fetched: 0, processed: 0, error: 'ingest endpoint未設定' };
+      this.logSync(result);
+      return result;
+    }
 
     try {
       const res = await fetch(`${endpoint}/pending?hash=${hash}`, { method: 'GET' });
-      if (!res.ok) return { fetched: 0, processed: 0 };
+      if (!res.ok) {
+        const result = { fetched: 0, processed: 0, error: `HTTP ${res.status}` };
+        this.logSync(result);
+        return result;
+      }
 
       const { messages } = await res.json();
-      if (!messages || messages.length === 0) return { fetched: 0, processed: 0 };
+      if (!messages || messages.length === 0) {
+        const result = { fetched: 0, processed: 0, analyzed: 0 };
+        this.logSync(result);
+        return result;
+      }
 
       const processedIds = [];
       let analyzed = 0;
@@ -133,18 +183,24 @@ var plaud = {
             source: 'plaud_email'
           });
 
-          // Auto-analyze with Zen Track prompt
-          try {
-            const result = await AIEngine.analyze('consciousness', 'transcript_analysis', {
-              text: `<<<TRANSCRIPT_START\n${text}\nTRANSCRIPT_END>>>`
-            });
-            // Parse and save observation (7-layer analysis)
-            if (typeof app !== 'undefined' && app.parseAndSaveObservation) {
-              app.parseAndSaveObservation(result);
+          // Auto-analyze with Zen Track prompt (if enabled)
+          if (settings.autoAnalyze) {
+            try {
+              // promptType='transcript_analysis' is aliased to the
+              // `consciousness_transcript` prompt key (禅トラック) in
+              // AIEngine.buildSystemPrompt.
+              const result = await AIEngine.analyze('consciousness', 'transcript_analysis', {
+                text: `<<<TRANSCRIPT_START\n${text}\nTRANSCRIPT_END>>>`
+              });
+              // Parse and save observation (7-layer analysis)
+              // → flows into consciousness_observation → trend chart
+              if (typeof app !== 'undefined' && app.parseAndSaveObservation) {
+                app.parseAndSaveObservation(result);
+              }
+              analyzed++;
+            } catch (e) {
+              console.warn('Zen Track analysis failed for message', msg.id, e);
             }
-            analyzed++;
-          } catch (e) {
-            console.warn('Auto-analysis failed for message', msg.id, e);
           }
 
           processedIds.push(msg.id);
@@ -162,10 +218,38 @@ var plaud = {
         }).catch(() => {});
       }
 
-      return { fetched: messages.length, processed: processedIds.length, analyzed };
+      const result = { fetched: messages.length, processed: processedIds.length, analyzed };
+      this.logSync(result);
+      return result;
     } catch (e) {
       console.warn('Inbox poll error:', e);
-      return { fetched: 0, processed: 0, error: e.message };
+      const result = { fetched: 0, processed: 0, error: e.message };
+      this.logSync(result);
+      return result;
+    }
+  },
+
+  // ─── Re-analyze the most recent transcript with Zen Track ───
+  // Manual trigger used by the "Zen Track いま実行" button on the trend card.
+  async reanalyzeLatestTranscript() {
+    const transcripts = store.get('consciousness_transcript') || [];
+    if (transcripts.length === 0) {
+      return { ok: false, error: 'まだ文字起こしがありません。まずPlaudから取り込んでください。' };
+    }
+    const latest = transcripts[transcripts.length - 1];
+    const text = latest.content || '';
+    if (!text.trim()) return { ok: false, error: '文字起こしが空です' };
+
+    try {
+      const result = await AIEngine.analyze('consciousness', 'transcript_analysis', {
+        text: `<<<TRANSCRIPT_START(source=${latest.source || 'plaud'})\n${text}\nTRANSCRIPT_END>>>`
+      });
+      if (typeof app !== 'undefined' && app.parseAndSaveObservation) {
+        app.parseAndSaveObservation(result);
+      }
+      return { ok: true, result, transcriptTitle: latest.title || '直近の文字起こし' };
+    } catch (e) {
+      return { ok: false, error: e.message };
     }
   }
 };
