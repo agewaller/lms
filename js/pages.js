@@ -986,6 +986,168 @@ var Pages = {
   },
 
   // ═══════════════════════════════════════════════════════════
+  //  Consciousness Devices Section (意識ドメイン専用)
+  //  Plaud / Otter / Limitless / Bee / Rewind / Whisper / Browser
+  // ═══════════════════════════════════════════════════════════
+  renderConsciousnessDevicesSection(ingestEmail, cx) {
+    const devices = (typeof ConsciousnessIntegrations !== 'undefined')
+      ? ConsciousnessIntegrations.devices : [];
+    if (!devices.length) return '';
+
+    // Group devices by category for readable display
+    const groups = {
+      recorder:       { label: '🎙️ 録音デバイス',        items: [] },
+      wearable:       { label: '🪪 ウェアラブル',          items: [] },
+      meeting:        { label: '💼 会議・通話',            items: [] },
+      desktop:        { label: '🖥️ デスクトップ',          items: [] },
+      device:         { label: '📟 AIデバイス',            items: [] },
+      journal:        { label: '📓 ジャーナルアプリ',      items: [] },
+      behavior:       { label: '📊 行動データ',            items: [] },
+      transcription:  { label: '🗣️ 文字起こしサービス',    items: [] },
+      generic:        { label: '📝 その他',                items: [] }
+    };
+    devices.forEach(d => {
+      (groups[d.category] || groups.generic).items.push(d);
+    });
+
+    const limitlessConnected = cx?.limitless;
+    const beeConnected = cx?.bee;
+    const whisperConnected = cx?.whisper;
+
+    let html = `<div class="card consciousness-devices-card" style="margin-bottom:20px;border-top:3px solid #9B59B6;">
+      <div class="card-header">
+        <h3>🧠 意識 - 録音・行動デバイス連携</h3>
+        <span class="status-badge connected">マルチデバイス対応</span>
+      </div>
+      <div class="card-body">
+        <p>録音デバイス・ウェアラブル・会議ツール・ジャーナルなど、あらゆる意識データソースから取り込み、<strong>七つの意識レイヤー</strong>で自動分析します。</p>
+
+        <!-- ブラウザ内蔵録音 -->
+        <div class="integration-auto-flow">
+          <h4>🔴 このブラウザで今すぐ録音</h4>
+          <p>マイクに向かって話すだけ。Whisperで自動文字起こし→七つのレイヤーで分析します。</p>
+          <div class="form-actions" style="gap:8px;">
+            <button id="cxRecStart" class="btn btn-primary" onclick="app.cxStartRecording()">● 録音開始</button>
+            <button id="cxRecStop" class="btn btn-secondary" onclick="app.cxStopRecording()" disabled>■ 停止して文字起こし</button>
+            <button id="cxRecCancel" class="btn btn-sm btn-secondary" onclick="app.cxCancelRecording()" disabled>キャンセル</button>
+            <span id="cxRecTimer" class="rec-timer" style="margin-left:12px;"></span>
+          </div>
+          ${!whisperConnected ? `<p class="integration-note" style="color:#c0392b">
+            ※ Whisperが未設定のため、録音のみ保存されます。下の「Whisper API」で設定してください。
+          </p>` : ''}
+        </div>
+
+        <!-- デバイスカタログ -->
+        <div class="cx-device-grid">`;
+
+    Object.values(groups).forEach(group => {
+      if (!group.items.length) return;
+      html += `<div class="cx-device-group">
+        <h4 class="cx-group-label">${group.label}</h4>
+        <div class="cx-device-list">`;
+      group.items.forEach(dev => {
+        const statusBadge =
+          (dev.id === 'plaud' && ingestEmail) ? '<span class="cx-badge cx-ok">Email自動取込</span>' :
+          (dev.id === 'limitless' && limitlessConnected) ? '<span class="cx-badge cx-ok">接続済み</span>' :
+          (dev.id === 'bee' && beeConnected) ? '<span class="cx-badge cx-ok">接続済み</span>' :
+          (dev.id === 'whisper' && whisperConnected) ? '<span class="cx-badge cx-ok">設定済み</span>' :
+          (dev.connectVia.includes('file')) ? '<span class="cx-badge">ファイル対応</span>' :
+          '';
+        html += `<div class="cx-device-item">
+          <div class="cx-device-head">
+            <span class="cx-device-icon">${dev.icon}</span>
+            <span class="cx-device-name">${dev.label}</span>
+            ${statusBadge}
+          </div>
+          <p class="cx-device-desc">${dev.description}</p>
+          <div class="cx-device-actions">
+            ${this._cxDeviceActions(dev, { ingestEmail, limitlessConnected, beeConnected, whisperConnected })}
+          </div>
+        </div>`;
+      });
+      html += `</div></div>`;
+    });
+
+    html += `</div>
+
+        <!-- 汎用ファイル取込 (意識用) -->
+        <div class="integration-manual" style="margin-top:20px;">
+          <h4>どのデバイスでも: ファイルまたはテキストを貼り付け</h4>
+          <p>ファイル名から自動的にPlaud/Otter/Rewind/Zoomなどを判別します。音声ファイルはWhisperで文字起こしします。</p>
+          <div class="form-group">
+            <label>文字起こしを貼り付け</label>
+            <textarea id="cxPasteText" class="form-input" rows="5"
+              placeholder="文字起こし / 会話ログ / 日記の本文をここに..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>入力元（省略可）</label>
+            <select id="cxPasteSource" class="form-input">
+              <option value="">自動判別</option>
+              ${devices.map(d => `<option value="${d.id}">${d.icon} ${d.label}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="app.cxIngestPaste()">取り込んで七層分析</button>
+            <input type="file" id="cxFileInput" style="display:none"
+              accept=".txt,.md,.srt,.vtt,.json,.csv,.m4a,.mp3,.wav,.ogg,.flac,.webm,.aac,.mp4"
+              onchange="app.cxIngestFile(event)">
+            <button class="btn btn-secondary" onclick="document.getElementById('cxFileInput').click()">
+              📁 ファイルを選択（音声/テキスト）
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+    return html;
+  },
+
+  // Per-device action buttons
+  _cxDeviceActions(dev, ctx) {
+    const { ingestEmail, limitlessConnected, beeConnected, whisperConnected } = ctx;
+    switch (dev.id) {
+      case 'plaud':
+        return ingestEmail
+          ? `<button class="btn btn-sm btn-primary" onclick="app.cxCopyIngestEmail()">専用アドレスをコピー</button>
+             <button class="btn btn-sm btn-secondary" onclick="app.cxPollNow()">今すぐ取得</button>`
+          : `<span class="cx-muted">ログイン後に利用可</span>`;
+      case 'otter':
+        return ingestEmail
+          ? `<button class="btn btn-sm btn-primary" onclick="app.cxCopyIngestEmail()">専用アドレスをコピー</button>`
+          : '';
+      case 'limitless':
+        return limitlessConnected
+          ? `<button class="btn btn-sm btn-primary" onclick="app.cxLimitlessSync()">今すぐ同期</button>
+             <button class="btn btn-sm btn-secondary" onclick="app.cxLimitlessDisconnect()">解除</button>`
+          : `<button class="btn btn-sm btn-primary" onclick="app.cxLimitlessConnect()">APIキーを設定</button>`;
+      case 'bee':
+        return beeConnected
+          ? `<button class="btn btn-sm btn-primary" onclick="app.cxBeeSync()">今すぐ同期</button>
+             <button class="btn btn-sm btn-secondary" onclick="app.cxBeeDisconnect()">解除</button>`
+          : `<button class="btn btn-sm btn-primary" onclick="app.cxBeeConnect()">APIキーを設定</button>`;
+      case 'whisper':
+        return whisperConnected
+          ? `<button class="btn btn-sm btn-secondary" onclick="app.cxWhisperDisconnect()">設定を解除</button>`
+          : `<button class="btn btn-sm btn-primary" onclick="app.cxWhisperConnect()">APIキーを設定</button>`;
+      case 'browser_voice':
+        return `<span class="cx-muted">上の「今すぐ録音」をご利用ください</span>`;
+      case 'rewind':
+      case 'humane':
+      case 'rabbit':
+      case 'zoom':
+      case 'voice_memo':
+      case 'notion':
+      case 'obsidian':
+      case 'screen_time':
+      case 'digital_wellbeing':
+      case 'generic_transcript':
+        return `<button class="btn btn-sm btn-secondary"
+          onclick="app.cxPickFileFor('${dev.id}')">ファイルを選択</button>`;
+      default:
+        return '';
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════
   //  INTEGRATIONS PAGE (未病ダイアリー方式)
   // ═══════════════════════════════════════════════════════════
   renderIntegrations(domain) {
@@ -995,10 +1157,14 @@ var Pages = {
     const gcalConnected = typeof googleCalendar !== 'undefined' && googleCalendar.isConnected();
     const outlookConnected = typeof outlookCalendar !== 'undefined' && outlookCalendar.isConnected();
     const gmailConnected = typeof gmailIntegration !== 'undefined' && gmailIntegration.isConnected();
+    const cx = typeof ConsciousnessIntegrations !== 'undefined'
+      ? ConsciousnessIntegrations.connectionSummary() : {};
 
     let html = `<div class="page-integrations">
       <h2>連携・データ取り込み</h2>
       <p class="page-desc">外部のアプリやファイルからデータを取り込めます。</p>
+
+      ${this.renderConsciousnessDevicesSection(ingestEmail, cx)}
 
       <!-- Plaud (自動フロー + 手動貼り付け) -->
       <div class="card" style="margin-bottom:20px;">

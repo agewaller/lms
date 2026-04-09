@@ -56,15 +56,23 @@ var App = class App {
   }
 
   async pollPlaudInbox() {
-    if (typeof plaud === 'undefined' || !plaud.pollInbox) return;
+    // Unified consciousness poll: Plaud email + Limitless API + Bee API
     try {
-      const result = await plaud.pollInbox();
-      if (result?.processed > 0) {
+      let totalProcessed = 0;
+      if (typeof ConsciousnessIntegrations !== 'undefined'
+          && ConsciousnessIntegrations.pollAll) {
+        const r = await ConsciousnessIntegrations.pollAll();
+        totalProcessed = (r.plaud || 0) + (r.limitless || 0) + (r.bee || 0);
+      } else if (typeof plaud !== 'undefined' && plaud.pollInbox) {
+        const result = await plaud.pollInbox();
+        totalProcessed = result?.processed || 0;
+      }
+
+      if (totalProcessed > 0) {
         Components.showToast(
-          `Plaudから${result.processed}件の文字起こしを取り込みました`,
+          `意識データを${totalProcessed}件取り込みました`,
           'success'
         );
-        // Re-render if on consciousness domain or integrations page
         const page = store.get('currentPage');
         const domain = store.get('currentDomain');
         if (domain === 'consciousness' || page === 'integrations') {
@@ -643,6 +651,227 @@ var App = class App {
       }
     };
     reader.readAsText(file);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  Consciousness device integrations (録音・行動デバイス)
+  //  Delegates to ConsciousnessIntegrations module.
+  // ═══════════════════════════════════════════════════════════
+
+  cxCopyIngestEmail() {
+    const email = (typeof generateUserEmail === 'function') ? generateUserEmail() : null;
+    if (!email) {
+      Components.showToast('ログイン後に利用できます', 'info');
+      return;
+    }
+    try {
+      navigator.clipboard.writeText(email);
+      Components.showToast('専用アドレスをコピーしました', 'success');
+    } catch (e) {
+      Components.showToast(email, 'info');
+    }
+  }
+
+  async cxPollNow() {
+    if (typeof ConsciousnessIntegrations === 'undefined') return;
+    Components.showToast('受信箱を確認中...', 'info');
+    const r = await ConsciousnessIntegrations.pollAll();
+    const total = (r.plaud || 0) + (r.limitless || 0) + (r.bee || 0);
+    Components.showToast(total > 0 ? `${total}件の録音を取り込みました` : '新しいデータはありません',
+      total > 0 ? 'success' : 'info');
+    this.renderApp();
+  }
+
+  async cxIngestPaste() {
+    const text = document.getElementById('cxPasteText')?.value?.trim();
+    const sourceId = document.getElementById('cxPasteSource')?.value || '';
+    if (!text) {
+      Components.showToast('テキストを入力してください', 'info');
+      return;
+    }
+    Components.showToast('取り込み中... 七つのレイヤーで分析します', 'info');
+    try {
+      const result = await ConsciousnessIntegrations.ingestText(
+        text,
+        sourceId || ConsciousnessIntegrations.detectSource(text.slice(0, 200))
+      );
+      if (result.analysis) {
+        this.openModal('分析結果',
+          `<div class="analysis-content">${Components.formatMarkdown(result.analysis)}</div>`);
+      }
+      const ta = document.getElementById('cxPasteText');
+      if (ta) ta.value = '';
+      Components.showToast('取り込み + 分析が完了しました', 'success');
+    } catch (e) {
+      Components.showToast('失敗: ' + e.message, 'error');
+    }
+  }
+
+  async cxIngestFile(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const hint = this._cxNextFileHint || null;
+    this._cxNextFileHint = null;
+    Components.showToast(`${file.name} を処理中...`, 'info');
+    try {
+      const result = await ConsciousnessIntegrations.ingestFile(file, hint);
+      if (result?.analysis) {
+        this.openModal('分析結果',
+          `<div class="analysis-content">${Components.formatMarkdown(result.analysis)}</div>`);
+      }
+      Components.showToast('取り込み完了', 'success');
+      this.renderApp();
+    } catch (e) {
+      Components.showToast('失敗: ' + e.message, 'error');
+    } finally {
+      event.target.value = '';
+    }
+  }
+
+  cxPickFileFor(sourceId) {
+    this._cxNextFileHint = sourceId;
+    const input = document.getElementById('cxFileInput');
+    if (input) input.click();
+  }
+
+  // ─── Browser voice recording ───
+  async cxStartRecording() {
+    if (typeof ConsciousnessIntegrations === 'undefined') return;
+    try {
+      await ConsciousnessIntegrations.recorder.start();
+      const startBtn = document.getElementById('cxRecStart');
+      const stopBtn = document.getElementById('cxRecStop');
+      const cancelBtn = document.getElementById('cxRecCancel');
+      if (startBtn) startBtn.disabled = true;
+      if (stopBtn) stopBtn.disabled = false;
+      if (cancelBtn) cancelBtn.disabled = false;
+      this._cxRecStartedAt = Date.now();
+      this._cxRecTimer = setInterval(() => {
+        const el = document.getElementById('cxRecTimer');
+        if (!el) return;
+        const s = Math.round((Date.now() - this._cxRecStartedAt) / 1000);
+        const mm = String(Math.floor(s / 60)).padStart(2, '0');
+        const ss = String(s % 60).padStart(2, '0');
+        el.textContent = `● REC ${mm}:${ss}`;
+      }, 500);
+      Components.showToast('録音を開始しました', 'success');
+    } catch (e) {
+      Components.showToast('録音できません: ' + e.message, 'error');
+    }
+  }
+
+  async cxStopRecording() {
+    if (typeof ConsciousnessIntegrations === 'undefined') return;
+    clearInterval(this._cxRecTimer);
+    this._cxRecTimer = null;
+    const startBtn = document.getElementById('cxRecStart');
+    const stopBtn = document.getElementById('cxRecStop');
+    const cancelBtn = document.getElementById('cxRecCancel');
+    if (startBtn) startBtn.disabled = false;
+    if (stopBtn) stopBtn.disabled = true;
+    if (cancelBtn) cancelBtn.disabled = true;
+    const timerEl = document.getElementById('cxRecTimer');
+    if (timerEl) timerEl.textContent = '文字起こし中...';
+    try {
+      const result = await ConsciousnessIntegrations.stopAndTranscribe();
+      if (timerEl) timerEl.textContent = '';
+      if (result?.audioOnly) {
+        Components.showToast('録音のみ保存しました（Whisper未設定）', 'info');
+      } else {
+        Components.showToast('文字起こしと分析が完了しました', 'success');
+        if (result?.analysis) {
+          this.openModal('分析結果',
+            `<div class="analysis-content">${Components.formatMarkdown(result.analysis)}</div>`);
+        }
+      }
+      this.renderApp();
+    } catch (e) {
+      if (timerEl) timerEl.textContent = '';
+      Components.showToast('失敗: ' + e.message, 'error');
+    }
+  }
+
+  async cxCancelRecording() {
+    if (typeof ConsciousnessIntegrations === 'undefined') return;
+    clearInterval(this._cxRecTimer);
+    this._cxRecTimer = null;
+    await ConsciousnessIntegrations.recorder.cancel();
+    const startBtn = document.getElementById('cxRecStart');
+    const stopBtn = document.getElementById('cxRecStop');
+    const cancelBtn = document.getElementById('cxRecCancel');
+    if (startBtn) startBtn.disabled = false;
+    if (stopBtn) stopBtn.disabled = true;
+    if (cancelBtn) cancelBtn.disabled = true;
+    const timerEl = document.getElementById('cxRecTimer');
+    if (timerEl) timerEl.textContent = '';
+    Components.showToast('録音をキャンセルしました', 'info');
+  }
+
+  // ─── Limitless Pendant ───
+  cxLimitlessConnect() {
+    const key = prompt('Limitless APIキーを入力してください\n(https://www.limitless.ai/developers)');
+    if (!key) return;
+    ConsciousnessIntegrations.limitless.setKey(key.trim());
+    Components.showToast('Limitless APIキーを保存しました', 'success');
+    this.renderApp();
+  }
+  cxLimitlessDisconnect() {
+    ConsciousnessIntegrations.limitless.disconnect();
+    Components.showToast('接続を解除しました', 'success');
+    this.renderApp();
+  }
+  async cxLimitlessSync() {
+    Components.showToast('Limitless同期中...', 'info');
+    try {
+      const n = await ConsciousnessIntegrations.limitless.sync(24);
+      Components.showToast(`${n}件の Lifelog を取り込みました`, 'success');
+      this.renderApp();
+    } catch (e) {
+      Components.showToast('失敗: ' + e.message, 'error');
+    }
+  }
+
+  // ─── Bee AI ───
+  cxBeeConnect() {
+    const key = prompt('Bee AI APIキーを入力してください\n(https://developer.bee.computer)');
+    if (!key) return;
+    ConsciousnessIntegrations.bee.setKey(key.trim());
+    Components.showToast('Bee APIキーを保存しました', 'success');
+    this.renderApp();
+  }
+  cxBeeDisconnect() {
+    ConsciousnessIntegrations.bee.disconnect();
+    Components.showToast('接続を解除しました', 'success');
+    this.renderApp();
+  }
+  async cxBeeSync() {
+    Components.showToast('Bee同期中...', 'info');
+    try {
+      const n = await ConsciousnessIntegrations.bee.sync();
+      Components.showToast(`${n}件の会話を取り込みました`, 'success');
+      this.renderApp();
+    } catch (e) {
+      Components.showToast('失敗: ' + e.message, 'error');
+    }
+  }
+
+  // ─── Whisper (OpenAI) ───
+  cxWhisperConnect() {
+    const key = prompt('OpenAI APIキー (sk-...) を入力するか、プロキシURLを入力してください');
+    if (!key) return;
+    if (key.startsWith('http')) {
+      localStorage.setItem('lms_whisper_proxy', key.trim());
+    } else {
+      ConsciousnessIntegrations.whisper.setKey(key.trim());
+    }
+    Components.showToast('Whisperを設定しました', 'success');
+    this.renderApp();
+  }
+  cxWhisperDisconnect() {
+    ConsciousnessIntegrations.whisper.disconnect();
+    localStorage.removeItem('lms_whisper_proxy');
+    Components.showToast('Whisper設定を解除しました', 'success');
+    this.renderApp();
   }
 
   async importPlaud() {
