@@ -954,6 +954,16 @@ select.form-input { appearance: auto; }
 }
 .disease-item:hover { background: var(--bg-hover); }
 .disease-item input[type="checkbox"] { width: 16px; height: 16px; }
+
+/* User filters (admin users tab) */
+.user-filters {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.user-filters .form-group { margin-bottom: 0; }
 .admin-user-info {
   display: flex;
   align-items: center;

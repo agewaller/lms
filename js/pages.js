@@ -1277,6 +1277,85 @@ var Pages = {
         </div>
       </div>
 
+      <!-- Withings Health Mate -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>Withings Health Mate</h3>
+        </div>
+        <div class="card-body">
+          <p>Withings の体重計・活動量計・睡眠マットからデータを取り込めます。</p>
+          <div class="integration-steps">
+            <h4>取り込み方法（CSV）</h4>
+            <ol>
+              <li>Health Mate アプリ → プロフィール → 設定 → 「データのダウンロード」</li>
+              <li>CSVファイルをダウンロード（体重・活動・睡眠・心拍の各ファイル）</li>
+              <li>下のボタンでそれぞれ選択して取り込み</li>
+            </ol>
+          </div>
+          <input type="file" id="withingsFile" accept=".csv" style="display:none" onchange="app.importWithingsCSV(event)">
+          <button class="btn btn-primary" onclick="document.getElementById('withingsFile').click()">Withingsファイルを選択</button>
+          <p class="integration-note">※ OAuth接続はWithings側の仕様でサーバーが必要なため、CSV取込を推奨しています。</p>
+        </div>
+      </div>
+
+      <!-- Muse Headband -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>Muse Headband（瞑想センサー）</h3>
+        </div>
+        <div class="card-body">
+          <p>Muse Headband の瞑想セッションデータ（落ち着き度・継続時間）を意識ドメインに取り込みます。</p>
+          <div class="integration-steps">
+            <h4>取り込み方法</h4>
+            <ol>
+              <li>Muse アプリ → 設定 → データエクスポート</li>
+              <li>セッション履歴をCSVで書き出し</li>
+              <li>下のボタンでファイルを選択</li>
+            </ol>
+          </div>
+          <input type="file" id="museFile" accept=".csv" style="display:none" onchange="app.importMuseCSV(event)">
+          <button class="btn btn-primary" onclick="document.getElementById('museFile').click()">Museファイルを選択</button>
+        </div>
+      </div>
+
+      <!-- Sony Reon Pocket -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>Sony Reon Pocket</h3>
+        </div>
+        <div class="card-body">
+          <p>Reon Pocket は現在データエクスポートに対応していないため、手動で使用記録を残せます。</p>
+          <div class="integration-note">
+            Sony からの公式データアクセスAPIが提供されれば自動連携を実装します。
+            現状は「記録する」→「健康」→「活動」から手動で記録してください。
+          </div>
+        </div>
+      </div>
+
+      <!-- ZIP 一括取込 -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>ZIP一括取込（アーカイブファイル）</h3>
+        </div>
+        <div class="card-body">
+          <p>Facebook、Instagram、Google Takeout、Discord などのアーカイブZIPをそのまま取り込めます。ZIP内のファイルが自動で各パーサーに振り分けられます。</p>
+          <div class="integration-steps">
+            <h4>対応しているアーカイブ</h4>
+            <ul>
+              <li><strong>Facebook</strong>: 個人データのダウンロードZIP</li>
+              <li><strong>Instagram</strong>: データダウンロードZIP</li>
+              <li><strong>Google Takeout</strong>: Contacts + Calendar を含むZIP</li>
+              <li><strong>Discord</strong>: Request My Data ZIP</li>
+              <li><strong>Telegram</strong>: Export Desktop ZIP</li>
+              <li><strong>LinkedIn</strong>: Archive ZIP</li>
+            </ul>
+          </div>
+          <input type="file" id="zipFile" accept=".zip" style="display:none" onchange="app.importZipFile(event)">
+          <button class="btn btn-primary" onclick="document.getElementById('zipFile').click()">ZIPファイルを選択</button>
+          <p class="integration-note">大きいZIP（500MB超）は処理に時間がかかる場合があります。画像・動画は自動でスキップします。</p>
+        </div>
+      </div>
+
       <!-- Gmail (連絡先抽出) -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">
@@ -1317,7 +1396,7 @@ var Pages = {
           <p>各SNSからダウンロードした友達リストや会話ログを取り込み、連絡先に追加します。</p>
 
           <div class="integration-steps">
-            <h4>取り込み方法</h4>
+            <h4>対応プラットフォーム（10種）</h4>
             <ol>
               <li><strong>Facebook</strong>: 設定 → プライバシー → 個人データのダウンロード → 「友達」→ JSON形式</li>
               <li><strong>Instagram</strong>: 設定 → アカウント → データのダウンロード → JSON形式</li>
@@ -1326,13 +1405,16 @@ var Pages = {
               <li><strong>WhatsApp</strong>: トーク画面 → メニュー → その他 → チャットをエクスポート → メディアなし（.txt）</li>
               <li><strong>LINE</strong>: トーク画面 → メニュー → 設定 → トーク履歴を送信（.txt）</li>
               <li><strong>Telegram</strong>: Telegram Desktop → Settings → Advanced → Export Telegram data → JSON</li>
+              <li><strong>WeChat (微信)</strong>: トーク長押し → チャットログをメールで送信（.txt）</li>
+              <li><strong>Kakao (카카오톡)</strong>: トーク画面 → 設定 → トーク履歴をメールで送信（.txt）</li>
+              <li><strong>Discord</strong>: User Settings → Privacy & Safety → Request My Data（.json）</li>
               <li>ダウンロードしたファイルを下のボタンで選択</li>
             </ol>
           </div>
 
           <input type="file" id="snsFile" accept=".json,.csv,.js,.txt" style="display:none" onchange="app.importSnsFile(event)">
           <button class="btn btn-primary" onclick="document.getElementById('snsFile').click()">SNSエクスポートファイルを選択</button>
-          <p class="integration-note">ファイル名から自動的にどのSNSかを判別します。会話ログからは3回以上やり取りした相手のみを追加します。</p>
+          <p class="integration-note">ファイル名から自動的にどのSNSかを判別します。会話ログからは3回以上やり取りした相手のみを追加します。ZIPアーカイブは上のZIP一括取込で処理してください。</p>
         </div>
       </div>
 
@@ -1618,42 +1700,102 @@ var Pages = {
         <button class="btn btn-sm btn-secondary" onclick="app.loadAllUsers()">更新</button>
       </div>
       <div class="card-body">
-        <p class="page-desc">システムに登録されているすべてのユーザーです。タップすると詳細情報（プロフィール・疾患・資産・目標）が見られます。</p>
+        <p class="page-desc">タップすると詳細情報（プロフィール・疾患・資産・目標）が見られます。</p>
+
         ${allUsers.length === 0 ? `
           <p style="color:var(--text-muted);font-size:13px;">ユーザー一覧を読み込むには「更新」ボタンを押してください。</p>
-        ` : `
-          <div class="admin-users-list">
-            ${allUsers.map(u => {
-              const diseaseCount = (u.diseases || []).length;
-              const initial = (u.displayName || u.email || '?').charAt(0).toUpperCase();
-              const meta = [];
-              if (u.age) meta.push(u.age + '歳');
-              if (u.gender) meta.push(u.gender === 'male' ? '男性' : u.gender === 'female' ? '女性' : 'その他');
-              if (u.location) meta.push(u.location);
-              const metaText = meta.join(' · ');
-
-              return `<div class="admin-user-item clickable" onclick="app.showUserDetail('${u.uid}')">
-                <div class="admin-user-info">
-                  <div class="admin-user-avatar">${initial}</div>
-                  <div>
-                    <div class="admin-user-email">${u.displayName || u.email || '不明'}</div>
-                    <div class="admin-user-role">
-                      ${u.email ? u.email + '<br>' : ''}${metaText || 'プロフィール未設定'}
-                      ${u.lastActive ? ' · 最終: ' + new Date(u.lastActive).toLocaleDateString('ja-JP') : ''}
-                    </div>
-                  </div>
-                </div>
-                <div class="admin-user-stats">
-                  ${diseaseCount > 0 ? `<span class="stat-chip">持病${diseaseCount}</span>` : ''}
-                  ${u.subscription && u.subscription !== 'free' ? `<span class="stat-chip">${u.subscription}</span>` : ''}
-                  ${adminEmails.includes(u.email) ? '<span class="status-badge">管理者</span>' : ''}
-                </div>
-              </div>`;
-            }).join('')}
-          </div>
-        `}
+        ` : this.renderUserListWithFilters(allUsers, adminEmails)}
       </div>
     </div>`;
+  },
+
+  // Render the filterable user list
+  renderUserListWithFilters(allUsers, adminEmails) {
+    const filter = store.get('_userFilter') || { search: '', type: 'all' };
+
+    // Apply filters
+    const searchLower = filter.search.toLowerCase();
+    const filtered = allUsers.filter(u => {
+      // Text search across multiple fields
+      if (searchLower) {
+        const haystack = [
+          u.displayName, u.email, u.location, u.occupation,
+          u.concerns, u.lifeGoals, ...(u.diseases || [])
+        ].join(' ').toLowerCase();
+        if (!haystack.includes(searchLower)) return false;
+      }
+      // Type filter
+      if (filter.type === 'admin') {
+        if (!adminEmails.includes(u.email)) return false;
+      } else if (filter.type === 'subscribed') {
+        if (!u.subscription || u.subscription === 'free') return false;
+      } else if (filter.type === 'withDiseases') {
+        if (!u.diseases || u.diseases.length === 0) return false;
+      } else if (filter.type === 'recent') {
+        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        if (!u.lastActive || new Date(u.lastActive).getTime() < sevenDaysAgo) return false;
+      }
+      return true;
+    });
+
+    return `
+      <div class="user-filters">
+        <div class="form-group" style="flex:2;">
+          <input type="text" id="userSearch" class="form-input"
+            value="${filter.search}"
+            placeholder="名前・メール・居住地・症状で検索..."
+            oninput="app.filterUsers('search', this.value)">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <select id="userFilterType" class="form-input" onchange="app.filterUsers('type', this.value)">
+            <option value="all" ${filter.type === 'all' ? 'selected' : ''}>すべて (${allUsers.length})</option>
+            <option value="admin" ${filter.type === 'admin' ? 'selected' : ''}>管理者のみ</option>
+            <option value="subscribed" ${filter.type === 'subscribed' ? 'selected' : ''}>有料プラン</option>
+            <option value="withDiseases" ${filter.type === 'withDiseases' ? 'selected' : ''}>持病あり</option>
+            <option value="recent" ${filter.type === 'recent' ? 'selected' : ''}>直近7日間</option>
+          </select>
+        </div>
+        ${filter.search || filter.type !== 'all' ? `
+          <button class="btn btn-sm btn-secondary" onclick="app.clearUserFilter()">クリア</button>
+        ` : ''}
+      </div>
+
+      <div style="margin:12px 0;color:var(--text-secondary);font-size:13px;">
+        ${filtered.length}件を表示中（全${allUsers.length}件）
+      </div>
+
+      <div class="admin-users-list">
+        ${filtered.length === 0 ? `
+          <p style="padding:20px;text-align:center;color:var(--text-muted);">該当するユーザーがいません</p>
+        ` : filtered.map(u => {
+          const diseaseCount = (u.diseases || []).length;
+          const initial = (u.displayName || u.email || '?').charAt(0).toUpperCase();
+          const meta = [];
+          if (u.age) meta.push(u.age + '歳');
+          if (u.gender) meta.push(u.gender === 'male' ? '男性' : u.gender === 'female' ? '女性' : 'その他');
+          if (u.location) meta.push(u.location);
+          const metaText = meta.join(' · ');
+
+          return `<div class="admin-user-item clickable" onclick="app.showUserDetail('${u.uid}')">
+            <div class="admin-user-info">
+              <div class="admin-user-avatar">${initial}</div>
+              <div>
+                <div class="admin-user-email">${u.displayName || u.email || '不明'}</div>
+                <div class="admin-user-role">
+                  ${u.email ? u.email + '<br>' : ''}${metaText || 'プロフィール未設定'}
+                  ${u.lastActive ? ' · 最終: ' + new Date(u.lastActive).toLocaleDateString('ja-JP') : ''}
+                </div>
+              </div>
+            </div>
+            <div class="admin-user-stats">
+              ${diseaseCount > 0 ? `<span class="stat-chip">持病${diseaseCount}</span>` : ''}
+              ${u.subscription && u.subscription !== 'free' ? `<span class="stat-chip">${u.subscription}</span>` : ''}
+              ${adminEmails.includes(u.email) ? '<span class="status-badge">管理者</span>' : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
   },
 
   // ─── Admin Tab: Affiliate ───

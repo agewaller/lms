@@ -382,6 +382,140 @@ var snsImport = {
     }
   },
 
+  // WeChat: チャット履歴エクスポート (.txt)
+  // WeChatの公式エクスポートはモバイルからメール送信 (.html または .txt)
+  // フォーマット: 2026-04-09 12:34:56 山田太郎\nメッセージ本文
+  parseWeChatChat(text) {
+    const contactFreq = {};
+    const lines = text.split('\n');
+    const datePattern = /^\d{4}[-/]\d{2}[-/]\d{2}\s+\d{1,2}:\d{2}(?::\d{2})?\s+(.+?)(?:\s|$)/;
+
+    lines.forEach(line => {
+      const m = line.match(datePattern);
+      if (m) {
+        const name = m[1].trim();
+        if (!name || name.length > 30) return;
+        if (/system|通知|提示/i.test(name)) return;
+        contactFreq[name] = (contactFreq[name] || 0) + 1;
+      }
+    });
+
+    return Object.entries(contactFreq)
+      .filter(([, c]) => c >= 3)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 100)
+      .map(([name, count]) => ({
+        name,
+        source: 'wechat',
+        interactionCount: count,
+        distance: count >= 20 ? '2' : count >= 10 ? '3' : '4',
+        notes: `WeChatで${count}回やり取り`
+      }));
+  },
+
+  // KakaoTalk: チャット履歴エクスポート (.txt)
+  // フォーマット: [山田太郎] [午後 3:45] メッセージ本文
+  // または: 2026-04-09 15:45:00, 山田太郎 : メッセージ
+  parseKakaoChat(text) {
+    const contactFreq = {};
+    const lines = text.split('\n');
+
+    // Multiple format patterns for Kakao exports
+    const patterns = [
+      /^\[([^\]]+?)\]\s*\[/,          // [名前] [時刻]
+      /^\d{4}[-/]\d{2}[-/]\d{2}[,\s]+([^:,]+?)\s*:/,  // 日付時刻 名前 :
+      /^---------------\s*(.+?)\s*---------------/    // 日付ヘッダー (skip)
+    ];
+
+    lines.forEach(line => {
+      // Try each pattern
+      for (const pattern of patterns) {
+        const m = line.match(pattern);
+        if (m && m[1]) {
+          const name = m[1].trim();
+          if (!name || name.length > 30) continue;
+          if (/^\d+$/.test(name)) continue;
+          if (/kakao|알림|公式|system/i.test(name)) continue;
+          contactFreq[name] = (contactFreq[name] || 0) + 1;
+          break;
+        }
+      }
+    });
+
+    return Object.entries(contactFreq)
+      .filter(([, c]) => c >= 3)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 100)
+      .map(([name, count]) => ({
+        name,
+        source: 'kakao',
+        interactionCount: count,
+        distance: count >= 20 ? '2' : count >= 10 ? '3' : '4',
+        notes: `KakaoTalkで${count}回やり取り`
+      }));
+  },
+
+  // Discord: data export JSON (friends.json / messages/*.json)
+  parseDiscordExport(jsonText) {
+    try {
+      const data = JSON.parse(jsonText);
+      const results = [];
+
+      // Friend list format (friends.json)
+      if (Array.isArray(data)) {
+        data.forEach(item => {
+          if (item.user?.username) {
+            const name = item.user.global_name || item.user.username;
+            results.push({
+              name,
+              sns_account: item.user.username + (item.user.discriminator ? '#' + item.user.discriminator : ''),
+              source: 'discord',
+              relationship: item.type === 1 ? 'friend' : 'other',
+              addedAt: item.since || null
+            });
+          } else if (item.username) {
+            // Alternate format
+            results.push({
+              name: item.global_name || item.username,
+              sns_account: item.username,
+              source: 'discord'
+            });
+          }
+        });
+      }
+
+      // Messages index format: { "channel_id": { "name": "...", "type": ... } }
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        Object.values(data).forEach(channel => {
+          if (channel?.recipients) {
+            (channel.recipients || []).forEach(r => {
+              if (r && typeof r === 'string') {
+                // User ID only
+              } else if (r?.username) {
+                results.push({
+                  name: r.global_name || r.username,
+                  sns_account: r.username,
+                  source: 'discord'
+                });
+              }
+            });
+          }
+        });
+      }
+
+      // Dedupe by name
+      const seen = new Set();
+      return results.filter(r => {
+        const key = (r.name || '').toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return !!r.name;
+      });
+    } catch (e) {
+      return [];
+    }
+  },
+
   // Generic: import any SNS parser result to relationship_contacts
   // Preserves per-entry distance/notes if provided by the parser,
   // falls back to defaults otherwise.
@@ -419,7 +553,7 @@ var snsImport = {
         let source = 'unknown';
 
         try {
-          // Explicit filename-based detection
+          // Explicit filename-based detection (11 platforms)
           if (name.includes('friends') && name.endsWith('.json')) {
             contacts = this.parseFacebookFriends(content);
             source = 'facebook';
@@ -441,25 +575,38 @@ var snsImport = {
           } else if (name.includes('telegram') && name.endsWith('.json')) {
             contacts = this.parseTelegramExport(content);
             source = 'telegram';
+          } else if (name.includes('wechat') || name.includes('微信')) {
+            contacts = this.parseWeChatChat(content);
+            source = 'wechat';
+          } else if (name.includes('kakao') || name.includes('카카오')) {
+            contacts = this.parseKakaoChat(content);
+            source = 'kakao';
+          } else if (name.includes('discord') && (name.endsWith('.json') || name.endsWith('.js'))) {
+            contacts = this.parseDiscordExport(content);
+            source = 'discord';
           } else if (name.endsWith('.json')) {
-            // Try multiple JSON formats
-            contacts = this.parseTelegramExport(content);
-            source = 'telegram';
-            if (contacts.length === 0) {
-              contacts = this.parseFacebookFriends(content);
-              source = 'facebook';
-            }
-            if (contacts.length === 0) {
-              contacts = this.parseInstagramFollowing(content);
-              source = 'instagram';
+            // Try multiple JSON formats in order of specificity
+            const tries = [
+              { parser: 'parseTelegramExport', source: 'telegram' },
+              { parser: 'parseDiscordExport', source: 'discord' },
+              { parser: 'parseFacebookFriends', source: 'facebook' },
+              { parser: 'parseInstagramFollowing', source: 'instagram' }
+            ];
+            for (const t of tries) {
+              contacts = this[t.parser](content);
+              if (contacts.length > 0) { source = t.source; break; }
             }
           } else if (name.endsWith('.txt')) {
-            // Generic text: try WhatsApp, then LINE
-            contacts = this.parseWhatsAppChat(content);
-            source = 'whatsapp';
-            if (contacts.length === 0) {
-              contacts = this.parseLINEChat(content);
-              source = 'line';
+            // Generic text: try WhatsApp → LINE → WeChat → Kakao
+            const tries = [
+              { parser: 'parseWhatsAppChat', source: 'whatsapp' },
+              { parser: 'parseLINEChat', source: 'line' },
+              { parser: 'parseWeChatChat', source: 'wechat' },
+              { parser: 'parseKakaoChat', source: 'kakao' }
+            ];
+            for (const t of tries) {
+              contacts = this[t.parser](content);
+              if (contacts.length > 0) { source = t.source; break; }
             }
           } else if (name.endsWith('.csv')) {
             contacts = this.parseLinkedInConnections(content);

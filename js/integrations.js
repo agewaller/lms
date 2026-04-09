@@ -647,9 +647,334 @@ var fileImport = {
   }
 };
 
+// ─── Withings Health Mate Integration ───
+// Withings uses OAuth2 with code grant flow, which requires a backend
+// for token exchange. For browser-only operation, we support:
+//   1. CSV/JSON export import (primary path)
+//   2. OAuth authorization flow that stores the auth code in localStorage
+//      for manual copy to a backend or direct browser use if Withings adds
+//      PKCE support in the future.
+var withings = {
+  getClientId() {
+    return localStorage.getItem('lms_withings_client_id') || '';
+  },
+
+  setClientId(id) {
+    localStorage.setItem('lms_withings_client_id', id);
+  },
+
+  getToken() {
+    return localStorage.getItem('lms_withings_token') || '';
+  },
+
+  setToken(token) {
+    localStorage.setItem('lms_withings_token', token);
+  },
+
+  isConnected() {
+    return !!this.getToken();
+  },
+
+  disconnect() {
+    localStorage.removeItem('lms_withings_token');
+  },
+
+  startAuth() {
+    const clientId = this.getClientId();
+    if (!clientId) {
+      if (typeof Components !== 'undefined') Components.showToast('Withings Client IDを設定してください', 'info');
+      return;
+    }
+    const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+    const scope = encodeURIComponent('user.metrics,user.activity,user.sleepevents');
+    window.location.href =
+      `https://account.withings.com/oauth2_user/authorize2?` +
+      `response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}` +
+      `&scope=${scope}&state=withings`;
+  },
+
+  checkCallback() {
+    // Withings returns an auth code (not access_token) in query string
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('state') === 'withings' && params.get('code')) {
+      const code = params.get('code');
+      localStorage.setItem('lms_withings_auth_code', code);
+      // Clear query string
+      const url = new URL(window.location.href);
+      url.search = '';
+      window.history.replaceState({}, '', url.toString());
+      if (typeof Components !== 'undefined') {
+        Components.showToast('Withingsの認証コードを保存しました。アクセストークンへの交換にはサーバーが必要です。', 'info');
+      }
+      return true;
+    }
+    return false;
+  },
+
+  // Parse Withings CSV export (weight, activity, sleep)
+  parseCSV(text) {
+    const rows = (typeof fileImport !== 'undefined' && fileImport.parseCSV)
+      ? fileImport.parseCSV(text)
+      : [];
+    let count = 0;
+    rows.forEach(row => {
+      const lower = {};
+      Object.keys(row).forEach(k => { lower[k.toLowerCase().trim()] = row[k]; });
+
+      const date = lower['date'] || lower['time'] || lower['start'] || '';
+      const weight = parseFloat(lower['weight (kg)'] || lower['weight'] || 0);
+      const fat = parseFloat(lower['fat mass (%)'] || lower['fat ratio'] || 0);
+      const muscle = parseFloat(lower['muscle mass (%)'] || 0);
+      const bmi = parseFloat(lower['bmi'] || 0);
+      const hr = parseFloat(lower['average heart rate (bpm)'] || lower['heart rate'] || 0);
+      const steps = parseFloat(lower['steps'] || 0);
+      const sleep = parseFloat(lower['light (s)'] || 0) + parseFloat(lower['deep (s)'] || 0) + parseFloat(lower['rem (s)'] || 0);
+
+      if (weight > 0) {
+        store.addDomainEntry('health', 'vitals', {
+          weight, fat_ratio: fat, muscle_mass: muscle, bmi, source: 'withings', date
+        });
+        count++;
+      }
+      if (hr > 0) {
+        store.addDomainEntry('health', 'vitals', { heart_rate: hr, source: 'withings', date });
+        count++;
+      }
+      if (steps > 0) {
+        store.addDomainEntry('health', 'activityData', {
+          activity_type: 'walking', steps, source: 'withings', date
+        });
+        count++;
+      }
+      if (sleep > 0) {
+        store.addDomainEntry('health', 'sleepData', {
+          source: 'withings', duration_minutes: Math.round(sleep / 60), date
+        });
+        count++;
+      }
+    });
+    return count;
+  }
+};
+
+// ─── Muse Headband Integration (CSV import) ───
+// Muse app exports sessions as CSV. Columns typically:
+// timestamp, session_duration, calm_percentage, meditation_type, etc.
+var muse = {
+  parseCSV(text) {
+    const rows = (typeof fileImport !== 'undefined' && fileImport.parseCSV)
+      ? fileImport.parseCSV(text)
+      : [];
+    let count = 0;
+    rows.forEach(row => {
+      const lower = {};
+      Object.keys(row).forEach(k => { lower[k.toLowerCase().trim()] = row[k]; });
+
+      const date = lower['timestamp'] || lower['date'] || lower['session start'] || '';
+      const duration = parseFloat(lower['session duration (s)'] || lower['duration'] || 0);
+      const calmPercent = parseFloat(lower['calm percentage'] || lower['calm %'] || lower['calm'] || 0);
+      const meditationType = lower['meditation type'] || lower['type'] || 'meditation';
+
+      if (duration > 0 || calmPercent > 0) {
+        store.addDomainEntry('consciousness', 'practices', {
+          practice_type: 'meditation',
+          source: 'muse',
+          duration_minutes: Math.round(duration / 60),
+          quality: calmPercent > 0 ? Math.round(calmPercent / 10) : 5,
+          notes: `Muse Headband: ${meditationType}${calmPercent ? ` - 落ち着き度 ${calmPercent}%` : ''}`,
+          date
+        });
+        count++;
+      }
+    });
+    return count;
+  }
+};
+
+// ─── Garmin Connect Integration (CSV + TCX import) ───
+// Garmin's consumer OAuth is restricted to Connect IQ partners.
+// For personal use, CSV/TCX/FIT export is the supported path.
+var garmin = {
+  parseCSV(text) {
+    const rows = (typeof fileImport !== 'undefined' && fileImport.parseCSV)
+      ? fileImport.parseCSV(text)
+      : [];
+    let count = 0;
+    rows.forEach(row => {
+      const lower = {};
+      Object.keys(row).forEach(k => { lower[k.toLowerCase().trim()] = row[k]; });
+
+      const date = lower['date'] || lower['timestamp'] || '';
+      const activityType = lower['activity type'] || lower['type'] || 'walking';
+      const distance = parseFloat(lower['distance (km)'] || lower['distance'] || 0);
+      const duration = parseFloat(lower['duration (s)'] || lower['moving time (s)'] || 0);
+      const calories = parseFloat(lower['calories'] || 0);
+      const avgHr = parseFloat(lower['avg hr'] || lower['average heart rate'] || 0);
+      const steps = parseFloat(lower['steps'] || 0);
+
+      if (distance > 0 || duration > 0 || steps > 0) {
+        store.addDomainEntry('health', 'activityData', {
+          activity_type: activityType.toLowerCase().replace(/\s/g, '_'),
+          source: 'garmin',
+          distance_km: distance,
+          duration_minutes: Math.round(duration / 60),
+          calories_burned: calories,
+          steps, date
+        });
+        count++;
+      }
+      if (avgHr > 0) {
+        store.addDomainEntry('health', 'vitals', {
+          heart_rate: avgHr, source: 'garmin', date
+        });
+        count++;
+      }
+    });
+    return count;
+  }
+};
+
+// ─── Plaud Pro: email auto-send reminder ───
+// Plaud does not have a public OAuth API. The supported path is their
+// existing "auto-send to email" feature which we already handle via
+// the email ingest worker. This module exposes setup guidance only.
+var plaudPro = {
+  getIngestEmail() {
+    return typeof generateUserEmail === 'function' ? generateUserEmail() : null;
+  },
+
+  getSetupInstructions() {
+    return [
+      'Plaud アプリを開く',
+      '設定（歯車）→「自動送信」または Auto Sync',
+      '送信先メールアドレスにあなた専用の取込アドレスを設定',
+      '送信フォーマット：テキストまたは文字起こしのみ',
+      '自動送信を有効化'
+    ];
+  }
+};
+
+// ─── Sony Reon Pocket (UI only - no public data API) ───
+// Reon Pocket has no public API for temperature/body cooling data.
+// We expose a manual log interface so users can still track usage.
+var reonPocket = {
+  logSession(data) {
+    store.addDomainEntry('health', 'activityData', {
+      activity_type: 'cooling_session',
+      source: 'reon_pocket',
+      duration_minutes: data.duration || 0,
+      notes: data.notes || 'Reon Pocket 使用',
+      date: data.date || new Date().toISOString().slice(0, 10)
+    });
+  }
+};
+
+// ─── ZIP Bulk Import ───
+// Uses JSZip (loaded via CDN in dashboard.html) to unpack common
+// archive formats: Facebook, Instagram, Google Takeout, Discord.
+// Routes each file to the appropriate parser in sns-integrations
+// or fileImport module.
+var zipImport = {
+  async importZip(file) {
+    if (typeof JSZip === 'undefined') {
+      throw new Error('JSZipライブラリが読み込まれていません');
+    }
+
+    const zip = await JSZip.loadAsync(file);
+    const results = {
+      processed: 0,
+      contactsAdded: 0,
+      calendarEvents: 0,
+      healthRecords: 0,
+      transcripts: 0,
+      skipped: 0,
+      files: []
+    };
+
+    // Iterate through ZIP entries
+    const entries = Object.values(zip.files).filter(f => !f.dir);
+
+    for (const entry of entries) {
+      const name = entry.name.toLowerCase();
+      const basename = name.split('/').pop();
+      results.files.push(basename);
+
+      try {
+        // Skip unsupported binary / huge files
+        if (/\.(jpg|jpeg|png|gif|mp4|mov|mp3|wav|pdf|zip)$/i.test(basename)) {
+          results.skipped++;
+          continue;
+        }
+
+        const content = await entry.async('string');
+
+        // SNS parsers (Facebook/Instagram/Discord/Telegram/LinkedIn)
+        if (basename === 'friends.json' || basename === 'your_friends.json') {
+          const c = snsImport.parseFacebookFriends(content);
+          results.contactsAdded += snsImport.importContacts(c, 'facebook');
+          results.processed++;
+        } else if (basename === 'following.json' || basename.includes('following_accounts')) {
+          const c = snsImport.parseInstagramFollowing(content);
+          results.contactsAdded += snsImport.importContacts(c, 'instagram');
+          results.processed++;
+        } else if (basename === 'following.js' || basename.startsWith('following-')) {
+          const c = snsImport.parseTwitterFollowing(content);
+          results.contactsAdded += snsImport.importContacts(c, 'twitter');
+          results.processed++;
+        } else if (basename === 'connections.csv' || basename.includes('linkedin')) {
+          const c = snsImport.parseLinkedInConnections(content);
+          results.contactsAdded += snsImport.importContacts(c, 'linkedin');
+          results.processed++;
+        } else if (basename.includes('discord') || basename === 'messages.json' || basename === 'friends.json') {
+          const c = snsImport.parseDiscordExport(content);
+          results.contactsAdded += snsImport.importContacts(c, 'discord');
+          results.processed++;
+        } else if (basename === 'result.json' || basename.includes('telegram')) {
+          const c = snsImport.parseTelegramExport(content);
+          results.contactsAdded += snsImport.importContacts(c, 'telegram');
+          results.processed++;
+        }
+        // Calendar (.ics)
+        else if (basename.endsWith('.ics') && typeof CalendarIntegration !== 'undefined') {
+          const events = CalendarIntegration.importICS(content);
+          results.calendarEvents += (events?.length || 0);
+          results.processed++;
+        }
+        // Apple Health XML (export.xml)
+        else if (basename === 'export.xml' && typeof appleHealth !== 'undefined') {
+          const parsed = appleHealth.parseExport(content);
+          results.healthRecords += appleHealth.importData(parsed);
+          results.processed++;
+        }
+        // Generic CSV/JSON → try fileImport
+        else if ((basename.endsWith('.csv') || basename.endsWith('.json')) &&
+                 typeof fileImport !== 'undefined') {
+          // Best-effort: try SNS parsers
+          if (basename.endsWith('.txt')) {
+            const c = snsImport.parseWhatsAppChat(content);
+            if (c.length > 0) {
+              results.contactsAdded += snsImport.importContacts(c, 'whatsapp');
+              results.processed++;
+            }
+          }
+          results.skipped++;
+        } else {
+          results.skipped++;
+        }
+      } catch (e) {
+        console.warn('ZIP entry processing error:', basename, e);
+        results.skipped++;
+      }
+    }
+
+    return results;
+  }
+};
+
 // ─── Check OAuth callbacks on page load ───
 document.addEventListener('DOMContentLoaded', () => {
   if (typeof fitbit !== 'undefined') fitbit.checkCallback();
   if (typeof googleCalendar !== 'undefined') googleCalendar.checkCallback();
   if (typeof outlookCalendar !== 'undefined') outlookCalendar.checkCallback();
+  if (typeof withings !== 'undefined') withings.checkCallback();
 });
