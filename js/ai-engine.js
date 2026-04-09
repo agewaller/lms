@@ -131,26 +131,36 @@ var AIEngine = {
 
   async callAnthropic(model, system, userMsg, maxTokens) {
     const apiKey = this.getApiKey('anthropic');
-    if (!apiKey) throw new Error('Anthropic API key not set');
+    if (!apiKey) throw new Error('Anthropic APIキーが設定されていません。管理者にご連絡ください。');
 
     const endpoint = CONFIG.endpoints.anthropic;
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey
-      },
-      body: JSON.stringify({
-        model: model,
-        max_tokens: maxTokens,
-        system: system,
-        messages: [{ role: 'user', content: userMsg }]
-      })
-    });
+    if (!endpoint || endpoint.includes('your-account')) {
+      throw new Error('APIプロキシが未設定です。管理画面 → APIキー でWorker URLを設定してください。');
+    }
+
+    let res;
+    try {
+      res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey
+        },
+        body: JSON.stringify({
+          model: model,
+          max_tokens: maxTokens,
+          system: system,
+          messages: [{ role: 'user', content: userMsg }]
+        })
+      });
+    } catch (e) {
+      // Network-level failure (DNS, CORS, offline)
+      throw new Error('プロキシに接続できません。Worker URLをご確認ください: ' + endpoint);
+    }
 
     if (!res.ok) {
       const err = await res.text();
-      throw new Error('Anthropic API error: ' + err);
+      throw new Error('Claude APIエラー: ' + err);
     }
     const data = await res.json();
     return data.content?.[0]?.text || '';
