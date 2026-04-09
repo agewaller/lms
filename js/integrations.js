@@ -255,6 +255,101 @@ var googleCalendar = {
   }
 };
 
+// ─── Outlook Calendar Integration (Microsoft Graph API) ───
+var outlookCalendar = {
+  getClientId() {
+    return localStorage.getItem('lms_outlook_client_id') || '';
+  },
+
+  setClientId(id) {
+    localStorage.setItem('lms_outlook_client_id', id);
+  },
+
+  getToken() {
+    return localStorage.getItem('lms_outlook_token') || '';
+  },
+
+  isConnected() {
+    return !!this.getToken();
+  },
+
+  connect() {
+    const clientId = this.getClientId();
+    if (!clientId) {
+      Components.showToast('Microsoft Client IDを設定してください', 'info');
+      return;
+    }
+    const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+    const scope = encodeURIComponent('Calendars.Read offline_access');
+    window.location.href =
+      `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
+      `client_id=${clientId}&response_type=token&redirect_uri=${redirectUri}` +
+      `&scope=${scope}&state=outlook&prompt=consent`;
+  },
+
+  checkCallback() {
+    const hash = window.location.hash;
+    if (hash.includes('access_token=') && hash.includes('state=outlook')) {
+      const token = hash.match(/access_token=([^&]+)/)?.[1];
+      if (token) {
+        localStorage.setItem('lms_outlook_token', token);
+        window.location.hash = '';
+        if (typeof Components !== 'undefined') Components.showToast('Outlookに接続しました', 'success');
+        try { this.sync(); } catch (e) { /* best effort */ }
+        return true;
+      }
+    }
+    return false;
+  },
+
+  disconnect() {
+    localStorage.removeItem('lms_outlook_token');
+  },
+
+  async fetchEvents(days = 30) {
+    const token = this.getToken();
+    if (!token) throw new Error('Outlook未接続');
+
+    const now = new Date();
+    const timeMax = new Date(now);
+    timeMax.setDate(now.getDate() + days);
+
+    const url =
+      `https://graph.microsoft.com/v1.0/me/calendarview?` +
+      `startDateTime=${now.toISOString()}&endDateTime=${timeMax.toISOString()}&$top=250`;
+
+    const res = await fetch(url, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    if (res.status === 401) {
+      this.disconnect();
+      throw new Error('トークン切れ。再接続してください');
+    }
+    if (!res.ok) throw new Error('Outlookカレンダー取得失敗');
+
+    const data = await res.json();
+    // Map Microsoft Graph format to our common event format
+    return (data.value || []).map(e => ({
+      id: e.id,
+      summary: e.subject || '',
+      start: e.start?.dateTime,
+      end: e.end?.dateTime,
+      location: e.location?.displayName || '',
+      description: e.bodyPreview || '',
+      source: 'outlook'
+    }));
+  },
+
+  async sync() {
+    const events = await this.fetchEvents(30);
+    if (typeof CalendarIntegration !== 'undefined') {
+      CalendarIntegration.saveEvents(events);
+    }
+    return events.length;
+  }
+};
+
 // ─── Fitbit Integration (未病ダイアリー準拠) ───
 var fitbit = {
   getClientId() {
@@ -556,4 +651,5 @@ var fileImport = {
 document.addEventListener('DOMContentLoaded', () => {
   if (typeof fitbit !== 'undefined') fitbit.checkCallback();
   if (typeof googleCalendar !== 'undefined') googleCalendar.checkCallback();
+  if (typeof outlookCalendar !== 'undefined') outlookCalendar.checkCallback();
 });

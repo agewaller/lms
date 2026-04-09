@@ -860,6 +860,170 @@ var App = class App {
     }
   }
 
+  // ─── Outlook Calendar ───
+  outlookConnect() {
+    const clientId = document.getElementById('outlookClientId')?.value?.trim();
+    if (!clientId) {
+      Components.showToast('Microsoft Client IDを入力してください', 'info');
+      return;
+    }
+    if (typeof outlookCalendar !== 'undefined') {
+      outlookCalendar.setClientId(clientId);
+      outlookCalendar.connect();
+    }
+  }
+
+  outlookDisconnect() {
+    if (!confirm('Outlook接続を解除しますか？')) return;
+    if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
+    Components.showToast('接続を解除しました', 'info');
+    this.renderApp();
+  }
+
+  async outlookSync() {
+    if (typeof outlookCalendar === 'undefined' || !outlookCalendar.isConnected()) {
+      Components.showToast('Outlookに接続してください', 'info');
+      return;
+    }
+    Components.showToast('Outlookカレンダーを同期中...', 'info');
+    try {
+      const count = await outlookCalendar.sync();
+      Components.showToast(`${count}件の予定を取り込みました`, 'success');
+      this.renderApp();
+    } catch (e) {
+      Components.showToast('同期に失敗しました: ' + e.message, 'error');
+    }
+  }
+
+  // ─── Gmail ───
+  gmailConnect() {
+    const clientId = document.getElementById('gmailClientId')?.value?.trim();
+    if (!clientId) {
+      Components.showToast('Google Client IDを入力してください', 'info');
+      return;
+    }
+    if (typeof gmailIntegration !== 'undefined') {
+      gmailIntegration.setClientId(clientId);
+      gmailIntegration.connect();
+    }
+  }
+
+  gmailDisconnect() {
+    if (!confirm('Gmail接続を解除しますか？')) return;
+    if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
+    Components.showToast('接続を解除しました', 'info');
+    this.renderApp();
+  }
+
+  async gmailImportContacts() {
+    if (typeof gmailIntegration === 'undefined' || !gmailIntegration.isConnected()) {
+      Components.showToast('Gmailに接続してください', 'info');
+      return;
+    }
+    Components.showToast('Gmailから連絡先を抽出中...(数分かかる場合があります)', 'info');
+    try {
+      const result = await gmailIntegration.importFrequentContacts(6);
+      Components.showToast(
+        `${result.added}件の連絡先を追加しました（${result.total}件中${result.skipped}件は既に登録済み）`,
+        'success'
+      );
+      this.renderApp();
+    } catch (e) {
+      Components.showToast('連絡先取得に失敗: ' + e.message, 'error');
+    }
+  }
+
+  // ─── SNS Export File Import (Facebook/Instagram/X/LinkedIn) ───
+  async importSnsFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (typeof snsImport === 'undefined') {
+      Components.showToast('SNSモジュールが読み込まれていません', 'error');
+      return;
+    }
+    Components.showToast(`${file.name} を解析中...`, 'info');
+    try {
+      const result = await snsImport.importFile(file);
+      if (result.total === 0) {
+        Components.showToast('認識できるデータが見つかりませんでした。ファイル形式をご確認ください。', 'info');
+      } else {
+        Components.showToast(
+          `${result.source}から${result.added}件の連絡先を追加しました（${result.total}件中）`,
+          'success'
+        );
+        this.renderApp();
+      }
+    } catch (e) {
+      Components.showToast('取り込みに失敗: ' + e.message, 'error');
+    }
+  }
+
+  // ─── Garmin / Oura / Whoop (CSV import) ───
+  importGarmin(event) {
+    this.importWearableCSV(event, 'garmin');
+  }
+
+  importOura(event) {
+    this.importWearableCSV(event, 'oura');
+  }
+
+  importWhoop(event) {
+    this.importWearableCSV(event, 'whoop');
+  }
+
+  // Generic CSV wearable importer: maps common columns to health data
+  importWearableCSV(event, source) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    Components.showToast(`${source} データを読み込み中...`, 'info');
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const rows = (typeof fileImport !== 'undefined' && fileImport.parseCSV)
+          ? fileImport.parseCSV(e.target.result)
+          : [];
+
+        let count = 0;
+        rows.forEach(row => {
+          const lower = {};
+          Object.keys(row).forEach(k => { lower[k.toLowerCase().trim()] = row[k]; });
+
+          const date = lower['date'] || lower['day'] || lower['timestamp'] || lower['start_time'] || '';
+          const steps = parseFloat(lower['steps'] || lower['total steps'] || 0);
+          const hr = parseFloat(lower['average heart rate'] || lower['heart rate'] || lower['resting_hr'] || 0);
+          const sleep = parseFloat(lower['sleep duration'] || lower['total sleep'] || lower['asleep time'] || 0);
+          const calories = parseFloat(lower['calories'] || lower['total calories'] || lower['calories burned'] || 0);
+          const readiness = parseFloat(lower['readiness'] || lower['readiness score'] || lower['recovery'] || 0);
+
+          if (steps > 0) {
+            store.addDomainEntry('health', 'activityData', {
+              activity_type: 'walking', source, steps, calories_burned: calories, date
+            });
+            count++;
+          }
+          if (hr > 0) {
+            store.addDomainEntry('health', 'vitals', { heart_rate: hr, source, date });
+            count++;
+          }
+          if (sleep > 0) {
+            store.addDomainEntry('health', 'sleepData', {
+              source, duration_minutes: sleep,
+              quality: readiness > 0 ? Math.round(readiness / 10) : null, date
+            });
+            count++;
+          }
+        });
+
+        Components.showToast(`${source}から${count}件のデータを取り込みました`, 'success');
+        this.renderApp();
+      } catch (err) {
+        Components.showToast('取り込みに失敗: ' + err.message, 'error');
+      }
+    };
+    reader.readAsText(file);
+  }
+
   importAppleHealth(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -1137,13 +1301,36 @@ var App = class App {
   }
 
   // ─── Settings ───
+  // Collects all schema fields from the settings form and the
+  // disease checkboxes. Preserves any pre-existing fields that
+  // are not in the current form (e.g. email, displayName from Auth).
   saveProfile() {
-    const profile = {
-      age: document.getElementById('profileAge')?.value || '',
-      gender: document.getElementById('profileGender')?.value || '',
-      location: document.getElementById('profileLocation')?.value || '',
-      language: document.getElementById('profileLang')?.value || 'ja'
-    };
+    const current = store.get('userProfile') || {};
+    const profile = { ...current };
+    const schema = CONFIG.profileSchema || {};
+
+    // Collect all schema fields across all sections
+    Object.values(schema).forEach(section => {
+      section.forEach(field => {
+        const el = document.getElementById('profile_' + field.key);
+        if (!el) return;
+        let val = el.value;
+        if (field.type === 'number') val = val === '' ? '' : Number(val);
+        profile[field.key] = val;
+      });
+    });
+
+    // Collect disease checkboxes
+    const diseases = [];
+    document.querySelectorAll('input[name="disease"]:checked').forEach(cb => {
+      diseases.push(cb.value);
+    });
+    profile.diseases = diseases;
+
+    // Language (kept separate since it's also in i18n)
+    const lang = document.getElementById('profileLang')?.value;
+    if (lang) profile.language = lang;
+
     store.set('userProfile', profile);
     Components.showToast(i18n.t('saved'), 'success');
   }
