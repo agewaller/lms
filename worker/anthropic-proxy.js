@@ -16,23 +16,39 @@
  *   - main ブランチの worker/ 以下を更新すると自動デプロイされる
  */
 
+// CORS headers - allow any origin (LMS may be on github.io or custom domain)
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, x-api-key, anthropic-version, anthropic-dangerous-direct-browser-access',
+  'Access-Control-Max-Age': '86400',
+  'Access-Control-Expose-Headers': '*'
+};
+
 export default {
   async fetch(request, env) {
-    // CORS preflight
+    // CORS preflight - respond 204 No Content (more standard than 200)
     if (request.method === 'OPTIONS') {
       return new Response(null, {
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
-          'Access-Control-Max-Age': '86400',
-        },
+        status: 204,
+        headers: CORS_HEADERS
       });
     }
 
-    // Only allow POST
+    // Health check / direct browser access
+    if (request.method === 'GET') {
+      return new Response('LMS Anthropic Proxy is running. Use POST to call.', {
+        status: 200,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'text/plain' }
+      });
+    }
+
+    // Only POST is accepted for actual API calls
     if (request.method !== 'POST') {
-      return new Response('Method not allowed', { status: 405 });
+      return new Response('Method not allowed', {
+        status: 405,
+        headers: CORS_HEADERS
+      });
     }
 
     try {
@@ -41,7 +57,7 @@ export default {
       const apiKey = request.headers.get('x-api-key');
 
       if (!apiKey) {
-        return corsResponse({ error: 'x-api-key header required' }, 401);
+        return jsonResponse({ error: 'x-api-key header required' }, 401);
       }
 
       // Forward to Anthropic API
@@ -60,22 +76,22 @@ export default {
       return new Response(responseData, {
         status: anthropicResponse.status,
         headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          ...CORS_HEADERS,
+          'Content-Type': 'application/json'
         },
       });
     } catch (error) {
-      return corsResponse({ error: error.message }, 500);
+      return jsonResponse({ error: error.message || String(error) }, 500);
     }
   },
 };
 
-function corsResponse(data, status = 200) {
+function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    },
+      ...CORS_HEADERS,
+      'Content-Type': 'application/json'
+    }
   });
 }
