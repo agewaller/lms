@@ -201,6 +201,13 @@ var FirebaseBackend = {
           }
           if (cfg.emailIngestUrl) CONFIG.endpoints.emailIngest = cfg.emailIngestUrl;
           if (cfg.emailIngestDomain) CONFIG.emailIngestDomain = cfg.emailIngestDomain;
+
+          // OAuth Client IDs (admin-shared) - merge with defaults
+          // so that all users inherit the admin's OAuth apps and only
+          // see a one-click Connect button in their integration page.
+          if (cfg.oauthClientIds) {
+            CONFIG.oauthClientIds = { ...CONFIG.oauthClientIds, ...cfg.oauthClientIds };
+          }
         }
 
         // Load admin API keys (shared across all users)

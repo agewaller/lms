@@ -15,8 +15,13 @@
 
 // ─── Gmail Integration (Google OAuth2) ───
 var gmailIntegration = {
+  // Priority: admin-shared CONFIG.oauthClientIds.google > legacy localStorage
+  // Gmail and Google Calendar use the same Google Cloud project, so we
+  // reuse the same `google` slot in oauthClientIds.
   getClientId() {
-    return localStorage.getItem('lms_gmail_client_id') || localStorage.getItem('lms_gcal_client_id') || '';
+    return (typeof CONFIG !== 'undefined' && CONFIG.oauthClientIds && CONFIG.oauthClientIds.google) ||
+      localStorage.getItem('lms_gmail_client_id') ||
+      localStorage.getItem('lms_gcal_client_id') || '';
   },
 
   setClientId(id) {

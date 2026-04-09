@@ -996,6 +996,13 @@ var Pages = {
     const outlookConnected = typeof outlookCalendar !== 'undefined' && outlookCalendar.isConnected();
     const gmailConnected = typeof gmailIntegration !== 'undefined' && gmailIntegration.isConnected();
 
+    // Check if admin has configured OAuth client IDs - if so, users see
+    // a one-click "Connect" button without needing to paste their own.
+    const oauthIds = (CONFIG && CONFIG.oauthClientIds) || {};
+    const googleReady = !!oauthIds.google;
+    const microsoftReady = !!oauthIds.microsoft;
+    const fitbitReady = !!oauthIds.fitbit;
+
     let html = `<div class="page-integrations">
       <h2>連携・データ取り込み</h2>
       <p class="page-desc">外部のアプリやファイルからデータを取り込めます。</p>
@@ -1075,20 +1082,14 @@ var Pages = {
             <button class="btn btn-primary" onclick="app.gcalSync()">今すぐ同期する</button>
             <button class="btn btn-sm btn-secondary" onclick="app.gcalDisconnect()">接続解除</button>
           </div>
+          ` : googleReady ? `
+          <p>ボタン1つで接続できます。Googleのログイン画面で許可してください。</p>
+          <button class="btn btn-primary btn-lg" onclick="app.gcalConnectOneClick()">Googleカレンダーに接続する</button>
           ` : `
-          <div class="integration-steps">
-            <h4>接続方法</h4>
-            <ol>
-              <li><a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a>でOAuthクライアントIDを作成</li>
-              <li>Client IDを下に入力</li>
-              <li>「接続する」を押す</li>
-            </ol>
+          <div class="integration-note">
+            接続機能を有効にするには、管理者が一度だけOAuth設定を行う必要があります。
+            管理者にご連絡いただくか、下記のICSファイル取込をご利用ください。
           </div>
-          <div class="form-group">
-            <label>Google Client ID</label>
-            <input type="text" id="gcalClientId" class="form-input" value="${localStorage.getItem('lms_gcal_client_id') || ''}" placeholder="xxx.apps.googleusercontent.com">
-          </div>
-          <button class="btn btn-primary" onclick="app.gcalConnect()">接続する</button>
           `}
 
           <hr style="margin:20px 0;border:none;border-top:1px solid var(--border);">
@@ -1117,20 +1118,14 @@ var Pages = {
             <button class="btn btn-secondary" onclick="app.fitbitImportHistory()">過去7日分を取り込む</button>
             <button class="btn btn-sm btn-secondary" onclick="app.fitbitDisconnect()">接続解除</button>
           </div>
+          ` : fitbitReady ? `
+          <p>ボタン1つで接続できます。Fitbit のログイン画面で許可してください。</p>
+          <button class="btn btn-primary btn-lg" onclick="app.fitbitConnectOneClick()">Fitbitに接続する</button>
           ` : `
-          <div class="integration-steps">
-            <h4>接続方法</h4>
-            <ol>
-              <li><a href="https://dev.fitbit.com/apps/new" target="_blank">Fitbit開発者ページ</a>でアプリを登録</li>
-              <li>Client IDを下に入力</li>
-              <li>「接続する」を押す</li>
-            </ol>
+          <div class="integration-note">
+            接続機能を有効にするには、管理者が一度だけOAuth設定を行う必要があります。
+            管理者にご連絡ください。
           </div>
-          <div class="form-group">
-            <label>Fitbit Client ID</label>
-            <input type="text" id="fitbitClientId" class="form-input" value="${localStorage.getItem('lms_fitbit_client_id') || ''}" placeholder="Client IDを入力">
-          </div>
-          <button class="btn btn-primary" onclick="app.fitbitConnect()">接続する</button>
           `}
         </div>
       </div>
@@ -1180,21 +1175,14 @@ var Pages = {
             <button class="btn btn-primary" onclick="app.outlookSync()">今すぐ同期する</button>
             <button class="btn btn-sm btn-secondary" onclick="app.outlookDisconnect()">接続解除</button>
           </div>
+          ` : microsoftReady ? `
+          <p>ボタン1つで接続できます。Microsoftのログイン画面で許可してください。</p>
+          <button class="btn btn-primary btn-lg" onclick="app.outlookConnectOneClick()">Outlookに接続する</button>
           ` : `
-          <div class="integration-steps">
-            <h4>接続方法</h4>
-            <ol>
-              <li><a href="https://portal.azure.com/" target="_blank">Azure Portal</a>でアプリを登録</li>
-              <li>「Microsoft アプリケーションクライアント ID」をコピー</li>
-              <li>リダイレクト URI にこのサイトのURLを追加</li>
-              <li>下の欄に Client ID を入力して「接続する」</li>
-            </ol>
+          <div class="integration-note">
+            接続機能を有効にするには、管理者が一度だけOAuth設定を行う必要があります。
+            管理者にご連絡ください。
           </div>
-          <div class="form-group">
-            <label>Microsoft Client ID</label>
-            <input type="text" id="outlookClientId" class="form-input" value="${localStorage.getItem('lms_outlook_client_id') || ''}" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
-          </div>
-          <button class="btn btn-primary" onclick="app.outlookConnect()">接続する</button>
           `}
         </div>
       </div>
@@ -1369,20 +1357,14 @@ var Pages = {
             <button class="btn btn-primary" onclick="app.gmailImportContacts()">連絡先を取り込む</button>
             <button class="btn btn-sm btn-secondary" onclick="app.gmailDisconnect()">接続解除</button>
           </div>
+          ` : googleReady ? `
+          <p>ボタン1つで接続できます。Googleのログイン画面で許可してください。</p>
+          <button class="btn btn-primary btn-lg" onclick="app.gmailConnectOneClick()">Gmailに接続する</button>
           ` : `
-          <div class="integration-steps">
-            <h4>接続方法</h4>
-            <ol>
-              <li>Google Cloud Console でOAuthクライアントIDを作成（Gmail APIを有効化）</li>
-              <li>下の欄に Client ID を入力</li>
-              <li>「接続する」をタップ</li>
-            </ol>
+          <div class="integration-note">
+            接続機能を有効にするには、管理者が一度だけOAuth設定を行う必要があります。
+            管理者にご連絡ください。
           </div>
-          <div class="form-group">
-            <label>Google Client ID</label>
-            <input type="text" id="gmailClientId" class="form-input" value="${localStorage.getItem('lms_gmail_client_id') || localStorage.getItem('lms_gcal_client_id') || ''}" placeholder="xxx.apps.googleusercontent.com">
-          </div>
-          <button class="btn btn-primary" onclick="app.gmailConnect()">接続する</button>
           `}
         </div>
       </div>
@@ -1656,6 +1638,61 @@ var Pages = {
           <button class="btn btn-danger" onclick="app.clearApiKeys()">すべて削除</button>
         </div>
         <div id="connectionResult"></div>
+      </div>
+    </div>
+
+    <!-- OAuth Client IDs (admin-shared: one-click user connections) -->
+    <div class="card" style="margin-top:16px;">
+      <div class="card-header">
+        <h3>連携サービス OAuth Client ID</h3>
+      </div>
+      <div class="card-body">
+        <p class="page-desc">
+          ここで Client ID を設定すると、すべてのユーザーの連携ページで
+          「接続する」ボタン<strong>1つ</strong>だけで各サービスに繋がるようになります。
+          Client ID は公開可能な値です（シークレットではありません）。
+        </p>
+
+        <div class="form-group">
+          <label>Google Client ID <span class="mode-badge ${CONFIG.oauthClientIds?.google ? 'mode-direct' : 'mode-proxy'}">${CONFIG.oauthClientIds?.google ? '設定済' : '未設定'}</span></label>
+          <input type="text" id="oauthGoogle" class="form-input"
+            value="${CONFIG.oauthClientIds?.google || ''}"
+            placeholder="xxx.apps.googleusercontent.com">
+          <div class="input-help">Google カレンダー + Gmail で共通利用</div>
+        </div>
+
+        <div class="form-group">
+          <label>Microsoft Client ID <span class="mode-badge ${CONFIG.oauthClientIds?.microsoft ? 'mode-direct' : 'mode-proxy'}">${CONFIG.oauthClientIds?.microsoft ? '設定済' : '未設定'}</span></label>
+          <input type="text" id="oauthMicrosoft" class="form-input"
+            value="${CONFIG.oauthClientIds?.microsoft || ''}"
+            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+          <div class="input-help">Outlook カレンダー用</div>
+        </div>
+
+        <div class="form-group">
+          <label>Fitbit Client ID <span class="mode-badge ${CONFIG.oauthClientIds?.fitbit ? 'mode-direct' : 'mode-proxy'}">${CONFIG.oauthClientIds?.fitbit ? '設定済' : '未設定'}</span></label>
+          <input type="text" id="oauthFitbit" class="form-input"
+            value="${CONFIG.oauthClientIds?.fitbit || ''}"
+            placeholder="XXXXXX">
+          <div class="input-help">Fitbit 活動・睡眠データ用</div>
+        </div>
+
+        <div class="form-group">
+          <label>Withings Client ID <span class="mode-badge ${CONFIG.oauthClientIds?.withings ? 'mode-direct' : 'mode-proxy'}">${CONFIG.oauthClientIds?.withings ? '設定済' : '未設定'}</span></label>
+          <input type="text" id="oauthWithings" class="form-input"
+            value="${CONFIG.oauthClientIds?.withings || ''}"
+            placeholder="xxxxxxxxxx">
+          <div class="input-help">Withings 体組成計・睡眠マット用（認証コードのみ取得）</div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="app.saveOAuthClientIds()">保存</button>
+        </div>
+
+        <div class="integration-note">
+          設定方法は <a href="https://github.com/agewaller/lms/blob/main/SETUP.md" target="_blank">SETUP.md</a>
+          の「Google OAuth」「Microsoft OAuth」「Fitbit OAuth」セクションをご参照ください。
+        </div>
       </div>
     </div>`;
   },

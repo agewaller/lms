@@ -173,8 +173,10 @@ var plaud = {
 // ─── Google Calendar Integration (未病ダイアリー準拠) ───
 // Uses Google Calendar API via gapi.client when connected
 var googleCalendar = {
+  // Priority: admin-shared CONFIG.oauthClientIds.google > legacy localStorage
   getClientId() {
-    return localStorage.getItem('lms_gcal_client_id') || '';
+    return (CONFIG && CONFIG.oauthClientIds && CONFIG.oauthClientIds.google) ||
+      localStorage.getItem('lms_gcal_client_id') || '';
   },
 
   setClientId(id) {
@@ -257,8 +259,10 @@ var googleCalendar = {
 
 // ─── Outlook Calendar Integration (Microsoft Graph API) ───
 var outlookCalendar = {
+  // Priority: admin-shared CONFIG.oauthClientIds.microsoft > legacy localStorage
   getClientId() {
-    return localStorage.getItem('lms_outlook_client_id') || '';
+    return (CONFIG && CONFIG.oauthClientIds && CONFIG.oauthClientIds.microsoft) ||
+      localStorage.getItem('lms_outlook_client_id') || '';
   },
 
   setClientId(id) {
@@ -352,8 +356,10 @@ var outlookCalendar = {
 
 // ─── Fitbit Integration (未病ダイアリー準拠) ───
 var fitbit = {
+  // Priority: admin-shared CONFIG.oauthClientIds.fitbit > legacy localStorage
   getClientId() {
-    return localStorage.getItem('lms_fitbit_client_id') || '';
+    return (CONFIG && CONFIG.oauthClientIds && CONFIG.oauthClientIds.fitbit) ||
+      localStorage.getItem('lms_fitbit_client_id') || '';
   },
 
   setClientId(id) {
@@ -655,8 +661,10 @@ var fileImport = {
 //      for manual copy to a backend or direct browser use if Withings adds
 //      PKCE support in the future.
 var withings = {
+  // Priority: admin-shared CONFIG.oauthClientIds.withings > legacy localStorage
   getClientId() {
-    return localStorage.getItem('lms_withings_client_id') || '';
+    return (CONFIG && CONFIG.oauthClientIds && CONFIG.oauthClientIds.withings) ||
+      localStorage.getItem('lms_withings_client_id') || '';
   },
 
   setClientId(id) {

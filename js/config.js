@@ -44,6 +44,23 @@ var CONFIG = {
   // Format: data-{hash}@{emailIngestDomain}
   emailIngestDomain: 'inbox.lms-life.com',
 
+  // ─── OAuth Client IDs (admin-shared) ───
+  // Admin sets these once via the admin panel. All users inherit them
+  // via Firestore admin/config.oauthClientIds, so user integration pages
+  // only show "Connect" buttons without requiring each user to create
+  // their own OAuth app.
+  //
+  // To set up: admin goes to 管理 → 連携キー tab, pastes the Client IDs,
+  // and clicks save. The Client IDs are public (not secrets), so sharing
+  // via Firestore is safe. Tokens are still stored per-user in their
+  // own localStorage.
+  oauthClientIds: {
+    google: '',     // for Google Calendar + Gmail (same project ID)
+    microsoft: '',  // for Outlook
+    fitbit: '',     // for Fitbit
+    withings: ''    // for Withings
+  },
+
   // ─── 6 Life Domains ───
   domains: {
     consciousness: {

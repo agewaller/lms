@@ -788,6 +788,41 @@ var App = class App {
     }
   }
 
+  // ─── One-click OAuth connect methods ───
+  // Used when admin has pre-configured the Client ID in admin/config.
+  // No per-user input required; go straight to the provider's consent screen.
+  gcalConnectOneClick() {
+    if (typeof googleCalendar === 'undefined' || !googleCalendar.getClientId()) {
+      Components.showToast('管理者がGoogle OAuth設定を行っていません', 'error');
+      return;
+    }
+    googleCalendar.connect();
+  }
+
+  outlookConnectOneClick() {
+    if (typeof outlookCalendar === 'undefined' || !outlookCalendar.getClientId()) {
+      Components.showToast('管理者がMicrosoft OAuth設定を行っていません', 'error');
+      return;
+    }
+    outlookCalendar.connect();
+  }
+
+  fitbitConnectOneClick() {
+    if (typeof fitbit === 'undefined' || !fitbit.getClientId()) {
+      Components.showToast('管理者がFitbit OAuth設定を行っていません', 'error');
+      return;
+    }
+    fitbit.connect();
+  }
+
+  gmailConnectOneClick() {
+    if (typeof gmailIntegration === 'undefined' || !gmailIntegration.getClientId()) {
+      Components.showToast('管理者がGoogle OAuth設定を行っていません', 'error');
+      return;
+    }
+    gmailIntegration.connect();
+  }
+
   fitbitDisconnect() {
     if (!confirm('Fitbit接続を解除しますか？')) return;
     if (typeof fitbit !== 'undefined') fitbit.disconnect();
@@ -1548,6 +1583,40 @@ var App = class App {
     }
 
     Components.showToast('保存しました: ' + url, 'success');
+  }
+
+  // ─── Save admin-shared OAuth Client IDs ───
+  // Stores OAuth Client IDs (Google/Microsoft/Fitbit/Withings) in
+  // admin/config.oauthClientIds so all users inherit them and see
+  // a one-click Connect button in their integration page.
+  saveOAuthClientIds() {
+    const ids = {
+      google: (document.getElementById('oauthGoogle')?.value || '').trim(),
+      microsoft: (document.getElementById('oauthMicrosoft')?.value || '').trim(),
+      fitbit: (document.getElementById('oauthFitbit')?.value || '').trim(),
+      withings: (document.getElementById('oauthWithings')?.value || '').trim()
+    };
+
+    // Update runtime config immediately
+    CONFIG.oauthClientIds = { ...CONFIG.oauthClientIds, ...ids };
+
+    // Sync to Firestore admin/config for all users
+    if (FirebaseBackend.isAdmin() && FirebaseBackend.db) {
+      FirebaseBackend.db.collection('admin').doc('config').set(
+        {
+          oauthClientIds: ids,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        },
+        { merge: true }
+      ).catch(e => console.warn('OAuth IDs sync error:', e));
+    } else {
+      // Non-admin: save locally only
+      localStorage.setItem('lms_oauthClientIds', JSON.stringify(ids));
+    }
+
+    const count = Object.values(ids).filter(Boolean).length;
+    Components.showToast(`${count}件のOAuth Client IDを保存しました`, 'success');
+    this.renderApp();
   }
 
   // ─── Direct mode toggle (Plan B - no proxy needed) ───
