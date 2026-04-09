@@ -139,6 +139,10 @@ var AIEngine = {
       throw new Error('APIプロキシが未設定です。管理画面 → APIキー でWorker URLを設定してください。');
     }
 
+    // Diagnostic logging - shown in browser console for debugging
+    console.log('[LMS] Calling Anthropic via proxy:', endpoint);
+    console.log('[LMS] Model:', model, 'Max tokens:', maxTokens);
+
     let res;
     try {
       res = await fetch(endpoint, {
@@ -156,12 +160,22 @@ var AIEngine = {
       });
     } catch (e) {
       // Network-level failure (DNS, CORS, offline)
-      throw new Error('プロキシに接続できません。Worker URLをご確認ください: ' + endpoint);
+      console.error('[LMS] fetch failed:', e);
+      throw new Error(
+        'プロキシに接続できません。\n' +
+        '原因: ' + (e.message || e.name || 'unknown') + '\n' +
+        'URL: ' + endpoint + '\n' +
+        '\nブラウザのコンソールで詳細を確認してください。\n' +
+        'よくある原因: CORS preflight失敗、DNSキャッシュ、Worker旧バージョン'
+      );
     }
+
+    console.log('[LMS] Proxy responded with status:', res.status);
 
     if (!res.ok) {
       const err = await res.text();
-      throw new Error('Claude APIエラー: ' + err);
+      console.error('[LMS] Anthropic error body:', err);
+      throw new Error('Claude APIエラー (HTTP ' + res.status + '): ' + err);
     }
     const data = await res.json();
     return data.content?.[0]?.text || '';
