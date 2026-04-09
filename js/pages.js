@@ -649,30 +649,93 @@ var Pages = {
   renderSettings(domain) {
     const profile = store.get('userProfile') || {};
     const user = store.get('user') || {};
+    const schema = CONFIG.profileSchema || {};
+
+    // Helper: render a form field from schema definition
+    const renderField = (field, value) => {
+      const val = value ?? '';
+      const id = 'profile_' + field.key;
+      switch (field.type) {
+        case 'number':
+          return `<input type="number" id="${id}" class="form-input" value="${val}" ${field.step ? `step="${field.step}"` : ''}>`;
+        case 'text':
+          return `<input type="text" id="${id}" class="form-input" value="${val}">`;
+        case 'date':
+          return `<input type="date" id="${id}" class="form-input" value="${val}">`;
+        case 'textarea':
+          return `<textarea id="${id}" class="form-input" rows="3">${val}</textarea>`;
+        case 'select':
+          return `<select id="${id}" class="form-input">
+            <option value="">選択してください</option>
+            ${(field.options || []).map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
+          </select>`;
+        default:
+          return `<input type="text" id="${id}" class="form-input" value="${val}">`;
+      }
+    };
+
+    const renderSchemaSection = (sectionKey, sectionTitle) => {
+      const fields = schema[sectionKey] || [];
+      if (fields.length === 0) return '';
+      return `<div class="settings-section">
+        <h3>${sectionTitle}</h3>
+        ${fields.map(f => `
+          <div class="form-group">
+            <label>${f.label}</label>
+            ${renderField(f, profile[f.key])}
+          </div>
+        `).join('')}
+      </div>`;
+    };
+
+    // Diseases (WHO ICD-11 based multi-select)
+    const selectedDiseases = Array.isArray(profile.diseases) ? profile.diseases : [];
+    const renderDiseases = () => {
+      const cats = CONFIG.diseaseCategories || {};
+      return `<div class="settings-section">
+        <h3>持病・症状（WHO ICD-11準拠）</h3>
+        <p class="page-desc">該当する項目すべてにチェックしてください。後から変更できます。</p>
+        ${Object.entries(cats).map(([catKey, cat]) => `
+          <div class="disease-category">
+            <h4>${cat.label}</h4>
+            <div class="disease-grid">
+              ${cat.diseases.map(d => `
+                <label class="disease-item">
+                  <input type="checkbox" name="disease" value="${d}"
+                    ${selectedDiseases.includes(d) ? 'checked' : ''}>
+                  <span>${d}</span>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+    };
 
     let html = `<div class="page-settings">
-      <h2>⚙️ ${i18n.t('settings')}</h2>
+      <h2>${i18n.t('settings')}</h2>
 
-      <!-- Profile -->
+      <!-- 基本情報 -->
+      ${renderSchemaSection('basic', '基本情報')}
+
+      <!-- 生活・家族 -->
+      ${renderSchemaSection('lifestyle', '生活・家族構成')}
+
+      <!-- 健康 -->
+      ${renderSchemaSection('health', '健康・医療')}
+
+      <!-- 疾患選択 -->
+      ${renderDiseases()}
+
+      <!-- 資産・収入 -->
+      ${renderSchemaSection('financial', '資産・収入')}
+
+      <!-- 目標・価値観 -->
+      ${renderSchemaSection('goals', '目標・価値観')}
+
+      <!-- 言語 -->
       <div class="settings-section">
-        <h3>👤 ${i18n.t('profile')}</h3>
-        <div class="form-group">
-          <label>${i18n.t('age')}</label>
-          <input type="number" id="profileAge" class="form-input" value="${profile.age || ''}">
-        </div>
-        <div class="form-group">
-          <label>${i18n.t('gender')}</label>
-          <select id="profileGender" class="form-input">
-            <option value="">${i18n.t('other')}</option>
-            <option value="male" ${profile.gender === 'male' ? 'selected' : ''}>${i18n.t('male')}</option>
-            <option value="female" ${profile.gender === 'female' ? 'selected' : ''}>${i18n.t('female')}</option>
-            <option value="other" ${profile.gender === 'other' ? 'selected' : ''}>${i18n.t('other')}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>${i18n.t('location')}</label>
-          <input type="text" id="profileLocation" class="form-input" value="${profile.location || ''}">
-        </div>
+        <h3>言語</h3>
         <div class="form-group">
           <label>${i18n.t('language')}</label>
           <select id="profileLang" class="form-input" onchange="app.changeLanguage(this.value)">
@@ -682,12 +745,15 @@ var Pages = {
             <option value="ko" ${i18n.currentLang === 'ko' ? 'selected' : ''}>한국어</option>
           </select>
         </div>
-        <button class="btn btn-primary" onclick="app.saveProfile()">${i18n.t('save_profile')}</button>
+      </div>
+
+      <div class="settings-section" style="text-align:center;">
+        <button class="btn btn-primary btn-lg" onclick="app.saveProfile()">${i18n.t('save_profile')}</button>
       </div>
 
       <!-- Subscription -->
       <div class="settings-section">
-        <h3>💳 ${i18n.t('subscription')}</h3>
+        <h3>サブスクリプション</h3>
         ${PayPalManager.renderStatus()}
       </div>
 
@@ -927,6 +993,8 @@ var Pages = {
     const calendarCount = (store.get('calendarEvents') || []).length;
     const fitbitConnected = typeof fitbit !== 'undefined' && fitbit.isConnected();
     const gcalConnected = typeof googleCalendar !== 'undefined' && googleCalendar.isConnected();
+    const outlookConnected = typeof outlookCalendar !== 'undefined' && outlookCalendar.isConnected();
+    const gmailConnected = typeof gmailIntegration !== 'undefined' && gmailIntegration.isConnected();
 
     let html = `<div class="page-integrations">
       <h2>連携・データ取り込み</h2>
@@ -1099,10 +1167,176 @@ var Pages = {
         </div>
       </div>
 
+      <!-- Outlook カレンダー -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>Outlook カレンダー</h3>
+          <span class="status-badge ${outlookConnected ? 'connected' : ''}">${outlookConnected ? '接続済み' : '未接続'}</span>
+        </div>
+        <div class="card-body">
+          <p>Microsoft Outlook / Office 365 の予定を取り込みます。</p>
+          ${outlookConnected ? `
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="app.outlookSync()">今すぐ同期する</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.outlookDisconnect()">接続解除</button>
+          </div>
+          ` : `
+          <div class="integration-steps">
+            <h4>接続方法</h4>
+            <ol>
+              <li><a href="https://portal.azure.com/" target="_blank">Azure Portal</a>でアプリを登録</li>
+              <li>「Microsoft アプリケーションクライアント ID」をコピー</li>
+              <li>リダイレクト URI にこのサイトのURLを追加</li>
+              <li>下の欄に Client ID を入力して「接続する」</li>
+            </ol>
+          </div>
+          <div class="form-group">
+            <label>Microsoft Client ID</label>
+            <input type="text" id="outlookClientId" class="form-input" value="${localStorage.getItem('lms_outlook_client_id') || ''}" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+          </div>
+          <button class="btn btn-primary" onclick="app.outlookConnect()">接続する</button>
+          `}
+        </div>
+      </div>
+
+      <!-- Apple Watch -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>Apple Watch</h3>
+        </div>
+        <div class="card-body">
+          <p>Apple Watchのデータは、iPhoneの「ヘルスケア」アプリ経由で取り込めます（上記 Apple Health と同じ方法）。</p>
+          <div class="integration-steps">
+            <h4>取り込み手順</h4>
+            <ol>
+              <li>Apple Watchのデータは iPhone の「ヘルスケア」アプリに自動で集約されます</li>
+              <li>上の「Apple Health」セクションの手順でエクスポート</li>
+              <li>心拍・活動・睡眠・転倒検知などのデータが自動取り込みされます</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <!-- Garmin -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>Garmin</h3>
+        </div>
+        <div class="card-body">
+          <p>Garmin Connect のデータをエクスポートして取り込めます。</p>
+          <div class="integration-steps">
+            <h4>取り込み方法</h4>
+            <ol>
+              <li><a href="https://www.garmin.com/ja-JP/account/datamanagement/" target="_blank">Garmin Connect データ管理</a>を開く</li>
+              <li>「データのエクスポート」からCSVまたはFITファイルをダウンロード</li>
+              <li>下のボタンでファイルを選択</li>
+            </ol>
+          </div>
+          <input type="file" id="garminFile" accept=".csv,.fit,.tcx,.gpx" style="display:none" onchange="app.importGarmin(event)">
+          <button class="btn btn-primary" onclick="document.getElementById('garminFile').click()">Garminファイルを選択</button>
+        </div>
+      </div>
+
+      <!-- Oura Ring -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>Oura Ring</h3>
+        </div>
+        <div class="card-body">
+          <p>Oura Ring の睡眠・レディネス・アクティビティデータを取り込めます。</p>
+          <div class="integration-steps">
+            <h4>取り込み方法</h4>
+            <ol>
+              <li>Ouraアプリ → 設定 → データエクスポート</li>
+              <li>CSVファイルをダウンロード</li>
+              <li>下のボタンでファイルを選択</li>
+            </ol>
+          </div>
+          <input type="file" id="ouraFile" accept=".csv" style="display:none" onchange="app.importOura(event)">
+          <button class="btn btn-primary" onclick="document.getElementById('ouraFile').click()">Ouraファイルを選択</button>
+        </div>
+      </div>
+
+      <!-- Whoop -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>Whoop</h3>
+        </div>
+        <div class="card-body">
+          <p>Whoop のストレイン・リカバリー・睡眠データを取り込めます。</p>
+          <div class="integration-steps">
+            <h4>取り込み方法</h4>
+            <ol>
+              <li>Whoop アプリ → Profile → Export Data</li>
+              <li>CSVファイルをダウンロード</li>
+              <li>下のボタンでファイルを選択</li>
+            </ol>
+          </div>
+          <input type="file" id="whoopFile" accept=".csv" style="display:none" onchange="app.importWhoop(event)">
+          <button class="btn btn-primary" onclick="document.getElementById('whoopFile').click()">Whoopファイルを選択</button>
+        </div>
+      </div>
+
+      <!-- Gmail (連絡先抽出) -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>Gmail（連絡先の自動抽出）</h3>
+          <span class="status-badge ${gmailConnected ? 'connected' : ''}">${gmailConnected ? '接続済み' : '未接続'}</span>
+        </div>
+        <div class="card-body">
+          <p>Gmailから頻繁にやり取りしている人を自動で抽出し、連絡先に追加します。</p>
+          ${gmailConnected ? `
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="app.gmailImportContacts()">連絡先を取り込む</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.gmailDisconnect()">接続解除</button>
+          </div>
+          ` : `
+          <div class="integration-steps">
+            <h4>接続方法</h4>
+            <ol>
+              <li>Google Cloud Console でOAuthクライアントIDを作成（Gmail APIを有効化）</li>
+              <li>下の欄に Client ID を入力</li>
+              <li>「接続する」をタップ</li>
+            </ol>
+          </div>
+          <div class="form-group">
+            <label>Google Client ID</label>
+            <input type="text" id="gmailClientId" class="form-input" value="${localStorage.getItem('lms_gmail_client_id') || localStorage.getItem('lms_gcal_client_id') || ''}" placeholder="xxx.apps.googleusercontent.com">
+          </div>
+          <button class="btn btn-primary" onclick="app.gmailConnect()">接続する</button>
+          `}
+        </div>
+      </div>
+
+      <!-- Facebook / Instagram / X / LinkedIn (手動エクスポート取込) -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <h3>SNS連絡先の取り込み</h3>
+        </div>
+        <div class="card-body">
+          <p>各SNSからダウンロードした友達リストを取り込み、連絡先に追加します。</p>
+
+          <div class="integration-steps">
+            <h4>取り込み方法</h4>
+            <ol>
+              <li><strong>Facebook</strong>: 設定 → プライバシー → 個人データのダウンロード → 「友達」→ JSON形式</li>
+              <li><strong>Instagram</strong>: 設定 → アカウント → データのダウンロード → JSON形式</li>
+              <li><strong>X (Twitter)</strong>: 設定 → アカウント → データのアーカイブをリクエスト</li>
+              <li><strong>LinkedIn</strong>: Settings → Get a copy of your data → Connections → CSV</li>
+              <li>ダウンロードしたファイルを下のボタンで選択</li>
+            </ol>
+          </div>
+
+          <input type="file" id="snsFile" accept=".json,.csv,.js" style="display:none" onchange="app.importSnsFile(event)">
+          <button class="btn btn-primary" onclick="document.getElementById('snsFile').click()">SNSエクスポートファイルを選択</button>
+          <p class="integration-note">ファイル名から自動的にどのSNSかを判別します。</p>
+        </div>
+      </div>
+
       <!-- ファイル取り込み -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">
-          <h3>📎 ファイル取り込み</h3>
+          <h3>汎用ファイル取り込み</h3>
         </div>
         <div class="card-body">
           <p>CSV、JSON、テキストファイルなど、いろいろなファイルからデータを取り込めます。</p>
