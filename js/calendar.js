@@ -8,18 +8,15 @@ var CalendarIntegration = {
   events: [],
 
   // ─── Save events from external calendar ───
+  // Merges new events into existing set. Events with the same dedupe key
+  // (summary + start) are updated in place; new ones are appended.
+  // This preserves previously imported events (ICS + Google mixed).
   saveEvents(rawEvents) {
-    if (!Array.isArray(rawEvents)) return;
+    if (!Array.isArray(rawEvents)) return this.events;
 
-    // Deduplicate and clean
-    const seen = new Set();
-    this.events = rawEvents.filter(e => {
-      const key = (e.id || '') + (e.summary || '') + (e.start || '');
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    }).map(e => ({
-      id: e.id || Date.now().toString(36),
+    // Normalize incoming events
+    const normalized = rawEvents.map(e => ({
+      id: e.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
       summary: (e.summary || '').replace(/<[^>]*>/g, ''),
       start: e.start?.dateTime || e.start?.date || e.start || '',
       end: e.end?.dateTime || e.end?.date || e.end || '',
@@ -28,6 +25,19 @@ var CalendarIntegration = {
       allDay: !!(e.start?.date),
       source: e.source || 'google'
     }));
+
+    // Build a map keyed by dedupe key for the existing events
+    const dedupeKey = (e) => `${e.summary || ''}::${(e.start || '').slice(0, 19)}`;
+    const merged = new Map();
+    (this.events || []).forEach(e => merged.set(dedupeKey(e), e));
+
+    // Merge (normalized overrides existing)
+    normalized.forEach(e => merged.set(dedupeKey(e), e));
+
+    // Convert back to array, sorted by start
+    this.events = Array.from(merged.values()).sort((a, b) => {
+      return new Date(a.start || 0) - new Date(b.start || 0);
+    });
 
     store.set('calendarEvents', this.events);
     return this.events;
@@ -100,21 +110,27 @@ var CalendarIntegration = {
 
   // ─── Render schedule widget for Time domain home ───
   renderWidget() {
+    // Safety: if in-memory cache is empty, re-hydrate from store
+    if ((!this.events || this.events.length === 0)) {
+      const stored = store.get('calendarEvents');
+      if (Array.isArray(stored) && stored.length > 0) this.events = stored;
+    }
+
     const today = this.getToday();
     const load = this.analyzeLoad();
 
-    if (this.events.length === 0) {
+    if (!this.events || this.events.length === 0) {
       return `<div class="calendar-widget">
-        <h3>📅 今日の予定</h3>
+        <h3>今日の予定</h3>
         <div class="calendar-empty">
           <p>カレンダーがまだ接続されていません</p>
-          <button class="btn btn-secondary" onclick="app.navigate('settings')">カレンダーを接続する</button>
+          <button class="btn btn-secondary" onclick="app.navigate('integrations')">カレンダーを接続する</button>
         </div>
       </div>`;
     }
 
     let html = `<div class="calendar-widget">
-      <h3>📅 今日の予定（${today.length}件）</h3>
+      <h3>今日の予定（${today.length}件）</h3>
       <div class="calendar-events">`;
 
     if (today.length === 0) {
@@ -126,7 +142,7 @@ var CalendarIntegration = {
         html += `<div class="calendar-event">
           <span class="event-time">${time}</span>
           <span class="event-title">${e.summary}</span>
-          ${e.location ? `<span class="event-location">📍 ${e.location}</span>` : ''}
+          ${e.location ? `<span class="event-location">${e.location}</span>` : ''}
         </div>`;
       });
     }
@@ -218,9 +234,17 @@ var CalendarIntegration = {
   },
 
   // ─── Init from stored data ───
+  // Hydrates this.events from the store and subscribes to changes so that
+  // events loaded later (e.g. from Firestore after login) are reflected
+  // in the in-memory cache used by renderWidget and getToday.
   init() {
     const stored = store.get('calendarEvents');
     if (Array.isArray(stored)) this.events = stored;
+    if (typeof store !== 'undefined' && store.on) {
+      store.on('calendarEvents', (value) => {
+        if (Array.isArray(value)) this.events = value;
+      });
+    }
   }
 };
 

@@ -9,7 +9,7 @@ var App = class App {
   // ─── Initialize ───
   async init(entryDomain) {
     this.entryDomain = entryDomain || null;
-    this.checkFitbitCallback();
+    this.checkOAuthCallbacks();
 
     // Initialize Firebase
     await FirebaseBackend.init();
@@ -853,16 +853,15 @@ var App = class App {
     if (file) this.handleFileUpload({ target: { files: [file] } }, store.get('currentDomain'));
   }
 
-  // Check Fitbit OAuth callback on page load
-  checkFitbitCallback() {
-    const hash = window.location.hash;
-    if (hash.includes('access_token=')) {
-      const token = hash.match(/access_token=([^&]+)/)?.[1];
-      if (token) {
-        localStorage.setItem('lms_fitbit_token', token);
-        window.location.hash = '';
-        Components.showToast('Fitbitに接続しました', 'success');
-      }
+  // Check all OAuth callbacks (Google Calendar, Fitbit) on page load.
+  // Each module's checkCallback() checks the state parameter strictly
+  // so they don't steal each other's tokens.
+  checkOAuthCallbacks() {
+    if (typeof googleCalendar !== 'undefined' && googleCalendar.checkCallback) {
+      googleCalendar.checkCallback();
+    }
+    if (typeof fitbit !== 'undefined' && fitbit.checkCallback) {
+      fitbit.checkCallback();
     }
   }
 

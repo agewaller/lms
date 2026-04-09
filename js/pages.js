@@ -36,6 +36,11 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>`;
 
+    // Assets domain: Show stock analysis at the very top
+    if (domain === 'assets') {
+      html += this.renderStockAnalysisWidget();
+    }
+
     // Domain score + overview
     html += `<div class="home-overview">
         <div class="overview-score">
@@ -133,7 +138,8 @@ var Pages = {
       html += this.renderUpcomingBirthdays();
     }
 
-    // Assets domain: NISA simulator + AI advisor + screenshot + auto trading + stock analysis
+    // Assets domain: NISA simulator + advisor + screenshot + auto trading
+    // (Stock analysis widget is rendered at the top of the page.)
     if (domain === 'assets') {
       if (typeof AssetsFeatures !== 'undefined') {
         html += AssetsFeatures.renderNISASimulator();
@@ -141,7 +147,6 @@ var Pages = {
         html += AssetsFeatures.renderScreenshotReader();
         html += AssetsFeatures.renderAutoTrading();
       }
-      html += this.renderStockAnalysisWidget();
     }
 
     // Domain disclaimers
