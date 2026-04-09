@@ -135,22 +135,39 @@ var AIEngine = {
     if (!apiKey) throw new Error('Anthropic APIキーが設定されていません。管理者にご連絡ください。');
 
     const endpoint = CONFIG.endpoints.anthropic;
-    if (!endpoint || endpoint.includes('your-account')) {
-      throw new Error('APIプロキシが未設定です。管理画面 → APIキー でWorker URLを設定してください。');
+
+    // ─── Direct browser mode (no proxy) ───
+    // Used when:
+    //   - endpoint is empty / unset
+    //   - endpoint is the literal "direct"
+    //   - endpoint still contains placeholder "your-account"
+    // Anthropic supports browser-direct calls via the
+    // 'anthropic-dangerous-direct-browser-access' header.
+    const isDirect = !endpoint
+      || endpoint === 'direct'
+      || endpoint.includes('your-account');
+
+    const url = isDirect
+      ? 'https://api.anthropic.com/v1/messages'
+      : endpoint;
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    };
+    if (isDirect) {
+      headers['anthropic-dangerous-direct-browser-access'] = 'true';
     }
 
-    // Diagnostic logging - shown in browser console for debugging
-    console.log('[LMS] Calling Anthropic via proxy:', endpoint);
+    console.log('[LMS] Calling Anthropic', isDirect ? '(direct)' : 'via proxy:', url);
     console.log('[LMS] Model:', model, 'Max tokens:', maxTokens);
 
     let res;
     try {
-      res = await fetch(endpoint, {
+      res = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey
-        },
+        headers,
         body: JSON.stringify({
           model: model,
           max_tokens: maxTokens,
@@ -159,18 +176,16 @@ var AIEngine = {
         })
       });
     } catch (e) {
-      // Network-level failure (DNS, CORS, offline)
       console.error('[LMS] fetch failed:', e);
       throw new Error(
-        'プロキシに接続できません。\n' +
+        (isDirect ? 'Anthropicに直接接続できません。' : 'プロキシに接続できません。') + '\n' +
         '原因: ' + (e.message || e.name || 'unknown') + '\n' +
-        'URL: ' + endpoint + '\n' +
-        '\nブラウザのコンソールで詳細を確認してください。\n' +
-        'よくある原因: CORS preflight失敗、DNSキャッシュ、Worker旧バージョン'
+        'URL: ' + url + '\n' +
+        '\nブラウザのコンソールで詳細を確認してください。'
       );
     }
 
-    console.log('[LMS] Proxy responded with status:', res.status);
+    console.log('[LMS] Anthropic responded with status:', res.status);
 
     if (!res.ok) {
       const err = await res.text();
