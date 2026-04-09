@@ -248,11 +248,12 @@ var App = class App {
       domainLabel.textContent = i18n.t(d);
     }
 
-    // Admin mode: show admin nav items via body class
+    // Admin mode: show admin nav items via body class only.
+    // We avoid setting inline style because CSS `.admin-only { display: none }`
+    // and `body.is-admin .admin-only { display: flex }` already handles this,
+    // and inline style would override the CSS class toggling.
     const isAdmin = FirebaseBackend.isAdmin();
     document.body.classList.toggle('is-admin', isAdmin);
-    const adminLink = document.getElementById('adminLink');
-    if (adminLink) adminLink.style.display = isAdmin ? 'flex' : 'none';
   }
 
   // ─── Quick Input ───
