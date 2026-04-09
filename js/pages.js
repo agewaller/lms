@@ -1280,14 +1280,41 @@ var Pages = {
 
   // ─── Admin Tab: API Keys ───
   renderAdminTab_apikeys() {
+    const isDirect = !CONFIG.endpoints.anthropic
+      || CONFIG.endpoints.anthropic === 'direct'
+      || CONFIG.endpoints.anthropic.includes('your-account');
+
     return `<div class="card" style="margin-bottom:16px;">
       <div class="card-header"><h3>APIキー設定</h3></div>
       <div class="card-body">
         <p class="page-desc">ここで設定したキーは、すべてのユーザーが利用します。</p>
+
         <div class="form-group">
-          <label>APIプロキシURL（必須）</label>
-          <input type="text" id="workerUrl" class="form-input" value="${CONFIG.endpoints.anthropic}" placeholder="https://...workers.dev">
-          <div class="input-help">CloudflareワーカーのURLを入力してください</div>
+          <label>接続モード</label>
+          <div class="connection-mode">
+            <span class="mode-badge ${isDirect ? 'mode-direct' : 'mode-proxy'}">
+              ${isDirect ? '直接モード（プロキシ不要）' : 'プロキシ経由'}
+            </span>
+            ${isDirect
+              ? '<div class="input-help">Anthropicに直接接続します。Cloudflare Workerは不要です。</div>'
+              : '<div class="input-help">Cloudflare Worker経由で接続します。</div>'
+            }
+          </div>
+          <div class="form-actions" style="margin-top:8px;">
+            ${isDirect
+              ? '<button class="btn btn-sm btn-secondary" onclick="app.useProxyMode()">プロキシ経由に戻す</button>'
+              : '<button class="btn btn-sm btn-secondary" onclick="app.useDirectMode()">直接モードに切り替え</button>'
+            }
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>APIプロキシURL ${isDirect ? '（直接モードでは未使用）' : '（必須）'}</label>
+          <input type="text" id="workerUrl" class="form-input"
+            value="${CONFIG.endpoints.anthropic}"
+            placeholder="https://...workers.dev または direct"
+            ${isDirect ? 'disabled' : ''}>
+          <div class="input-help">CloudflareワーカーのURL、または「direct」で直接モード</div>
         </div>
         <div class="form-group">
           <label>Anthropic API Key (Claude)</label>

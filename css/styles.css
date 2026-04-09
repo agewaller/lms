@@ -863,6 +863,17 @@ select.form-input { appearance: auto; }
 .status-badge.connected { background: var(--success-bg); color: var(--success); }
 .status-badge.disconnected { background: var(--danger-bg); color: var(--danger); }
 
+.connection-mode { display: flex; align-items: center; gap: 10px; }
+.mode-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.mode-direct { background: var(--success-bg); color: var(--success); }
+.mode-proxy { background: var(--info-bg); color: var(--info); }
+
 .admin-users-list {
   display: flex;
   flex-direction: column;

@@ -1363,6 +1363,34 @@ var App = class App {
     Components.showToast('保存しました: ' + url, 'success');
   }
 
+  // ─── Direct mode toggle (Plan B - no proxy needed) ───
+  useDirectMode() {
+    CONFIG.endpoints.anthropic = 'direct';
+    localStorage.setItem('lms_workerUrl', 'direct');
+
+    if (FirebaseBackend.isAdmin() && FirebaseBackend.db) {
+      FirebaseBackend.db.collection('admin').doc('config').set(
+        {
+          anthropicProxyUrl: 'direct',
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        },
+        { merge: true }
+      ).catch(e => console.warn('Direct mode sync error:', e));
+    }
+
+    Components.showToast('直接モードに切り替えました', 'success');
+    this.renderApp();
+  }
+
+  useProxyMode() {
+    // Restore the last known proxy URL or clear to placeholder
+    const last = localStorage.getItem('lms_workerUrl_backup') || '';
+    CONFIG.endpoints.anthropic = last;
+    localStorage.setItem('lms_workerUrl', last);
+    Components.showToast('プロキシ経由モードに戻しました。URLを入力してください。', 'info');
+    this.renderApp();
+  }
+
   // ─── Admin User Management ───
   async addAdminEmail() {
     const email = prompt('管理者として追加するメールアドレスを入力してください');
