@@ -427,29 +427,57 @@ var App = class App {
   }
 
   // ─── Stock Analysis (Assets domain) ───
+  // Uses the VM Hands-on prompt (assets_stock) configured by admin.
+  // The prompt is loaded via AIEngine.buildSystemPrompt which maps
+  // promptType 'stock_analysis' to the flat key 'assets_stock'.
   async analyzeStock() {
     const input = document.getElementById('stockTicker');
-    if (!input || !input.value.trim()) return;
+    const ticker = input?.value?.trim();
+    if (!ticker) {
+      Components.showToast('銘柄名またはティッカーを入力してください', 'info');
+      return;
+    }
 
-    const ticker = input.value.trim();
     const resultEl = document.getElementById('stockResult');
-    if (resultEl) resultEl.innerHTML = Components.loading('銘柄を分析中です...');
+    if (resultEl) resultEl.innerHTML = Components.loading(`${ticker} を分析中です...`);
+
+    // Pre-check: admin must have configured an API key
+    if (!AIEngine.getApiKey('anthropic') && !AIEngine.getApiKey('openai') && !AIEngine.getApiKey('google')) {
+      if (resultEl) {
+        resultEl.innerHTML = `<div class="error-msg">
+          <strong>分析できません</strong><br>
+          管理者がAIキーを設定していないため、分析を実行できません。管理者にご連絡ください。
+        </div>`;
+      }
+      return;
+    }
 
     try {
-      const prompt = CONFIG.prompts.assets.stock_analysis || CONFIG.inlinePrompts.stockAnalysis;
+      // promptType='stock_analysis' is mapped to config key 'assets_stock'
+      // (VM Hands-on prompt) via ai-engine's buildSystemPrompt legacy alias.
       const result = await AIEngine.analyze('assets', 'stock_analysis', {
-        text: `銘柄: ${ticker}\n日付: ${new Date().toISOString().slice(0, 10)}`
+        text: `COMPANY: ${ticker}\nTIME_NOW: ${new Date().toISOString().slice(0, 10)}`
       });
+
+      if (!result || !result.trim()) {
+        throw new Error('分析結果が空でした。プロンプト設定をご確認ください。');
+      }
 
       if (resultEl) {
         resultEl.innerHTML = `<div class="stock-result">
-          <h3>📊 ${ticker} の分析結果</h3>
+          <h3>${ticker} の分析結果</h3>
           <div class="analysis-content">${Components.formatMarkdown(result)}</div>
           <div class="disclaimer">${i18n.t('disclaimer_assets')}</div>
         </div>`;
       }
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      console.error('Stock analysis error:', e);
+      if (resultEl) {
+        resultEl.innerHTML = `<div class="error-msg">
+          <strong>分析できませんでした</strong><br>
+          ${e.message || 'もう一度お試しください'}
+        </div>`;
+      }
     }
   }
 
@@ -1283,29 +1311,6 @@ var App = class App {
     CONFIG.endpoints.anthropic = url;
     localStorage.setItem('lms_workerUrl', url);
     Components.showToast('保存しました', 'success');
-  }
-
-  saveEmailIngestConfig() {
-    const url = document.getElementById('emailIngestUrl')?.value || '';
-    const domain = document.getElementById('emailIngestDomain')?.value || '';
-    CONFIG.endpoints.emailIngest = url;
-    CONFIG.emailIngestDomain = domain;
-    localStorage.setItem('lms_emailIngestUrl', url);
-    localStorage.setItem('lms_emailIngestDomain', domain);
-
-    // Sync to admin/config if admin
-    if (FirebaseBackend.isAdmin() && FirebaseBackend.db) {
-      FirebaseBackend.db.collection('admin').doc('config').set(
-        {
-          emailIngestUrl: url,
-          emailIngestDomain: domain,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        },
-        { merge: true }
-      ).catch(e => console.warn(e));
-    }
-
-    Components.showToast('メール取込設定を保存しました', 'success');
   }
 
   // ─── Admin User Management ───

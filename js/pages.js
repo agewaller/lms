@@ -331,10 +331,12 @@ var Pages = {
   // ─── Stock Analysis Widget (Assets domain) ───
   renderStockAnalysisWidget() {
     return `<div class="stock-analysis-section">
-      <h3>📈 ${i18n.t('stock_investment')}</h3>
+      <h3>${i18n.t('stock_investment')}</h3>
       <p>銘柄名またはティッカーを入力すると、詳しい分析をご覧いただけます。</p>
       <div class="stock-input-bar">
-        <input type="text" id="stockTicker" class="form-input" placeholder="例：トヨタ、7203、AAPL">
+        <input type="text" id="stockTicker" class="form-input"
+          placeholder="例：トヨタ、7203、AAPL"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();app.analyzeStock();}">
         <button class="btn btn-primary" onclick="app.analyzeStock()">
           ${i18n.t('analyze_stock')}
         </button>
@@ -1303,40 +1305,6 @@ var Pages = {
           <button class="btn btn-danger" onclick="app.clearApiKeys()">すべて削除</button>
         </div>
         <div id="connectionResult"></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header"><h3>Plaud メール取込 Worker</h3></div>
-      <div class="card-body">
-        <p class="page-desc">Plaudが自動送信する文字起こしを受信するためのCloudflare Workerを設定します。</p>
-
-        <div class="form-group">
-          <label>メール取込 Worker URL</label>
-          <input type="text" id="emailIngestUrl" class="form-input"
-            value="${CONFIG.endpoints.emailIngest || ''}" placeholder="https://lms-email-ingest.your-account.workers.dev">
-          <div class="input-help">Cloudflare Email WorkerのHTTPエンドポイントURLです</div>
-        </div>
-
-        <div class="form-group">
-          <label>取込用ドメイン</label>
-          <input type="text" id="emailIngestDomain" class="form-input"
-            value="${CONFIG.emailIngestDomain || 'inbox.lms-life.com'}" placeholder="inbox.lms-life.com">
-          <div class="input-help">ユーザー固有アドレスに使うドメイン（data-xxx@このドメイン）</div>
-        </div>
-
-        <div class="integration-steps">
-          <h4>セットアップ手順</h4>
-          <ol>
-            <li>Cloudflare Dashboard → Email → Email Routing で上記ドメインを認証</li>
-            <li>Workers → KV → 「EMAIL_INBOX」名前空間を作成</li>
-            <li><code>wrangler deploy -c wrangler.email.toml</code> で Email Worker をデプロイ</li>
-            <li>Email Routing でキャッチオール（<code>data-*@ドメイン</code>）を Worker にルーティング</li>
-            <li>このページの Worker URL を入力して保存</li>
-          </ol>
-        </div>
-
-        <button class="btn btn-primary" onclick="app.saveEmailIngestConfig()">保存</button>
       </div>
     </div>`;
   },
