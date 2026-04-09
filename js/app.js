@@ -1682,6 +1682,104 @@ var App = class App {
     }
   }
 
+  // User list filter (admin users tab)
+  filterUsers(key, value) {
+    const filter = store.get('_userFilter') || { search: '', type: 'all' };
+    filter[key] = value;
+    store.set('_userFilter', filter);
+    this.renderApp();
+  }
+
+  clearUserFilter() {
+    store.set('_userFilter', { search: '', type: 'all' });
+    this.renderApp();
+  }
+
+  // ─── ZIP bulk import ───
+  async importZipFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (typeof zipImport === 'undefined' || typeof JSZip === 'undefined') {
+      Components.showToast('ZIPライブラリが読み込まれていません', 'error');
+      return;
+    }
+
+    Components.showToast(`${file.name} を解凍中...`, 'info');
+    try {
+      const result = await zipImport.importZip(file);
+      const summary = [
+        `処理ファイル: ${result.processed}`,
+        `連絡先追加: ${result.contactsAdded}`,
+        `予定追加: ${result.calendarEvents}`,
+        `健康データ: ${result.healthRecords}`
+      ].join(' / ');
+      Components.showToast('取り込み完了: ' + summary, 'success');
+
+      // Also show details in a modal
+      this.openModal('ZIP取込結果', `
+        <div style="font-size:14px;line-height:1.8;">
+          <p><strong>ファイル:</strong> ${file.name}</p>
+          <p><strong>処理成功:</strong> ${result.processed}件</p>
+          <p><strong>スキップ:</strong> ${result.skipped}件</p>
+          <hr>
+          <p><strong>連絡先追加:</strong> ${result.contactsAdded}件</p>
+          <p><strong>カレンダー予定:</strong> ${result.calendarEvents}件</p>
+          <p><strong>健康記録:</strong> ${result.healthRecords}件</p>
+          <hr>
+          <details>
+            <summary>含まれていたファイル (${result.files.length}件)</summary>
+            <ul style="font-size:12px;color:var(--text-muted);max-height:200px;overflow-y:auto;">
+              ${result.files.slice(0, 100).map(f => `<li>${f}</li>`).join('')}
+              ${result.files.length > 100 ? `<li>...他${result.files.length - 100}件</li>` : ''}
+            </ul>
+          </details>
+        </div>
+      `);
+      this.renderApp();
+    } catch (e) {
+      Components.showToast('ZIP取込失敗: ' + e.message, 'error');
+    }
+  }
+
+  // ─── Withings ───
+  withingsConnect() {
+    const clientId = document.getElementById('withingsClientId')?.value?.trim();
+    if (!clientId) {
+      Components.showToast('Withings Client IDを入力してください', 'info');
+      return;
+    }
+    if (typeof withings !== 'undefined') {
+      withings.setClientId(clientId);
+      withings.startAuth();
+    }
+  }
+
+  importWithingsCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const count = typeof withings !== 'undefined' ? withings.parseCSV(e.target.result) : 0;
+      Components.showToast(`Withingsから${count}件のデータを取り込みました`, 'success');
+      this.renderApp();
+    };
+    reader.readAsText(file);
+  }
+
+  // ─── Muse ───
+  importMuseCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const count = typeof muse !== 'undefined' ? muse.parseCSV(e.target.result) : 0;
+      Components.showToast(`Museから${count}件のセッションを取り込みました`, 'success');
+      this.renderApp();
+    };
+    reader.readAsText(file);
+  }
+
   // Show a modal with detailed profile info for one user
   showUserDetail(uid) {
     const users = store.get('_allUsers') || [];
