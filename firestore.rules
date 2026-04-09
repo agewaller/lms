@@ -14,14 +14,20 @@ service cloud.firestore {
       );
     }
 
-    // Per-user data: only the owner can read/write
+    // Per-user data: owner has full read/write; admin has read-only for management
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Owner can read and write everything in their doc.
+      // Admin can read any user's doc for the user management tab.
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow write: if request.auth != null && request.auth.uid == userId;
       // Admins can list users for user management
       allow list: if isAdmin();
 
       match /{subcollection}/{docId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        // Owner has full access to their subcollections (records, history, etc.)
+        // Admin can only read, not write.
+        allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+        allow write: if request.auth != null && request.auth.uid == userId;
       }
     }
 
