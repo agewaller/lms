@@ -207,7 +207,9 @@ var googleCalendar = {
       if (token) {
         localStorage.setItem('lms_gcal_token', token);
         window.location.hash = '';
-        Components.showToast('Googleカレンダーに接続しました', 'success');
+        if (typeof Components !== 'undefined') Components.showToast('Googleカレンダーに接続しました', 'success');
+        // Auto-sync after successful connection
+        try { this.sync(); } catch (e) { /* best effort */ }
         return true;
       }
     }
@@ -283,13 +285,16 @@ var fitbit = {
   },
 
   checkCallback() {
+    // Only claim the hash if the state is explicitly "fitbit".
+    // Previously this would grab any access_token without state=gcal,
+    // stealing the Google Calendar callback.
     const hash = window.location.hash;
-    if (hash.includes('access_token=') && (hash.includes('state=fitbit') || !hash.includes('state=gcal'))) {
+    if (hash.includes('access_token=') && hash.includes('state=fitbit')) {
       const token = hash.match(/access_token=([^&]+)/)?.[1];
       if (token) {
         localStorage.setItem('lms_fitbit_token', token);
         window.location.hash = '';
-        Components.showToast('Fitbitに接続しました', 'success');
+        if (typeof Components !== 'undefined') Components.showToast('Fitbitに接続しました', 'success');
         return true;
       }
     }
