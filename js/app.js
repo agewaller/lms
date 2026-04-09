@@ -235,6 +235,20 @@ var App = class App {
         if (typeof AssetsFeatures !== 'undefined') AssetsFeatures.calculateNISA();
       }, 100);
     }
+
+    // Initialize consciousness stacked time-series chart
+    if (domain === 'consciousness' && page === 'home') {
+      setTimeout(() => {
+        if (typeof Pages !== 'undefined' && Pages.initConsciousnessTrendChart) {
+          Pages.initConsciousnessTrendChart();
+        }
+      }, 50);
+    }
+  }
+
+  setConsciousnessTrendRange(days) {
+    store.set('consciousnessTrendRange', days);
+    this.renderApp();
   }
 
   updateSidebar() {

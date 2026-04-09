@@ -396,6 +396,69 @@ select.form-input { appearance: auto; }
   align-self: center;
 }
 
+/* ─── Consciousness Trend (時系列 積み上げグラフ) ─── */
+.consciousness-trend-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 18px 20px;
+  margin: 20px 0;
+}
+.consciousness-trend-section .trend-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+.consciousness-trend-section h3 { margin: 0; }
+.consciousness-trend-section .trend-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 4px 0 14px;
+}
+.trend-range-tabs {
+  display: inline-flex;
+  gap: 4px;
+  background: var(--bg-tertiary);
+  padding: 3px;
+  border-radius: var(--radius-sm);
+}
+.trend-range-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: calc(var(--radius-sm) - 2px);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.trend-range-btn:hover { color: var(--text-primary); }
+.trend-range-btn.active {
+  background: #9B59B6;
+  color: #fff;
+}
+.trend-chart-wrap {
+  position: relative;
+  height: 280px;
+  margin-bottom: 18px;
+}
+.trend-netvalue-wrap {
+  border-top: 1px dashed var(--border);
+  padding-top: 14px;
+}
+.trend-netvalue-wrap h4 {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+}
+.trend-netvalue-wrap canvas {
+  height: 140px !important;
+}
+
 /* ─── Data Browser ─── */
 .page-data-browser { max-width: 1100px; margin: 0 auto; }
 .data-browser-header { margin-bottom: 16px; }

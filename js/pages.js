@@ -110,9 +110,10 @@ var Pages = {
 
     // ─── Domain-specific widgets ───
 
-    // Consciousness domain: 7-layer visualization + transcript input
+    // Consciousness domain: 7-layer visualization + trend chart + transcript input
     if (domain === 'consciousness') {
       html += this.renderConsciousnessLayers();
+      html += this.renderConsciousnessTrend();
       html += this.renderTranscriptInput();
     }
 
@@ -223,6 +224,296 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Consciousness Trend (時系列 積み上げグラフ) ───
+  // 七つの意識レイヤーの日次比率を、欠損日は線形補間で滑らかに繋げて表示。
+  // Chart.js の stacked area (line+fill) を後から app.renderApp が初期化する。
+  renderConsciousnessTrend() {
+    const observations = store.getDomainData('consciousness', 'observation', 60) || [];
+
+    if (observations.length === 0) {
+      return `<div class="consciousness-trend-section">
+        <h3>📈 時系列 積み上げグラフ</h3>
+        ${Components.emptyState('📊', 'まだ記録がありません',
+          '文字起こしを分析するか「記録する」から定点観測を入力すると、ここに時系列グラフが表示されます')}
+      </div>`;
+    }
+
+    // Range selector defaults to 30 days
+    const range = store.get('consciousnessTrendRange') || 30;
+
+    return `<div class="consciousness-trend-section">
+      <div class="trend-header">
+        <h3>📈 時系列 積み上げグラフ</h3>
+        <div class="trend-range-tabs">
+          ${[7, 30, 60].map(d => `
+            <button class="trend-range-btn ${range === d ? 'active' : ''}"
+              onclick="app.setConsciousnessTrendRange(${d})">${d}日</button>
+          `).join('')}
+        </div>
+      </div>
+      <p class="trend-hint">七つのレイヤーの比率を時系列で積み上げ表示。記録のない日は前後の値を線形補間で滑らかに繋いでいます。</p>
+      <div class="trend-chart-wrap">
+        <canvas id="consciousnessTrendChart" height="260"></canvas>
+      </div>
+      <div class="trend-netvalue-wrap">
+        <h4>純価値の推移</h4>
+        <canvas id="consciousnessNetValueChart" height="120"></canvas>
+      </div>
+    </div>`;
+  },
+
+  // Build interpolated time-series for the 7 layers (returns Chart.js-ready shape)
+  // Strategy: for each day in the range, if an observation exists use it; otherwise
+  // linearly interpolate between the nearest prior & next known days. Leading /
+  // trailing gaps carry-forward the closest known value.
+  buildConsciousnessTrendData(days = 30) {
+    const layers = CONFIG.domains.consciousness.layers;
+    const layerKeys = ['1', '2', '3', '3.5', '4', '5', '6', '7'];
+    const storeKeyOf = (k) => (k === '3.5' ? 'layer_35' : 'layer_' + k);
+
+    // Fetch observations up to `days` back, keyed by YYYY-MM-DD.
+    const raw = store.getDomainData('consciousness', 'observation', days + 30) || [];
+    const byDate = {};
+    raw.forEach(o => {
+      const d = (o.date || (o.timestamp || '').slice(0, 10));
+      if (!d) return;
+      // If multiple observations on the same day, keep the latest (last wins)
+      byDate[d] = o;
+    });
+
+    // Build dense day array [oldest .. today]
+    const dayList = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      dayList.push(d.toISOString().slice(0, 10));
+    }
+
+    // Helper: get known value for a given (day, fieldKey) or null
+    const valueAt = (day, field) => {
+      const o = byDate[day];
+      if (!o) return null;
+      const v = o[field];
+      return (typeof v === 'number' && !isNaN(v)) ? v : null;
+    };
+
+    // Normalize layer percentages for each known day so they sum to 100 (avoids
+    // jitter when the raw data is loosely constrained). Missing → skip.
+    const knownDayKeys = Object.keys(byDate).filter(d => dayList.includes(d)).sort();
+    const normalizedKnown = {};
+    knownDayKeys.forEach(day => {
+      const vals = layerKeys.map(k => {
+        const v = valueAt(day, storeKeyOf(k));
+        return v == null ? 0 : Math.max(0, v);
+      });
+      const sum = vals.reduce((a, b) => a + b, 0);
+      if (sum <= 0) return; // no usable layer data that day
+      normalizedKnown[day] = {};
+      layerKeys.forEach((k, i) => {
+        normalizedKnown[day][storeKeyOf(k)] = (vals[i] / sum) * 100;
+      });
+      // Pass-through scalar signals for the net value chart
+      normalizedKnown[day].net_value = valueAt(day, 'net_value');
+      normalizedKnown[day].desire_count = valueAt(day, 'desire_count');
+      normalizedKnown[day].virtue_count = valueAt(day, 'virtue_count');
+      normalizedKnown[day].energy_count = valueAt(day, 'energy_count');
+    });
+
+    const normalizedDayKeys = Object.keys(normalizedKnown).sort();
+    if (normalizedDayKeys.length === 0) return null;
+
+    // Gap-fill for every day in dayList via linear interpolation between
+    // surrounding known days. Before the first known / after the last: carry.
+    const indexOfKnown = (day) => {
+      // Returns [leftIdx, rightIdx] — indices into normalizedDayKeys
+      // s.t. normalizedDayKeys[left] <= day <= normalizedDayKeys[right].
+      let left = -1, right = -1;
+      for (let i = 0; i < normalizedDayKeys.length; i++) {
+        if (normalizedDayKeys[i] <= day) left = i;
+        if (normalizedDayKeys[i] >= day) { right = i; break; }
+      }
+      if (left === -1) left = right;
+      if (right === -1) right = left;
+      return [left, right];
+    };
+
+    const dateDiffDays = (a, b) => {
+      const da = new Date(a).getTime();
+      const db = new Date(b).getTime();
+      return (db - da) / (1000 * 60 * 60 * 24);
+    };
+
+    const interpolate = (day, field) => {
+      if (normalizedKnown[day] && normalizedKnown[day][field] != null) {
+        return normalizedKnown[day][field];
+      }
+      const [li, ri] = indexOfKnown(day);
+      const leftDay = normalizedDayKeys[li];
+      const rightDay = normalizedDayKeys[ri];
+      const leftVal = normalizedKnown[leftDay]?.[field];
+      const rightVal = normalizedKnown[rightDay]?.[field];
+
+      // Edge cases: before-first or after-last → carry nearest known
+      if (li === ri) return leftVal ?? rightVal ?? null;
+      if (leftVal == null) return rightVal;
+      if (rightVal == null) return leftVal;
+
+      // Linear interpolation by date distance
+      const span = dateDiffDays(leftDay, rightDay);
+      if (span <= 0) return leftVal;
+      const t = dateDiffDays(leftDay, day) / span;
+      return leftVal + (rightVal - leftVal) * t;
+    };
+
+    // Build per-layer series
+    const datasets = layerKeys.map(k => {
+      const field = storeKeyOf(k);
+      const layer = layers[k];
+      const data = dayList.map(day => {
+        const v = interpolate(day, field);
+        return v == null ? 0 : Math.round(v * 10) / 10;
+      });
+      return {
+        label: `${k} ${layer.name}`,
+        data,
+        backgroundColor: this._hexToRgba(layer.color, 0.65),
+        borderColor: layer.color,
+        borderWidth: 1,
+        fill: true,
+        tension: 0.35,
+        pointRadius: 0,
+        pointHoverRadius: 3
+      };
+    });
+
+    // Net value (separate chart)
+    const netValueData = dayList.map(day => {
+      const v = interpolate(day, 'net_value');
+      return v == null ? null : Math.round(v);
+    });
+
+    // Mark which days were actually recorded vs interpolated (for point styling)
+    const recordedMask = dayList.map(d => !!normalizedKnown[d]);
+
+    return {
+      labels: dayList,
+      datasets,
+      netValueData,
+      recordedMask,
+      layerKeys,
+      layers
+    };
+  },
+
+  _hexToRgba(hex, alpha = 1) {
+    if (!hex) return `rgba(128,128,128,${alpha})`;
+    const h = hex.replace('#', '');
+    const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+    const r = parseInt(full.slice(0, 2), 16);
+    const g = parseInt(full.slice(2, 4), 16);
+    const b = parseInt(full.slice(4, 6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  },
+
+  // Called by App after DOM insert — Chart.js canvas initialization
+  initConsciousnessTrendChart() {
+    if (typeof Chart === 'undefined') return;
+    const canvas = document.getElementById('consciousnessTrendChart');
+    if (!canvas) return;
+
+    const days = store.get('consciousnessTrendRange') || 30;
+    const data = this.buildConsciousnessTrendData(days);
+    if (!data) return;
+
+    // Destroy previous instance if any
+    if (this._trendChart) { try { this._trendChart.destroy(); } catch (_) {} }
+    if (this._netValueChart) { try { this._netValueChart.destroy(); } catch (_) {} }
+
+    const labelDisplay = data.labels.map(d => {
+      const [, m, day] = d.split('-');
+      return `${parseInt(m)}/${parseInt(day)}`;
+    });
+
+    this._trendChart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: labelDisplay,
+        datasets: data.datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { font: { size: 11 }, boxWidth: 12, padding: 8 }
+          },
+          tooltip: {
+            callbacks: {
+              title: (items) => data.labels[items[0].dataIndex],
+              afterTitle: (items) => {
+                const idx = items[0].dataIndex;
+                return data.recordedMask[idx] ? '● 記録あり' : '… 補間（前後の値から推定）';
+              },
+              label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%`
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } },
+          y: { stacked: true, min: 0, max: 100, ticks: { callback: (v) => v + '%' } }
+        }
+      }
+    });
+
+    // Net value line chart (below stacked)
+    const nvCanvas = document.getElementById('consciousnessNetValueChart');
+    if (nvCanvas && data.netValueData.some(v => v != null)) {
+      this._netValueChart = new Chart(nvCanvas.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: labelDisplay,
+          datasets: [{
+            label: '純価値',
+            data: data.netValueData,
+            borderColor: '#9B59B6',
+            backgroundColor: 'rgba(155,89,182,0.15)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            spanGaps: true, // connect through null gaps
+            pointRadius: (ctx) => data.recordedMask[ctx.dataIndex] ? 3 : 0,
+            pointBackgroundColor: '#9B59B6'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: (items) => data.labels[items[0].dataIndex],
+                afterTitle: (items) => {
+                  const idx = items[0].dataIndex;
+                  return data.recordedMask[idx] ? '● 記録あり' : '… 補間';
+                },
+                label: (ctx) => `純価値: ${ctx.parsed.y}/100`
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } },
+            y: { min: 0, max: 100 }
+          }
+        }
+      });
+    }
   },
 
   // ─── Transcript Input (Plaud / Voice) ───
