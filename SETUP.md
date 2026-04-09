@@ -303,12 +303,44 @@ Anthropic Direct Mode を使う場合、Cloudflare Worker は**不要**です。
 5. 生成された URL（例: `https://lms-api-proxy.xxx.workers.dev`）をコピー
 6. LMS → 管理 → APIキー → 「プロキシ経由に戻す」→ URL を貼り付け → 保存
 
-### GitHub Actions 自動デプロイ（上級者向け）
+### GitHub Actions 自動デプロイ（上級者向け・オプション）
 
-1. https://dash.cloudflare.com/profile/api-tokens → Create Token → **Edit Cloudflare Workers** テンプレート → Create
-2. https://github.com/agewaller/lms/settings/secrets/actions → New secret
-3. Name: `CLOUDFLARE_API_TOKEN`、値: 上のトークン
-4. 以降、worker/ 配下を更新すると自動デプロイされます
+**注意:** この手順はオプションです。Cloudflare ダッシュボードから手動で
+コードを貼り付けてデプロイしているなら、GitHub Actions は不要です。
+シークレットが未設定の場合、ワークフローは自動的にスキップされます
+（失敗にはなりません）。
+
+自動デプロイを有効化したい場合のみ、以下を設定してください:
+
+1. **API トークンを作成**
+   - https://dash.cloudflare.com/profile/api-tokens → Create Token
+   - **Edit Cloudflare Workers** テンプレートを選択 → Create
+   - 表示されたトークンをコピー（一度しか表示されません）
+
+2. **Account ID を確認**
+   - https://dash.cloudflare.com/ にアクセス
+   - Workers & Pages を開き、右サイドバーの **Account ID** をコピー
+
+3. **GitHub シークレットに登録**
+   - https://github.com/agewaller/lms/settings/secrets/actions → New repository secret
+   - `CLOUDFLARE_API_TOKEN` = 手順1のトークン
+   - `CLOUDFLARE_ACCOUNT_ID` = 手順2の Account ID
+
+4. **動作確認**
+   - main ブランチの `worker/anthropic-proxy.js` または `wrangler.toml` を変更してプッシュ
+   - Actions タブで **Deploy Cloudflare Worker** が成功することを確認
+   - もしくは Actions タブから手動実行（workflow_dispatch）
+
+### ワークフローが失敗した場合
+
+- **`Authentication error [code: 10000]`**
+  → API トークンが無効/期限切れ。手順1からトークンを作り直してください。
+- **`Could not route to ... account_id is required`**
+  → `CLOUDFLARE_ACCOUNT_ID` シークレットが未登録。手順2-3を実施してください。
+- **`workers.api.error.script_not_found`**
+  → Worker 名の不一致。`wrangler.toml` の `name` と Cloudflare 側の名前を揃えてください（既定: `lms-api-proxy`）。
+- **ワークフロー自体がスキップされる**
+  → `CLOUDFLARE_API_TOKEN` 未設定時の想定動作です。手動デプロイのみで運用できます。
 
 ### Plaud メール受信 Worker（将来実装予定）
 

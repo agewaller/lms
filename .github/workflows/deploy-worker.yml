@@ -1,19 +1,54 @@
 name: Deploy Cloudflare Worker
 
+# このワークフローはオプションです。
+# Cloudflare ダッシュボードから手動デプロイしている場合は不要で、
+# リポジトリに CLOUDFLARE_API_TOKEN シークレットが無ければ自動的にスキップされます。
+#
+# 自動デプロイを有効化する場合:
+#   1. https://dash.cloudflare.com/profile/api-tokens で
+#      "Edit Cloudflare Workers" テンプレートのトークンを作成
+#   2. リポジトリ Settings → Secrets and variables → Actions に追加:
+#        - CLOUDFLARE_API_TOKEN   (必須)
+#        - CLOUDFLARE_ACCOUNT_ID  (必須: ダッシュボード右サイドバーの Account ID)
+
 on:
   push:
     branches: ["main"]
-    paths: ["worker/**", "wrangler.toml"]
+    paths:
+      - "worker/anthropic-proxy.js"
+      - "wrangler.toml"
+      - ".github/workflows/deploy-worker.yml"
   workflow_dispatch:
 
 jobs:
+  check-secrets:
+    runs-on: ubuntu-latest
+    outputs:
+      has_token: ${{ steps.check.outputs.has_token }}
+    steps:
+      - id: check
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -n "$CF_TOKEN" ]; then
+            echo "has_token=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::CLOUDFLARE_API_TOKEN detected — proceeding with deploy."
+          else
+            echo "has_token=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CLOUDFLARE_API_TOKEN is not set — skipping deploy. Configure it in repo secrets to enable automatic deployment, or deploy via the Cloudflare dashboard."
+          fi
+
   deploy:
+    needs: check-secrets
+    if: needs.check-secrets.outputs.has_token == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Deploy Worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: "."
-          command: deploy --name lms-api-proxy
+          command: deploy
