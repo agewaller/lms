@@ -270,20 +270,57 @@ var App = class App {
     try {
       const result = await AIEngine.analyze(domain, 'quickInput', { text });
 
-      // Try to parse as JSON for structured response
-      let parsed;
-      try { parsed = JSON.parse(result); } catch (e) { parsed = null; }
+      // Extract JSON from the response. The model may wrap it in a
+      // markdown code fence (```json ... ```) or return plain JSON,
+      // or return a raw string when it ignores the format instruction.
+      let parsed = null;
+      const cleaned = this.extractJsonFromResponse(result);
+      if (cleaned) {
+        try { parsed = JSON.parse(cleaned); } catch (e) { parsed = null; }
+      }
 
-      if (parsed && parsed.response) {
-        if (responseEl) responseEl.innerHTML = `<div class="quick-response">${Components.formatMarkdown(parsed.response)}</div>`;
+      if (parsed && (parsed.response || parsed.actions)) {
+        let html = '<div class="quick-response">';
+        if (parsed.response) {
+          html += `<div class="qr-body">${Components.formatMarkdown(parsed.response)}</div>`;
+        }
+        if (Array.isArray(parsed.actions) && parsed.actions.length > 0) {
+          html += '<div class="qr-actions"><strong>おすすめの行動</strong><ul>';
+          parsed.actions.forEach(a => {
+            const label = typeof a === 'string' ? a : (a.text || JSON.stringify(a));
+            html += `<li>${Components.formatMarkdown(label)}</li>`;
+          });
+          html += '</ul></div>';
+        }
+        html += '</div>';
+        if (responseEl) responseEl.innerHTML = html;
       } else {
-        if (responseEl) responseEl.innerHTML = `<div class="quick-response">${Components.formatMarkdown(result)}</div>`;
+        // Fallback: strip code fences and display as markdown
+        const stripped = (result || '').replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
+        if (responseEl) responseEl.innerHTML = `<div class="quick-response">${Components.formatMarkdown(stripped)}</div>`;
       }
 
       input.value = '';
     } catch (e) {
       if (responseEl) responseEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
     }
+  }
+
+  // Extract a JSON object from the model's response.
+  // Handles: raw JSON, ```json fenced blocks, ``` fenced blocks, or
+  // JSON embedded in surrounding prose.
+  extractJsonFromResponse(text) {
+    if (!text) return null;
+    // 1. Try fenced code block
+    const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fenceMatch && fenceMatch[1]) return fenceMatch[1].trim();
+    // 2. Try finding a JSON object in the text
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      return text.slice(firstBrace, lastBrace + 1).trim();
+    }
+    return text.trim();
   }
 
   // ─── Record Save ───
