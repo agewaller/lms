@@ -179,3 +179,216 @@ Cloudflare Worker は `worker/**` の変更で自動デプロイ（GitHub Action
 - **CONFIG.profileSchema**: ユーザープロファイルのスキーマ定義
 - **CONFIG.diseaseCategories**: WHO ICD-11 疾患分類
 - **CONFIG.prompts**: 全AIプロンプト定義
+
+---
+
+## 外部サービス統合プラン（車輪の再発明をしない）
+
+原則: **既存のサービス・ライブラリで解決できるものはゼロから作らない**。
+ただし LMS の「管理者が一度設定すれば全ユーザーが使える」アーキテクチャを維持するため、
+各サービスの Client ID / API キーは `admin/config` や `admin/secrets` に格納する。
+
+### 現状の外部サービス（実装済）
+
+| 機能 | 採用サービス | 統合方法 |
+|------|-------------|---------|
+| **認証** | Firebase Authentication | `js/firebase-backend.js` の `signInWithGoogle()` / `signInWithEmail()` |
+| **DB** | Firebase Firestore | `js/firebase-backend.js` の `loadUserData()` / `enableAutoSync()` |
+| **ファイル** | Firebase Storage | `FirebaseBackend.uploadFile()` で `/users/{uid}/{path}/` に保存 |
+| **決済 (1)** | PayPal Subscriptions | `js/affiliate.js` の `PayPalManager` |
+| **AI** | Anthropic Claude / OpenAI / Google Gemini | `js/ai-engine.js` の `callAnthropic() / callOpenAI() / callGemini()` |
+| **カレンダー** | Google Calendar / Microsoft Graph | `js/integrations.js` の `googleCalendar` / `outlookCalendar` |
+| **ヘルスケア** | Fitbit / Apple Health / Withings | `js/integrations.js` |
+| **メール受信** | Cloudflare Email Workers | `worker/email-ingest.js`（Plaud 自動取込） |
+
+### 追加候補サービス
+
+以下のサービスは **必要になったタイミングで追加する**。
+現時点では実装しないが、実装時の最小変更点を記載しておく。
+
+#### 決済 (2): Stripe
+
+**追加理由**: PayPalはサブスクリプション管理が中心。単発決済・従量課金・請求書発行が必要になったら Stripe を追加する。
+
+**統合ポイント**:
+- 新規ファイル: `js/stripe-integration.js`
+- Stripe Checkout（リダイレクト方式）でCORS問題を回避
+- 管理画面 → APIキータブ に Stripe Publishable Key 入力欄を追加
+- `CONFIG.stripe.publishableKey` に格納（公開キーなので安全）
+- 秘密鍵は Cloudflare Worker 経由（`worker/stripe-proxy.js` を追加）
+- `store.subscription` に Stripe subscription ID を保存
+- Webhook は Cloudflare Worker で受信して Firestore に書込
+
+**最小実装**:
+```javascript
+// js/stripe-integration.js
+var StripeIntegration = {
+  async checkout(priceId) {
+    const stripe = Stripe(CONFIG.stripe.publishableKey);
+    await stripe.redirectToCheckout({
+      lineItems: [{ price: priceId, quantity: 1 }],
+      mode: 'subscription',
+      successUrl: window.location.origin + '/dashboard.html?payment=success',
+      cancelUrl: window.location.origin + '/dashboard.html?payment=cancel'
+    });
+  }
+};
+```
+
+**優先度**: **中**（アフィリエイト以外の収益源が必要になったら）
+
+---
+
+#### メール送信: Resend または SendGrid
+
+**追加理由**: 現在はメール送信機能がない。以下で必要になる:
+- ユーザー登録時のウェルカムメール
+- パスワードリセット（Firebase Auth 標準機能で代替可）
+- 日次/週次レポートのメール配信
+- アラート通知（孤立スコア警告、誕生日リマインダ）
+
+**統合ポイント**:
+- 新規ファイル: `worker/mail-sender.js`（Cloudflare Worker）
+- Resend 推奨（無料枠が大きい、日本からのメール到達率が良い）
+- `CONFIG.mail.resendApiKey` を `admin/secrets` に格納
+- `MailSender.send(to, template, data)` API をフロントから呼出
+- テンプレートは `CONFIG.mailTemplates` で一元管理
+
+**最小実装**:
+```javascript
+// worker/mail-sender.js
+export default {
+  async fetch(request, env) {
+    const { to, subject, html } = await request.json();
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ from: 'lms@agewaller.com', to, subject, html })
+    });
+    return new Response(await res.text(), { status: res.status });
+  }
+};
+```
+
+**代替案**: Firebase Extensions の `Trigger Email` を使えば Worker 不要。Firestore `mail/` コレクションへの書込でメール送信が自動実行される。こちらの方が LMS の設計思想（全てFirestore）に沿う。
+
+**優先度**: **高**（ユーザーへの能動的な通知機能は成長に必須）
+
+---
+
+#### 検索: Algolia
+
+**追加理由**: 以下の場面で全文検索が必要になる:
+- 管理画面のユーザー検索（現在は line-by-line フィルタで代替）
+- 個人のデータブラウザ（現在は全文検索済だが、データ量が増えると重くなる）
+- プロンプトライブラリの検索
+- 疾患名・症状の検索
+
+**統合ポイント**:
+- 新規ファイル: `js/algolia-search.js`
+- Algolia InstantSearch JS（CDN読込）
+- `CONFIG.algolia.appId` + `CONFIG.algolia.searchApiKey` を `admin/config` に格納
+- インデックス: `users`, `prompts`, `records`
+- Firestore → Algolia の同期は Firebase Extension（`Search with Algolia`）で自動化
+
+**最小実装**:
+```javascript
+// js/algolia-search.js
+var AlgoliaSearch = {
+  client: null,
+  init() {
+    if (!CONFIG.algolia?.appId) return;
+    this.client = algoliasearch(CONFIG.algolia.appId, CONFIG.algolia.searchApiKey);
+  },
+  async search(indexName, query) {
+    const index = this.client.initIndex(indexName);
+    const { hits } = await index.search(query);
+    return hits;
+  }
+};
+```
+
+**代替案**: データ量が10万件未満なら Firestore のクライアント側フィルタで十分。Algolia は 1000ユーザー以上で検討。
+
+**優先度**: **低**（現状のデータブラウザで十分）
+
+---
+
+#### UI コンポーネント: shadcn/ui の原則のみ採用
+
+**採用不可の理由**: shadcn/ui は React + Tailwind CSS ベース。LMS は Vanilla JS なので直接は使えない。
+
+**採用する原則**:
+- **コピペ可能な独立コンポーネント**: `js/components.js` の関数は外部依存なしで動作する
+- **アクセシビリティ重視**: ARIA属性、キーボード操作、コントラスト比
+- **カスタマイズ可能**: CSS変数で全コンポーネントの見た目を変更可能
+- **最小限のスタイル**: 未病ダイアリーの `--accent` を軸にした控えめなデザイン
+
+**参考にする shadcn/ui コンポーネント**（JS版を自作する場合）:
+- Dialog → 既存の `.modal-overlay` で代替
+- Command palette → `/` キーでスラッシュコマンド起動
+- Toast → 既存の `Components.showToast()`
+- Tabs → 既存の管理画面タブで代替
+- Form → 既存の `Components.dataEntryForm()` で代替
+
+**優先度**: **現状維持**（採用しない）
+
+---
+
+#### 認証代替: Clerk / Supabase Auth
+
+**追加不要の理由**: Firebase Authentication が以下すべてを提供済:
+- Google OAuth
+- Email/Password
+- パスワードリセット
+- セッション管理
+- カスタムクレーム（管理者フラグ）
+- 多要素認証（有料プラン）
+
+**Clerk を検討するケース**: organization 機能や高度な SSO が必要になったら（現状のソロユーザー向けには過剰）
+**Supabase Auth を検討するケース**: DB も Supabase に移行するなら同時採用（現状の Firebase から乗り換える必然性はない）
+
+**優先度**: **現状維持**（採用しない）
+
+---
+
+#### DB 代替: Supabase (PostgreSQL)
+
+**追加不要の理由**: Firebase Firestore + Storage でユーザーデータ管理は十分。
+
+**Supabase を検討するケース**:
+- SQL による複雑なクエリ（統計・ランキング・分析）が必要
+- リレーショナルデータモデル（家族関係、グループチャット等）
+- 1ユーザーあたり100万件超のレコード
+
+**優先度**: **現状維持**（採用しない）
+
+---
+
+### 統合時の共通ルール
+
+新しい外部サービスを追加するときは、必ず以下のパターンに従う:
+
+1. **管理画面でキーを設定**: admin → APIキー タブに入力欄を追加
+2. **`admin/config` または `admin/secrets` に保存**: 全ユーザーで共有（per-userのトークンのみ localStorage）
+3. **`CONFIG.{service}` に展開**: `js/config.js` で型とデフォルト値を定義
+4. **モジュールは単一ファイル**: `js/{service}-integration.js` に集約
+5. **フォールバック必須**: サービス未設定でも LMS 全体が動く状態を維持
+6. **ユーザー画面では名称を出さない**: 「通知メールを送信」「検索する」等の一般名詞で表示
+7. **SETUP.md に設定手順を追加**: 非エンジニアが設定できるレベルで記述
+
+### 判断のチェックリスト
+
+新しい機能が必要になったとき、以下の順に検討する:
+
+1. **既存の LMS 機能で代替できないか？**
+2. **既存の外部サービス（Firebase, Google, etc.）の機能を拡張すれば済まないか？**
+3. **Firebase Extensions で追加できないか？**（Trigger Email, Algolia Search 等）
+4. **Cloudflare Workers で実装できないか？**（既存のプロキシ基盤を使える）
+5. **それでも必要なら、上記のプランに従って新サービスを統合する**
+
+新しい機能を実装する前に、**必ず既存のスタックで解決できないか検討する**。
+「何を作らないか」を判断することが、このプロジェクトの成功の鍵。
