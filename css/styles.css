@@ -863,6 +863,63 @@ select.form-input { appearance: auto; }
 .status-badge.connected { background: var(--success-bg); color: var(--success); }
 .status-badge.disconnected { background: var(--danger-bg); color: var(--danger); }
 
+/* ─── Email Forwarding Admin ─── */
+.forward-list { display: flex; flex-direction: column; gap: 8px; }
+.forward-item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.forward-item .form-input { flex: 1; margin: 0; }
+
+.forward-rules { display: flex; flex-direction: column; gap: 12px; }
+.forward-rule {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  background: var(--bg-secondary);
+}
+.forward-rule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.forward-rule-num {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.forward-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.checkbox-label input[type="checkbox"] { width: 16px; height: 16px; }
+
+.test-result {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+.test-result.success { background: var(--success-bg); color: var(--success); }
+.test-result.error   { background: var(--danger-bg); color: var(--danger); }
+.test-result.warning { background: var(--warning-bg, #fff4e0); color: var(--warning, #b45309); }
+.test-result ul { margin: 6px 0 0 18px; padding: 0; }
+.test-result li { margin: 2px 0; }
+
 .connection-mode { display: flex; align-items: center; gap: 10px; }
 .mode-badge {
   display: inline-block;

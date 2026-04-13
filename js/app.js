@@ -1564,6 +1564,196 @@ var App = class App {
     Components.showToast('削除しました（再読み込みが必要です）', 'info');
   }
 
+  // ─── Email Forwarding Admin ───
+  _getForwardConfig() {
+    return store.get('emailForwardConfig') || {
+      enabled: false,
+      receiveAddress: '',
+      workerUrl: '',
+      destinations: [],
+      rules: []
+    };
+  }
+
+  _saveForwardConfig(cfg) {
+    store.set('emailForwardConfig', cfg);
+  }
+
+  _buildForwardMap(cfg) {
+    const map = {};
+    (cfg.rules || []).forEach(r => {
+      if (r.from && Array.isArray(r.to) && r.to.length > 0) {
+        map[r.from.toLowerCase()] = r.to;
+      }
+    });
+    if (cfg.destinations && cfg.destinations.length > 0) {
+      map['*'] = cfg.destinations;
+    }
+    return map;
+  }
+
+  addForwardDestination() {
+    const cfg = this._getForwardConfig();
+    cfg.destinations = cfg.destinations || [];
+    cfg.destinations.push('');
+    this._saveForwardConfig(cfg);
+    this.renderApp();
+  }
+
+  updateForwardDestination(idx, value) {
+    const cfg = this._getForwardConfig();
+    if (!cfg.destinations || cfg.destinations[idx] === undefined) return;
+    cfg.destinations[idx] = value;
+    this._saveForwardConfig(cfg);
+  }
+
+  removeForwardDestination(idx) {
+    const cfg = this._getForwardConfig();
+    if (!cfg.destinations) return;
+    cfg.destinations.splice(idx, 1);
+    this._saveForwardConfig(cfg);
+    this.renderApp();
+  }
+
+  addForwardRule() {
+    const cfg = this._getForwardConfig();
+    cfg.rules = cfg.rules || [];
+    cfg.rules.push({ from: '', to: [] });
+    this._saveForwardConfig(cfg);
+    this.renderApp();
+  }
+
+  updateForwardRule(idx, field, value) {
+    const cfg = this._getForwardConfig();
+    if (!cfg.rules || !cfg.rules[idx]) return;
+    if (field === 'to') {
+      cfg.rules[idx].to = String(value).split(',').map(s => s.trim()).filter(Boolean);
+    } else {
+      cfg.rules[idx][field] = value;
+    }
+    this._saveForwardConfig(cfg);
+  }
+
+  removeForwardRule(idx) {
+    const cfg = this._getForwardConfig();
+    if (!cfg.rules) return;
+    cfg.rules.splice(idx, 1);
+    this._saveForwardConfig(cfg);
+    this.renderApp();
+  }
+
+  saveEmailForwardConfig() {
+    const cfg = this._getForwardConfig();
+    cfg.enabled = document.getElementById('efEnabled')?.checked || false;
+    cfg.receiveAddress = (document.getElementById('efReceiveAddress')?.value || '').trim();
+    cfg.workerUrl = (document.getElementById('efWorkerUrl')?.value || '').trim().replace(/\/+$/, '');
+    cfg.destinations = (cfg.destinations || [])
+      .map(s => String(s).trim())
+      .filter(Boolean);
+    cfg.rules = (cfg.rules || []).filter(r => r.from && Array.isArray(r.to) && r.to.length > 0);
+
+    this._saveForwardConfig(cfg);
+
+    // Sync to Firestore if admin so all clients see it
+    if (FirebaseBackend.isAdmin() && FirebaseBackend.db) {
+      try {
+        FirebaseBackend.db.collection('admin').doc('emailForward').set(
+          { ...cfg, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
+          { merge: true }
+        );
+      } catch (e) { console.warn('Firestore sync failed:', e); }
+    }
+
+    Components.showToast('保存しました', 'success');
+    this.renderApp();
+  }
+
+  testForwardConfig() {
+    const cfg = this._getForwardConfig();
+    // Apply pending form values without saving
+    cfg.receiveAddress = (document.getElementById('efReceiveAddress')?.value || '').trim();
+    cfg.enabled = document.getElementById('efEnabled')?.checked || false;
+
+    const errors = [];
+    const warnings = [];
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!cfg.receiveAddress) {
+      errors.push('受信アドレスが未設定です');
+    } else if (!emailRe.test(cfg.receiveAddress)) {
+      errors.push('受信アドレスの形式が不正です');
+    }
+
+    const totalDest = (cfg.destinations || []).length
+      + (cfg.rules || []).reduce((s, r) => s + ((r.to || []).length), 0);
+    if (totalDest === 0) {
+      errors.push('転送先が 1 件も設定されていません');
+    }
+
+    (cfg.destinations || []).forEach((addr, i) => {
+      if (!emailRe.test(addr)) {
+        errors.push(`一括転送先 #${i + 1} が不正: ${addr}`);
+      }
+      if (cfg.receiveAddress && addr.toLowerCase() === cfg.receiveAddress.toLowerCase()) {
+        warnings.push(`${addr} は受信アドレスと同一 (無限ループ防止のためスキップされます)`);
+      }
+    });
+
+    (cfg.rules || []).forEach((rule, i) => {
+      if (rule.from && !emailRe.test(rule.from)) {
+        errors.push(`ルール #${i + 1} の受信アドレスが不正: ${rule.from}`);
+      }
+      (rule.to || []).forEach(addr => {
+        if (!emailRe.test(addr)) {
+          errors.push(`ルール #${i + 1} の転送先が不正: ${addr}`);
+        }
+      });
+    });
+
+    const resultEl = document.getElementById('forwardTestResult');
+    if (!resultEl) return;
+
+    if (errors.length === 0 && warnings.length === 0) {
+      resultEl.innerHTML = `<div class="test-result success">✔ 設定は有効です (転送先 ${totalDest} 件)</div>`;
+    } else {
+      let html = `<div class="test-result ${errors.length > 0 ? 'error' : 'warning'}">`;
+      if (errors.length > 0) {
+        html += '<strong>エラー</strong><ul>' + errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
+      }
+      if (warnings.length > 0) {
+        html += '<strong>警告</strong><ul>' + warnings.map(w => `<li>${w}</li>`).join('') + '</ul>';
+      }
+      html += '</div>';
+      resultEl.innerHTML = html;
+    }
+  }
+
+  copyForwardMap() {
+    const cfg = this._getForwardConfig();
+    const map = this._buildForwardMap(cfg);
+    const json = JSON.stringify(map);
+    try {
+      navigator.clipboard.writeText(json).then(
+        () => Components.showToast('FORWARD_MAP をコピーしました', 'success'),
+        () => Components.showToast('コピーに失敗しました', 'error')
+      );
+    } catch (e) {
+      Components.showToast('コピーに失敗しました', 'error');
+    }
+  }
+
+  exportForwardConfig() {
+    const cfg = this._getForwardConfig();
+    const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'email-forward-config.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    Components.showToast('エクスポートしました', 'success');
+  }
+
   saveWorkerUrl() {
     let url = (document.getElementById('workerUrl')?.value || '').trim();
     // Normalize: strip trailing slash(es), strip whitespace
