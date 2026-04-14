@@ -27,14 +27,16 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
-    // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    // Quick input bar (not shown for assets domain; assets is financial-focused)
+    let html = `<div class="page-home">`;
+    if (domain !== 'assets') {
+      html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
       <div id="quickResponse"></div>`;
+    }
 
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
@@ -337,14 +339,21 @@ var Pages = {
   renderStockAnalysisWidget() {
     return `<div class="stock-analysis-section">
       <h3>${i18n.t('stock_investment')}</h3>
-      <p>銘柄名またはティッカーを入力すると、詳しい分析をご覧いただけます。</p>
+      <p>銘柄名またはティッカーを入力し、分析の種類を選んでください。</p>
       <div class="stock-input-bar">
         <input type="text" id="stockTicker" class="form-input"
           placeholder="例：トヨタ、7203、AAPL"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();app.analyzeStock();}">
-        <button class="btn btn-primary" onclick="app.analyzeStock()">
-          ${i18n.t('analyze_stock')}
+          onkeydown="if(event.key==='Enter'){event.preventDefault();app.analyzeStock('short');}">
+        <button class="btn btn-primary" onclick="app.analyzeStock('short')">
+          簡易分析（3論点）
         </button>
+        <button class="btn btn-secondary" onclick="app.analyzeStock('full')">
+          VMハンズオン 深い分析
+        </button>
+      </div>
+      <div class="stock-mode-help">
+        <small>・簡易分析：誠実さ／割安度／進化可能性の3論点で素早く評価<br>
+        ・VMハンズオン：一次資料ベースのフルレポート（0〜⑩章＋グラフ8枚）</small>
       </div>
       <div id="stockResult"></div>
     </div>`;
