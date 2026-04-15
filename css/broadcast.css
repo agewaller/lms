@@ -359,6 +359,52 @@
   border-radius: var(--radius-sm);
 }
 
+/* ─── External CTA card (for work/broadcast category in record page) ─── */
+.external-cta {
+  background: var(--bg-secondary);
+  border: 2px dashed var(--cat-color, var(--accent));
+  border-radius: var(--radius);
+  padding: 40px 32px;
+  text-align: center;
+  max-width: 720px;
+  margin: 20px auto;
+}
+.external-cta-icon {
+  font-size: 56px;
+  line-height: 1;
+  margin-bottom: 16px;
+}
+.external-cta h4 {
+  font-size: 22px;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+.external-cta p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.external-cta-platforms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.external-cta-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.external-cta .btn-lg {
+  padding: 14px 28px;
+  font-size: 15px;
+}
+
 /* ─── Responsive fixes ─── */
 @media (max-width: 640px) {
   .platform-grid { grid-template-columns: repeat(2, 1fr); }

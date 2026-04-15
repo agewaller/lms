@@ -55,6 +55,37 @@ var Components = {
     const domainConfig = CONFIG.domains[domain];
     if (!domainConfig || !domainConfig.dataFields[category]) return '<p>No fields configured.</p>';
 
+    // ─── External category: render a CTA card instead of a form ───
+    // e.g. work/broadcast opens broadcast-dashboard.html in a new tab
+    const catConfig = domainConfig.categories?.[category];
+    if (catConfig?.external) {
+      const color = domainConfig.color || 'var(--accent)';
+      return `<div class="external-cta" style="--cat-color:${color}">
+        <div class="external-cta-icon">${catConfig.icon || '🔗'}</div>
+        <h4>${i18n.t(catConfig.label)}</h4>
+        <p>${i18n.t('broadcast_desc')}</p>
+        <div class="external-cta-platforms">
+          <span class="status-badge">𝕏 X</span>
+          <span class="status-badge">LinkedIn</span>
+          <span class="status-badge">Medium</span>
+          <span class="status-badge">note</span>
+          <span class="status-badge">はてな</span>
+          <span class="status-badge">WordPress</span>
+          <span class="status-badge">Threads</span>
+          <span class="status-badge">Mastodon</span>
+          <span class="status-badge">Bluesky</span>
+          <span class="status-badge">Discord</span>
+          <span class="status-badge">Slack</span>
+          <span class="status-badge">Telegram</span>
+          <span class="status-badge">+12 more</span>
+        </div>
+        <div class="external-cta-actions">
+          <a href="${catConfig.external}" class="btn btn-primary btn-lg">${i18n.t('broadcast_open')} →</a>
+          <a href="broadcast-preview.html" target="_blank" class="btn btn-outline">👁 プレビューを見る</a>
+        </div>
+      </div>`;
+    }
+
     const fields = domainConfig.dataFields[category];
     let html = `<form class="data-entry-form" data-domain="${domain}" data-category="${category}">
       <input type="hidden" name="date" value="${new Date().toISOString().slice(0,10)}">`;

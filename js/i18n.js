@@ -102,6 +102,8 @@ var i18n = {
       // Contribution
       tasks: 'タスク', work_goals: '仕事の目標', skills: 'スキル',
       projects: 'プロジェクト', reviews: 'レビュー',
+      broadcast: '記事自動配信', broadcast_open: 'Broadcast を開く',
+      broadcast_desc: '思想・アイデア・メモを 24 プラットフォームに一括配信',
       task_title: 'タスク名', description: '説明',
       status: 'ステータス', due_date: '期限',
       todo: '未着手', in_progress: '進行中', done: '完了',
@@ -262,6 +264,8 @@ var i18n = {
       leisure: 'Leisure', commute: 'Commute', housework: 'Housework',
       tasks: 'Tasks', work_goals: 'Work Goals', skills: 'Skills',
       projects: 'Projects', reviews: 'Reviews',
+      broadcast: 'Broadcast', broadcast_open: 'Open Broadcast',
+      broadcast_desc: 'Distribute thoughts, ideas, and memos to 24 platforms at once',
       task_title: 'Task', description: 'Description',
       status: 'Status', due_date: 'Due Date',
       todo: 'To Do', in_progress: 'In Progress', done: 'Done',

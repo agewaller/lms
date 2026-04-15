@@ -250,6 +250,12 @@ var CONFIG = {
           { key: 'achievements', type: 'textarea', label: 'achievements' },
           { key: 'challenges',  type: 'textarea', label: 'challenges' },
           { key: 'next_steps',  type: 'textarea', label: 'next_steps' }
+        ],
+        // broadcast カテゴリは外部ダッシュボードに遷移するだけなので、
+        // フィールドはプレースホルダ 1 つだけにする (Components.dataEntryForm が
+        // external を検知して専用 CTA カードを出す)
+        broadcast: [
+          { key: '_external', type: 'external', label: 'broadcast_desc' }
         ]
       }
     },
