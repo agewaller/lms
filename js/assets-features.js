@@ -324,18 +324,202 @@ var AssetsFeatures = {
 
   renderAutoTrading() {
     const settings = this.getAutoTradingSettings();
+    const isRakuten = settings.broker === 'rakuten';
 
     return `<div class="auto-trading">
       <h3>自動売買</h3>
       <p>分析結果に基づいて、設定した条件で自動的に売買を実行します。</p>
 
-      ${settings.enabled ? this.renderAutoTradingDashboard(settings) : this.renderAutoTradingSetup(settings)}
+      ${this.renderBrokerPicker(settings)}
+
+      ${isRakuten
+        ? this.renderRakutenAutoTrading(settings)
+        : (settings.enabled ? this.renderAutoTradingDashboard(settings) : this.renderAutoTradingSetup(settings))}
 
       <div class="disclaimer">
         ※ 自動売買は元本を保証するものではありません。投資は自己責任でお願いいたします。
         必ず余裕資金の範囲内で、リスクをご理解の上ご利用ください。
       </div>
     </div>`;
+  },
+
+  // ─── 証券会社ピッカー（楽天証券を最上部に表示） ───
+  renderBrokerPicker(settings) {
+    const brokers = [
+      { v: 'rakuten',    label: '楽天証券（MS2 RSS × Excel/VBA）', recommended: true },
+      { v: 'sbi',        label: 'SBI証券（API予定）' },
+      { v: 'monex',      label: 'マネックス証券（API予定）' },
+      { v: 'matsui',     label: '松井証券（API予定）' },
+      { v: 'au_kabucom', label: 'auカブコム証券（kabuステーション API）' },
+      { v: 'alpaca',     label: 'Alpaca（米国株）' },
+      { v: 'ib',         label: 'Interactive Brokers' },
+      { v: 'custom',     label: 'その他（API設定）' }
+    ];
+    return `<div class="at-broker-picker">
+      <label>証券会社</label>
+      <div class="broker-chips">
+        ${brokers.map(b => `
+          <button class="broker-chip ${settings.broker === b.v ? 'active' : ''}"
+                  onclick="AssetsFeatures.selectBroker('${b.v}')">
+            ${b.label}${b.recommended ? ' <span class="chip-badge">推奨</span>' : ''}
+          </button>
+        `).join('')}
+      </div>
+    </div>`;
+  },
+
+  selectBroker(broker) {
+    const s = this.getAutoTradingSettings();
+    s.broker = broker;
+    store.set('autoTradingSettings', s);
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ═════════════════════════════════════════════════════════
+  //  楽天証券 (Rakuten MS2 RSS × Excel/VBA) 自動売買 UI
+  // ═════════════════════════════════════════════════════════
+
+  renderRakutenAutoTrading(settings) {
+    const bridge = this.getBridgeStatus();
+
+    return `<div class="rakuten-trading">
+      <div class="rkt-banner">
+        <div>
+          <strong>楽天証券 自動売買（マーケットスピード II RSS 連携）</strong><br>
+          <span class="rkt-banner-sub">
+            ブラウザ UI が「発注キュー」を作り、Excel/VBA が MS2 RSS 経由で実発注します。
+            ブラウザから直接発注はしません（誤発注防止）。
+          </span>
+        </div>
+        <a class="btn btn-sm btn-secondary"
+           href="https://marketspeed.jp/ms2/download/" target="_blank" rel="noopener">MS2 II をダウンロード ↗</a>
+      </div>
+
+      <!-- Step 1: ブリッジセットアップ -->
+      <details class="rkt-step" ${bridge.ready ? '' : 'open'}>
+        <summary><span class="rkt-step-no">1</span> ブリッジ設定（Excel/VBA を準備する）</summary>
+        ${this.renderRakutenBridgeSetup(bridge)}
+      </details>
+
+      <!-- Step 2: MS2 RSS 監視ダッシュボード -->
+      <details class="rkt-step" open>
+        <summary><span class="rkt-step-no">2</span> MS2 RSS 監視ダッシュボード</summary>
+        ${this.renderMS2Trading()}
+      </details>
+
+      <!-- Step 3: 戦略・リスク（上のダッシュボード内で編集） -->
+      <details class="rkt-step">
+        <summary><span class="rkt-step-no">3</span> 戦略プリセット</summary>
+        ${this.renderRakutenStrategyPresets(settings)}
+      </details>
+    </div>`;
+  },
+
+  renderRakutenBridgeSetup(bridge) {
+    return `<div class="rkt-bridge">
+      <div class="rkt-bridge-grid">
+        <div class="rkt-bridge-card">
+          <h4>① Excel/VBA バンドルをダウンロード</h4>
+          <p>MS2 RSS 対応の Excel ブック雛形 + VBA モジュール一式（17 ファイル）</p>
+          <button class="btn btn-sm btn-primary" onclick="AssetsFeatures.downloadRakutenBundle()">
+            📦 rakuten_trading_bundle.zip をダウンロード
+          </button>
+          <div class="rkt-bridge-help">
+            展開先: <code>C:\\Trading\\</code> 推奨 /
+            <a href="docs/japanese-stock-trading-system/README.md" target="_blank">README</a>
+          </div>
+        </div>
+
+        <div class="rkt-bridge-card">
+          <h4>② 連携フォルダを接続</h4>
+          <p>Excel が読み書きする CSV フォルダをブラウザと共有します（File System Access API）</p>
+          ${bridge.ready ? `
+            <div class="rkt-bridge-status ok">✅ 接続中: <code>${bridge.folderName}</code></div>
+            <button class="btn btn-sm btn-secondary" onclick="AssetsFeatures.disconnectBridge()">切断</button>
+            <button class="btn btn-sm btn-primary" onclick="AssetsFeatures.syncBridge()">
+              ⟳ 今すぐ同期
+            </button>
+          ` : `
+            <button class="btn btn-sm btn-primary" onclick="AssetsFeatures.connectBridge()"
+                    ${typeof window !== 'undefined' && !('showDirectoryPicker' in (window || {})) ? 'disabled title="Chrome/Edge で利用可能"' : ''}>
+              📁 フォルダを選択
+            </button>
+            <div class="rkt-bridge-help">
+              Chrome / Edge で動作します。Safari の場合は下の手動モードを使ってください。
+            </div>
+          `}
+        </div>
+
+        <div class="rkt-bridge-card">
+          <h4>③ 手動モード（フォルダ接続なし）</h4>
+          <p>承認済シグナル CSV を手動でダウンロード / 約定結果をアップロード</p>
+          <div class="rkt-bridge-buttons">
+            <button class="btn btn-sm btn-secondary" onclick="AssetsFeatures.downloadSignalsCsv()">
+              ⬇ signals.csv ダウンロード
+            </button>
+            <label class="btn btn-sm btn-secondary">
+              ⬆ fills.csv 取り込み
+              <input type="file" accept=".csv,text/csv" style="display:none"
+                     onchange="AssetsFeatures.importFillsCsv(event)">
+            </label>
+          </div>
+        </div>
+
+        <div class="rkt-bridge-card">
+          <h4>④ プロトコル仕様</h4>
+          <ul class="rkt-proto">
+            <li>Web → Excel: <code>signals.csv</code> に承認済シグナル</li>
+            <li>Excel → Web: <code>fills.csv</code> に約定結果</li>
+            <li>Excel → Web: <code>positions.csv</code> に建玉スナップショット</li>
+            <li>Excel → Web: <code>heartbeat.txt</code> に MS2 最終更新時刻</li>
+            <li>Web → Excel: <code>control.json</code> に KillSwitch / Trading ON</li>
+          </ul>
+          <button class="btn btn-sm btn-secondary" onclick="AssetsFeatures.showBridgeProtocol()">
+            詳細仕様を表示
+          </button>
+        </div>
+      </div>
+
+      <div class="rkt-bridge-state">
+        <strong>ブリッジ状態:</strong>
+        <span class="rkt-bridge-dot ${bridge.ready ? 'ok' : 'off'}"></span>
+        ${bridge.ready
+          ? `接続中 · 最終同期 ${bridge.lastSyncAt ? new Date(bridge.lastSyncAt).toLocaleTimeString('ja-JP') : '—'} · ${bridge.lastSyncMsg || ''}`
+          : '未接続 · 手動モードで運用可'}
+      </div>
+    </div>`;
+  },
+
+  renderRakutenStrategyPresets(settings) {
+    const presets = [
+      { id: 'breakout_v1',  name: '高値ブレイク（デイ）', desc: '当日高値 × VWAP 上で打診、0.5% 損切・1.0% 利確' },
+      { id: 'reversion_v1', name: '過度売られ戻り',       desc: '前日比 -3% 以上で反発の兆し時のみ打診' },
+      { id: 'opening_gap',  name: '寄り高値越え',          desc: '寄り付き後の高値更新で追撃' },
+      { id: 'dividend',     name: '配当取り',              desc: '権利付き最終日の前々日まで打診、落日に決済' }
+    ];
+    const active = settings.rakutenStrategies || ['breakout_v1'];
+    return `<div class="rkt-strategies">
+      <p>有効化する戦略を選択してください。シグナル生成時にこの戦略が評価されます。</p>
+      ${presets.map(p => `
+        <label class="rkt-preset ${active.includes(p.id) ? 'active' : ''}">
+          <input type="checkbox" ${active.includes(p.id) ? 'checked' : ''}
+                 onchange="AssetsFeatures.toggleRakutenStrategy('${p.id}', this.checked)">
+          <div>
+            <strong>${p.name}</strong>
+            <span class="rkt-preset-id">${p.id}</span>
+            <div class="rkt-preset-desc">${p.desc}</div>
+          </div>
+        </label>
+      `).join('')}
+    </div>`;
+  },
+
+  toggleRakutenStrategy(id, on) {
+    const s = this.getAutoTradingSettings();
+    const cur = new Set(s.rakutenStrategies || ['breakout_v1']);
+    if (on) cur.add(id); else cur.delete(id);
+    s.rakutenStrategies = Array.from(cur);
+    store.set('autoTradingSettings', s);
   },
 
   renderAutoTradingSetup(settings) {
@@ -1202,5 +1386,545 @@ var AssetsFeatures = {
     st.todayRealizedPnl = 0;
     this.saveMS2State(st);
     if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ═════════════════════════════════════════════════════════
+  //  楽天証券ブリッジ (Excel/VBA ↔ Web)
+  //
+  //   - File System Access API でローカルフォルダを接続
+  //     (Chrome/Edge のみ。Safari/Firefox はフォールバック手動モード)
+  //   - ブラウザは発注しない。signals.csv に承認済を書く。
+  //   - Excel/VBA 側が signals.csv を読んで RSS 経由で発注 → fills.csv を返す。
+  //   - heartbeat.txt / positions.csv / control.json も同フォルダ経由。
+  // ═════════════════════════════════════════════════════════
+
+  _bridgeHandle: null,  // FileSystemDirectoryHandle (runtime)
+  _bridgeTimer: null,
+
+  getBridgeStatus() {
+    const meta = store.get('rakutenBridgeMeta') || {};
+    return {
+      ready: !!this._bridgeHandle,
+      folderName: meta.folderName || '',
+      lastSyncAt: meta.lastSyncAt || 0,
+      lastSyncMsg: meta.lastSyncMsg || ''
+    };
+  },
+
+  setBridgeStatus(update) {
+    const meta = store.get('rakutenBridgeMeta') || {};
+    store.set('rakutenBridgeMeta', { ...meta, ...update });
+  },
+
+  async connectBridge() {
+    if (typeof window === 'undefined' || !('showDirectoryPicker' in window)) {
+      Components.showToast('このブラウザでは未対応です。手動モード (CSV 手動) をご利用ください。', 'warning');
+      return;
+    }
+    try {
+      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      // Request persistent permission
+      const perm = await handle.requestPermission({ mode: 'readwrite' });
+      if (perm !== 'granted') throw new Error('permission denied');
+      this._bridgeHandle = handle;
+      this.setBridgeStatus({
+        folderName: handle.name,
+        lastSyncAt: Date.now(),
+        lastSyncMsg: 'フォルダに接続'
+      });
+      // Initialize protocol files
+      await this._writeBridgeFile('README_bridge.txt', this._bridgeReadme());
+      await this._writeBridgeControlJson();
+      Components.showToast(`連携フォルダ「${handle.name}」に接続しました`, 'success');
+      this.startBridgePolling();
+      this.syncBridge();
+      if (typeof app !== 'undefined') app.renderApp();
+    } catch (e) {
+      console.warn('bridge connect failed', e);
+      Components.showToast('フォルダ接続をキャンセルしました', 'info');
+    }
+  },
+
+  disconnectBridge() {
+    this._bridgeHandle = null;
+    if (this._bridgeTimer) { clearInterval(this._bridgeTimer); this._bridgeTimer = null; }
+    this.setBridgeStatus({ folderName: '', lastSyncMsg: '切断' });
+    Components.showToast('ブリッジを切断しました', 'info');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  startBridgePolling() {
+    if (this._bridgeTimer) clearInterval(this._bridgeTimer);
+    // 5 秒ごとに fills.csv / positions.csv / heartbeat.txt を読みにいく
+    this._bridgeTimer = setInterval(() => this.syncBridge(true), 5000);
+  },
+
+  async syncBridge(silent = false) {
+    if (!this._bridgeHandle) {
+      if (!silent) Components.showToast('フォルダが接続されていません', 'warning');
+      return;
+    }
+    try {
+      // 1) Export signals (approved only, 未送信)
+      await this._writeBridgeFile('signals.csv', this._buildSignalsCsv());
+      // 2) Export control.json (killSwitch / tradingEnabled)
+      await this._writeBridgeControlJson();
+      // 3) Import heartbeat.txt -> lastRssUpdate
+      const hb = await this._readBridgeFileMaybe('heartbeat.txt');
+      if (hb) {
+        const parsed = Date.parse(hb.trim());
+        if (!isNaN(parsed)) {
+          const st = this.getMS2State();
+          st.lastRssUpdate = parsed;
+          this.saveMS2State(st);
+        }
+      }
+      // 4) Import fills.csv -> update signals/positions
+      const fillsCsv = await this._readBridgeFileMaybe('fills.csv');
+      if (fillsCsv) this._applyFillsCsv(fillsCsv);
+      // 5) Import positions.csv -> override positions snapshot
+      const posCsv = await this._readBridgeFileMaybe('positions.csv');
+      if (posCsv) this._applyPositionsCsv(posCsv);
+
+      this.setBridgeStatus({
+        lastSyncAt: Date.now(),
+        lastSyncMsg: '同期完了'
+      });
+      if (!silent && typeof app !== 'undefined') app.renderApp();
+    } catch (e) {
+      console.warn('bridge sync error', e);
+      this.setBridgeStatus({
+        lastSyncAt: Date.now(),
+        lastSyncMsg: 'エラー: ' + (e.message || e)
+      });
+      if (!silent) Components.showToast('同期エラー: ' + e.message, 'error');
+    }
+  },
+
+  async _writeBridgeFile(name, text) {
+    const fh = await this._bridgeHandle.getFileHandle(name, { create: true });
+    const w = await fh.createWritable();
+    await w.write(text);
+    await w.close();
+  },
+
+  async _readBridgeFileMaybe(name) {
+    try {
+      const fh = await this._bridgeHandle.getFileHandle(name, { create: false });
+      const f = await fh.getFile();
+      return await f.text();
+    } catch (e) {
+      return null; // file not present yet
+    }
+  },
+
+  async _writeBridgeControlJson() {
+    const st = this.getMS2State();
+    const ctrl = {
+      killSwitch: !!st.killSwitch,
+      tradingEnabled: !!st.tradingEnabled,
+      tradingMode: st.tradingMode,
+      approvalRequired: st.approvalRequired !== false,
+      risk: st.risk,
+      updatedAt: new Date().toISOString()
+    };
+    await this._writeBridgeFile('control.json', JSON.stringify(ctrl, null, 2));
+  },
+
+  _bridgeReadme() {
+    return `# 楽天証券 MS2 RSS ブリッジプロトコル
+
+このフォルダは lms-life (Web UI) と Excel/VBA の双方向連携用です。
+Web は signals.csv / control.json を書き、Excel/VBA が fills.csv /
+positions.csv / heartbeat.txt を書きます。
+
+## ファイル一覧
+
+- signals.csv   : Web → Excel  承認済シグナル (発注キュー)
+- control.json  : Web → Excel  KillSwitch / 取引ON/OFF / リスクパラメータ
+- heartbeat.txt : Excel → Web  MS2 RSS 最終更新時刻 (ISO 8601)
+- fills.csv     : Excel → Web  約定結果
+- positions.csv : Excel → Web  建玉スナップショット
+- README_bridge.txt : このファイル
+
+## signals.csv 形式
+
+signal_id,timestamp,code,name,side,qty,price,stop,take,reason,state
+
+Excel/VBA 側は state=APPROVED の行だけを処理し、処理後 state=SENT に
+更新して fills.csv に結果を書き込みます。
+
+## 安全ルール
+
+- 同一 signal_id は 2 回処理しない
+- state が APPROVED 以外の行は無視
+- 読み取り時は lock ファイル (signals.csv.lock) を作成
+- 書き込み後は state=SENT / FILLED / REJECTED / ERROR に必ず遷移
+`;
+  },
+
+  _buildSignalsCsv() {
+    const st = this.getMS2State();
+    const approved = (st.signals || []).filter(s => s.state === 'WAIT_BRIDGE' || s.state === 'APPROVED');
+    const header = 'signal_id,timestamp,code,name,side,qty,price,stop,take,reason,state';
+    const rows = approved.map(s => [
+      s.id, new Date(s.timestamp).toISOString(), s.code, s.name || '',
+      s.side, s.qty, s.refPrice, s.stopPrice, s.takePrice,
+      (s.reason || '').replace(/,/g, ';'), 'APPROVED'
+    ].join(','));
+    return [header, ...rows].join('\n');
+  },
+
+  _applyFillsCsv(csv) {
+    const st = this.getMS2State();
+    const lines = csv.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return;
+    const header = lines[0].split(',');
+    const idx = k => header.indexOf(k);
+    const iId    = idx('signal_id');
+    const iState = idx('state');
+    const iPx    = idx('fill_price');
+    const iQty   = idx('fill_qty');
+    const iErr   = idx('error');
+    const iTs    = idx('fill_timestamp');
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',');
+      const sigId = cols[iId];
+      if (!sigId) continue;
+      const sig = (st.signals || []).find(s => s.id === sigId);
+      if (!sig) continue;
+      // Idempotent: skip if already terminal
+      if (['FILLED', 'CANCEL', 'REJECTED'].includes(sig.state)) continue;
+      const newState = cols[iState] || 'SENT';
+      sig.state = newState;
+      if (newState === 'FILLED') {
+        sig.fillPrice = parseFloat(cols[iPx] || sig.refPrice);
+        sig.fillQty = parseInt(cols[iQty] || sig.qty, 10);
+        this.ms2Log(st, 'FILL', `BRIDGE ${sigId} ${sig.code} x${sig.fillQty} @${sig.fillPrice}`);
+        if (sig.side === 'BUY') {
+          st.positions = [...(st.positions || []), {
+            code: sig.code, name: sig.name, qty: sig.fillQty,
+            avgPrice: sig.fillPrice, lastPrice: sig.fillPrice,
+            stopPrice: sig.stopPrice, takePrice: sig.takePrice,
+            openedAt: Date.now(), sourceSignalId: sig.id
+          }];
+        } else {
+          const pos = (st.positions || []).find(p => p.code === sig.code);
+          if (pos) {
+            const pnl = (sig.fillPrice - pos.avgPrice) * Math.min(pos.qty, sig.fillQty);
+            st.todayRealizedPnl = (st.todayRealizedPnl || 0) + pnl;
+            st.positions = (st.positions || []).filter(p => p.code !== sig.code);
+          }
+        }
+      } else if (newState === 'REJECTED' || newState === 'ERROR') {
+        sig.reason = cols[iErr] || sig.reason;
+        this.ms2Log(st, 'ORDER', `BRIDGE REJECT ${sigId} ${cols[iErr]}`, 'WARN');
+      }
+    }
+    this.saveMS2State(st);
+  },
+
+  _applyPositionsCsv(csv) {
+    const st = this.getMS2State();
+    const lines = csv.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return;
+    const header = lines[0].split(',');
+    const idx = k => header.indexOf(k);
+    const positions = [];
+    for (let i = 1; i < lines.length; i++) {
+      const c = lines[i].split(',');
+      positions.push({
+        code: c[idx('code')],
+        name: c[idx('name')] || '',
+        qty: parseInt(c[idx('qty')], 10) || 0,
+        avgPrice: parseFloat(c[idx('avg_price')]) || 0,
+        lastPrice: parseFloat(c[idx('last_price')]) || 0,
+        stopPrice: parseFloat(c[idx('stop_price')]) || 0,
+        takePrice: parseFloat(c[idx('take_price')]) || 0,
+        openedAt: Date.parse(c[idx('opened_at')] || '') || Date.now(),
+        sourceSignalId: c[idx('source_signal_id')] || ''
+      });
+    }
+    st.positions = positions;
+    this.saveMS2State(st);
+  },
+
+  downloadSignalsCsv() {
+    const csv = this._buildSignalsCsv();
+    this._downloadBlob('signals.csv', csv, 'text/csv;charset=utf-8');
+    Components.showToast('signals.csv をダウンロードしました', 'success');
+  },
+
+  importFillsCsv(ev) {
+    const f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        this._applyFillsCsv(String(reader.result || ''));
+        Components.showToast('fills.csv を取り込みました', 'success');
+        if (typeof app !== 'undefined') app.renderApp();
+      } catch (e) {
+        Components.showToast('取り込み失敗: ' + e.message, 'error');
+      }
+    };
+    reader.readAsText(f, 'utf-8');
+  },
+
+  _downloadBlob(filename, content, mime) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  showBridgeProtocol() {
+    app.openModal('ブリッジプロトコル仕様', `
+      <pre style="font-size:11px;line-height:1.5;background:#f8fafc;padding:12px;border-radius:6px;overflow:auto;white-space:pre-wrap">${this._bridgeReadme()}</pre>
+      <h4 style="margin-top:16px">signals.csv (Web → Excel)</h4>
+      <pre style="font-size:11px;background:#f8fafc;padding:8px;border-radius:4px">signal_id,timestamp,code,name,side,qty,price,stop,take,reason,state
+SIG-ABC,2026-04-15T10:23:15Z,7203,トヨタ自動車,BUY,100,2540,2528,2565,当日高値ブレイク,APPROVED</pre>
+      <h4 style="margin-top:16px">fills.csv (Excel → Web)</h4>
+      <pre style="font-size:11px;background:#f8fafc;padding:8px;border-radius:4px">signal_id,state,fill_qty,fill_price,fill_timestamp,error
+SIG-ABC,FILLED,100,2540.5,2026-04-15T10:23:18Z,
+SIG-XYZ,REJECTED,0,,2026-04-15T10:24:01Z,INSUFFICIENT_FUNDS</pre>
+      <h4 style="margin-top:16px">positions.csv (Excel → Web)</h4>
+      <pre style="font-size:11px;background:#f8fafc;padding:8px;border-radius:4px">code,name,qty,avg_price,last_price,stop_price,take_price,opened_at,source_signal_id
+7203,トヨタ自動車,100,2540.5,2548,2528,2565,2026-04-15T10:23:18Z,SIG-ABC</pre>
+      <h4 style="margin-top:16px">control.json (Web → Excel)</h4>
+      <pre style="font-size:11px;background:#f8fafc;padding:8px;border-radius:4px">{
+  "killSwitch": false,
+  "tradingEnabled": true,
+  "tradingMode": "LIVE",
+  "approvalRequired": true,
+  "risk": { "maxLossPerTrade": 5000, ... }
+}</pre>
+    `);
+  },
+
+  // ─── VBA バンドル (Excel/VBA ファイル一式を ZIP で配布) ───
+  async downloadRakutenBundle() {
+    if (typeof JSZip === 'undefined') {
+      Components.showToast('JSZip が読み込まれていません', 'error');
+      return;
+    }
+    Components.showToast('バンドルを組み立て中...', 'info');
+    const zip = new JSZip();
+    const base = 'docs/japanese-stock-trading-system';
+    const files = [
+      'vba/modMain.bas', 'vba/modConfig.bas', 'vba/modRssData.bas',
+      'vba/modSignal.bas', 'vba/modRisk.bas', 'vba/modOrder.bas',
+      'vba/modPosition.bas', 'vba/modLog.bas', 'vba/modNotify.bas',
+      'vba/modUtils.bas', 'vba/modUI.bas',
+      'vba/clsSignalContext.cls', 'vba/clsSignalResult.cls',
+      'vba/clsOrder.cls', 'vba/clsPosition.cls',
+      'vba/clsStrategyBreakout.cls', 'vba/ThisWorkbook.cls',
+      'python/notify_slack.py', 'python/log_to_csv.py',
+      'python/report_daily.py', 'python/config.example.yaml',
+      'python/secrets.example.ini', 'python/requirements.txt',
+      'README.md', 'RSS_VERIFIED.md'
+    ];
+    let fetched = 0;
+    for (const rel of files) {
+      try {
+        const res = await fetch(`${base}/${rel}`);
+        if (res.ok) {
+          zip.file(`rakuten_trading/${rel}`, await res.text());
+          fetched++;
+        }
+      } catch (e) {
+        console.warn('fetch failed', rel, e);
+      }
+    }
+    // Always add an install guide and a bridge integration module
+    zip.file('rakuten_trading/INSTALL.md', this._installGuide());
+    zip.file('rakuten_trading/vba/modBridge.bas', this._bridgeVbaModule());
+    zip.file('rakuten_trading/bridge/README_bridge.txt', this._bridgeReadme());
+
+    if (fetched === 0) {
+      Components.showToast('バンドルのファイルを取得できませんでした（オフライン?）', 'warning');
+      return;
+    }
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'rakuten_trading_bundle.zip';
+    a.click();
+    URL.revokeObjectURL(url);
+    Components.showToast(`rakuten_trading_bundle.zip をダウンロード (${fetched + 3} ファイル)`, 'success');
+  },
+
+  _installGuide() {
+    return `# 楽天証券 自動売買 バンドル インストールガイド
+
+## 前提
+- Windows 10/11
+- Microsoft Excel 2016 以降
+- 楽天証券 マーケットスピード II (最新版)
+- マーケットスピード II RSS が有効になっていること
+
+## 手順
+1. このフォルダを C:\\Trading\\ に展開
+2. C:\\Trading\\trading.xlsm を新規作成（マクロ有効）
+3. Excel VBE で、rakuten_trading/vba/ 配下の .bas / .cls を全てインポート
+4. docs/japanese-stock-trading-system/02_excel_book_design.md に従い、
+   シート・名前付きセルを作成
+5. RSS_VERIFIED.md を埋めながら、RSS 関数をセルに配置
+6. Web UI (資産 > 自動売買) で「連携フォルダを接続」で C:\\Trading\\bridge\\ を選択
+7. 初回は必ず cfgTradingMode="PAPER" で動作確認
+8. PAPER で 1 週間問題なければ OBSERVE → LIVE へ
+
+## ブリッジフォルダ
+C:\\Trading\\bridge\\
+- signals.csv    (Web → Excel)
+- fills.csv      (Excel → Web)
+- positions.csv  (Excel → Web)
+- heartbeat.txt  (Excel → Web)
+- control.json   (Web → Excel)
+
+## 重要な安全確認
+- [ ] cfgKillSwitch を手動で TRUE にしたら全停止する
+- [ ] cfgMaxLossPerDay を小さい額 (例 3000) で動作確認
+- [ ] PAPER モードで 10 回以上のシグナル → 承認 → 約定 を確認
+- [ ] RSS を切断したら 10 秒以内に停止することを確認
+
+詳細は docs/japanese-stock-trading-system/ 配下を参照。
+`;
+  },
+
+  _bridgeVbaModule() {
+    return `Attribute VB_Name = "modBridge"
+'===========================================================================
+' modBridge - Web UI (lms-life) との CSV/JSON ファイル連携
+'
+' ブリッジフォルダ (例: C:\\Trading\\bridge\\) を監視し、
+'   - signals.csv を読む → modRisk.PreCheckOrder → modOrder.SendOrder
+'   - fills.csv を書き戻す
+'   - positions.csv を書き出す
+'   - heartbeat.txt に現在時刻を書き続ける
+'   - control.json を読んで KillSwitch / TradingEnabled を反映
+'
+' 呼出:  modMain.MainLoop の末尾で modBridge.Tick を呼ぶ
+'===========================================================================
+Option Explicit
+
+Private Const BRIDGE_DIR As String = "C:\\Trading\\bridge\\"
+
+Public Sub Tick()
+    On Error Resume Next
+    WriteHeartbeat
+    ReadControlJson
+    ReadSignalsCsv
+    WritePositionsCsv
+End Sub
+
+Private Sub WriteHeartbeat()
+    Dim path As String: path = BRIDGE_DIR & "heartbeat.txt"
+    Dim fnum As Integer: fnum = FreeFile
+    Open path For Output As #fnum
+    Print #fnum, Format(Now, "yyyy-mm-ddThh:nn:ss")
+    Close #fnum
+End Sub
+
+Private Sub ReadSignalsCsv()
+    Dim path As String: path = BRIDGE_DIR & "signals.csv"
+    If Dir(path) = "" Then Exit Sub
+
+    ' lock
+    Dim lock As String: lock = path & ".lock"
+    If Dir(lock) <> "" Then Exit Sub   ' 他プロセスが読んでいる
+    Open lock For Output As #FreeFile: Close
+
+    Dim fnum As Integer: fnum = FreeFile
+    Open path For Input As #fnum
+    Dim line As String, header As String, first As Boolean
+    first = True
+    Do While Not EOF(fnum)
+        Line Input #fnum, line
+        If first Then
+            header = line
+            first = False
+        Else
+            ProcessSignalRow line
+        End If
+    Loop
+    Close #fnum
+
+    ' delete lock
+    If Dir(lock) <> "" Then Kill lock
+End Sub
+
+Private Sub ProcessSignalRow(ByVal line As String)
+    Dim cols() As String
+    cols = Split(line, ",")
+    If UBound(cols) < 10 Then Exit Sub
+    If cols(10) <> "APPROVED" Then Exit Sub
+
+    Dim sigId As String: sigId = cols(0)
+    ' 冪等性: 既に同じ signal_id を処理していたらスキップ
+    If Not modOrder.FindOrderBySignalId(sigId) Is Nothing Then Exit Sub
+
+    Dim o As clsOrder
+    Set o = modOrder.NewOrder(cols(2), cols(4), CLng(cols(5)), CDbl(cols(6)), "LIMIT", sigId)
+
+    If modOrder.SendOrder(o) Then
+        AppendFillRow sigId, "FILLED", o.FillQty, o.FillPrice, ""
+    Else
+        AppendFillRow sigId, "REJECTED", 0, 0, o.ErrorCode
+    End If
+End Sub
+
+Private Sub AppendFillRow(sigId As String, state As String, qty As Long, price As Double, err As String)
+    Dim path As String: path = BRIDGE_DIR & "fills.csv"
+    Dim fnum As Integer: fnum = FreeFile
+    Dim exists As Boolean: exists = (Dir(path) <> "")
+    Open path For Append As #fnum
+    If Not exists Then
+        Print #fnum, "signal_id,state,fill_qty,fill_price,fill_timestamp,error"
+    End If
+    Print #fnum, sigId & "," & state & "," & qty & "," & price & "," & _
+                 Format(Now, "yyyy-mm-ddThh:nn:ss") & "," & err
+    Close #fnum
+End Sub
+
+Private Sub WritePositionsCsv()
+    Dim path As String: path = BRIDGE_DIR & "positions.csv"
+    Dim fnum As Integer: fnum = FreeFile
+    Open path For Output As #fnum
+    Print #fnum, "code,name,qty,avg_price,last_price,stop_price,take_price,opened_at,source_signal_id"
+    Dim pos As Collection: Set pos = modPosition.GetPositions()
+    Dim i As Long, p As clsPosition
+    For i = 1 To pos.Count
+        Set p = pos.Item(i)
+        Print #fnum, p.Code & "," & p.Name & "," & p.Qty & "," & p.AvgPrice & "," & _
+                     p.LastPrice & "," & p.StopPrice & "," & p.TakePrice & "," & _
+                     Format(p.OpenedAt, "yyyy-mm-ddThh:nn:ss") & "," & p.SourceSignalId
+    Next i
+    Close #fnum
+End Sub
+
+Private Sub ReadControlJson()
+    Dim path As String: path = BRIDGE_DIR & "control.json"
+    If Dir(path) = "" Then Exit Sub
+
+    Dim fnum As Integer: fnum = FreeFile
+    Dim raw As String
+    Open path For Input As #fnum
+    raw = Input(LOF(fnum), #fnum)
+    Close #fnum
+
+    ' 極小 JSON パース (killSwitch / tradingEnabled のみ)
+    If InStr(raw, """killSwitch"":true") > 0 Then
+        ThisWorkbook.Names("cfgKillSwitch").RefersToRange.Value = True
+    End If
+    If InStr(raw, """tradingEnabled"":false") > 0 Then
+        ThisWorkbook.Names("cfgTradingEnabled").RefersToRange.Value = False
+    End If
+End Sub
+`;
   }
 };

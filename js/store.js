@@ -103,6 +103,7 @@ var Store = class Store {
       autoTradePending: [],        // Pending trade orders
       autoTradeHistory: [],        // Executed/rejected trade history
       ms2TradingState: null,       // Rakuten MS2 RSS (日本株) monitoring dashboard state
+      rakutenBridgeMeta: {},       // Rakuten MS2 bridge folder metadata (name, last sync)
       calendarEvents: [],
       latestFeedback: null,
       cachedResearch: null,
@@ -184,7 +185,7 @@ var Store = class Store {
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
       'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
-      'ms2TradingState'
+      'ms2TradingState', 'rakutenBridgeMeta'
     ];
   }
 

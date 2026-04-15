@@ -138,11 +138,11 @@ var Pages = {
       html += this.renderUpcomingBirthdays();
     }
 
-    // Assets domain: NISA simulator + advisor + screenshot + auto trading + MS2 RSS trading
+    // Assets domain: NISA simulator + advisor + screenshot + auto trading
     // (Stock analysis widget is rendered at the top of the page.)
+    // MS2 RSS 日本株トレードは自動売買セクションの中で broker=rakuten のときに描画される
     if (domain === 'assets') {
       if (typeof AssetsFeatures !== 'undefined') {
-        html += AssetsFeatures.renderMS2Trading();
         html += AssetsFeatures.renderNISASimulator();
         html += AssetsFeatures.renderAIAdvisor();
         html += AssetsFeatures.renderScreenshotReader();
