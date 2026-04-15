@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Broadcast Preview - Multi-Platform Distribution System</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/broadcast.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    .preview-banner {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: linear-gradient(90deg, #FDE68A, #FCD34D);
+      color: #78350F;
+      padding: 8px 16px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 9999;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .app-container { padding-top: 34px; }
+  </style>
+</head>
+<body>
+  <div class="preview-banner">
+    👁 プレビューモード — 認証なしのダッシュボード デモ（実データは保存されません）・
+    <a href="broadcast.html" style="color:#78350F;text-decoration:underline;">本物のログインはこちら</a>
+  </div>
+
+  <div class="app-container">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a class="sidebar-logo" onclick="broadcastApp.navigate('compose')">
+          <div class="sidebar-logo-icon">◈</div>
+          <div>
+            <div class="sidebar-logo-text">Broadcast</div>
+            <div class="sidebar-logo-sub">Multi-Platform Distribution</div>
+          </div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">メニュー</div>
+        <a class="nav-item active" data-page="compose" onclick="broadcastApp.navigate('compose')">
+          <span class="nav-dot"></span><span>書く</span>
+        </a>
+        <a class="nav-item" data-page="history" onclick="broadcastApp.navigate('history')">
+          <span class="nav-dot"></span><span>配信ログ</span>
+        </a>
+        <a class="nav-item" data-page="scheduled" onclick="broadcastApp.navigate('scheduled')">
+          <span class="nav-dot"></span><span>スケジュール</span>
+        </a>
+        <a class="nav-item" data-page="connections" onclick="broadcastApp.navigate('connections')">
+          <span class="nav-dot"></span><span>プラットフォーム接続</span>
+        </a>
+        <a class="nav-item" data-page="ask_ai" onclick="broadcastApp.navigate('ask_ai')">
+          <span class="nav-dot"></span><span>AI に相談</span>
+        </a>
+        <a class="nav-item" data-page="settings" onclick="broadcastApp.navigate('settings')">
+          <span class="nav-dot"></span><span>設定</span>
+        </a>
+
+        <div class="nav-section-title">関連プロダクト</div>
+        <a class="nav-item" href="index.html">
+          <span class="nav-num">L</span><span>LMS (Life Management)</span>
+        </a>
+        <a class="nav-item" href="work.html">
+          <span class="nav-num">四</span><span>仕事ドメイン</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-user">
+        <div class="user-avatar" style="background:linear-gradient(135deg,#6C63FF,#8B85FF);color:#fff;">D</div>
+        <div class="user-info">
+          <div class="user-name">デモユーザー</div>
+          <div class="user-domain">Preview Mode</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="top-bar" id="top-bar">
+        <div class="top-bar-left">
+          <button class="btn btn-icon btn-secondary" id="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+          <h2 class="top-bar-title" id="top-bar-title">書く</h2>
+        </div>
+        <div class="top-bar-right">
+          <button class="btn btn-sm btn-secondary" onclick="broadcastApp.navigate('settings')">⚙️</button>
+        </div>
+      </div>
+
+      <div class="page-content" id="mainContent"></div>
+    </main>
+
+  </div>
+
+  <!-- Sidebar Overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="document.getElementById('sidebar').classList.toggle('open')"></div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Mock shared LMS infrastructure stubs (enough to render the UI) -->
+  <script>
+    // Stub CONFIG to avoid depending on config.js's Firebase init
+    window.CONFIG = {
+      aiModels: {
+        'claude-opus-4-6':   { name: 'Claude Opus 4.6',   provider: 'anthropic', maxTokens: 4096 },
+        'claude-sonnet-4-6': { name: 'Claude Sonnet 4.6', provider: 'anthropic', maxTokens: 4096 },
+        'claude-haiku-4-5':  { name: 'Claude Haiku 4.5',  provider: 'anthropic', maxTokens: 4096 },
+        'gpt-4o':            { name: 'GPT-4o',            provider: 'openai',    maxTokens: 4096 },
+        'gemini-pro':        { name: 'Gemini Pro',        provider: 'google',    maxTokens: 4096 }
+      },
+      endpoints: { anthropic: '', openai: '', google: '' }
+    };
+
+    // Stub Components helper (subset used by broadcast-app)
+    window.Components = {
+      showToast(msg, type) {
+        const c = document.getElementById('toast-container');
+        const t = document.createElement('div');
+        t.className = 'toast toast-' + (type || 'info');
+        t.textContent = msg;
+        c.appendChild(t);
+        setTimeout(() => t.classList.add('show'), 10);
+        setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2800);
+      },
+      emptyState(icon, title, description) {
+        return `<div class="empty-state">
+          <div class="empty-icon" style="font-size:48px">${icon || '📭'}</div>
+          <h3>${title || ''}</h3>
+          <p style="color:var(--text-secondary)">${description || ''}</p>
+        </div>`;
+      },
+      chatMessage(msg) {
+        const cls = msg.role === 'user' ? 'chat-user' : 'chat-ai';
+        const icon = msg.role === 'user' ? 'あ' : 'S';
+        return `<div class="chat-msg ${cls}" style="display:flex;gap:10px;padding:10px;border-bottom:1px solid var(--border)">
+          <div class="chat-icon" style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">${icon}</div>
+          <div class="chat-content" style="flex:1">${(msg.content || '').replace(/\n/g, '<br>')}</div>
+        </div>`;
+      }
+    };
+
+    // Stub AIEngine (preview does not actually call APIs)
+    window.AIEngine = {
+      callAnthropic: () => Promise.resolve(''),
+      callOpenAI: () => Promise.resolve(''),
+      callGemini: () => Promise.resolve(''),
+      setApiKey: () => {}
+    };
+    // Stub store with mock authenticated user
+    window.store = {
+      _state: { user: { displayName: 'デモユーザー', email: 'demo@example.com' }, isAuthenticated: true },
+      get(k) { return this._state[k]; },
+      set(k, v) { this._state[k] = v; },
+      on() { return () => {}; }
+    };
+    window.FirebaseBackend = { init: () => Promise.resolve(), signOut: () => Promise.resolve() };
+  </script>
+
+  <!-- Broadcast scripts (real code, reactive UI) -->
+  <script src="js/broadcast-config.js"></script>
+  <script src="js/broadcast-store.js"></script>
+  <script src="js/broadcast-ai.js"></script>
+  <script src="js/broadcast-platforms.js"></script>
+  <script src="js/broadcast-app.js"></script>
+
+  <script>
+    // ─── Inject demo data into broadcastStore ───
+    broadcastStore.set('draft', {
+      title: '仕事の発信を、世界へ。',
+      body: `今日の気づき：\n\n自分の思考をアウトプットする時、1つのプラットフォームだけに絞る必要はない。\n\n・Twitter では要点を絞って\n・LinkedIn ではプロフェッショナルに\n・Medium では深掘りエッセイに\n・note では読者との距離感を意識して\n\nそれぞれに合わせて書き分ければ、同じ思考がもっと多くの人に届く。\n\n書き分け作業こそ、AI が最も価値を発揮するところ。\n自分は原稿を 1 つ書き、AI に任せればいい。`,
+      language: 'ja',
+      tags: [],
+      images: [],
+      createdAt: new Date().toISOString()
+    });
+
+    broadcastStore.set('selectedPlatforms', ['twitter', 'linkedin', 'medium', 'note', 'threads', 'bluesky', 'discord', 'slack']);
+
+    broadcastStore.set('connections', {
+      twitter:   { connected: true, token: 'demo' },
+      linkedin:  { connected: true, token: 'demo' },
+      medium:    { connected: true, token: 'demo', userId: 'demo' },
+      note:      { connected: true },
+      threads:   { connected: true, token: 'demo' },
+      bluesky:   { connected: true, handle: 'demo.bsky.social', appPassword: 'demo' },
+      discord:   { connected: true, webhook: 'https://discord.com/api/webhooks/demo' },
+      slack:     { connected: true, webhook: 'https://hooks.slack.com/demo' },
+      mastodon:  { connected: true, token: 'demo', instance: 'mastodon.social' },
+      telegram:  { connected: true, token: 'demo', chatId: '@demo' },
+      devto:     { connected: true, token: 'demo' }
+    });
+
+    broadcastStore.set('adaptations', {
+      twitter: {
+        title: '',
+        body: '今日の気づき：\n\n自分の思考を 1 プラットフォームに絞る必要はない。AI に書き分けを任せれば、同じ思考がもっと多くの人に届く。\n\n書き分けこそ AI の真価。#発信 #AI活用',
+        tags: ['発信', 'AI活用'],
+        charCount: 96,
+        language: 'ja',
+        edited: false
+      },
+      linkedin: {
+        title: '',
+        body: `【発信の質を上げる小さな気づき】\n\nコンテンツを発信する時、私たちは無意識に「1 つのプラットフォーム」を選んでしまいがちです。\n\nしかし、同じ思考であっても：\n\n✅ Twitter では要点を絞って瞬発力で\n✅ LinkedIn ではプロフェッショナルな学びとして\n✅ Medium では深いエッセイとして\n✅ note では読者との距離感を大切に\n\n書き分けることで、同じ思考がより多くの人の心に届きます。\n\nそして、この「書き分け作業」こそ、AI が最も価値を発揮する領域。\n\n私たちは原稿を 1 つ書くだけでよく、プラットフォーム最適化は AI に任せる — そんな時代が来ています。\n\n#コンテンツ戦略 #AI活用 #発信力`,
+        tags: ['コンテンツ戦略', 'AI活用', '発信力'],
+        charCount: 392,
+        language: 'ja',
+        edited: false
+      },
+      medium: {
+        title: '書き分けは AI の仕事 — マルチプラットフォーム時代の発信術',
+        body: `## はじめに\n\n自分の思考をアウトプットする時、私たちはつい 1 つのプラットフォームだけに絞りがちです。Twitter なら Twitter、LinkedIn なら LinkedIn、という具合に。\n\nでも、本当にそれでいいのでしょうか？\n\n## 各プラットフォームの性格\n\n同じ思想でも、プラットフォームごとに届き方は大きく違います。\n\n- **Twitter**: 要点を絞った瞬発力が求められる\n- **LinkedIn**: プロフェッショナルな学びとして提示する\n- **Medium**: 深いエッセイとして構造化する\n- **note**: 読者との距離感を大切にする\n\n## AI が変えたこと\n\nかつてはこの「書き分け作業」こそがボトルネックでした。1 つの思考を 4 つのプラットフォーム向けに書き分けるには、単純に 4 倍の時間がかかったからです。\n\nしかし今、AI はこの作業を完璧にこなせます。私たちは原稿を 1 つ書くだけ。あとは AI に任せればいい。\n\n## 結論\n\n発信の質を上げる鍵は、もはや「どう書くか」ではなく「どう AI に書き分けさせるか」です。`,
+        tags: ['ai', 'writing', 'content-strategy'],
+        charCount: 480,
+        language: 'ja',
+        edited: false
+      },
+      note: {
+        title: '書き分けは AI の仕事になった',
+        body: `自分の思考をアウトプットする時、いつも迷っていました。\n\nTwitter にしようか、note にしようか、それとも Medium に長文で書こうか。\n\n今日、ふと気づいたんです。どれか 1 つを選ぶ必要なんて、もうないんじゃないかって。\n\n同じ思想でも、プラットフォームによって届き方が違う。Twitter では要点を。LinkedIn ではプロフェッショナルに。Medium では深掘りで。そして note では、こうして読者の方との距離感を大切にしながら。\n\nそれぞれに合わせて書き分ければ、同じ思考がもっと多くの人に届くはず。\n\nそして面白いのは、この「書き分け作業」こそ、AI が最も価値を発揮する領域だということ。私たちは原稿を 1 つ書くだけでいい。あとは AI が、それぞれのプラットフォームの空気に合わせて書き直してくれる。\n\n発信のハードルが、また一つ下がった気がします。`,
+        tags: [],
+        charCount: 388,
+        language: 'ja',
+        edited: false
+      },
+      threads: {
+        title: '',
+        body: '自分の思考を 1 プラットフォームに絞る必要はもうない。\n\n・Twitter では要点を\n・LinkedIn ではプロフェッショナルに\n・Medium では深掘りに\n・note では読者との距離感を意識して\n\n書き分け作業こそ AI が最も価値を発揮する領域。原稿を 1 つ書けば、あとは AI に任せればいい。',
+        tags: [],
+        charCount: 155,
+        language: 'ja',
+        edited: false
+      },
+      bluesky: {
+        title: '',
+        body: '気づき: 自分の思考を 1 プラットフォームに絞る必要はない。\n\nTwitter/LinkedIn/Medium/note、それぞれに合わせて書き分ければ、同じ思考がもっと多くの人に届く。\n\n書き分けこそ AI の仕事。私たちは原稿を 1 つ書くだけでいい。',
+        tags: [],
+        charCount: 128,
+        language: 'ja',
+        edited: false
+      },
+      discord: {
+        title: '',
+        body: '📝 **今日の気づき**\n\n同じ思考でも、Twitter / LinkedIn / Medium / note で届き方が違う。\n書き分けこそ AI の仕事。原稿を 1 つ書けば、あとは AI に任せればいい。\n\n発信のハードルがまた下がった感ある。',
+        tags: [],
+        charCount: 135,
+        language: 'ja',
+        edited: false
+      },
+      slack: {
+        title: '',
+        body: '📝 今日の気づき: 同じ思考でもプラットフォームによって届き方が違う。Twitter では要点を、LinkedIn ではプロフェッショナルに、Medium では深掘りで。書き分けこそ AI の仕事なので、私たちは原稿を 1 つ書くだけでいい。発信のハードルがまた一段下がった。',
+        tags: [],
+        charCount: 144,
+        language: 'ja',
+        edited: false
+      }
+    });
+
+    // Demo broadcast history
+    broadcastStore.set('broadcasts', [
+      {
+        id: 'demo1',
+        timestamp: new Date(Date.now() - 86400000).toISOString(),
+        draft: { title: '朝の習慣の力', body: '毎朝の 15 分の瞑想が、1 日の質を劇的に変える。' },
+        platforms: ['twitter', 'threads', 'bluesky', 'linkedin'],
+        results: {
+          twitter:  { status: 'success', url: 'https://twitter.com/i/web/status/demo1' },
+          threads:  { status: 'success', url: 'https://threads.net/@demo/post/demo1' },
+          bluesky:  { status: 'success', url: 'https://bsky.app/profile/demo/post/demo1' },
+          linkedin: { status: 'success', url: 'https://linkedin.com/feed/update/demo1' }
+        }
+      },
+      {
+        id: 'demo2',
+        timestamp: new Date(Date.now() - 172800000).toISOString(),
+        draft: { title: '', body: 'コードは書かれる時間より読まれる時間の方が 10 倍長い。可読性は機能と同等に重要。' },
+        platforms: ['twitter', 'devto', 'mastodon', 'discord'],
+        results: {
+          twitter:  { status: 'success', url: '#' },
+          devto:    { status: 'success', url: '#' },
+          mastodon: { status: 'success', url: '#' },
+          discord:  { status: 'success' }
+        }
+      },
+      {
+        id: 'demo3',
+        timestamp: new Date(Date.now() - 259200000).toISOString(),
+        draft: { title: '', body: '日曜の朝、新しい週の設計図を書く時間を持つ。' },
+        platforms: ['twitter', 'linkedin', 'slack'],
+        results: {
+          twitter:  { status: 'success', url: '#' },
+          linkedin: { status: 'error', error: 'Rate limit exceeded' },
+          slack:    { status: 'success' }
+        }
+      }
+    ]);
+
+    // ─── Override auth checks & disable real network calls ───
+    broadcastStore.set = (function(orig) {
+      return function(key, value) {
+        // Prevent infinite redirect loops from isAuthenticated listener
+        if (key === 'isAuthenticated' && value === false) return;
+        return orig.call(this, key, value);
+      };
+    })(broadcastStore.set);
+
+    // Stub the AI/platform calls so demo buttons don't throw
+    BroadcastAI.callModel = async () => '---TITLE---\n\n---BODY---\n(プレビュー: 実際の AI 呼び出しはスタブ化されています)\n---TAGS---\n';
+    BroadcastAI.adaptForAll = async () => {
+      Components.showToast('プレビューでは実際の AI 呼び出しは行いません', 'info');
+      return {};
+    };
+    BroadcastPlatforms.distribute = async () => {
+      Components.showToast('プレビューでは実際の配信は行いません', 'info');
+      return {};
+    };
+
+    // ─── Render ───
+    broadcastApp.navigate = function(page) {
+      broadcastStore._state.currentPage = page;
+      const title = document.getElementById('top-bar-title');
+      if (title) title.textContent = this.pageTitle(page);
+      document.querySelectorAll('.nav-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.page === page);
+      });
+      const main = document.getElementById('mainContent');
+      switch (page) {
+        case 'compose':     main.innerHTML = this.renderCompose(); this.bindCompose(); break;
+        case 'history':     main.innerHTML = this.renderHistory(); break;
+        case 'connections': main.innerHTML = this.renderConnections(); break;
+        case 'scheduled':   main.innerHTML = this.renderScheduled(); break;
+        case 'settings':    main.innerHTML = this.renderSettings(); break;
+        case 'ask_ai':      main.innerHTML = this.renderAskAI(); break;
+        default:            main.innerHTML = this.renderCompose();
+      }
+    };
+
+    // Initial render
+    broadcastApp.navigate('compose');
+  </script>
+</body>
+</html>

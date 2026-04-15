@@ -212,11 +212,12 @@ var CONFIG = {
       icon: '四',
       color: '#3b82f6',
       categories: {
-        tasks:    { label: 'tasks',     icon: '✅' },
-        goals:    { label: 'work_goals', icon: '🎯' },
-        skills:   { label: 'skills',    icon: '📚' },
-        projects: { label: 'projects',  icon: '📊' },
-        reviews:  { label: 'reviews',   icon: '📝' }
+        tasks:     { label: 'tasks',     icon: '✅' },
+        goals:     { label: 'work_goals', icon: '🎯' },
+        skills:    { label: 'skills',    icon: '📚' },
+        projects:  { label: 'projects',  icon: '📊' },
+        reviews:   { label: 'reviews',   icon: '📝' },
+        broadcast: { label: 'broadcast', icon: '📡', external: 'broadcast-dashboard.html' }
       },
       dataFields: {
         tasks: [
