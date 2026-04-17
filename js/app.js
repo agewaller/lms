@@ -20,6 +20,7 @@ var App = class App {
       store.set('currentPage', 'home');
       this.renderApp();
       this.startInboxPolling();
+      setTimeout(() => this._postLoginFlow(), 600);
     }
 
     // Listen for auth changes
@@ -29,6 +30,7 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        setTimeout(() => this._postLoginFlow(), 600);
       } else {
         this.stopInboxPolling();
       }
@@ -245,7 +247,11 @@ var App = class App {
     }
     if (domainLabel) {
       const d = store.get('currentDomain');
-      domainLabel.textContent = i18n.t(d);
+      const streak = store.get('checkInStreak') || 0;
+      const streakHtml = streak >= 2
+        ? `<span class="streak-badge">&#x1f525; ${streak}日</span>`
+        : '';
+      domainLabel.innerHTML = i18n.t(d) + streakHtml;
     }
 
     // Admin mode: show admin nav items via body class only.
@@ -1953,6 +1959,110 @@ var App = class App {
   closeModal() {
     const overlay = document.getElementById('modal-overlay');
     if (overlay) overlay.classList.remove('active');
+  }
+
+  // ─── Post-login flow: onboarding → daily check-in ───
+  _postLoginFlow() {
+    if (!store.get('onboardingComplete')) {
+      this.showOnboarding(1);
+    } else {
+      this._checkDailyCheckin();
+    }
+  }
+
+  _checkDailyCheckin() {
+    const today = new Date().toISOString().slice(0, 10);
+    if (store.get('lastCheckInDate') !== today) {
+      setTimeout(() => this.showDailyCheckin(), 400);
+    }
+  }
+
+  // ─── Onboarding Wizard ───
+  showOnboarding(step) {
+    const existing = document.getElementById('onboarding-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'onboarding-overlay';
+    overlay.className = 'onboarding-overlay';
+    overlay.innerHTML = Pages.renderOnboarding(step);
+    document.body.appendChild(overlay);
+  }
+
+  completeOnboardingStep(step) {
+    if (step === 2) {
+      // Save chosen priority domains
+      const checked = [];
+      document.querySelectorAll('.ob-domain-card.selected').forEach(el => {
+        checked.push(el.dataset.domain);
+      });
+      if (checked.length === 0) {
+        Components.showToast('1つ以上選んでください', 'info');
+        return;
+      }
+      store.set('priorityDomains', checked);
+      const first = checked[0];
+      store.set('currentDomain', first);
+    }
+    if (step === 3) {
+      const age = document.getElementById('ob-age')?.value?.trim();
+      const goal = document.getElementById('ob-goal')?.value?.trim();
+      const profile = store.get('userProfile') || {};
+      if (age) profile.age = age;
+      if (goal) profile.mainGoal = goal;
+      store.set('userProfile', profile);
+    }
+    this.showOnboarding(step + 1);
+  }
+
+  finishOnboarding() {
+    store.set('onboardingComplete', true);
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) overlay.remove();
+    Components.showToast('ようこそ！さっそく始めましょう', 'success');
+    this.renderApp();
+    setTimeout(() => this._checkDailyCheckin(), 500);
+  }
+
+  // ─── Daily Check-in ───
+  showDailyCheckin() {
+    const streak = store.get('checkInStreak') || 0;
+    this.openModal('今日はどうですか？', Pages.renderDailyCheckin(streak));
+  }
+
+  saveDailyCheckin(mood) {
+    const today = new Date().toISOString().slice(0, 10);
+    const last = store.get('lastCheckInDate');
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+
+    let streak = store.get('checkInStreak') || 0;
+    if (last === yesterday) {
+      streak += 1;
+    } else if (last !== today) {
+      streak = 1;
+    }
+
+    const note = document.getElementById('checkin-note')?.value?.trim() || '';
+    const history = store.get('checkInHistory') || [];
+    history.unshift({ date: today, mood, note });
+    if (history.length > 90) history.length = 90;
+
+    store.set('lastCheckInDate', today);
+    store.set('checkInStreak', streak);
+    store.set('checkInHistory', history);
+
+    this.closeModal();
+    this.updateSidebar();
+
+    const msgs = {
+      great: '最高の一日にしましょう！',
+      good: '今日も着実に前進！',
+      okay: '無理せず、一歩ずつ。',
+      tired: 'ゆっくり休んでください。',
+      low: 'いつでも相談してください。'
+    };
+    const streakMsg = streak >= 3 ? ` ${streak}日連続！` : '';
+    Components.showToast((msgs[mood] || 'チェックイン完了') + streakMsg, 'success');
   }
 };
 

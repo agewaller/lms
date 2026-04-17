@@ -20,6 +20,215 @@ var Pages = {
   },
 
   // ═══════════════════════════════════════════════════════════
+  //  ONBOARDING WIZARD
+  // ═══════════════════════════════════════════════════════════
+  renderOnboarding(step) {
+    const totalSteps = 3;
+    const dots = [1, 2, 3].map(i =>
+      `<div class="ob-progress-dot ${i < step ? 'done' : i === step ? 'active' : ''}"></div>`
+    ).join('');
+
+    if (step === 1) {
+      return `<div class="onboarding-card">
+        <div class="ob-progress">${dots}</div>
+        <div class="ob-title">ようこそ、LMSへ</div>
+        <div class="ob-subtitle">
+          人生を6つの領域で整えるアプリです。<br>
+          記録・分析・アドバイスを、あなただけのペースで。
+        </div>
+        <div class="ob-domain-grid">
+          ${Object.entries(CONFIG.domains).map(([id, d]) => `
+            <div class="ob-domain-card" style="border-color:${d.color}20">
+              <div class="ob-d-icon">${d.icon}</div>
+              <div class="ob-d-name" style="color:${d.color}">${d.name}</div>
+              <div class="ob-d-desc">${this._obDomainDesc(id)}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="ob-actions">
+          <button class="btn btn-primary btn-lg" onclick="app.completeOnboardingStep(1)">
+            次へ →
+          </button>
+        </div>
+      </div>`;
+    }
+
+    if (step === 2) {
+      const priority = store.get('priorityDomains') || [];
+      return `<div class="onboarding-card">
+        <div class="ob-progress">${dots}</div>
+        <div class="ob-title">特に気になる領域は？</div>
+        <div class="ob-subtitle">
+          複数選べます。後からいつでも変えられます。
+        </div>
+        <div class="ob-domain-grid">
+          ${Object.entries(CONFIG.domains).map(([id, d]) => `
+            <div class="ob-domain-card ${priority.includes(id) ? 'selected' : ''}"
+                 data-domain="${id}"
+                 onclick="this.classList.toggle('selected')"
+                 style="border-color:${d.color}40">
+              <div class="ob-d-icon">${d.icon}</div>
+              <div class="ob-d-name" style="color:${d.color}">${d.name}</div>
+              <div class="ob-d-desc">${this._obDomainDesc(id)}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="ob-actions">
+          <button class="btn btn-secondary" onclick="app.showOnboarding(1)">← 戻る</button>
+          <button class="btn btn-primary" onclick="app.completeOnboardingStep(2)">次へ →</button>
+        </div>
+      </div>`;
+    }
+
+    if (step === 3) {
+      const profile = store.get('userProfile') || {};
+      return `<div class="onboarding-card">
+        <div class="ob-progress">${dots}</div>
+        <div class="ob-title">あなたのことを教えてください</div>
+        <div class="ob-subtitle">より的確なアドバイスができます（2問だけ）</div>
+        <div class="ob-profile-row">
+          <label>今の年齢</label>
+          <select id="ob-age" class="form-input">
+            <option value="">選択してください</option>
+            ${['60〜64歳','65〜69歳','70〜74歳','75〜79歳','80歳以上'].map(a =>
+              `<option value="${a}" ${profile.age === a ? 'selected' : ''}>${a}</option>`
+            ).join('')}
+          </select>
+        </div>
+        <div class="ob-profile-row">
+          <label>一番の願いは何ですか？</label>
+          <textarea id="ob-goal" class="form-input" rows="3"
+            placeholder="例：健康に長生きしたい、老後を楽しみたい、孤独を感じたくない"
+          >${profile.mainGoal || ''}</textarea>
+        </div>
+        <div class="ob-actions">
+          <button class="btn btn-secondary" onclick="app.showOnboarding(2)">← 戻る</button>
+          <button class="btn btn-primary" onclick="app.completeOnboardingStep(3)">次へ →</button>
+        </div>
+      </div>`;
+    }
+
+    // step 4: completion
+    return `<div class="onboarding-card" style="text-align:center">
+      <div class="ob-progress">${[1,2,3].map(() => '<div class="ob-progress-dot done"></div>').join('')}</div>
+      <div class="ob-finish-icon">🎉</div>
+      <div class="ob-title">準備完了！</div>
+      <div class="ob-subtitle">
+        毎日少しずつ記録するだけで、あなたの人生が見えてきます。<br>
+        まず今日の状態を記録してみましょう。
+      </div>
+      <div class="ob-actions" style="justify-content:center">
+        <button class="btn btn-primary btn-lg" onclick="app.finishOnboarding()">
+          さっそく始める
+        </button>
+      </div>
+    </div>`;
+  },
+
+  _obDomainDesc(id) {
+    const descs = {
+      consciousness: '心の状態・気づき',
+      health: '体の調子・食事・睡眠',
+      time: '時間の使い方・習慣',
+      work: '仕事・ボランティア',
+      relationship: '人とのつながり',
+      assets: 'お金・資産の管理'
+    };
+    return descs[id] || '';
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  DAILY CHECK-IN (modal body)
+  // ═══════════════════════════════════════════════════════════
+  renderDailyCheckin(streak) {
+    const moods = [
+      { id: 'great',  emoji: '😄', label: '最高' },
+      { id: 'good',   emoji: '😊', label: 'まあまあ' },
+      { id: 'okay',   emoji: '😐', label: '普通' },
+      { id: 'tired',  emoji: '😔', label: '疲れた' },
+      { id: 'low',    emoji: '😞', label: 'つらい' }
+    ];
+
+    const streakHtml = streak >= 1
+      ? `<div class="checkin-streak-display">
+          <div class="checkin-streak-num">${streak}</div>
+          <div class="checkin-streak-label">日連続チェックイン${streak >= 7 ? ' 🔥' : ''}</div>
+        </div>`
+      : '';
+
+    return `
+      ${streakHtml}
+      <p style="text-align:center;color:var(--text-secondary);margin-bottom:4px">
+        今日の気持ちは？
+      </p>
+      <div class="checkin-moods">
+        ${moods.map(m => `
+          <button class="checkin-mood-btn" onclick="
+            document.querySelectorAll('.checkin-mood-btn').forEach(b=>b.classList.remove('selected'));
+            this.classList.add('selected');
+            this.dataset.selected='1';
+            document.getElementById('checkin-save').dataset.mood='${m.id}';
+          ">
+            <span class="mood-emoji">${m.emoji}</span>
+            <span class="mood-label">${m.label}</span>
+          </button>
+        `).join('')}
+      </div>
+      <textarea id="checkin-note" class="form-input" rows="2"
+        placeholder="ひとこと（省略できます）" style="margin-bottom:16px"></textarea>
+      <button id="checkin-save" class="btn btn-primary btn-block"
+        onclick="const m=this.dataset.mood;if(m)app.saveDailyCheckin(m);else Components.showToast('気持ちを選んでください','info')">
+        記録する
+      </button>
+      <button class="btn btn-secondary btn-block" style="margin-top:8px" onclick="app.closeModal()">
+        あとで
+      </button>
+    `;
+  },
+
+  // ─── Check-in widget on home ───
+  renderCheckinWidget() {
+    const today = new Date().toISOString().slice(0, 10);
+    const lastDate = store.get('lastCheckInDate');
+    const streak = store.get('checkInStreak') || 0;
+    const history = store.get('checkInHistory') || [];
+
+    if (lastDate === today) {
+      // Already checked in - show streak
+      const todayEntry = history[0];
+      const moodEmojis = { great:'😄', good:'😊', okay:'😐', tired:'😔', low:'😞' };
+      const emoji = moodEmojis[todayEntry?.mood] || '✓';
+      if (streak < 2) return '';
+      return `<div class="checkin-done-banner" style="
+        display:flex;align-items:center;gap:12px;padding:12px 16px;
+        background:var(--bg-secondary);border-radius:12px;margin-bottom:16px;
+        border-left:3px solid var(--success);">
+        <span style="font-size:22px">${emoji}</span>
+        <div>
+          <div style="font-weight:600;font-size:14px">今日のチェックイン済み</div>
+          <div style="font-size:12px;color:var(--text-secondary)">${streak}日連続${streak >= 7 ? ' 🔥' : ''}</div>
+        </div>
+      </div>`;
+    }
+
+    // Not checked in today
+    return `<div class="checkin-nudge" style="
+      display:flex;align-items:center;gap:12px;padding:14px 16px;
+      background:linear-gradient(135deg,#6C63FF15,#6C63FF05);
+      border:1px solid #6C63FF30;border-radius:12px;margin-bottom:16px;cursor:pointer;"
+      onclick="app.showDailyCheckin()">
+      <span style="font-size:24px">🌅</span>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">今日の気持ちを記録しましょう</div>
+        <div style="font-size:12px;color:var(--text-secondary)">
+          ${streak >= 1 ? `${streak}日連続中 — 続けて記録しよう` : '毎日の記録が、あなたの変化を見せてくれます'}
+        </div>
+      </div>
+      <span style="color:var(--accent);font-size:18px">→</span>
+    </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════
   //  HOME PAGE (per domain)
   // ═══════════════════════════════════════════════════════════
   renderHome(domain) {
@@ -35,6 +244,9 @@ var Pages = {
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
       <div id="quickResponse"></div>`;
+
+    // Daily check-in nudge / streak
+    html += this.renderCheckinWidget();
 
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {

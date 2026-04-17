@@ -109,7 +109,14 @@ var Store = class Store {
 
       // Notifications
       notifications: [],
-      unreadCount: 0
+      unreadCount: 0,
+
+      // Onboarding & retention
+      onboardingComplete: false,
+      priorityDomains: [],      // user's chosen focus domains
+      checkInStreak: 0,
+      lastCheckInDate: null,    // 'YYYY-MM-DD'
+      checkInHistory: []        // [{ date, mood, note }]
     };
 
     this.listeners = new Map();
@@ -182,7 +189,9 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'onboardingComplete', 'priorityDomains',
+      'checkInStreak', 'lastCheckInDate', 'checkInHistory'
     ];
   }
 
