@@ -29,6 +29,7 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        this.maybeShowOnboarding();
       } else {
         this.stopInboxPolling();
       }
@@ -254,6 +255,55 @@ var App = class App {
     // and inline style would override the CSS class toggling.
     const isAdmin = FirebaseBackend.isAdmin();
     document.body.classList.toggle('is-admin', isAdmin);
+  }
+
+  // ─── First-time onboarding ───
+  maybeShowOnboarding() {
+    const key = 'lms_onboarding_done';
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, '1');
+
+    setTimeout(() => {
+      const body = `
+        <div class="onboarding-modal">
+          <p class="onboarding-welcome">ようこそ、LMSへ。</p>
+          <p class="onboarding-sub">人生の6つの領域をまるごとサポートします。<br>まず最初の3ステップをやってみましょう。</p>
+          <div class="onboarding-steps">
+            <div class="onboarding-step" onclick="app.onboardingGo('health','record')">
+              <div class="ob-step-num">1</div>
+              <div class="ob-step-body">
+                <div class="ob-step-title">健康を記録する</div>
+                <div class="ob-step-desc">今日の体調をひとこと入力してみましょう</div>
+              </div>
+              <div class="ob-step-arrow">→</div>
+            </div>
+            <div class="onboarding-step" onclick="app.onboardingGo('health','ask_ai')">
+              <div class="ob-step-num">2</div>
+              <div class="ob-step-body">
+                <div class="ob-step-title">相談してみる</div>
+                <div class="ob-step-desc">気になることを何でも入力してください</div>
+              </div>
+              <div class="ob-step-arrow">→</div>
+            </div>
+            <div class="onboarding-step" onclick="app.onboardingGo('assets','home')">
+              <div class="ob-step-num">3</div>
+              <div class="ob-step-body">
+                <div class="ob-step-title">資産を確認する</div>
+                <div class="ob-step-desc">NISA・株式のポートフォリオを整理する</div>
+              </div>
+              <div class="ob-step-arrow">→</div>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-block" onclick="app.closeModal()" style="margin-top:24px">さっそく始める</button>
+        </div>`;
+      this.openModal('LMSへようこそ', body);
+    }, 800);
+  }
+
+  onboardingGo(domain, page) {
+    this.closeModal();
+    store.set('currentDomain', domain);
+    store.set('currentPage', page);
   }
 
   // ─── Quick Input ───

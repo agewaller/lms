@@ -3,7 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LMS - Life Management System</title>
+  <title>LMS - 人生の6領域をまるごとサポート | Life Management System</title>
+  <meta name="description" content="意識・健康・時間・仕事・関係・資産の6領域を統合管理。65歳からの豊かな人生設計を、深い分析と自動アクションでサポートします。無料で始められます。">
+  <meta name="keywords" content="人生管理,シニア,健康管理,資産管理,生活習慣,ライフマネジメント,老後,65歳">
+  <meta property="og:title" content="LMS - 人生の6領域をまるごとサポート">
+  <meta property="og:description" content="意識・健康・時間・仕事・関係・資産の6領域を統合管理。深い分析と自動アクションで豊かな人生設計を支援します。">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="LMS - 人生の6領域をまるごとサポート">
+  <meta name="twitter:description" content="意識・健康・時間・仕事・関係・資産の6領域を統合管理。深い分析と自動アクションで豊かな人生設計を支援します。">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -25,9 +33,13 @@
     </nav>
 
     <div class="hero-content">
-      <h1>Life Management System</h1>
-      <p class="hero-subtitle">年金だけでは足りない時代。<br>意識・健康・時間・仕事・関係・資産<br>6つの領域を、まるごとサポート</p>
-      <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
+      <div class="hero-eyebrow">65歳からの人生設計</div>
+      <h1>6つの柱で、人生を<br>まるごと整える</h1>
+      <p class="hero-subtitle">意識・健康・時間・仕事・関係・資産。<br>6つの領域をひとつのアプリで記録・分析・行動。<br>深い洞察と自動サポートで、毎日が変わります。</p>
+      <div class="hero-actions">
+        <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
+        <a href="#domains" class="btn btn-lg btn-secondary">詳しく見る</a>
+      </div>
     </div>
   </header>
 
@@ -36,36 +48,102 @@
     <h2>6つのライフドメイン</h2>
     <p class="section-sub">それぞれの領域をやさしくサポートし、あなたに合ったアドバイスをお届けします</p>
     <div class="domain-cards">
-      <a href="consciousness.html" class="domain-card" style="--domain-color:#9B59B6">
-        <div class="dc-icon">🧠</div>
+      <a href="consciousness.html" class="domain-card" style="--domain-color:#6C63FF">
+        <div class="dc-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="6" stroke="currentColor" stroke-width="2"/>
+            <path d="M16 4v4M16 24v4M4 16h4M24 16h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M7.5 7.5l2.8 2.8M21.7 21.7l2.8 2.8M7.5 24.5l2.8-2.8M21.7 10.3l2.8-2.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="dc-num">一</div>
         <h3>意識</h3>
-        <p>心の健康・瞑想・感謝の気持ち</p>
+        <p>心の状態を7つの層で観察。気づきと静けさを育む</p>
       </a>
-      <a href="health.html" class="domain-card" style="--domain-color:#27AE60">
-        <div class="dc-icon">💚</div>
+      <a href="health.html" class="domain-card" style="--domain-color:#10b981">
+        <div class="dc-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 27s-11-7.5-11-14a7 7 0 0 1 11-5.7A7 7 0 0 1 27 13c0 6.5-11 14-11 14z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M11 15h10M16 10v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="dc-num">二</div>
         <h3>健康</h3>
-        <p>体調の記録・お薬の管理・元気な毎日</p>
+        <p>体調・お薬・食事・睡眠を記録。未病を先手で管理</p>
       </a>
-      <a href="time.html" class="domain-card" style="--domain-color:#E67E22">
-        <div class="dc-icon">⏰</div>
+      <a href="time.html" class="domain-card" style="--domain-color:#f59e0b">
+        <div class="dc-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="11" stroke="currentColor" stroke-width="2"/>
+            <path d="M16 9v7l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="dc-num">三</div>
         <h3>時間</h3>
-        <p>日々の過ごし方・趣味・心豊かな時間</p>
+        <p>日々の過ごし方を可視化。心豊かな時間の使い方を設計</p>
       </a>
-      <a href="work.html" class="domain-card" style="--domain-color:#2980B9">
-        <div class="dc-icon">💼</div>
+      <a href="work.html" class="domain-card" style="--domain-color:#3b82f6">
+        <div class="dc-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="12" width="22" height="15" rx="2" stroke="currentColor" stroke-width="2"/>
+            <path d="M11 12V9a5 5 0 0 1 10 0v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M5 19h22" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="16" cy="19" r="2" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="dc-num">四</div>
         <h3>仕事</h3>
-        <p>生きがい・経験を活かす・社会とのつながり</p>
+        <p>経験を活かす生きがいを探す。副業・ボランティア・社会貢献</p>
       </a>
-      <a href="relationship.html" class="domain-card" style="--domain-color:#E74C3C">
-        <div class="dc-icon">🤝</div>
+      <a href="relationship.html" class="domain-card" style="--domain-color:#ef4444">
+        <div class="dc-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="11" cy="11" r="4" stroke="currentColor" stroke-width="2"/>
+            <circle cx="21" cy="11" r="4" stroke="currentColor" stroke-width="2"/>
+            <path d="M4 26c0-4 3.1-7 7-7h10c3.9 0 7 3 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="dc-num">五</div>
         <h3>関係</h3>
-        <p>大切な人との関係・ご縁を大切に</p>
+        <p>大切な人との縁を深める。孤立を防ぎ、つながりを育む</p>
       </a>
-      <a href="assets.html" class="domain-card" style="--domain-color:#F1C40F">
-        <div class="dc-icon">💰</div>
+      <a href="assets.html" class="domain-card" style="--domain-color:#d97706">
+        <div class="dc-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="4" y="8" width="24" height="16" rx="2" stroke="currentColor" stroke-width="2"/>
+            <circle cx="16" cy="16" r="4" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M4 13h3M25 13h3M4 19h3M25 19h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="dc-num">六</div>
         <h3>資産</h3>
-        <p>安心の資産管理・株式投資・収支の把握</p>
+        <p>NISA・株式・収支を安心管理。老後資金を賢く育てる</p>
       </a>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="lp-section">
+    <h2>使い方は、とてもシンプル</h2>
+    <p class="section-sub">難しい操作は一切ありません。書いて、読んで、行動するだけ</p>
+    <div class="how-steps">
+      <div class="how-step">
+        <div class="how-step-num">1</div>
+        <h3>記録する</h3>
+        <p>気になることをひとことで入力するだけ。体調、気持ち、お金のこと——何でもOK</p>
+      </div>
+      <div class="how-step-arrow">→</div>
+      <div class="how-step">
+        <div class="how-step-num">2</div>
+        <h3>分析を受け取る</h3>
+        <p>あなたの記録をもとに、深い洞察とわかりやすいアドバイスが届きます</p>
+      </div>
+      <div class="how-step-arrow">→</div>
+      <div class="how-step">
+        <div class="how-step-num">3</div>
+        <h3>行動に移す</h3>
+        <p>おすすめの行動が自動で提案されます。ボタンひとつで実行できるものも</p>
+      </div>
     </div>
   </section>
 
@@ -74,28 +152,84 @@
     <h2>主な特徴</h2>
     <div class="feature-grid">
       <div class="feature-item">
-        <h3>深い分析</h3>
-        <p>あなたの記録を丁寧に読み解き、気づきと最適な打ち手をお届けします</p>
+        <div class="feature-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>6つの領域を一画面で</h3>
+        <p>意識・健康・時間・仕事・関係・資産をまとめて管理。バラバラだった情報が、ひとつに</p>
       </div>
       <div class="feature-item">
-        <h3>領域横断の洞察</h3>
-        <p>6つの領域の相互作用を考慮した、統合的なアドバイス</p>
+        <div class="feature-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 8v4l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <h3>毎日の積み重ねが見える</h3>
+        <p>記録を続けるほど、あなたの傾向と変化がグラフで可視化されます</p>
       </div>
       <div class="feature-item">
-        <h3>自動アクション</h3>
-        <p>おすすめに基づく自動実行（投資、予約、購入など）</p>
+        <div class="feature-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>何でも相談できる</h3>
+        <p>困ったことや悩みをいつでも入力。記録に基づいた、あなただけのアドバイスを返します</p>
       </div>
       <div class="feature-item">
-        <h3>多言語対応</h3>
-        <p>日本語・英語・中国語・韓国語に対応</p>
+        <div class="feature-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>データは安全に保管</h3>
+        <p>Google認証でログイン。あなたのデータは暗号化されて保存されます</p>
       </div>
       <div class="feature-item">
-        <h3>安心のデータ管理</h3>
-        <p>Google認証 + Firebase によるセキュアなデータ同期</p>
+        <div class="feature-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" stroke-width="2"/><path d="M9 7h6M9 11h6M9 15h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <h3>スマホでもパソコンでも</h3>
+        <p>どの端末からでも同じデータにアクセス。外出先でも自宅でも使えます</p>
       </div>
       <div class="feature-item">
-        <h3>専門家連携</h3>
-        <p>必要に応じて専門家によるメンタリング・コーチングにも対応</p>
+        <div class="feature-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <h3>あなたのペースで</h3>
+        <p>毎日でも、週1回でも。無理なく続けられる仕組みです</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="lp-section lp-testimonials">
+    <h2>使ってみた方の声</h2>
+    <p class="section-sub">同じ世代の方が、実際にどんな変化を感じたか</p>
+    <div class="testimonial-grid">
+      <div class="testimonial-card">
+        <div class="testimonial-body">「健康と資産を別々に管理していたのが、ひとつにまとまって本当に楽になりました。毎朝の記録が習慣になっています」</div>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">田</div>
+          <div>
+            <div class="testimonial-name">田中さん（68歳・東京）</div>
+            <div class="testimonial-since">利用開始3ヶ月</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-body">「退職後に何をすればいいかわからなかった。仕事ドメインで副業の可能性を分析してもらったら、新しい道が見えてきました」</div>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">鈴</div>
+          <div>
+            <div class="testimonial-name">鈴木さん（65歳・大阪）</div>
+            <div class="testimonial-since">利用開始1ヶ月</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-body">「子供たちとの関係がなんとなく疎遠になっていた。関係ドメインで整理したら、連絡を取るタイミングがわかるようになりました」</div>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">山</div>
+          <div>
+            <div class="testimonial-name">山本さん（71歳・名古屋）</div>
+            <div class="testimonial-since">利用開始2ヶ月</div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -193,9 +327,9 @@
   </footer>
 
   <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
   <!-- LMS Scripts -->
   <script src="js/config.js"></script>

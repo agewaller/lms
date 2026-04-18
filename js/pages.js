@@ -22,6 +22,70 @@ var Pages = {
   // ═══════════════════════════════════════════════════════════
   //  HOME PAGE (per domain)
   // ═══════════════════════════════════════════════════════════
+  renderDailyOverview() {
+    const now = new Date();
+    const hour = now.getHours();
+    const greeting = hour < 11 ? 'おはようございます' : hour < 17 ? 'こんにちは' : 'こんばんは';
+    const dateStr = now.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' });
+    const user = store.get('user');
+    const userName = user?.displayName ? `、${user.displayName.split(' ')[0]}さん` : '';
+
+    const domains = Object.keys(CONFIG.domains);
+    const scores = store.get('domainScores') || {};
+    const totalRecordsToday = domains.reduce((sum, d) => {
+      const cats = Object.keys(CONFIG.domains[d].categories || {});
+      cats.forEach(cat => {
+        const entries = store.getDomainData(d, cat, 1);
+        if (entries.length > 0) {
+          const last = new Date(entries[entries.length - 1].timestamp);
+          if (last.toDateString() === now.toDateString()) sum++;
+        }
+      });
+      return sum;
+    }, 0);
+
+    const avgScore = domains.length
+      ? Math.round(domains.reduce((s, d) => s + (scores[d] || 0), 0) / domains.length)
+      : 0;
+
+    const scoreTrend = avgScore >= 70 ? '良好' : avgScore >= 40 ? '普通' : '要注意';
+    const trendColor = avgScore >= 70 ? 'var(--success)' : avgScore >= 40 ? 'var(--warning)' : 'var(--danger)';
+
+    return `<div class="daily-overview-card">
+      <div class="doc-header">
+        <div class="doc-greeting">
+          <div class="doc-date">${dateStr}</div>
+          <div class="doc-hello">${greeting}${userName}</div>
+        </div>
+        <div class="doc-summary">
+          <div class="doc-stat">
+            <div class="doc-stat-val" style="color:${trendColor}">${avgScore}</div>
+            <div class="doc-stat-label">総合スコア</div>
+          </div>
+          <div class="doc-stat">
+            <div class="doc-stat-val">${totalRecordsToday}</div>
+            <div class="doc-stat-label">今日の記録</div>
+          </div>
+          <div class="doc-stat">
+            <div class="doc-stat-val" style="color:${trendColor}">${scoreTrend}</div>
+            <div class="doc-stat-label">状態</div>
+          </div>
+        </div>
+      </div>
+      <div class="doc-domains">
+        ${domains.map(d => {
+          const s = scores[d] || 0;
+          const cfg = CONFIG.domains[d];
+          const bar = Math.max(4, s);
+          return `<div class="doc-domain" onclick="app.switchDomain('${d}')" title="${i18n.t(d)}: ${s}点">
+            <div class="doc-domain-bar" style="height:${bar}px;background:${cfg.color}"></div>
+            <div class="doc-domain-label">${cfg.icon || d.charAt(0)}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  },
+
   renderHome(domain) {
     const domainConfig = CONFIG.domains[domain];
     const score = store.calculateDomainScore(domain);
@@ -29,6 +93,7 @@ var Pages = {
 
     // Quick input bar
     let html = `<div class="page-home">
+      ${this.renderDailyOverview()}
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
