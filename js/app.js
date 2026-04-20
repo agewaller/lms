@@ -29,6 +29,8 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        // Show onboarding for first-time users
+        setTimeout(() => this.showOnboarding(), 500);
       } else {
         this.stopInboxPolling();
       }
@@ -1953,6 +1955,94 @@ var App = class App {
   closeModal() {
     const overlay = document.getElementById('modal-overlay');
     if (overlay) overlay.classList.remove('active');
+  }
+
+  // ─── Onboarding Wizard ───
+  showOnboarding() {
+    if (store.get('onboardingComplete')) return;
+    if (document.getElementById('onboarding-overlay')) return;
+
+    const steps = [
+      {
+        icon: '◈',
+        title: 'LMSへようこそ',
+        body: '意識・健康・時間・仕事・関係・資産の6つの領域を、まるごとサポートします。まず、あなたが一番気になる領域を教えてください。'
+      },
+      {
+        icon: '📝',
+        title: '毎日の記録から始めましょう',
+        body: '「記録する」ページで体調・時間・気持ちをメモするだけ。難しいことは一切ありません。ひと言でもOKです。'
+      },
+      {
+        icon: '◈',
+        title: 'アドバイザーに相談できます',
+        body: '「相談する」ページで、日々の悩みや疑問を自由に入力してください。あなたの記録をもとに、最適なアドバイスをお届けします。'
+      }
+    ];
+
+    const domains = Object.values(CONFIG.domains);
+    let currentStep = 0;
+
+    const renderStep = (idx) => {
+      const overlay = document.getElementById('onboarding-overlay');
+      if (!overlay) return;
+
+      const dotsHtml = steps.map((_, i) =>
+        `<div class="onboarding-dot ${i === idx ? 'active' : ''}"></div>`
+      ).join('');
+
+      let stepContent = '';
+      if (idx === 0) {
+        const domainGrid = domains.map(d =>
+          `<button class="onboarding-domain-btn" onclick="app.onboardingSelectDomain('${d.id}',this)"
+            style="border-top: 3px solid ${d.color}">
+            <div>${d.icon}</div>
+            <div>${d.name}</div>
+          </button>`
+        ).join('');
+        stepContent = `<div class="onboarding-domains">${domainGrid}</div>`;
+      }
+
+      overlay.innerHTML = `<div class="onboarding-card">
+        <div class="onboarding-dots">${dotsHtml}</div>
+        <div class="onboarding-icon">${steps[idx].icon}</div>
+        <h2>${steps[idx].title}</h2>
+        <p>${steps[idx].body}</p>
+        ${stepContent}
+        <div style="display:flex;gap:10px;justify-content:center">
+          ${idx > 0 ? `<button class="btn btn-secondary" onclick="app.onboardingStep(${idx-1})">戻る</button>` : ''}
+          ${idx < steps.length - 1
+            ? `<button class="btn btn-primary" onclick="app.onboardingStep(${idx+1})">次へ</button>`
+            : `<button class="btn btn-primary" onclick="app.onboardingFinish()">始める</button>`
+          }
+        </div>
+      </div>`;
+    };
+
+    const overlay = document.createElement('div');
+    overlay.id = 'onboarding-overlay';
+    overlay.className = 'onboarding-overlay';
+    document.body.appendChild(overlay);
+    renderStep(0);
+
+    this._onboardingRenderStep = renderStep;
+  }
+
+  onboardingStep(idx) {
+    if (this._onboardingRenderStep) this._onboardingRenderStep(idx);
+  }
+
+  onboardingSelectDomain(domainId, btn) {
+    document.querySelectorAll('.onboarding-domain-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    store.set('currentDomain', domainId);
+  }
+
+  onboardingFinish() {
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) overlay.remove();
+    store.set('onboardingComplete', true);
+    Components.showToast('ようこそ！まずは「記録する」から始めてみましょう', 'success');
   }
 };
 

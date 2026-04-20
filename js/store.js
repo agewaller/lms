@@ -109,7 +109,13 @@ var Store = class Store {
 
       // Notifications
       notifications: [],
-      unreadCount: 0
+      unreadCount: 0,
+
+      // Streak (連続記録日数)
+      streakDays: 0,
+      streakLastDate: null,
+      streakLongest: 0,
+      onboardingComplete: false
     };
 
     this.listeners = new Map();
@@ -182,7 +188,8 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'streakDays', 'streakLastDate', 'streakLongest', 'onboardingComplete'
     ];
   }
 
@@ -224,7 +231,39 @@ var Store = class Store {
       this.notify(key, this.state[key]);
       this.saveToStorage(key, this.state[key]);
     }
+    this.updateStreak();
     return entry;
+  }
+
+  // ─── Streak Tracking ───
+  updateStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    const last = this.state.streakLastDate;
+
+    if (last === today) return; // Already counted today
+
+    if (last) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yStr = yesterday.toISOString().slice(0, 10);
+      if (last === yStr) {
+        this.state.streakDays = (this.state.streakDays || 0) + 1;
+      } else {
+        this.state.streakDays = 1; // Streak broken
+      }
+    } else {
+      this.state.streakDays = 1;
+    }
+
+    this.state.streakLastDate = today;
+    if (this.state.streakDays > (this.state.streakLongest || 0)) {
+      this.state.streakLongest = this.state.streakDays;
+    }
+
+    this.saveToStorage('streakDays', this.state.streakDays);
+    this.saveToStorage('streakLastDate', this.state.streakLastDate);
+    this.saveToStorage('streakLongest', this.state.streakLongest);
+    this.notify('streakDays', this.state.streakDays);
   }
 
   getDomainData(domain, category, days) {

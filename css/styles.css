@@ -496,8 +496,38 @@ select.form-input { appearance: auto; }
   padding: 28px; box-shadow: var(--shadow);
 }
 .fi-icon { font-size: 32px; margin-bottom: 12px; }
+.feature-icon { font-size: 24px; color: var(--accent); margin-bottom: 12px; }
 .feature-item h3 { font-size: 20px; margin-bottom: 10px; }
 .feature-item p { font-size: 16px; color: var(--text-light); line-height: 1.9; }
+
+/* Steps */
+.steps-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 32px; margin-top: 40px; text-align: center;
+}
+.step-item { padding: 24px; }
+.step-num {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-size: 22px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+}
+.step-item h3 { font-size: 18px; margin-bottom: 10px; }
+.step-item p { font-size: 15px; color: var(--text-light); line-height: 1.8; }
+
+/* Testimonials */
+.testimonial-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px; margin-top: 40px;
+}
+.testimonial-card {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 28px; box-shadow: var(--shadow); text-align: left;
+  border-left: 4px solid var(--accent);
+}
+.testimonial-text { font-size: 15px; line-height: 1.9; color: var(--text); margin-bottom: 16px; font-style: italic; }
+.testimonial-author { font-size: 13px; color: var(--text-light); font-weight: 500; }
 
 /* Login Section */
 .lp-login-section { display: flex; justify-content: center; padding: 60px 20px; }
@@ -1796,4 +1826,108 @@ body.is-admin .admin-only { display: flex; }
   .sub-nav-btn span:last-child { display: none; }
   .sim-cards { grid-template-columns: 1fr; }
   .top-bar-title { font-size: 13px; }
+}
+
+/* ─── Streak Banner ─── */
+.streak-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #fff7ed, #fef3c7);
+  border: 1px solid #fbbf24;
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+.streak-flame {
+  font-size: 20px;
+  color: #f59e0b;
+}
+.streak-text {
+  font-weight: 600;
+  color: #92400e;
+}
+.streak-sub {
+  color: #b45309;
+  font-size: 12px;
+  margin-left: auto;
+}
+
+/* ─── Onboarding Wizard ─── */
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.onboarding-card {
+  background: var(--bg-primary);
+  border-radius: var(--radius);
+  padding: 40px 32px;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  text-align: center;
+}
+.onboarding-step {
+  display: none;
+}
+.onboarding-step.active {
+  display: block;
+}
+.onboarding-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+.onboarding-card h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+.onboarding-card p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.onboarding-domains {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.onboarding-domain-btn {
+  padding: 12px 8px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s;
+  color: var(--text-primary);
+}
+.onboarding-domain-btn:hover, .onboarding-domain-btn.selected {
+  border-color: var(--accent);
+  background: rgba(108,99,255,0.08);
+}
+.onboarding-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+.onboarding-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.2s;
+}
+.onboarding-dot.active {
+  background: var(--accent);
 }

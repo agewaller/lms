@@ -36,6 +36,17 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>`;
 
+    // Streak banner
+    const streak = store.get('streakDays') || 0;
+    const longest = store.get('streakLongest') || 0;
+    if (streak >= 2) {
+      html += `<div class="streak-banner">
+        <span class="streak-flame">◆</span>
+        <span class="streak-text">${streak}日連続記録中！</span>
+        <span class="streak-sub">最長記録: ${longest}日</span>
+      </div>`;
+    }
+
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
       html += this.renderStockAnalysisWidget();
