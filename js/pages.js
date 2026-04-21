@@ -293,6 +293,35 @@ var Pages = {
       </div>`;
     });
 
+    html += `</div>`;
+
+    // Contact list with enrichment data
+    html += `<div class="contact-list-section">
+      <h4>連絡先の詳細</h4>`;
+
+    const sorted = [...contacts].sort((a, b) => (parseInt(a.distance) || 5) - (parseInt(b.distance) || 5));
+    sorted.slice(0, 20).forEach(c => {
+      const level = levels[parseInt(c.distance) || 5] || levels[5];
+      const initial = (c.name || '?').charAt(0);
+      html += `<div class="contact-card">
+        <div class="contact-avatar" style="background:${level.color}">${initial}</div>
+        <div class="contact-main">
+          <div class="contact-name">${c.name || '名前なし'}
+            <span class="contact-distance-badge" style="background:${level.color}20;color:${level.color};margin-left:8px">${level.description}</span>
+          </div>
+          <div class="contact-meta">${[c.company, c.title, c.email, c.phone].filter(Boolean).join(' · ')}</div>
+          ${c._enrichData ? `<div class="contact-enrich">
+            <div class="contact-enrich-label">調査情報</div>
+            ${Components.formatMarkdown(c._enrichData)}
+          </div>` : ''}
+        </div>
+      </div>`;
+    });
+
+    if (contacts.length > 20) {
+      html += `<p style="text-align:center;color:var(--text-muted);font-size:13px">他 ${contacts.length - 20} 名</p>`;
+    }
+
     html += `</div></div>`;
     return html;
   },
@@ -559,8 +588,20 @@ var Pages = {
     const recs = (store.get('recommendations') || []).filter(r => r.domain === domain || !r.domain);
     const actions = (store.get('actionItems') || []).filter(a => a.domain === domain || !a.domain);
 
+    const lastWeekly = store.get('lastWeeklyAnalysis');
+    const weeklyAgo = lastWeekly ? Math.floor((Date.now() - new Date(lastWeekly).getTime()) / 86400000) : null;
+
     let html = `<div class="page-actions">
       <h2>${i18n.t(domain)} - ${i18n.t('actions')}</h2>
+
+      <!-- Weekly holistic analysis card -->
+      <div class="weekly-analysis-card">
+        <h3>週次レポート</h3>
+        <p>6つの領域を横断して分析し、今週の気づきと来週に向けた具体的なアドバイスをお届けします${weeklyAgo !== null ? `（前回: ${weeklyAgo === 0 ? '今日' : weeklyAgo + '日前'}）` : '（まだ実行されていません）'}。</p>
+        <button class="btn btn-primary" onclick="app.runWeeklyAnalysis()">
+          今週のレポートを作成する
+        </button>
+      </div>
 
       <!-- Generate recommendations -->
       <div class="action-generate">

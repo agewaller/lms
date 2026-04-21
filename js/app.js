@@ -25,10 +25,12 @@ var App = class App {
     // Listen for auth changes
     store.on('isAuthenticated', (val) => {
       if (val) {
+        const isNew = !localStorage.getItem('lms_onboarding_done');
         store.set('currentDomain', this.entryDomain || store.get('currentDomain') || 'health');
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        if (isNew) setTimeout(() => this.showOnboarding(), 600);
       } else {
         this.stopInboxPolling();
       }
@@ -158,6 +160,117 @@ var App = class App {
     }
   }
 
+  // ─── Onboarding (first-time user wizard) ───
+  showOnboarding() {
+    if (document.getElementById('onboarding-overlay')) return;
+    this._obStep = 1;
+    this._obDomain = null;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'onboarding-overlay';
+    overlay.className = 'onboarding-overlay';
+    overlay.innerHTML = this._renderObStep(1);
+    document.body.appendChild(overlay);
+  }
+
+  _renderObStep(step) {
+    const dots = [1, 2, 3].map(i =>
+      `<div class="ob-step-dot ${i <= step ? 'active' : ''}"></div>`
+    ).join('');
+
+    if (step === 1) {
+      const user = store.get('user');
+      const name = user?.displayName?.split(' ')[0] || 'ようこそ';
+      return `<div class="onboarding-card">
+        <div class="onboarding-steps">${dots}</div>
+        <h2>${name}さん、LMSへようこそ</h2>
+        <p>人生の6つの領域を一緒に整えましょう。まず、今一番気になることを教えてください。</p>
+        <div class="onboarding-domain-grid">
+          ${Object.entries(CONFIG.domains).map(([id, d]) => `
+            <button class="ob-domain-btn" onclick="app._obSelectDomain('${id}', this)">
+              <span class="ob-domain-num" style="color:${d.color}">${{consciousness:'一',health:'二',time:'三',work:'四',relationship:'五',assets:'六'}[id]}</span>
+              <span class="ob-domain-name">${d.name || id}</span>
+            </button>
+          `).join('')}
+        </div>
+        <div class="onboarding-actions">
+          <button class="btn btn-secondary" onclick="app._obSkip()">あとで</button>
+          <button class="btn btn-primary" id="ob-next" onclick="app._obNext()" disabled>次へ</button>
+        </div>
+      </div>`;
+    }
+
+    if (step === 2) {
+      return `<div class="onboarding-card">
+        <div class="onboarding-steps">${dots}</div>
+        <h2>今日の状態を記録しましょう</h2>
+        <p>短い一言でも大丈夫です。今日の気持ちや出来事を自由に書いてみてください。</p>
+        <div class="form-group">
+          <textarea id="ob-diary" class="form-input" rows="4" placeholder="例：今日は少し疲れ気味。昨日より体が重い気がする。午後に散歩に行ってみた..."></textarea>
+        </div>
+        <div class="onboarding-actions">
+          <button class="btn btn-secondary" onclick="app._obSkip()">スキップ</button>
+          <button class="btn btn-primary" onclick="app._obSaveDiary()">保存して次へ</button>
+        </div>
+      </div>`;
+    }
+
+    if (step === 3) {
+      return `<div class="onboarding-card">
+        <div class="onboarding-steps">${dots}</div>
+        <h2>準備完了です</h2>
+        <p>LMSはあなたの記録を毎日読み解き、今日やるべきことを提案します。毎日少しずつ記録を続けるだけで、人生が整ってきます。</p>
+        <div style="background:var(--accent-bg);border-radius:var(--radius-sm);padding:16px;margin-bottom:20px;font-size:14px;color:var(--text-secondary);line-height:1.8">
+          <strong>まずやること</strong><br>
+          「記録する」から今日の出来事を入力 →「アクション」で提案を受ける
+        </div>
+        <div class="onboarding-actions">
+          <button class="btn btn-primary btn-block" onclick="app._obFinish()">さっそく始める</button>
+        </div>
+      </div>`;
+    }
+    return '';
+  }
+
+  _obSelectDomain(id, el) {
+    document.querySelectorAll('.ob-domain-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    this._obDomain = id;
+    const nextBtn = document.getElementById('ob-next');
+    if (nextBtn) nextBtn.disabled = false;
+  }
+
+  _obNext() {
+    if (this._obDomain) {
+      store.set('currentDomain', this._obDomain);
+    }
+    this._obStep++;
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) overlay.innerHTML = this._renderObStep(this._obStep);
+  }
+
+  _obSaveDiary() {
+    const text = document.getElementById('ob-diary')?.value?.trim();
+    const domain = this._obDomain || store.get('currentDomain');
+    if (text) {
+      store.addDomainEntry(domain, 'entries', { type: 'diary', text });
+    }
+    this._obStep = 3;
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) overlay.innerHTML = this._renderObStep(3);
+  }
+
+  _obSkip() {
+    this._obFinish();
+  }
+
+  _obFinish() {
+    localStorage.setItem('lms_onboarding_done', '1');
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) overlay.remove();
+    this.renderApp();
+  }
+
   // ─── Navigation ───
   switchDomain(domain) {
     store.set('currentDomain', domain);
@@ -179,7 +292,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理', data: 'データ', integrations: '連携' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -417,6 +530,40 @@ var App = class App {
           role: 'assistant', content: '⚠️ ' + e.message, timestamp: new Date().toISOString()
         });
       }
+    }
+  }
+
+  // ─── Weekly Holistic Analysis ───
+  async runWeeklyAnalysis() {
+    Components.showToast('週次レポートを作成しています...', 'info');
+    store.set('isAnalyzing', true);
+    this.renderApp();
+
+    try {
+      // Gather last 7 days from all 6 domains
+      const snapshot = {};
+      Object.keys(CONFIG.domains).forEach(d => {
+        const domainConfig = CONFIG.domains[d];
+        const cats = Object.keys(domainConfig.categories || {});
+        snapshot[d] = [];
+        cats.forEach(cat => {
+          snapshot[d] = snapshot[d].concat(store.getDomainData(d, cat, 7));
+        });
+        snapshot[d] = snapshot[d].slice(0, 10);
+      });
+
+      const text = `直近7日間の記録:\n${JSON.stringify(snapshot, null, 2)}`;
+      const result = await AIEngine.analyze('holistic', 'holistic_weekly', { text });
+
+      store.set('lastWeeklyAnalysis', new Date().toISOString());
+      store.set('weeklyReport', { text: result, timestamp: new Date().toISOString() });
+
+      this.openModal('今週のレポート', `<div class="analysis-content">${Components.formatMarkdown(result)}</div>`);
+    } catch (e) {
+      Components.showToast(e.message, 'error');
+    } finally {
+      store.set('isAnalyzing', false);
+      this.renderApp();
     }
   }
 
