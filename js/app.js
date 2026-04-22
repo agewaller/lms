@@ -10,6 +10,13 @@ var App = class App {
   async init(entryDomain) {
     this.entryDomain = entryDomain || null;
     this.checkOAuthCallbacks();
+    this.registerServiceWorker();
+
+    // Restore daily reminder if set
+    const savedHour = store.get('reminderHour');
+    if (savedHour != null && Notification.permission === 'granted') {
+      this._startReminderTimer(savedHour);
+    }
 
     // Initialize Firebase
     await FirebaseBackend.init();
@@ -20,6 +27,7 @@ var App = class App {
       store.set('currentPage', 'home');
       this.renderApp();
       this.startInboxPolling();
+      setTimeout(() => this.showOnboarding(), 600);
     }
 
     // Listen for auth changes
@@ -29,6 +37,7 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        setTimeout(() => this.showOnboarding(), 600);
       } else {
         this.stopInboxPolling();
       }
@@ -1953,6 +1962,163 @@ var App = class App {
   closeModal() {
     const overlay = document.getElementById('modal-overlay');
     if (overlay) overlay.classList.remove('active');
+  }
+
+  // ─── PWA: Service Worker Registration ───
+  registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            Components.showToast('アプリを更新しました。再読み込みで反映されます。', 'info');
+          }
+        });
+      });
+    }).catch(() => {});
+  }
+
+  // ─── Notifications ───
+  async requestNotificationPermission() {
+    if (!('Notification' in window)) return false;
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied') return false;
+    const result = await Notification.requestPermission();
+    return result === 'granted';
+  }
+
+  scheduleLocalReminder(hourOfDay) {
+    if (!('serviceWorker' in navigator)) return;
+    store.set('reminderHour', hourOfDay);
+    Components.showToast(`毎日${hourOfDay}時にリマインダーをお送りします`, 'success');
+    this._startReminderTimer(hourOfDay);
+  }
+
+  _startReminderTimer(hourOfDay) {
+    if (this._reminderTimer) clearTimeout(this._reminderTimer);
+    const now = new Date();
+    const next = new Date();
+    next.setHours(hourOfDay, 0, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 1);
+    const ms = next - now;
+    this._reminderTimer = setTimeout(() => {
+      if (Notification.permission === 'granted') {
+        new Notification('LMS 記録の時間です', {
+          body: '今日の記録を入力して、健康で豊かな毎日を。',
+          tag: 'lms-daily'
+        });
+      }
+      this._startReminderTimer(hourOfDay);
+    }, ms);
+  }
+
+  // ─── Onboarding ───
+  showOnboarding() {
+    const done = store.get('onboardingDone');
+    if (done) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'onboarding-overlay';
+    overlay.className = 'onboarding-overlay';
+    overlay.innerHTML = this._onboardingStep1Html();
+    document.body.appendChild(overlay);
+  }
+
+  _onboardingStep1Html() {
+    const domains = Object.entries(CONFIG.domains).map(([id, d]) =>
+      `<button class="ob-domain-btn" onclick="app._selectOnboardingDomain('${id}')">
+        <span class="ob-domain-num">${d.kanji || ''}</span>
+        <span class="ob-domain-name">${d.label}</span>
+        <span class="ob-domain-desc">${d.description || ''}</span>
+      </button>`
+    ).join('');
+
+    return `
+      <div class="onboarding-card">
+        <div class="ob-steps"><span class="ob-step active"></span><span class="ob-step"></span><span class="ob-step"></span></div>
+        <h2 class="ob-title">ようこそ、LMSへ</h2>
+        <p class="ob-sub">あなたが今、一番気になっていることはどれですか？<br>ここから始めましょう。</p>
+        <div class="ob-domain-grid">${domains}</div>
+      </div>`;
+  }
+
+  _selectOnboardingDomain(domain) {
+    store.set('currentDomain', domain);
+    const card = document.querySelector('#onboarding-overlay .onboarding-card');
+    if (card) card.innerHTML = this._onboardingStep2Html(domain);
+  }
+
+  _onboardingStep2Html(domain) {
+    return `
+      <div class="ob-steps"><span class="ob-step active"></span><span class="ob-step active"></span><span class="ob-step"></span></div>
+      <h2 class="ob-title">基本プロフィール</h2>
+      <p class="ob-sub">あなたに合ったアドバイスをお届けするため、<br>少しだけ教えてください。</p>
+      <div class="ob-form">
+        <div class="form-group">
+          <label>お名前（ニックネームでも）</label>
+          <input type="text" id="ob-name" class="form-input" placeholder="例：花子">
+        </div>
+        <div class="form-group">
+          <label>年齢</label>
+          <input type="number" id="ob-age" class="form-input" placeholder="例：68" min="0" max="120">
+        </div>
+        <div class="form-group">
+          <label>今の一番の悩み（自由に書いてください）</label>
+          <textarea id="ob-concern" class="form-input" rows="2" placeholder="例：体力が落ちてきた、老後のお金が心配、一人でいることが多い…"></textarea>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="app._onboardingStep3('${domain}')">次へ</button>
+      </div>`;
+  }
+
+  _onboardingStep3(domain) {
+    const name = document.getElementById('ob-name')?.value?.trim();
+    const age = document.getElementById('ob-age')?.value;
+    const concern = document.getElementById('ob-concern')?.value?.trim();
+
+    const profile = store.get('userProfile') || {};
+    if (name) profile.displayName = name;
+    if (age) profile.age = Number(age);
+    if (concern) profile.concerns = concern;
+    store.set('userProfile', profile);
+
+    if (name && firebase.auth().currentUser) {
+      firebase.auth().currentUser.updateProfile({ displayName: name }).catch(() => {});
+    }
+
+    const card = document.querySelector('#onboarding-overlay .onboarding-card');
+    if (card) card.innerHTML = this._onboardingStep3Html();
+  }
+
+  _onboardingStep3Html() {
+    return `
+      <div class="ob-steps"><span class="ob-step active"></span><span class="ob-step active"></span><span class="ob-step active"></span></div>
+      <h2 class="ob-title">毎日の記録リマインダー</h2>
+      <p class="ob-sub">何時ごろ、記録するお知らせを受け取りますか？<br>いつでも設定から変更できます。</p>
+      <div class="ob-reminder-grid">
+        <button class="ob-reminder-btn" onclick="app._onboardingFinish(8)">朝 8時</button>
+        <button class="ob-reminder-btn" onclick="app._onboardingFinish(12)">昼 12時</button>
+        <button class="ob-reminder-btn" onclick="app._onboardingFinish(20)">夜 20時</button>
+        <button class="ob-reminder-btn ob-skip" onclick="app._onboardingFinish(null)">通知なし</button>
+      </div>`;
+  }
+
+  async _onboardingFinish(reminderHour) {
+    if (reminderHour !== null) {
+      const granted = await this.requestNotificationPermission();
+      if (granted) this.scheduleLocalReminder(reminderHour);
+    }
+
+    store.set('onboardingDone', true);
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) {
+      overlay.classList.add('ob-fade-out');
+      setTimeout(() => overlay.remove(), 400);
+    }
+
+    Components.showToast('設定が完了しました。まず記録してみましょう！', 'success');
+    store.set('currentPage', 'record');
+    this.renderApp();
   }
 };
 

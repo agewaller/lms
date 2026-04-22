@@ -780,6 +780,33 @@ var Pages = {
         <button class="btn btn-secondary" onclick="document.getElementById('calImport').click()">カレンダーファイルを取り込む</button>
       </div>` : ''}
 
+      <!-- Notification / Reminder -->
+      <div class="settings-section">
+        <h3>通知・リマインダー</h3>
+        <p style="margin-bottom:12px;color:var(--text-secondary)">毎日の記録忘れを防ぐ通知をお届けします。</p>
+        ${('Notification' in window) ? `
+        <div class="form-group">
+          <label>通知の許可</label>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span id="notif-status" style="font-size:13px;color:var(--text-secondary)">
+              ${Notification.permission === 'granted' ? '✓ 許可済み' : Notification.permission === 'denied' ? '✗ ブロック中（ブラウザ設定から変更）' : '未設定'}
+            </span>
+            ${Notification.permission === 'default' ? `<button class="btn btn-sm btn-primary" onclick="app.requestNotificationPermission().then(g=>{ document.getElementById('notif-status').textContent = g ? '✓ 許可済み' : '未設定'; })">許可する</button>` : ''}
+          </div>
+        </div>
+        <div class="form-group">
+          <label>リマインダーの時間</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            ${[7,8,9,12,18,19,20,21].map(h => {
+              const saved = store.get('reminderHour');
+              const active = saved === h;
+              return `<button class="btn btn-sm ${active ? 'btn-primary' : 'btn-secondary'}" onclick="app.scheduleLocalReminder(${h})">${h}時</button>`;
+            }).join('')}
+            ${store.get('reminderHour') != null ? `<button class="btn btn-sm btn-danger" onclick="store.set('reminderHour',null);app.renderApp()">解除</button>` : ''}
+          </div>
+        </div>` : `<p style="color:var(--text-muted);font-size:13px;">このブラウザは通知に対応していません。</p>`}
+      </div>
+
       <!-- Logout -->
       <div class="settings-section">
         <button class="btn btn-danger" onclick="app.logout()">🚪 ${i18n.t('logout')}</button>
@@ -1673,7 +1700,7 @@ var Pages = {
           <label>Fitbit Client ID <span class="mode-badge ${CONFIG.oauthClientIds?.fitbit ? 'mode-direct' : 'mode-proxy'}">${CONFIG.oauthClientIds?.fitbit ? '設定済' : '未設定'}</span></label>
           <input type="text" id="oauthFitbit" class="form-input"
             value="${CONFIG.oauthClientIds?.fitbit || ''}"
-            placeholder="XXXXXX">
+            placeholder="123ABC">
           <div class="input-help">Fitbit 活動・睡眠データ用</div>
         </div>
 
