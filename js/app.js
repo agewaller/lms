@@ -1452,7 +1452,16 @@ var App = class App {
   }
 
   parseAndSaveObservation(aiResponse) {
-    // Try to extract JSON from AI response to auto-populate observation
+    // ZenTrack module: full structured parse + cross-domain routing
+    if (typeof ZenTrack !== 'undefined' && ZenTrack.parseResponse) {
+      const parsed = ZenTrack.parseResponse(aiResponse);
+      if (parsed) {
+        ZenTrack.saveObservation(parsed);
+        return;
+      }
+    }
+
+    // Fallback: legacy minimal extraction
     try {
       const jsonMatch = aiResponse.match(/\{[\s\S]*"conscious_focus"[\s\S]*\}/);
       if (jsonMatch) {
@@ -1477,7 +1486,6 @@ var App = class App {
         });
       }
     } catch (e) {
-      // JSON parsing failed, observation can be entered manually
       console.warn('Auto-observation parse failed:', e);
     }
   }
