@@ -12,7 +12,7 @@
 #
 # Or keep both as named environments inside this file.
 
-name = "lms-api-proxy"
+name = "lms"
 main = "worker/anthropic-proxy.js"
 compatibility_date = "2024-01-01"
 
