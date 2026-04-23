@@ -125,6 +125,12 @@ var ZenTrack = {
         energy_count:  json.signals?.energy_count ?? 0
       },
 
+      // ─── domainScores (5ドメイン 0-5 スコア) ───
+      domainScores: this._normalizeDomainScores(json),
+
+      // ─── timeUsage (4カテゴリ %) ───
+      timeUsage: this._normalizeTimeUsage(json),
+
       // ─── raw_bullets (フル版の箇条書き保存) ───
       rawBullets: Array.isArray(json.raw_bullets) ? json.raw_bullets : [],
 
@@ -237,6 +243,37 @@ var ZenTrack = {
     };
   },
 
+  _normalizeDomainScores(json) {
+    const s = json.summary || {};
+    const d = json.details || {};
+    const scores = s.domain_scores || s.scores || json.domain_scores || {};
+    const clamp = (v) => v == null ? null : Math.max(0, Math.min(5, Number(v) || 0));
+    return {
+      health: clamp(scores.health ?? s.health_score ?? null),
+      time:   clamp(scores.time ?? s.time_quality ?? s.time_score ?? null),
+      work:   clamp(scores.work ?? s.work_score ?? null),
+      trust:  clamp(scores.trust ?? scores.credit ?? s.trust_score ?? null),
+      assets: clamp(scores.assets ?? s.assets_score ?? null)
+    };
+  },
+
+  _normalizeTimeUsage(json) {
+    const t = json.details?.time || json.details?.time_usage || json.time_usage || {};
+    if (typeof t === 'string') return null;
+    const val = (v) => (typeof v === 'number' ? v : null);
+    const vc = val(t.value_creation ?? t.kachi ?? t.creation);
+    const fd = val(t.foundation ?? t.kiban ?? t.building);
+    const mt = val(t.maintenance ?? t.iji ?? t.maint);
+    const ws = val(t.waste ?? t.rouhi ?? t.loss);
+    if (vc == null && fd == null && mt == null && ws == null) return null;
+    return {
+      value_creation: vc || 0,
+      foundation: fd || 0,
+      maintenance: mt || 0,
+      waste: ws || 0
+    };
+  },
+
   // ═══════════════════════════════════════════════════════════
   //  Save: 構造化データ → Store 各ドメインに分配
   // ═══════════════════════════════════════════════════════════
@@ -247,6 +284,9 @@ var ZenTrack = {
     const sig = parsed.signals;
     const nv = parsed.summary?.net_value?.value || 0;
     const date = parsed.meta?.date || new Date().toISOString().slice(0, 10);
+
+    const ds = parsed.domainScores || {};
+    const tu = parsed.timeUsage || {};
 
     const obs = store.addDomainEntry('consciousness', 'observation', {
       // Layer percentages
@@ -263,12 +303,22 @@ var ZenTrack = {
       virtue_count: sig.virtue_count,
       energy_count: sig.energy_count,
       net_value: nv,
+      // Domain scores (0-5 scale)
+      score_health: ds.health,
+      score_time:   ds.time,
+      score_work:   ds.work,
+      score_trust:  ds.trust,
+      score_assets: ds.assets,
+      // Time usage (%)
+      time_value_creation: tu.value_creation ?? null,
+      time_foundation:     tu.foundation ?? null,
+      time_maintenance:    tu.maintenance ?? null,
+      time_waste:          tu.waste ?? null,
       // Metadata
       dominant_layer: cf.dominant,
       date,
       auto_generated: true,
       source: 'zentrack',
-      // Full parsed data for later rendering
       _zentrack: {
         summary: parsed.summary,
         actions: parsed.actions,
@@ -598,5 +648,355 @@ var ZenTrack = {
         🔥 欲 ${s.totalDesire} &nbsp; ✨ 徳 ${s.totalVirtue} &nbsp; ⚡ E ${s.totalEnergy}
       </div>
     </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  Charts: ZenTrack 3-panel chart system
+  //  ① スコア推移  (5-domain line chart, 0-5)
+  //  ② 時間の使い方 (4-category stacked area, 0-100%)
+  //  ③ 注意資源の配分 (8-layer stacked area, 0-100%)
+  // ═══════════════════════════════════════════════════════════
+
+  // ─── Dimension labels (ZenTrack style) ───
+  DIMENSION_LABELS: {
+    '1':   '一次元',
+    '2':   '二次元',
+    '3':   '三次元',
+    '3.5': '三・五次元',
+    '4':   '四次元',
+    '5':   '五次元',
+    '6':   '六次元',
+    '7':   '七次元'
+  },
+
+  SCORE_DOMAINS: [
+    { key: 'score_health', label: '健康', color: '#27AE60' },
+    { key: 'score_time',   label: '時間', color: '#2980B9' },
+    { key: 'score_work',   label: '仕事', color: '#F39C12' },
+    { key: 'score_trust',  label: '信用', color: '#E74C3C' },
+    { key: 'score_assets', label: '資産', color: '#8E44AD' }
+  ],
+
+  TIME_USAGE_SERIES: [
+    { key: 'time_value_creation', label: '価値創出', color: 'rgba(39,174,96,0.6)',  border: '#27AE60' },
+    { key: 'time_foundation',     label: '基盤づくり', color: 'rgba(41,128,185,0.6)', border: '#2980B9' },
+    { key: 'time_maintenance',    label: 'メンテ',   color: 'rgba(243,156,18,0.6)',  border: '#F39C12' },
+    { key: 'time_waste',          label: '浪費',     color: 'rgba(231,76,60,0.45)',  border: '#E74C3C' }
+  ],
+
+  ATTENTION_COLORS: [
+    'rgba(39,174,96,0.55)',   // 一次元
+    'rgba(41,128,185,0.55)',  // 二次元
+    'rgba(243,156,18,0.55)',  // 三次元
+    'rgba(231,76,60,0.45)',   // 三・五次元
+    'rgba(142,68,173,0.55)',  // 四次元
+    'rgba(230,126,34,0.55)',  // 五次元
+    'rgba(26,188,156,0.55)',  // 六次元
+    'rgba(127,140,141,0.55)'  // 七次元
+  ],
+
+  ATTENTION_BORDERS: [
+    '#27AE60', '#2980B9', '#F39C12', '#E74C3C',
+    '#8E44AD', '#E67E22', '#1ABC9C', '#7F8C8D'
+  ],
+
+  // ─── Build dense day list ───
+  _dayList(days) {
+    const list = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      list.push(d.toISOString().slice(0, 10));
+    }
+    return list;
+  },
+
+  _dayLabels(dayList) {
+    return dayList.map(d => {
+      const [, m, day] = d.split('-');
+      return `${parseInt(m)}/${parseInt(day)}`;
+    });
+  },
+
+  // ─── Index observations by date ───
+  _obsByDate(days) {
+    const raw = store.getDomainData('consciousness', 'observation', days + 30) || [];
+    const byDate = {};
+    raw.forEach(o => {
+      const d = o.date || (o.timestamp || '').slice(0, 10);
+      if (d) byDate[d] = o;
+    });
+    return byDate;
+  },
+
+  // ─── Linear interpolation helper (same logic as Pages.buildConsciousnessTrendData) ───
+  _interpolateSeries(dayList, byDate, field) {
+    const knownDays = dayList.filter(d => byDate[d] && byDate[d][field] != null);
+    if (knownDays.length === 0) return dayList.map(() => null);
+
+    const dateDiff = (a, b) => (new Date(b) - new Date(a)) / 86400000;
+
+    return dayList.map(day => {
+      if (byDate[day] && byDate[day][field] != null) return byDate[day][field];
+      let leftDay = null, rightDay = null;
+      for (const kd of knownDays) { if (kd <= day) leftDay = kd; }
+      for (let i = knownDays.length - 1; i >= 0; i--) { if (knownDays[i] >= day) rightDay = knownDays[i]; }
+      if (!leftDay && !rightDay) return null;
+      if (!leftDay) return byDate[rightDay][field];
+      if (!rightDay) return byDate[leftDay][field];
+      if (leftDay === rightDay) return byDate[leftDay][field];
+      const span = dateDiff(leftDay, rightDay);
+      if (span <= 0) return byDate[leftDay][field];
+      const t = dateDiff(leftDay, day) / span;
+      const lv = byDate[leftDay][field];
+      const rv = byDate[rightDay][field];
+      return lv + (rv - lv) * t;
+    });
+  },
+
+  // ─── Normalize stacked series so each day sums to target (e.g. 100) ───
+  _normalizeStacked(dayList, seriesMap, target = 100) {
+    return dayList.map((_, i) => {
+      const vals = {};
+      let sum = 0;
+      Object.entries(seriesMap).forEach(([key, arr]) => {
+        const v = Math.max(0, arr[i] || 0);
+        vals[key] = v;
+        sum += v;
+      });
+      if (sum <= 0) return vals;
+      Object.keys(vals).forEach(k => { vals[k] = (vals[k] / sum) * target; });
+      return vals;
+    });
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  Render: 3-panel chart HTML
+  // ═══════════════════════════════════════════════════════════
+  renderCharts() {
+    const observations = store.getDomainData('consciousness', 'observation', 60) || [];
+    if (observations.length === 0) {
+      return `<div class="zt-charts">
+        <h3>禅トラック ダッシュボード</h3>
+        ${Components.emptyState('📊', 'まだ観測データがありません',
+          'Plaudで録音するか文字起こしを取り込むと、禅トラック分析結果がここにグラフとして表示されます')}
+      </div>`;
+    }
+
+    const range = store.get('consciousnessTrendRange') || 30;
+
+    return `<div class="zt-charts">
+      <div class="zt-charts-header">
+        <h3>禅トラック ダッシュボード</h3>
+        <div class="zt-range-tabs">
+          ${[7, 30, 60].map(d => `
+            <button class="zt-range-btn ${range === d ? 'active' : ''}"
+              onclick="app.setConsciousnessTrendRange(${d})">${d === 7 ? '日次' : d === 30 ? '月次' : '全期間'}</button>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="zt-chart-card">
+        <h4>スコア推移</h4>
+        <div class="zt-chart-wrap zt-chart-score">
+          <canvas id="ztScoreChart"></canvas>
+        </div>
+      </div>
+
+      <div class="zt-chart-card">
+        <h4>時間の使い方</h4>
+        <div class="zt-chart-wrap zt-chart-time">
+          <canvas id="ztTimeChart"></canvas>
+        </div>
+      </div>
+
+      <div class="zt-chart-card">
+        <h4>注意資源の配分</h4>
+        <div class="zt-chart-wrap zt-chart-attention">
+          <canvas id="ztAttentionChart"></canvas>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  Init: Chart.js instantiation (call after DOM insert)
+  // ═══════════════════════════════════════════════════════════
+  _charts: {},
+
+  destroyCharts() {
+    Object.values(this._charts).forEach(c => { try { c.destroy(); } catch (_) {} });
+    this._charts = {};
+  },
+
+  initCharts() {
+    if (typeof Chart === 'undefined') return;
+    this.destroyCharts();
+
+    const days = store.get('consciousnessTrendRange') || 30;
+    const dayList = this._dayList(days);
+    const labels = this._dayLabels(dayList);
+    const byDate = this._obsByDate(days);
+    const hasData = dayList.some(d => !!byDate[d]);
+    if (!hasData) return;
+
+    this._initScoreChart(dayList, labels, byDate);
+    this._initTimeChart(dayList, labels, byDate);
+    this._initAttentionChart(dayList, labels, byDate);
+  },
+
+  // ─── ① スコア推移 (Line chart, 0-5) ───
+  _initScoreChart(dayList, labels, byDate) {
+    const canvas = document.getElementById('ztScoreChart');
+    if (!canvas) return;
+
+    const datasets = this.SCORE_DOMAINS.map(sd => {
+      const data = this._interpolateSeries(dayList, byDate, sd.key);
+      return {
+        label: sd.label,
+        data,
+        borderColor: sd.color,
+        backgroundColor: 'transparent',
+        borderWidth: 2.5,
+        tension: 0.4,
+        spanGaps: true,
+        pointRadius: (ctx) => byDate[dayList[ctx.dataIndex]] ? 3 : 0,
+        pointBackgroundColor: sd.color
+      };
+    });
+
+    this._charts.score = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 10, padding: 10 } },
+          tooltip: {
+            callbacks: {
+              title: (items) => dayList[items[0].dataIndex],
+              label: (ctx) => {
+                const v = ctx.parsed.y;
+                return v != null ? `${ctx.dataset.label}: ${v.toFixed(1)}` : '';
+              }
+            }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+          y: { min: 0, max: 5, ticks: { stepSize: 1 }, grid: { borderDash: [3, 3] } }
+        }
+      }
+    });
+  },
+
+  // ─── ② 時間の使い方 (Stacked area, 0-100%) ───
+  _initTimeChart(dayList, labels, byDate) {
+    const canvas = document.getElementById('ztTimeChart');
+    if (!canvas) return;
+
+    // Build raw series
+    const rawSeries = {};
+    this.TIME_USAGE_SERIES.forEach(ts => {
+      rawSeries[ts.key] = this._interpolateSeries(dayList, byDate, ts.key);
+    });
+
+    // Check if any time usage data exists
+    const hasAny = Object.values(rawSeries).some(arr => arr.some(v => v != null && v > 0));
+    if (!hasAny) return;
+
+    // Normalize to 100%
+    const normalized = this._normalizeStacked(dayList, rawSeries, 100);
+
+    const datasets = this.TIME_USAGE_SERIES.map(ts => ({
+      label: ts.label,
+      data: normalized.map(n => Math.round((n[ts.key] || 0) * 10) / 10),
+      backgroundColor: ts.color,
+      borderColor: ts.border,
+      borderWidth: 1,
+      fill: true,
+      tension: 0.4,
+      pointRadius: 0,
+      pointHoverRadius: 3
+    }));
+
+    this._charts.time = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 10, padding: 10 } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)}%`
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+          y: { stacked: true, min: 0, max: 100, ticks: { callback: v => v + '%' }, grid: { borderDash: [3, 3] } }
+        }
+      }
+    });
+  },
+
+  // ─── ③ 注意資源の配分 (Stacked area, 0-100%) ───
+  _initAttentionChart(dayList, labels, byDate) {
+    const canvas = document.getElementById('ztAttentionChart');
+    if (!canvas) return;
+
+    const layerFields = this.LAYER_KEYS.map(k => this.STORE_KEY(k));
+
+    // Build raw + normalize
+    const rawSeries = {};
+    layerFields.forEach(field => {
+      rawSeries[field] = this._interpolateSeries(dayList, byDate, field);
+    });
+
+    const normalized = this._normalizeStacked(dayList, rawSeries, 100);
+
+    const datasets = this.LAYER_KEYS.map((k, i) => {
+      const field = this.STORE_KEY(k);
+      return {
+        label: this.DIMENSION_LABELS[k],
+        data: normalized.map(n => Math.round((n[field] || 0) * 10) / 10),
+        backgroundColor: this.ATTENTION_COLORS[i],
+        borderColor: this.ATTENTION_BORDERS[i],
+        borderWidth: 1,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 3
+      };
+    });
+
+    this._charts.attention = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 10, padding: 10 } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}　${ctx.parsed.y.toFixed(0)}%`
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+          y: { stacked: true, min: 0, max: 100, ticks: { callback: v => v + '%' }, grid: { borderDash: [3, 3] } }
+        }
+      }
+    });
   }
 };

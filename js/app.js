@@ -255,11 +255,11 @@ var App = class App {
       }, 100);
     }
 
-    // Initialize consciousness stacked time-series chart
+    // Initialize ZenTrack 3-panel charts (スコア推移 / 時間の使い方 / 注意資源の配分)
     if (domain === 'consciousness' && page === 'home') {
       setTimeout(() => {
-        if (typeof Pages !== 'undefined' && Pages.initConsciousnessTrendChart) {
-          Pages.initConsciousnessTrendChart();
+        if (typeof ZenTrack !== 'undefined' && ZenTrack.initCharts) {
+          ZenTrack.initCharts();
         }
       }, 50);
     }

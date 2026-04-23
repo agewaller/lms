@@ -110,15 +110,15 @@ var Pages = {
 
     // ─── Domain-specific widgets ───
 
-    // Consciousness domain: Plaud settings + ZenTrack report + 7-layer + trend chart + transcript input
+    // Consciousness domain: Plaud settings + ZenTrack charts + report + transcript input
     if (domain === 'consciousness') {
       html += this.renderPlaudSettingsCard();
       if (typeof ZenTrack !== 'undefined') {
+        html += ZenTrack.renderCharts();
         html += ZenTrack.renderWeeklySummary();
         html += ZenTrack.renderLatestReport();
       }
       html += this.renderConsciousnessLayers();
-      html += this.renderConsciousnessTrend();
       html += this.renderTranscriptInput();
     }
 
