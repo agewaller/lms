@@ -1729,6 +1729,66 @@ body.is-admin .admin-only { display: flex; }
   gap: 10px;
 }
 
+/* ─── Trend Chart ─── */
+.trend-chart-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.trend-chart-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  letter-spacing: 0.02em;
+}
+.trend-chart-wrap {
+  position: relative;
+  height: 160px;
+}
+.trend-chart-empty {
+  text-align: center;
+  padding: 32px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ─── Admin Pagination ─── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 0 8px;
+}
+.pagination-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background var(--transition);
+}
+.pagination-btn:hover:not(:disabled) {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.pagination-info {
+  font-size: 13px;
+  color: var(--text-secondary);
+  min-width: 80px;
+  text-align: center;
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
   /* Sidebar off-canvas */

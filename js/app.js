@@ -221,6 +221,11 @@ var App = class App {
       }, 100);
     }
 
+    // Initialize trend chart on home page
+    if (page === 'home') {
+      setTimeout(() => Pages.initTrendChart(domain), 150);
+    }
+
     // Auto-calculate NISA on assets home
     if (domain === 'assets' && page === 'home') {
       setTimeout(() => {
@@ -1387,7 +1392,7 @@ var App = class App {
 
     // Save to Firestore if available
     if (Object.keys(keys).length > 0) {
-      FirebaseBackend.saveApiKeys({ ...AIEngine.getApiKey, ...keys });
+      FirebaseBackend.saveApiKeys({ ...(store.get('_apiKeys') || {}), ...keys });
     }
 
     Components.showToast(i18n.t('saved'), 'success');
@@ -1714,7 +1719,7 @@ var App = class App {
 
     Components.showToast('ユーザー一覧を読み込み中...', 'info');
     try {
-      const snap = await FirebaseBackend.db.collection('users').limit(100).get();
+      const snap = await FirebaseBackend.db.collection('users').limit(500).get();
       const users = [];
       snap.forEach(doc => {
         const data = doc.data();
@@ -1753,14 +1758,16 @@ var App = class App {
 
   // User list filter (admin users tab)
   filterUsers(key, value) {
-    const filter = store.get('_userFilter') || { search: '', type: 'all' };
+    const filter = store.get('_userFilter') || { search: '', type: 'all', page: 0 };
     filter[key] = value;
+    // Reset to first page on any filter change except explicit page navigation
+    if (key !== 'page') filter.page = 0;
     store.set('_userFilter', filter);
     this.renderApp();
   }
 
   clearUserFilter() {
-    store.set('_userFilter', { search: '', type: 'all' });
+    store.set('_userFilter', { search: '', type: 'all', page: 0 });
     this.renderApp();
   }
 

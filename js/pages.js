@@ -52,6 +52,9 @@ var Pages = {
     html += this.getDomainStats(domain);
     html += `</div></div>`;
 
+    // 7-day trend chart
+    html += this.renderTrendChart(domain);
+
     // All domain scores overview (mini)
     html += `<div class="all-domains-overview">
       <h3>${i18n.t('holistic_analysis')}</h3>
@@ -384,6 +387,128 @@ var Pages = {
   },
 
   // ─── Domain-specific stat cards ───
+  // ─── 7-day Trend Chart ───
+  renderTrendChart(domain) {
+    const domainConfig = CONFIG.domains[domain];
+    const color = domainConfig?.color || '#6C63FF';
+    return `<div class="trend-chart-section">
+      <h3>推移（直近7日）</h3>
+      <div class="trend-chart-wrap">
+        <canvas id="trendChart" height="120"></canvas>
+      </div>
+      <div id="trendChartEmpty" class="trend-chart-empty" style="display:none">
+        記録が増えるとグラフが表示されます
+      </div>
+    </div>`;
+  },
+
+  initTrendChart(domain) {
+    const canvas = document.getElementById('trendChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    // Build last-7-days date labels
+    const days = [];
+    const dayLabels = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      days.push(d.toISOString().slice(0, 10));
+      dayLabels.push((d.getMonth() + 1) + '/' + d.getDate());
+    }
+
+    const groupByDay = (records, valueKey) =>
+      days.map(day => {
+        const recs = records.filter(r => (r.timestamp || r.date || '').slice(0, 10) === day);
+        if (!recs.length) return null;
+        return +(recs.reduce((s, r) => s + (parseFloat(r[valueKey]) || 0), 0) / recs.length).toFixed(1);
+      });
+
+    const countByDay = (records) =>
+      days.map(day => records.filter(r => (r.timestamp || r.date || '').slice(0, 10) === day).length);
+
+    const domainColor = CONFIG.domains[domain]?.color || '#6C63FF';
+    let datasets = [];
+
+    switch (domain) {
+      case 'consciousness': {
+        const obs = store.getDomainData('consciousness', 'observation', 30);
+        const vals = groupByDay(obs, 'net_value');
+        datasets = [{ label: '純価値', data: vals, borderColor: domainColor, backgroundColor: domainColor + '22', fill: true, tension: 0.4, spanGaps: true }];
+        break;
+      }
+      case 'health': {
+        const symptoms = store.getDomainData('health', 'symptoms', 30);
+        const sleep = store.getDomainData('health', 'sleepData', 30);
+        datasets = [
+          { label: '体調', data: groupByDay(symptoms, 'condition_level'), borderColor: '#ef4444', backgroundColor: '#ef444422', fill: false, tension: 0.4, spanGaps: true },
+          { label: '睡眠', data: groupByDay(sleep, 'quality'), borderColor: '#3b82f6', backgroundColor: '#3b82f622', fill: false, tension: 0.4, spanGaps: true }
+        ];
+        break;
+      }
+      case 'time': {
+        const logs = store.getDomainData('time', 'entries', 30);
+        datasets = [{ label: '生産性', data: groupByDay(logs, 'productivity'), borderColor: domainColor, backgroundColor: domainColor + '22', fill: true, tension: 0.4, spanGaps: true }];
+        break;
+      }
+      case 'work': {
+        const tasks = store.getDomainData('work', 'tasks', 30);
+        const done = days.map(day => tasks.filter(t => (t.timestamp || '').slice(0, 10) === day && t.status === 'done').length);
+        const total = countByDay(tasks);
+        datasets = [
+          { label: '完了', data: done, borderColor: '#10b981', backgroundColor: '#10b98144', fill: true, tension: 0.3 },
+          { label: '合計', data: total, borderColor: domainColor, backgroundColor: 'transparent', fill: false, tension: 0.3, borderDash: [4, 3] }
+        ];
+        break;
+      }
+      case 'relationship': {
+        const interactions = store.getDomainData('relationship', 'interactions', 30);
+        datasets = [{ label: '交流', data: countByDay(interactions), borderColor: domainColor, backgroundColor: domainColor + '44', fill: true, tension: 0.3 }];
+        break;
+      }
+      case 'assets': {
+        const income = store.getDomainData('assets', 'income', 30);
+        const expenses = store.getDomainData('assets', 'expenses', 30);
+        const incomeByDay = days.map(day => income.filter(r => (r.timestamp || '').slice(0, 10) === day).reduce((s, r) => s + (r.amount || 0), 0));
+        const expenseByDay = days.map(day => expenses.filter(r => (r.timestamp || '').slice(0, 10) === day).reduce((s, r) => s + (r.amount || 0), 0));
+        datasets = [
+          { label: '収入', data: incomeByDay, borderColor: '#10b981', backgroundColor: '#10b98133', fill: true, tension: 0.3 },
+          { label: '支出', data: expenseByDay, borderColor: '#ef4444', backgroundColor: '#ef444433', fill: true, tension: 0.3 }
+        ];
+        break;
+      }
+    }
+
+    // Check if there's any real data
+    const hasData = datasets.some(ds => ds.data.some(v => v !== null && v !== 0));
+    const emptyEl = document.getElementById('trendChartEmpty');
+    if (!hasData) {
+      canvas.style.display = 'none';
+      if (emptyEl) emptyEl.style.display = 'block';
+      return;
+    }
+
+    // Destroy previous instance if any
+    if (canvas._chartInstance) canvas._chartInstance.destroy();
+
+    canvas._chartInstance = new Chart(canvas, {
+      type: 'line',
+      data: { labels: dayLabels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
+          tooltip: { mode: 'index', intersect: false }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+          y: { beginAtZero: true, grid: { color: '#f0f0f0' }, ticks: { font: { size: 11 } } }
+        },
+        interaction: { mode: 'nearest', axis: 'x', intersect: false }
+      }
+    });
+  },
+
   getDomainStats(domain) {
     const stats = [];
 
@@ -1748,12 +1873,13 @@ var Pages = {
 
   // Render the filterable user list
   renderUserListWithFilters(allUsers, adminEmails) {
-    const filter = store.get('_userFilter') || { search: '', type: 'all' };
+    const filter = store.get('_userFilter') || { search: '', type: 'all', page: 0 };
+    const PAGE_SIZE = 20;
+    const currentPage = filter.page || 0;
 
     // Apply filters
     const searchLower = filter.search.toLowerCase();
     const filtered = allUsers.filter(u => {
-      // Text search across multiple fields
       if (searchLower) {
         const haystack = [
           u.displayName, u.email, u.location, u.occupation,
@@ -1761,7 +1887,6 @@ var Pages = {
         ].join(' ').toLowerCase();
         if (!haystack.includes(searchLower)) return false;
       }
-      // Type filter
       if (filter.type === 'admin') {
         if (!adminEmails.includes(u.email)) return false;
       } else if (filter.type === 'subscribed') {
@@ -1774,6 +1899,12 @@ var Pages = {
       }
       return true;
     });
+
+    const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+    const page = Math.min(currentPage, Math.max(0, totalPages - 1));
+    const pageUsers = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+    const start = page * PAGE_SIZE + 1;
+    const end = Math.min((page + 1) * PAGE_SIZE, filtered.length);
 
     return `
       <div class="user-filters">
@@ -1798,13 +1929,13 @@ var Pages = {
       </div>
 
       <div style="margin:12px 0;color:var(--text-secondary);font-size:13px;">
-        ${filtered.length}件を表示中（全${allUsers.length}件）
+        ${filtered.length > 0 ? `${start}〜${end}件を表示中（全${filtered.length}件）` : '0件'}
       </div>
 
       <div class="admin-users-list">
-        ${filtered.length === 0 ? `
+        ${pageUsers.length === 0 ? `
           <p style="padding:20px;text-align:center;color:var(--text-muted);">該当するユーザーがいません</p>
-        ` : filtered.map(u => {
+        ` : pageUsers.map(u => {
           const diseaseCount = (u.diseases || []).length;
           const initial = (u.displayName || u.email || '?').charAt(0).toUpperCase();
           const meta = [];
@@ -1832,6 +1963,14 @@ var Pages = {
           </div>`;
         }).join('')}
       </div>
+
+      ${totalPages > 1 ? `
+        <div class="pagination">
+          <button class="pagination-btn" onclick="app.filterUsers('page', ${page - 1})" ${page === 0 ? 'disabled' : ''}>← 前</button>
+          <span class="pagination-info">${page + 1} / ${totalPages}ページ</span>
+          <button class="pagination-btn" onclick="app.filterUsers('page', ${page + 1})" ${page >= totalPages - 1 ? 'disabled' : ''}>次 →</button>
+        </div>
+      ` : ''}
     `;
   },
 
