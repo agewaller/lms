@@ -59,6 +59,22 @@ lms/
 └── CLAUDE.md                     ← このファイル
 ```
 
+## JS モジュール読み込み順（= 依存順）
+
+`dashboard.html` の `<script>` タグは以下の順序で配置する。逆順にすると `undefined`
+エラーが出る。新モジュールを追加するときは依存するモジュールの**後**に置く。
+
+1. `js/config.js`            ← CONFIG（全設定・プロンプト・ドメイン定義）
+2. `js/store.js`             ← Store（CONFIG 参照）
+3. `js/i18n.js`              ← i18n
+4. `js/components.js`        ← UI 部品（escapeHtml など）
+5. `js/ai-engine.js`         ← AI（CONFIG, Store, Components 参照）
+6. `js/firebase-backend.js`  ← Firebase
+7. `js/affiliate.js` / `js/calendar.js` / `js/integrations.js` / `js/sns-integrations.js`
+8. `js/*-features.js`（assets / work / relationship / time-marketplace）
+9. `js/pages.js`             ← 画面レンダラ（上記すべてを参照）
+10. `js/app.js`              ← メインコントローラ（最後）
+
 ## 6つのライフドメイン
 
 | # | ID | 名前 | 色 | 概要 |
@@ -109,6 +125,51 @@ lms/
 - `CONFIG.inlinePrompts` でクイック分析用
 - 管理者はadmin画面からプロンプトを追加・編集・削除可能
 
+## 絶対にやってはいけないこと
+
+過去に健康日記（agewaller/stock-screener）で実際に発生した障害を禁則化。
+同じアーキテクチャなので LMS でも同じ失敗が再発する。
+
+### ストレージ
+- `localStorage.clear()` を使わない。`store.clearAll()` を使う
+  （`clear()` は Firebase 設定・OAuth トークンも吹き飛ばす）
+- `persistKeys` のキー名を変更しない（既存ユーザーのデータが失われる）
+
+### モバイル互換
+- `confirm()` / `alert()` を使わない（iOS Safari / Chrome Android で
+  ブロック/無視されることがある）。インライン UI（モーダル・トースト）で代替
+- `signInWithPopup` をモバイルで使わない。`signInWithRedirect` を使う
+  （モバイルブラウザのポップアップブロックで詰む）
+
+### API キー・シークレット
+- API キー・Firebase 設定をコードにハードコードしない
+  （必ず管理パネル → `admin/config` or `admin/secrets` 経由）
+- `saveApiKeys` / `clearApiKeys` / プロンプト編集系は `isAdmin()` ガード必須
+- 管理者メール `agewaller@gmail.com` をコードから削除しない
+
+### AI モデル ID
+- Claude の datestamped model id（`claude-3-5-sonnet-20241022` 等）を
+  ハードコードしない。必ず `MODEL_MAP` で CONFIG id → API id に変換する
+  （Anthropic は model id を定期的に rotate するため、ハードコードすると
+  ある日突然 400 エラーになる）
+- OpenAI / Gemini も同じ（`gpt-4o-2024-11-20` 等）
+
+### セキュリティ
+- ユーザー入力を DOM に挿入する前に必ず `Components.escapeHtml()` で escape
+  （XSS 予防。テンプレートリテラル内の `${userInput}` も例外なく escape）
+- URL 抽出の正規表現は ASCII のみ（`[\x21-\x7e]` 系）。日本語文字クラスを
+  含めると URL 末尾の日本語を巻き込んで壊れたリンクを生成する
+
+### 外部リンク
+- Google 翻訳リンクは `translate.goog` サブドメイン形式を使う
+  例: `https://<host-with-dashes>.translate.goog/...?_x_tr_sl=...&_x_tr_tl=ja&_x_tr_hl=ja`
+  旧 `translate.google.com/translate?u=` 形式は 2019 年に廃止済みで
+  クリックすると無限リダイレクトする
+
+### ユーザー向け文言
+- ユーザー画面に「AI」リテラルを出さない（「相談する」「分析」等に言い換え）
+- リリース前に `grep -n '"AI\|>AI\|AIが\|AIを' js/pages.js` でチェック
+
 ## AI 呼び出し
 
 ```javascript
@@ -122,6 +183,26 @@ const result = await AIEngine.analyze(domain, promptType, { text: userInput });
 // 3. CONFIG.inlinePrompts[key] (インライン)
 // 4. フォールバック: universal_daily
 ```
+
+### MODEL_MAP（重要）
+
+`callAnthropic` / `callOpenAI` / `callGemini` は必ず MODEL_MAP 経由で API ID を解決する:
+
+```javascript
+// ❌ 絶対ダメ（Anthropic が id rotate すると死ぬ）
+await fetch('...', { body: JSON.stringify({ model: 'claude-opus-4-20250514' }) });
+
+// ✅ 正しい
+const MODEL_MAP = {
+  'claude-opus-4-6':   'claude-opus-4-6-20260201',   // ここを更新すれば全体が追従
+  'claude-sonnet-4-6': 'claude-sonnet-4-6-20260101',
+  'gpt-4o':            'gpt-4o-2025-12-17',
+  'gemini-pro':        'gemini-2.0-flash',
+};
+const apiId = MODEL_MAP[CONFIG.aiModel] || CONFIG.aiModel;
+```
+
+Vision は `options.imageBase64` が渡されたら自動で image block に切替える実装にする。
 
 ## データフロー
 
@@ -161,6 +242,25 @@ git checkout claude/life-management-system-95hjH
 
 GitHub Pages は main ブランチの push で自動デプロイ。
 Cloudflare Worker は `worker/**` の変更で自動デプロイ（GitHub Actions）。
+
+### キャッシュバスティング（忘れやすい）
+
+静的アセット（`js/*.js`, `css/*.css`）を更新したら **必ず** 各 HTML ファイルの
+`?v=N` パラメータを +1 する。忘れるとブラウザが古い JS をキャッシュから配信し、
+ユーザーには修正が届かない。
+
+```html
+<script src="js/config.js?v=11"></script>  <!-- 10 → 11 にバンプ -->
+```
+
+対象ファイル: `index.html`, `dashboard.html`, `consciousness.html`, `health.html`,
+`time.html`, `work.html`, `relationship.html`, `assets.html`
+
+一括置換コマンド:
+```bash
+# v=10 を v=11 に全ファイル一括で bump
+sed -i '' 's/?v=10/?v=11/g' *.html
+```
 
 ## 壊してはいけないもの
 
