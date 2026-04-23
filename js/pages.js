@@ -1439,6 +1439,10 @@ var Pages = {
     const adminEmails = (store.get('adminEmails') || ['agewaller@gmail.com']);
     const userCount = store.get('_allUsersCount') || 0;
 
+    const forwardCfg = store.get('emailForwardConfig') || { destinations: [], rules: [] };
+    const forwardCount = (forwardCfg.destinations || []).length
+      + (forwardCfg.rules || []).reduce((s, r) => s + ((r.to || []).length), 0);
+
     let html = `<div class="page-admin">
       <div class="admin-tabs">
         <button class="admin-tab ${currentTab === 'prompts' ? 'active' : ''}" onclick="app.setAdminTab('prompts')">
@@ -1458,6 +1462,9 @@ var Pages = {
         </button>
         <button class="admin-tab ${currentTab === 'firebase' ? 'active' : ''}" onclick="app.setAdminTab('firebase')">
           Firebase
+        </button>
+        <button class="admin-tab ${currentTab === 'emailForward' ? 'active' : ''}" onclick="app.setAdminTab('emailForward')">
+          メール転送<span class="tab-count">${forwardCount}</span>
         </button>
         <button class="admin-tab ${currentTab === 'data' ? 'active' : ''}" onclick="app.setAdminTab('data')">
           データ管理
@@ -1918,5 +1925,176 @@ var Pages = {
         </div>
       </div>
     </div>`;
+  },
+
+  // ─── Admin Tab: Email Forwarding ───
+  renderAdminTab_emailForward() {
+    const cfg = store.get('emailForwardConfig') || {
+      enabled: false,
+      receiveAddress: '',
+      workerUrl: '',
+      destinations: [],
+      rules: []
+    };
+
+    // Build FORWARD_MAP preview (* catch-all + per-address rules)
+    const forwardMap = {};
+    (cfg.rules || []).forEach(r => {
+      if (r.from && Array.isArray(r.to) && r.to.length > 0) {
+        forwardMap[r.from.toLowerCase()] = r.to;
+      }
+    });
+    if (cfg.destinations && cfg.destinations.length > 0) {
+      forwardMap['*'] = cfg.destinations;
+    }
+    const forwardMapJson = Object.keys(forwardMap).length > 0
+      ? JSON.stringify(forwardMap)
+      : '';
+    const forwardToCsv = (cfg.destinations || []).join(',');
+
+    const totalDest = (cfg.destinations || []).length
+      + (cfg.rules || []).reduce((s, r) => s + ((r.to || []).length), 0);
+
+    const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    let html = `<div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <h3>メール転送システム</h3>
+        <span class="status-badge ${cfg.enabled ? 'connected' : 'disconnected'}">${cfg.enabled ? '有効' : '無効'}</span>
+      </div>
+      <div class="card-body">
+        <p class="page-desc">ひとつのメールアドレスに届いたメールを、複数のアドレスへ自動転送します。Cloudflare Email Routing + Email Worker で動作。</p>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="efEnabled" ${cfg.enabled ? 'checked' : ''}>
+            転送を有効化
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>受信アドレス</label>
+          <input type="email" id="efReceiveAddress" class="form-input"
+            value="${esc(cfg.receiveAddress)}" placeholder="forward@your-domain.com">
+          <div class="input-help">Cloudflare Email Routing で Worker にルーティングするアドレス</div>
+        </div>
+
+        <div class="form-group">
+          <label>Worker URL (任意)</label>
+          <input type="text" id="efWorkerUrl" class="form-input"
+            value="${esc(cfg.workerUrl)}" placeholder="https://lms-email-forwarder.xxx.workers.dev">
+          <div class="input-help">デプロイ済み Worker の URL。メモ用途</div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="app.saveEmailForwardConfig()">保存</button>
+          <button class="btn btn-secondary" onclick="app.testForwardConfig()">検証</button>
+        </div>
+        <div id="forwardTestResult"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <h3>一括転送先 <span class="tab-count">${(cfg.destinations || []).length}</span></h3>
+        <button class="btn btn-sm btn-primary" onclick="app.addForwardDestination()">+ 宛先を追加</button>
+      </div>
+      <div class="card-body">
+        <p class="page-desc">受信アドレスに届いたすべてのメールを、以下の宛先にブロードキャストします。</p>
+        <div class="forward-list">`;
+
+    if ((cfg.destinations || []).length === 0) {
+      html += `<div class="forward-empty">宛先がありません。「+ 宛先を追加」で追加してください。</div>`;
+    } else {
+      (cfg.destinations || []).forEach((addr, i) => {
+        html += `<div class="forward-item">
+          <input type="email" class="form-input" value="${esc(addr)}" placeholder="person@example.com"
+            oninput="app.updateForwardDestination(${i}, this.value)">
+          <button class="btn btn-sm btn-danger" onclick="app.removeForwardDestination(${i})">削除</button>
+        </div>`;
+      });
+    }
+
+    html += `</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <h3>アドレス別ルール <span class="tab-count">${(cfg.rules || []).length}</span></h3>
+        <button class="btn btn-sm btn-primary" onclick="app.addForwardRule()">+ ルールを追加</button>
+      </div>
+      <div class="card-body">
+        <p class="page-desc">特定の受信アドレスに届いたメールを、指定した宛先グループに振り分けます。ルールは一括転送先より優先されます。</p>
+        <div class="forward-rules">`;
+
+    if ((cfg.rules || []).length === 0) {
+      html += `<div class="forward-empty">ルールがありません。</div>`;
+    } else {
+      (cfg.rules || []).forEach((rule, i) => {
+        html += `<div class="forward-rule">
+          <div class="forward-rule-header">
+            <span class="forward-rule-num">#${i + 1}</span>
+            <button class="btn btn-sm btn-danger" onclick="app.removeForwardRule(${i})">ルール削除</button>
+          </div>
+          <div class="form-group">
+            <label>受信アドレス</label>
+            <input type="email" class="form-input" value="${esc(rule.from)}"
+              placeholder="info@lms-life.com"
+              oninput="app.updateForwardRule(${i}, 'from', this.value)">
+          </div>
+          <div class="form-group">
+            <label>転送先 (カンマ区切り)</label>
+            <input type="text" class="form-input" value="${esc((rule.to || []).join(', '))}"
+              placeholder="a@example.com, b@example.com"
+              oninput="app.updateForwardRule(${i}, 'to', this.value)">
+          </div>
+        </div>`;
+      });
+    }
+
+    html += `</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>デプロイ設定</h3>
+        <span class="tab-count">${totalDest} 宛先</span>
+      </div>
+      <div class="card-body">
+        <p class="page-desc">以下の値を <code>wrangler.toml</code> に設定して <code>wrangler deploy -e email-forwarder</code> でデプロイします。</p>
+
+        <div class="form-group">
+          <label>FORWARD_TO (CSV)</label>
+          <textarea class="form-input" rows="2" readonly>${esc(forwardToCsv)}</textarea>
+          <div class="input-help">一括転送先のみを使う場合</div>
+        </div>
+
+        <div class="form-group">
+          <label>FORWARD_MAP (JSON)</label>
+          <textarea class="form-input" rows="3" readonly>${esc(forwardMapJson)}</textarea>
+          <div class="input-help">ルール + 一括転送先をまとめた設定</div>
+        </div>
+
+        <div class="form-group">
+          <label>wrangler.toml スニペット</label>
+          <textarea class="form-input" rows="6" readonly>[env.email-forwarder]
+name = "lms-email-forwarder"
+main = "worker/email-forwarder.js"
+compatibility_date = "2024-01-01"
+
+[env.email-forwarder.vars]
+FORWARD_MAP = '${forwardMapJson}'</textarea>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-secondary" onclick="app.copyForwardMap()">FORWARD_MAP をコピー</button>
+          <button class="btn btn-secondary" onclick="app.exportForwardConfig()">JSON エクスポート</button>
+        </div>
+      </div>
+    </div>`;
+
+    return html;
   }
 };

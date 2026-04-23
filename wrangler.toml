@@ -2,15 +2,15 @@
 # LMS - Cloudflare Workers configuration
 # ============================================================
 #
-# This project deploys two workers:
-#   1. lms-api-proxy  - Anthropic API proxy (CORS relay)
-#   2. lms-email-ingest - Plaud email receiver + frontend pull API
+# This project deploys three workers:
+#   1. lms-api-proxy       - Anthropic API proxy (CORS relay)
+#   2. lms-email-ingest    - Plaud email receiver + frontend pull API
+#   3. lms-email-forwarder - 1入力→N転送のシンプルなメール転送
 #
-# To deploy each worker, use wrangler with the appropriate config:
+# To deploy each worker, use wrangler with the appropriate environment:
 #   wrangler deploy                                    (deploys main: api-proxy)
-#   wrangler deploy -c wrangler.email.toml             (deploys email ingest)
-#
-# Or keep both as named environments inside this file.
+#   wrangler deploy -e email-ingest                    (deploys email ingest)
+#   wrangler deploy -e email-forwarder                 (deploys email forwarder)
 
 name = "lms-api-proxy"
 main = "worker/anthropic-proxy.js"
@@ -33,3 +33,29 @@ compatibility_date = "2024-01-01"
 # 1. In Cloudflare Dashboard → Email → Email Routing
 # 2. Verify your domain (e.g. inbox.lms-life.com)
 # 3. Add catch-all rule: data-*@inbox.lms-life.com → Worker → lms-email-ingest
+
+# ─── Email Forwarder Worker (1 入力 → N 転送) ───
+#
+# ひとつのメールアドレスに届いたメールを、設定した複数の
+# アドレスに転送するシンプルなフォワーダー。
+#
+# デプロイ前に、Cloudflare Email Routing の
+# "Destination addresses" で転送先アドレスを全て検証しておくこと。
+#
+# [env.email-forwarder]
+# name = "lms-email-forwarder"
+# main = "worker/email-forwarder.js"
+# compatibility_date = "2024-01-01"
+#
+# [env.email-forwarder.vars]
+# # パターン A: 受信アドレスに関係なく同じ宛先へ転送
+# FORWARD_TO = "alice@example.com,bob@example.com,carol@example.com"
+#
+# # パターン B: 受信アドレスごとに転送先を振り分け (JSON)
+# #   "*" は catch-all。FORWARD_MAP が優先されます。
+# # FORWARD_MAP = '{"info@lms-life.com":["a@x.com","b@x.com"],"*":["fallback@x.com"]}'
+#
+# To enable routing:
+# 1. Cloudflare Dashboard → Email → Email Routing → Routes
+# 2. Add rule: forward@your-domain → Worker → lms-email-forwarder
+# 3. すべての転送先アドレスを "Destination addresses" で検証
