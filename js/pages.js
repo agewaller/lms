@@ -269,6 +269,9 @@ var Pages = {
     const lists = store.getDomainData('health', 'shoppingLists') || [];
     const latestPlan = plans.length ? plans[plans.length - 1] : null;
     const latestList = lists.length ? lists[lists.length - 1] : null;
+    const esc = (s) => String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 
     let body = '';
     if (latestPlan) {
@@ -284,11 +287,10 @@ var Pages = {
             const m = planObj[d]?.[slot];
             const title = m?.title || '—';
             const id = m?.recipe_id || '';
-            const safe = title.replace(/'/g, "\\'");
             return `<td class="meal-cell">
               <div class="meal-slot">${slotLabels[slot]}</div>
-              <div class="meal-title">${title}</div>
-              ${id ? `<button class="btn btn-sm btn-link" onclick="app.openRecipeSheet('${id}','${safe}')">手順を見る</button>` : ''}
+              <div class="meal-title">${esc(title)}</div>
+              ${id ? `<button class="btn btn-sm btn-link" data-recipe-id="${esc(id)}" data-recipe-title="${esc(title)}" onclick="app.openRecipeSheet(this.dataset.recipeId, this.dataset.recipeTitle)">手順を見る</button>` : ''}
             </td>`;
           }).join('')}
         </tr>
@@ -296,8 +298,8 @@ var Pages = {
 
       body = `
         <div class="meal-plan-summary">
-          <div class="meal-plan-meta">週はじまり: ${latestPlan.week_start_date || '-'}</div>
-          ${latestPlan.note ? `<p class="meal-plan-note">${latestPlan.note}</p>` : ''}
+          <div class="meal-plan-meta">週はじまり: ${esc(latestPlan.week_start_date || '-')}</div>
+          ${latestPlan.note ? `<p class="meal-plan-note">${esc(latestPlan.note)}</p>` : ''}
         </div>
         <div class="meal-plan-grid-wrap">
           <table class="meal-plan-grid">

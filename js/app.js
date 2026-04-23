@@ -2067,6 +2067,22 @@ var App = class App {
 
       setMsg('好みと体調にあわせて整えています…');
       const plan = await MealPlanner.buildWeeklyMenu(fetched);
+
+      // 献立に使う前に、参照される可能性のあるレシピを先に Firestore へ保存。
+      // こうしておくと、ページを閉じ直してから「手順を見る」を押してもレシピ
+      // 本体（材料と手順）を再取得できる。
+      const referencedIds = new Set();
+      Object.values(plan.plan || {}).forEach(day => {
+        ['breakfast', 'lunch', 'dinner'].forEach(slot => {
+          const rid = day?.[slot]?.recipe_id;
+          if (rid) referencedIds.add(String(rid));
+        });
+      });
+      const existing = new Set((store.get('health_recipes') || []).map(r => String(r.recipe_id)));
+      fetched
+        .filter(r => referencedIds.has(String(r.recipe_id)) && !existing.has(String(r.recipe_id)))
+        .forEach(r => MealPlanner.saveRecipe(r));
+
       MealPlanner.savePlan(plan);
 
       setMsg('買い物リストを作っています…');
@@ -2090,15 +2106,18 @@ var App = class App {
     if (!latest) { Components.showToast('買い物リストはまだありません', 'info'); return; }
     let items = [];
     try { items = JSON.parse(latest.items || '[]'); } catch (e) { /* ignore */ }
+    const esc = (s) => String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 
     const rows = items.map((it, idx) => `
       <tr>
         <td><input type="checkbox" ${it.purchased ? 'checked' : ''} onchange="app.toggleShoppingItem(${idx}, this.checked)"></td>
-        <td>${it.name}</td>
-        <td>${it.qty || ''} ${it.unit || ''}</td>
+        <td>${esc(it.name)}</td>
+        <td>${esc(it.qty || '')} ${esc(it.unit || '')}</td>
         <td>
-          ${it.affiliate?.rakuten ? `<a href="${it.affiliate.rakuten}" target="_blank" rel="noopener" onclick="AffiliateEngine.trackClick('rakuten','${it.name}','health')">楽天で買う</a>` : ''}
-          ${it.affiliate?.amazon ? `<a href="${it.affiliate.amazon}" target="_blank" rel="noopener" onclick="AffiliateEngine.trackClick('amazon_jp','${it.name}','health')" style="margin-left:8px">Amazonで探す</a>` : ''}
+          ${it.affiliate?.rakuten ? `<a href="${esc(it.affiliate.rakuten)}" target="_blank" rel="noopener" data-store="rakuten" data-name="${esc(it.name)}" onclick="AffiliateEngine.trackClick(this.dataset.store,this.dataset.name,'health')">楽天で買う</a>` : ''}
+          ${it.affiliate?.amazon ? `<a href="${esc(it.affiliate.amazon)}" target="_blank" rel="noopener" data-store="amazon_jp" data-name="${esc(it.name)}" onclick="AffiliateEngine.trackClick(this.dataset.store,this.dataset.name,'health')" style="margin-left:8px">Amazonで探す</a>` : ''}
         </td>
       </tr>
     `).join('');
@@ -2151,11 +2170,14 @@ var App = class App {
     this.openModal(recipe.title || 'レシピ', '<div class="loading">整えています…</div>');
     try {
       const html = await MealPlanner.renderOneSheet(recipe, { id: 'recipeSheet' });
+      const safeName = String(recipe.title || 'recipe').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60);
+      const filename = safeName + '.pdf';
+      const escAttr = (s) => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
       const body = `
         ${html}
         <div class="form-actions sheet-actions no-print">
           <button class="btn btn-primary" onclick="MealPlanner.printOneSheet()">印刷する</button>
-          <button class="btn btn-secondary" onclick="MealPlanner.exportPdf('recipeSheet','${(recipe.title || 'recipe').replace(/'/g, '')}.pdf')">PDFで保存</button>
+          <button class="btn btn-secondary" data-filename="${escAttr(filename)}" onclick="MealPlanner.exportPdf('recipeSheet', this.dataset.filename)">PDFで保存</button>
           <button class="btn btn-secondary" onclick="app.closeModal()">閉じる</button>
         </div>
       `;
