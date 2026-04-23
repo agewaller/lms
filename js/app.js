@@ -1954,6 +1954,218 @@ var App = class App {
     const overlay = document.getElementById('modal-overlay');
     if (overlay) overlay.classList.remove('active');
   }
+
+  // ─── Rakuten admin settings ─────────────────────────────────
+  async saveRakutenSettings() {
+    const appId = document.getElementById('rakutenAppId')?.value || '';
+    const affId = document.getElementById('rakutenAffiliateId')?.value || '';
+    const ep    = document.getElementById('rakutenEndpoint')?.value || '';
+
+    // applicationId は伏せ字「••••••••」のまま保存しない
+    if (appId && !appId.includes('•')) {
+      CONFIG.rakuten.applicationId = appId;
+      try {
+        await FirebaseBackend.saveApiKeys({ rakuten_applicationId: appId });
+      } catch (e) { console.warn('rakuten secret save failed', e); }
+    }
+    CONFIG.rakuten.affiliateId = affId;
+    CONFIG.rakuten.endpoint = ep;
+
+    // 公開情報は admin/config 経由で全ユーザーに配る
+    try {
+      if (FirebaseBackend.isAdmin && FirebaseBackend.isAdmin() && FirebaseBackend.db) {
+        await FirebaseBackend.db.collection('admin').doc('config').set({
+          rakuten: { affiliateId: affId, endpoint: ep }
+        }, { merge: true });
+      }
+    } catch (e) { console.warn('rakuten public config save failed', e); }
+
+    Components.showToast('レシピ設定を保存しました', 'success');
+  }
+
+  async testRakutenConnection() {
+    const out = document.getElementById('connectionResult');
+    if (out) out.innerHTML = '接続中…';
+    const res = await MealPlanner.testConnection();
+    if (out) out.innerHTML = `<div class="${res.ok ? 'success' : 'error'}">${res.ok ? '✅' : '⚠️'} ${res.message}</div>`;
+    Components.showToast(res.message, res.ok ? 'success' : 'error');
+  }
+
+  // ─── Meal Planner orchestration ─────────────────────────────
+  startMealPlanner() {
+    const profile = store.get('userProfile') || {};
+    const fields = (CONFIG.profileSchema?.lifestyle || []).filter(f => f.key && f.key.indexOf('food_') === 0);
+    const allergies = profile.allergies || '';
+
+    const fieldHtml = fields.map(f => {
+      const val = profile[f.key];
+      if (f.type === 'multiselect') {
+        const opts = (f.options || []).map(o => {
+          const checked = Array.isArray(val) && val.includes(o);
+          return `<label class="chip"><input type="checkbox" name="${f.key}" value="${o}" ${checked ? 'checked' : ''}> ${o}</label>`;
+        }).join('');
+        return `<div class="form-group"><label>${f.label}</label><div class="chip-row">${opts}</div></div>`;
+      }
+      if (f.type === 'select') {
+        const opts = (f.options || []).map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('');
+        return `<div class="form-group"><label>${f.label}</label><select name="${f.key}" class="form-input"><option value="">選んでください</option>${opts}</select></div>`;
+      }
+      if (f.type === 'textarea') {
+        return `<div class="form-group"><label>${f.label}</label><textarea name="${f.key}" class="form-input" rows="2">${val || ''}</textarea></div>`;
+      }
+      return `<div class="form-group"><label>${f.label}</label><input name="${f.key}" class="form-input" value="${val || ''}"></div>`;
+    }).join('');
+
+    const body = `
+      <p class="muted">家族の好みと体調にあわせて、1週間分の献立を整えます。当てはまるものをえらんでください。</p>
+      <form id="mealPlannerPrefs">
+        <div class="form-group"><label>アレルギー（必ず避ける食材）</label>
+          <textarea name="allergies" class="form-input" rows="2">${allergies}</textarea></div>
+        ${fieldHtml}
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" onclick="app.runMealPlanner()">献立をつくる</button>
+          <button type="button" class="btn btn-secondary" onclick="app.closeModal()">やめる</button>
+        </div>
+      </form>
+      <div id="mealPlannerProgress" class="muted small"></div>
+    `;
+    this.openModal('今週の献立をつくる', body);
+  }
+
+  async runMealPlanner() {
+    const form = document.getElementById('mealPlannerPrefs');
+    if (!form) return;
+    const prefs = {};
+    new FormData(form).forEach((v, k) => {
+      if (prefs[k] === undefined) prefs[k] = v;
+      else if (Array.isArray(prefs[k])) prefs[k].push(v);
+      else prefs[k] = [prefs[k], v];
+    });
+    // multiselect (checkboxes) collapse to array
+    form.querySelectorAll('.chip-row').forEach(row => {
+      const name = row.querySelector('input')?.name;
+      if (!name) return;
+      const checked = Array.from(row.querySelectorAll('input:checked')).map(i => i.value);
+      prefs[name] = checked;
+    });
+
+    // userProfile を更新（食事関連のみ）
+    const profile = { ...(store.get('userProfile') || {}) };
+    Object.keys(prefs).forEach(k => { profile[k] = prefs[k]; });
+    store.set('userProfile', profile);
+
+    const progress = document.getElementById('mealPlannerProgress');
+    const setMsg = (msg) => { if (progress) progress.textContent = msg; };
+
+    try {
+      setMsg('レシピを集めています…');
+      // 候補レシピ：複数カテゴリから取得して合算
+      const cats = MealPlanner.defaultCategoryIds.slice(0, 3);
+      const fetched = (await Promise.all(cats.map(c => MealPlanner.fetchRecipesByCategory(c, 8))))
+        .flat();
+      MealPlanner.state.candidates = fetched;
+
+      setMsg('好みと体調にあわせて整えています…');
+      const plan = await MealPlanner.buildWeeklyMenu(fetched);
+      MealPlanner.savePlan(plan);
+
+      setMsg('買い物リストを作っています…');
+      const list = MealPlanner.generateShoppingList(plan);
+      const linked = await MealPlanner.linkToStores(list);
+      MealPlanner.saveShoppingList(linked);
+
+      Components.showToast('献立と買い物リストができました', 'success');
+      this.closeModal();
+      this.renderMain();
+    } catch (e) {
+      console.error('[MealPlanner] runMealPlanner failed', e);
+      setMsg('うまくいきませんでした：' + (e.message || e));
+      Components.showToast('献立の作成に失敗しました', 'error');
+    }
+  }
+
+  openShoppingList() {
+    const lists = store.getDomainData('health', 'shoppingLists');
+    const latest = lists.length ? lists[lists.length - 1] : null;
+    if (!latest) { Components.showToast('買い物リストはまだありません', 'info'); return; }
+    let items = [];
+    try { items = JSON.parse(latest.items || '[]'); } catch (e) { /* ignore */ }
+
+    const rows = items.map((it, idx) => `
+      <tr>
+        <td><input type="checkbox" ${it.purchased ? 'checked' : ''} onchange="app.toggleShoppingItem(${idx}, this.checked)"></td>
+        <td>${it.name}</td>
+        <td>${it.qty || ''} ${it.unit || ''}</td>
+        <td>
+          ${it.affiliate?.rakuten ? `<a href="${it.affiliate.rakuten}" target="_blank" rel="noopener" onclick="AffiliateEngine.trackClick('rakuten','${it.name}','health')">楽天で買う</a>` : ''}
+          ${it.affiliate?.amazon ? `<a href="${it.affiliate.amazon}" target="_blank" rel="noopener" onclick="AffiliateEngine.trackClick('amazon_jp','${it.name}','health')" style="margin-left:8px">Amazonで探す</a>` : ''}
+        </td>
+      </tr>
+    `).join('');
+
+    const body = `
+      <p class="muted">献立に必要な材料です。チェックを入れると「持っているもの／買ったもの」を分けられます。</p>
+      <div class="shopping-list-wrap">
+        <table class="shopping-list-table">
+          <thead><tr><th></th><th>食材</th><th>分量</th><th>買う</th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="4">材料がありません</td></tr>'}</tbody>
+        </table>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="app.closeModal()">閉じる</button>
+      </div>
+    `;
+    this.openModal('買い物リスト', body);
+  }
+
+  toggleShoppingItem(idx, checked) {
+    const lists = store.get('health_shoppingLists') || [];
+    if (!lists.length) return;
+    const latest = lists[lists.length - 1];
+    let items = [];
+    try { items = JSON.parse(latest.items || '[]'); } catch (e) { return; }
+    if (!items[idx]) return;
+    items[idx].purchased = !!checked;
+    latest.items = JSON.stringify(items);
+    store.set('health_shoppingLists', lists);
+  }
+
+  async openRecipeSheet(recipeId, fallbackTitle) {
+    let recipe = MealPlanner._lookupCandidate(recipeId);
+    if (!recipe) {
+      const saved = (store.get('health_recipes') || []).find(r => String(r.recipe_id) === String(recipeId));
+      if (saved) {
+        try {
+          recipe = {
+            ...saved,
+            ingredients: JSON.parse(saved.ingredients || '[]'),
+            steps: JSON.parse(saved.steps || '[]')
+          };
+        } catch (e) { /* ignore */ }
+      }
+    }
+    if (!recipe) {
+      recipe = { recipe_id: recipeId, title: fallbackTitle || 'レシピ', servings: 2, cook_minutes: 0, ingredients: [], steps: [] };
+    }
+
+    this.openModal(recipe.title || 'レシピ', '<div class="loading">整えています…</div>');
+    try {
+      const html = await MealPlanner.renderOneSheet(recipe, { id: 'recipeSheet' });
+      const body = `
+        ${html}
+        <div class="form-actions sheet-actions no-print">
+          <button class="btn btn-primary" onclick="MealPlanner.printOneSheet()">印刷する</button>
+          <button class="btn btn-secondary" onclick="MealPlanner.exportPdf('recipeSheet','${(recipe.title || 'recipe').replace(/'/g, '')}.pdf')">PDFで保存</button>
+          <button class="btn btn-secondary" onclick="app.closeModal()">閉じる</button>
+        </div>
+      `;
+      const bodyEl = document.getElementById('modal-body');
+      if (bodyEl) bodyEl.innerHTML = body;
+    } catch (e) {
+      const bodyEl = document.getElementById('modal-body');
+      if (bodyEl) bodyEl.innerHTML = `<div class="error">レシピを整えられませんでした：${e.message || e}</div>`;
+    }
+  }
 };
 
 // Global instance

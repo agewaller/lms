@@ -116,6 +116,11 @@ var Pages = {
       html += this.renderTranscriptInput();
     }
 
+    // Health domain: Meal planner widget
+    if (domain === 'health') {
+      html += this.renderMealPlannerWidget();
+    }
+
     // Time domain: Calendar widget + Marketplace widget
     if (domain === 'time') {
       if (typeof CalendarIntegration !== 'undefined') html += CalendarIntegration.renderWidget();
@@ -256,6 +261,71 @@ var Pages = {
       </button>
       <div id="transcriptResult"></div>
     </div>`;
+  },
+
+  // ─── Meal Planner Widget (Health domain) ───
+  renderMealPlannerWidget() {
+    const plans = store.getDomainData('health', 'mealPlans') || [];
+    const lists = store.getDomainData('health', 'shoppingLists') || [];
+    const latestPlan = plans.length ? plans[plans.length - 1] : null;
+    const latestList = lists.length ? lists[lists.length - 1] : null;
+
+    let body = '';
+    if (latestPlan) {
+      let planObj = {};
+      try { planObj = JSON.parse(latestPlan.plan || '{}'); } catch (e) { /* ignore */ }
+      const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+      const dayLabels = { monday:'月', tuesday:'火', wednesday:'水', thursday:'木', friday:'金', saturday:'土', sunday:'日' };
+      const slotLabels = { breakfast:'朝', lunch:'昼', dinner:'夕' };
+      const cells = days.map(d => `
+        <tr>
+          <th class="meal-day">${dayLabels[d]}</th>
+          ${['breakfast','lunch','dinner'].map(slot => {
+            const m = planObj[d]?.[slot];
+            const title = m?.title || '—';
+            const id = m?.recipe_id || '';
+            const safe = title.replace(/'/g, "\\'");
+            return `<td class="meal-cell">
+              <div class="meal-slot">${slotLabels[slot]}</div>
+              <div class="meal-title">${title}</div>
+              ${id ? `<button class="btn btn-sm btn-link" onclick="app.openRecipeSheet('${id}','${safe}')">手順を見る</button>` : ''}
+            </td>`;
+          }).join('')}
+        </tr>
+      `).join('');
+
+      body = `
+        <div class="meal-plan-summary">
+          <div class="meal-plan-meta">週はじまり: ${latestPlan.week_start_date || '-'}</div>
+          ${latestPlan.note ? `<p class="meal-plan-note">${latestPlan.note}</p>` : ''}
+        </div>
+        <div class="meal-plan-grid-wrap">
+          <table class="meal-plan-grid">
+            <thead><tr><th></th><th>朝</th><th>昼</th><th>夕</th></tr></thead>
+            <tbody>${cells}</tbody>
+          </table>
+        </div>
+        <div class="meal-plan-actions">
+          <button class="btn btn-primary" onclick="app.startMealPlanner()">献立をつくり直す</button>
+          <button class="btn btn-secondary" onclick="app.openShoppingList()">買い物リストを開く</button>
+        </div>
+      `;
+    } else {
+      body = `
+        ${Components.emptyState('🍽️', 'まだ献立がありません', 'ボタンを押すと、好みと体調に合わせて1週間分の献立を整えます')}
+        <div style="text-align:center;margin-top:12px">
+          <button class="btn btn-primary btn-lg" onclick="app.startMealPlanner()">今週の献立をつくる</button>
+        </div>
+      `;
+    }
+
+    const listHint = latestList ? '' : '<p class="muted small">献立を作ると、買い物リストも自動で出来上がります。</p>';
+
+    return `<section class="meal-planner-widget">
+      <h3>🗓️ 1週間の献立</h3>
+      ${body}
+      ${listHint}
+    </section>`;
   },
 
   // ─── Social Graph (Relationship domain) ───
@@ -1632,9 +1702,27 @@ var Pages = {
           <input type="password" id="apiKeyGoogle" class="form-input"
             value="${AIEngine.getApiKey('google') ? '••••••••' : ''}" placeholder="AI...">
         </div>
+        <hr>
+        <div class="form-group">
+          <label>楽天 アプリID（レシピ・市場検索）</label>
+          <input type="password" id="rakutenAppId" class="form-input"
+            value="${CONFIG.rakuten?.applicationId ? '••••••••' : ''}" placeholder="楽天 Application ID">
+          <div class="input-help">https://webservice.rakuten.co.jp/ で取得</div>
+        </div>
+        <div class="form-group">
+          <label>楽天 アフィリエイトID（任意）</label>
+          <input type="text" id="rakutenAffiliateId" class="form-input"
+            value="${CONFIG.rakuten?.affiliateId || ''}" placeholder="20xxxxxx.xxxxxxxx">
+        </div>
+        <div class="form-group">
+          <label>レシピ取り込み プロキシURL（空欄なら直接モード）</label>
+          <input type="text" id="rakutenEndpoint" class="form-input"
+            value="${CONFIG.rakuten?.endpoint || ''}" placeholder="https://...workers.dev または空欄">
+        </div>
         <div class="form-actions">
-          <button class="btn btn-primary" onclick="app.saveApiKeys();app.saveWorkerUrl()">保存</button>
-          <button class="btn btn-secondary" onclick="app.testConnection()">接続テスト</button>
+          <button class="btn btn-primary" onclick="app.saveApiKeys();app.saveWorkerUrl();app.saveRakutenSettings()">保存</button>
+          <button class="btn btn-secondary" onclick="app.testConnection()">AI接続テスト</button>
+          <button class="btn btn-secondary" onclick="app.testRakutenConnection()">レシピ接続テスト</button>
           <button class="btn btn-danger" onclick="app.clearApiKeys()">すべて削除</button>
         </div>
         <div id="connectionResult"></div>

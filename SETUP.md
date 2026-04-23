@@ -317,6 +317,61 @@ Anthropic Direct Mode を使う場合、Cloudflare Worker は**不要**です。
 
 ---
 
+## 楽天ウェブサービス（レシピ・献立 機能）
+
+健康ドメインの「今週の献立をつくる」を有効化するための設定です。
+管理者が一度設定すれば、全ユーザーが共通の献立提案を受けられます。
+
+### 1. 楽天 アプリID を取得
+
+1. https://webservice.rakuten.co.jp/ にログイン（無料／楽天会員アカウントでOK）
+2. 「アプリID発行」→ アプリ名（例: `LMS`）を入力 → アプリ登録
+3. 表示された **applicationId**（19桁の数字）をコピー
+
+### 2. （任意）楽天アフィリエイトID を取得
+
+1. https://affiliate.rakuten.co.jp/ にログイン
+2. アフィリエイトID（例: `20XXXXXX.XXXXXXXX`）をコピー
+3. これを設定すると、買い物リストの「楽天で買う」リンクが報酬付きになります
+
+### 3. LMS に登録
+
+管理 → APIキー タブ で以下を入力 → **保存**:
+
+- **楽天 アプリID**: 上記でコピーした applicationId
+- **楽天 アフィリエイトID**: アフィリエイトID（任意）
+- **レシピ取り込み プロキシURL**: 空欄のまま（直接モード）または下記 Worker URL
+
+「レシピ接続テスト」ボタンで疎通確認できます。
+
+### 4. （任意）Cloudflare Worker でアプリIDを秘匿
+
+直接モードでは applicationId がブラウザから見えるため、本番運用では
+`worker/rakuten-proxy.js` をデプロイして秘匿することを推奨します。
+
+1. https://dash.cloudflare.com/ → Workers & Pages → Create Worker
+2. `worker/rakuten-proxy.js` の内容を貼り付けて Deploy
+3. Worker の Settings → Variables and Secrets で以下を追加:
+   - `RAKUTEN_APPLICATION_ID` = 上記 applicationId
+   - `RAKUTEN_AFFILIATE_ID` = 上記 affiliateId（任意）
+4. 生成された URL（例: `https://lms-rakuten-proxy.your-account.workers.dev`）を
+   LMS の「レシピ取り込み プロキシURL」欄に貼り付けて保存
+5. 管理画面で applicationId 欄は空でも動作します（Worker 側で付与されるため）
+
+> GitHub Actions 経由の自動デプロイを設定する場合は、`worker/anthropic-proxy.js`
+> と同じ仕組みで `worker/rakuten-proxy.js` も自動デプロイされます。
+
+### 5. 動作確認
+
+1. 健康ドメインを開く → 「今週の献立をつくる」ボタン
+2. 好みと体調を入力 → 数十秒で 7 日 × 3 食の献立が表示
+3. 「買い物リストを開く」→ 楽天/Amazon リンクを確認
+4. 個別レシピの「手順を見る」→ A4 一枚紙が表示 → 印刷 / PDF 保存
+
+> 楽天 アプリID 未設定でも、内蔵のサンプルレシピで一通りの動作を確認できます。
+
+---
+
 ## トラブルシューティング
 
 ### 「APIプロキシが未設定です」

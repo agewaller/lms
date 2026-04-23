@@ -208,6 +208,12 @@ var FirebaseBackend = {
           if (cfg.oauthClientIds) {
             CONFIG.oauthClientIds = { ...CONFIG.oauthClientIds, ...cfg.oauthClientIds };
           }
+
+          // Rakuten API public-side config (affiliateId, endpoint).
+          // applicationId は秘匿のため admin/secrets 側で扱う。
+          if (cfg.rakuten) {
+            CONFIG.rakuten = { ...CONFIG.rakuten, ...cfg.rakuten };
+          }
         }
 
         // Load admin API keys (shared across all users)
@@ -219,6 +225,9 @@ var FirebaseBackend = {
           if (keys.anthropic) localStorage.setItem('lms_apikey_anthropic', keys.anthropic);
           if (keys.openai) localStorage.setItem('lms_apikey_openai', keys.openai);
           if (keys.google) localStorage.setItem('lms_apikey_google', keys.google);
+          if (keys.rakuten_applicationId) {
+            CONFIG.rakuten = { ...CONFIG.rakuten, applicationId: keys.rakuten_applicationId };
+          }
         }
       } catch (e) {
         console.warn('Admin config load error:', e);

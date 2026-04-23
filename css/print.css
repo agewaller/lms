@@ -1,0 +1,167 @@
+/* ============================================================
+   LMS - Meal Planner & One-Sheet Recipe Styles
+   平均年齢50歳のユーザーを想定した、画面と印刷の両対応スタイル
+   ============================================================ */
+
+/* ─── Meal planner widget on the health dashboard ─── */
+.meal-planner-widget {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg-secondary, #fff);
+  border-radius: var(--radius, 12px);
+  border: 1px solid var(--border, #e5e7eb);
+}
+.meal-planner-widget h3 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+.meal-plan-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.meal-plan-meta { font-size: 13px; color: var(--text-secondary, #666); }
+.meal-plan-note { margin: 4px 0 8px; }
+.meal-plan-grid-wrap { overflow-x: auto; margin: 8px 0 12px; }
+.meal-plan-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.meal-plan-grid th,
+.meal-plan-grid td {
+  border: 1px solid var(--border, #e5e7eb);
+  padding: 8px;
+  vertical-align: top;
+}
+.meal-plan-grid th { background: var(--bg-tertiary, #f5f7fa); font-weight: 600; }
+.meal-day { width: 48px; text-align: center; font-weight: 700; }
+.meal-cell { min-width: 140px; }
+.meal-slot { font-size: 12px; color: var(--text-secondary, #888); }
+.meal-title { font-weight: 600; margin: 4px 0; }
+.meal-plan-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ─── Modal: meal planner preferences ─── */
+#mealPlannerPrefs .chip-row {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+#mealPlannerPrefs .chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+}
+#mealPlannerPrefs .chip input { margin: 0; }
+#mealPlannerProgress { margin-top: 8px; }
+
+/* ─── Shopping list ─── */
+.shopping-list-wrap { overflow-x: auto; }
+.shopping-list-table {
+  width: 100%; border-collapse: collapse;
+}
+.shopping-list-table th,
+.shopping-list-table td {
+  padding: 8px; border-bottom: 1px solid var(--border, #e5e7eb);
+  text-align: left; vertical-align: middle;
+}
+.shopping-list-table th { background: var(--bg-tertiary, #f5f7fa); }
+
+/* ─── One-sheet recipe (screen view) ─── */
+.recipe-sheet {
+  background: #fff;
+  color: #111;
+  padding: 16px;
+  border-radius: var(--radius, 12px);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.recipe-sheet .sheet-header { border-bottom: 2px solid #111; padding-bottom: 8px; margin-bottom: 12px; }
+.recipe-sheet .sheet-header h1 { margin: 0; font-size: 22px; }
+.recipe-sheet .sheet-subtitle { margin: 4px 0; color: #444; font-size: 14px; }
+.recipe-sheet .sheet-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 14px; color: #333; }
+.recipe-sheet .sheet-body {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 16px;
+}
+.recipe-sheet .sheet-col h3 { margin: 0 0 8px; font-size: 16px; }
+.recipe-sheet .recipe-sheet-group { margin-bottom: 8px; }
+.recipe-sheet .recipe-sheet-group h4 { margin: 0 0 4px; font-size: 14px; color: #333; }
+.recipe-sheet .recipe-sheet-group ul { list-style: none; padding: 0; margin: 0; }
+.recipe-sheet .recipe-sheet-group li { padding: 2px 0; border-bottom: 1px dashed #ddd; }
+.recipe-sheet .ing-name { font-weight: 600; margin-right: 6px; }
+.recipe-sheet .ing-qty { color: #555; }
+.recipe-sheet .ing-prep { color: #888; font-size: 12px; }
+.recipe-sheet .prep-steps,
+.recipe-sheet .cook-steps { padding-left: 0; list-style: none; margin: 0 0 8px; }
+.recipe-sheet .prep-steps li { padding: 2px 0; }
+.recipe-sheet .cook-step {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.recipe-sheet .step-num {
+  display: inline-flex; justify-content: center; align-items: center;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: #111; color: #fff;
+  font-size: 18px; font-weight: 700;
+}
+.recipe-sheet .step-text { margin: 0; font-size: 14px; }
+.recipe-sheet .step-meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; color: #444; margin-top: 2px; }
+.recipe-sheet .finishing { margin: 8px 0; font-weight: 600; }
+.recipe-sheet .sheet-footer {
+  margin-top: 12px; padding-top: 8px;
+  border-top: 1px solid #ddd;
+  font-size: 12px; color: #444;
+}
+.recipe-sheet .sheet-tips,
+.recipe-sheet .sheet-storage,
+.recipe-sheet .sheet-source { margin: 4px 0; }
+
+/* ─── Mobile (small screen): single column for one-sheet ─── */
+@media screen and (max-width: 768px) {
+  .recipe-sheet .sheet-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Print view (A4 one sheet) ─── */
+@media print {
+  @page { size: A4; margin: 12mm; }
+
+  /* Hide everything except the recipe sheet */
+  body.print-recipe-mode > *:not(.modal-overlay) { display: none !important; }
+  body.print-recipe-mode .modal-overlay {
+    position: static !important; background: #fff !important;
+    display: block !important; padding: 0 !important;
+  }
+  body.print-recipe-mode .modal-content {
+    box-shadow: none !important; border: none !important;
+    padding: 0 !important; max-width: 100% !important;
+  }
+  body.print-recipe-mode .no-print,
+  body.print-recipe-mode #modal-title,
+  body.print-recipe-mode .modal-close { display: none !important; }
+
+  .recipe-sheet {
+    color: #000; background: #fff;
+    font-size: 14pt; line-height: 1.55;
+    page-break-inside: avoid;
+  }
+  .recipe-sheet .sheet-header h1 { font-size: 22pt; }
+  .recipe-sheet .sheet-subtitle { font-size: 12pt; }
+  .recipe-sheet .sheet-meta { font-size: 12pt; }
+  .recipe-sheet .sheet-col h3 { font-size: 14pt; }
+  .recipe-sheet .step-num { font-size: 16pt; width: 28px; height: 28px; }
+  .recipe-sheet .step-text { font-size: 13pt; }
+  .recipe-sheet .step-meta { font-size: 10pt; }
+  .recipe-sheet .recipe-sheet-group ul { columns: 1; }
+}
