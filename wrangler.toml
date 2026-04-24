@@ -2,21 +2,48 @@
 # LMS - Cloudflare Workers configuration
 # ============================================================
 #
-# This project deploys two workers:
-#   1. lms-api-proxy  - Anthropic API proxy (CORS relay)
-#   2. lms-email-ingest - Plaud email receiver + frontend pull API
+# Workers in this project:
+#   1. lms-api-proxy      – Anthropic API CORS relay (main)
+#   2. lms-email-ingest   – Plaud email receiver + frontend pull API
+#   3. lms-mail-sender    – Transactional email via Resend
+#   4. lms-daily-cron     – Daily digest emails (cron trigger)
 #
-# To deploy each worker, use wrangler with the appropriate config:
-#   wrangler deploy                                    (deploys main: api-proxy)
-#   wrangler deploy -c wrangler.email.toml             (deploys email ingest)
+# Deploy commands:
+#   wrangler deploy                                          (api-proxy)
+#   wrangler deploy -c wrangler.email.toml                  (email-ingest)
+#   wrangler deploy --config wrangler.toml --env mail       (mail-sender)
+#   wrangler deploy --config wrangler.toml --env cron       (daily-cron)
 #
-# Or keep both as named environments inside this file.
+# Secrets:
+#   wrangler secret put ANTHROPIC_API_KEY   --env mail
+#   wrangler secret put RESEND_API_KEY      --env mail
+#   wrangler secret put RESEND_API_KEY      --env cron
+#   wrangler secret put ANTHROPIC_API_KEY   --env cron
+#   wrangler secret put FIREBASE_API_KEY    --env cron
+#   wrangler secret put FIREBASE_PROJECT_ID --env cron
+#   wrangler secret put CRON_TRIGGER_SECRET --env cron
 
 name = "lms-api-proxy"
 main = "worker/anthropic-proxy.js"
 compatibility_date = "2024-01-01"
 
-# ─── Email Ingest Worker (Plaud → email → KV) ───
+# ─── Mail Sender Worker ───────────────────────────────────────
+[env.mail]
+name = "lms-mail-sender"
+main = "worker/mail-sender.js"
+compatibility_date = "2024-01-01"
+
+# ─── Daily Cron Worker ───────────────────────────────────────
+[env.cron]
+name = "lms-daily-cron"
+main = "worker/daily-cron.js"
+compatibility_date = "2024-01-01"
+
+# 06:00 JST = 21:00 UTC (previous day)
+[[env.cron.triggers]]
+crons = ["0 21 * * *"]
+
+# ─── Email Ingest Worker (Plaud → email → KV) ───────────────
 # Uncomment and configure after creating KV namespace via:
 #   wrangler kv:namespace create "EMAIL_INBOX"
 #

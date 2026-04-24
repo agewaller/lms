@@ -249,6 +249,82 @@ var Components = {
     </div>`;
   },
 
+  // ─── XSS-safe HTML escaping ───
+  escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  // ─── Prompt Dialog (modal-based, replaces window.prompt()) ───
+  promptModal(message, defaultValue, onConfirm, options = {}) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active';
+    const placeholder = options.placeholder || '';
+    overlay.innerHTML = `<div class="modal confirm-modal">
+      <div class="modal-header">
+        <h3 class="modal-title">${options.title || '入力'}</h3>
+        <button class="modal-close" id="pmClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom:12px">${message}</p>
+        <input type="text" id="pmInput" class="form-input" value="${this.escapeHtml(defaultValue || '')}" placeholder="${placeholder}" style="margin-bottom:16px">
+        <div class="form-actions">
+          <button class="btn btn-primary" id="pmOk">${options.okLabel || 'OK'}</button>
+          <button class="btn btn-secondary" id="pmCancel">キャンセル</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('#pmInput');
+    input.focus();
+    input.select();
+    const close = () => overlay.remove();
+    const submit = () => {
+      const val = input.value.trim();
+      if (val) { close(); onConfirm(val); }
+    };
+    overlay.querySelector('#pmOk').onclick = submit;
+    overlay.querySelector('#pmCancel').onclick = close;
+    overlay.querySelector('#pmClose').onclick = close;
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') close(); });
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  },
+
+  // ─── Confirm Dialog (modal-based, works on iOS Safari / Chrome Android) ───
+  // Replaces window.confirm() which can be silently blocked on mobile.
+  // Usage: Components.confirm('削除しますか？', () => doDelete(), { danger: true });
+  confirm(message, onConfirm, options = {}) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active';
+    const yesLabel = options.yesLabel || (options.danger ? '削除する' : 'はい');
+    const noLabel  = options.noLabel  || 'キャンセル';
+    const title    = options.title    || '確認';
+    const yesClass = options.danger   ? 'btn btn-danger' : 'btn btn-primary';
+    overlay.innerHTML = `<div class="modal confirm-modal">
+      <div class="modal-header">
+        <h3 class="modal-title">${title}</h3>
+        <button class="modal-close" id="cfmClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom:20px">${message}</p>
+        <div class="form-actions">
+          <button class="${yesClass}" id="cfmYes">${yesLabel}</button>
+          <button class="btn btn-secondary" id="cfmNo">${noLabel}</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelector('#cfmYes').onclick   = () => { close(); onConfirm(); };
+    overlay.querySelector('#cfmNo').onclick    = close;
+    overlay.querySelector('#cfmClose').onclick = close;
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  },
+
   // ─── Record List Item ───
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';

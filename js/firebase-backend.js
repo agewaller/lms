@@ -124,10 +124,11 @@ var FirebaseBackend = {
 
     try {
       const result = await this.auth.createUserWithEmailAndPassword(email, password);
-      // Set display name
       if (displayName && result.user) {
         await result.user.updateProfile({ displayName });
       }
+      // Send welcome email (fire-and-forget; failure doesn't block registration)
+      this.sendWelcomeEmail(email, displayName || email.split('@')[0]);
     } catch (e) {
       if (e.code === 'auth/email-already-in-use') {
         throw new Error('このメールアドレスはすでに登録されています。ログインをお試しください。');
@@ -201,6 +202,10 @@ var FirebaseBackend = {
           }
           if (cfg.emailIngestUrl) CONFIG.endpoints.emailIngest = cfg.emailIngestUrl;
           if (cfg.emailIngestDomain) CONFIG.emailIngestDomain = cfg.emailIngestDomain;
+          if (cfg.mailSenderUrl) {
+            CONFIG.endpoints.mailSender = cfg.mailSenderUrl;
+            localStorage.setItem('lms_mailSenderUrl', cfg.mailSenderUrl);
+          }
 
           // OAuth Client IDs (admin-shared) - merge with defaults
           // so that all users inherit the admin's OAuth apps and only
@@ -375,10 +380,23 @@ var FirebaseBackend = {
   isAdmin() {
     const user = store.get('user');
     if (!user?.email) return false;
-    // Owner is always admin
     if (user.email === 'agewaller@gmail.com') return true;
-    // Check dynamic admin list (loaded from Firestore admin/config)
     const list = store.get('adminEmails') || ['agewaller@gmail.com'];
     return list.includes(user.email.toLowerCase());
+  },
+
+  // ─── Send welcome email via lms-mail-sender worker ───
+  async sendWelcomeEmail(email, displayName) {
+    const url = CONFIG.endpoints.mailSender;
+    if (!url) return; // Not configured; skip silently
+    try {
+      await fetch(`${url}/send-welcome`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: email, displayName })
+      });
+    } catch (e) {
+      console.warn('Welcome email failed:', e.message);
+    }
   }
 };

@@ -751,6 +751,22 @@ var Pages = {
         <button class="btn btn-primary btn-lg" onclick="app.saveProfile()">${i18n.t('save_profile')}</button>
       </div>
 
+      <!-- 通知設定 -->
+      ${CONFIG.endpoints.mailSender ? `
+      <div class="settings-section">
+        <h3>通知</h3>
+        <label class="toggle-row">
+          <span>毎日の6領域レポートをメールで受け取る</span>
+          <label class="toggle">
+            <input type="checkbox" id="prefDailyDigest"
+              ${(store.get('userProfile') || {}).dailyDigest ? 'checked' : ''}
+              onchange="app.saveDailyDigestPref(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </label>
+        <div class="input-help" style="margin-top:6px;">毎朝6時にその日の記録サマリーが届きます。いつでも停止できます。</div>
+      </div>` : ''}
+
       <!-- Subscription -->
       <div class="settings-section">
         <h3>サブスクリプション</h3>
@@ -1888,6 +1904,23 @@ var Pages = {
         <div class="form-actions">
           <button class="btn btn-primary" onclick="app.saveFirebaseConfig()">保存</button>
           <button class="btn btn-danger" onclick="app.clearFirebaseConfig()">削除</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Worker URLs -->
+    <div class="card" style="margin-top:16px;">
+      <div class="card-header"><h3>Cloudflare Workers URL</h3></div>
+      <div class="card-body">
+        <div class="form-group">
+          <label>メール送信 Worker URL (lms-mail-sender)</label>
+          <input type="text" id="workerMailSender" class="form-input"
+            value="${CONFIG.endpoints.mailSender || ''}"
+            placeholder="https://lms-mail-sender.your-account.workers.dev">
+          <div class="input-help">未設定の場合、ウェルカムメールとデイリーレポートは送信されません</div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="app.saveWorkerMailSender()">保存</button>
         </div>
       </div>
     </div>`;
