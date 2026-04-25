@@ -27,12 +27,23 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // Streak counter
+    const streak = (typeof app !== 'undefined' && app.getStreak) ? app.getStreak() : 0;
+    const streakHtml = streak > 0
+      ? `<div class="streak-badge" title="${streak}日連続記録中">
+           <span class="streak-fire">&#9889;</span>
+           <span class="streak-count">${streak}</span>
+           <span class="streak-label">日連続</span>
+         </div>`
+      : '';
+
     // Quick input bar
     let html = `<div class="page-home">
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
+        ${streakHtml}
       </div>
       <div id="quickResponse"></div>`;
 
@@ -1723,7 +1734,7 @@ var Pages = {
                 </div>
               </div>
               ${isOwner ? '<span class="status-badge">オーナー</span>' : `
-                <button class="btn btn-sm btn-danger" onclick="app.removeAdminEmail('${email}')">削除</button>
+                <button class="btn btn-sm btn-danger" onclick="app.confirmRemoveAdmin('${email}')">削除</button>
               `}
             </div>`;
           }).join('')}
