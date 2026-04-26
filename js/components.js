@@ -3,6 +3,17 @@
    ============================================================ */
 var Components = {
 
+  // ─── XSS防止: ユーザー入力を DOM に挿入する前に必ずこれを通す ───
+  escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
+
   // ─── Score Gauge (circular) ───
   scoreGauge(score, size = 120, label = '') {
     const pct = Math.max(0, Math.min(100, score));

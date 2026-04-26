@@ -34,7 +34,8 @@ var Pages = {
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
-      <div id="quickResponse"></div>`;
+      <div id="quickResponse"></div>
+      ${this.renderDailyCard(domain)}`;
 
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
@@ -158,6 +159,37 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Daily Analysis Card ───
+  renderDailyCard(domain) {
+    const latest = store.get('latestAnalysis');
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const hasToday = latest && latest.timestamp && latest.timestamp.slice(0, 10) === todayStr && latest.domain === domain;
+
+    if (hasToday) {
+      const snippet = (latest.response || '').replace(/<[^>]*>/g, '').slice(0, 120);
+      return `<div class="daily-analysis-card">
+        <h4>今日の気づき</h4>
+        <p>${Components.escapeHtml(snippet)}…</p>
+        <div class="dac-actions">
+          <button class="btn btn-sm btn-secondary" onclick="app.navigate('actions')">${i18n.t('actions')}</button>
+          <button class="copy-btn" onclick="app.copyToClipboard(${JSON.stringify(latest.response || '')})">📋 コピー</button>
+        </div>
+      </div>`;
+    }
+
+    // Show prompt to do daily analysis
+    const domainConfig = CONFIG.domains[domain];
+    const color = domainConfig?.color || '#6C63FF';
+    return `<div class="daily-analysis-card">
+      <h4 style="color:${color}">今日の${i18n.t(domain)}を振り返りましょう</h4>
+      <p>今日の記録をもとに、気づきとアドバイスをお伝えします。</p>
+      <div class="dac-actions">
+        <button class="btn btn-sm btn-primary" onclick="app.runDailyAnalysis('${domain}')">分析する</button>
+        <button class="btn btn-sm btn-secondary" onclick="app.navigate('record')">記録する</button>
+      </div>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───

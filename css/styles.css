@@ -1797,3 +1797,77 @@ body.is-admin .admin-only { display: flex; }
   .sim-cards { grid-template-columns: 1fr; }
   .top-bar-title { font-size: 13px; }
 }
+
+/* ─── Onboarding Wizard ─── */
+.onboard-progress {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.onboard-step {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.onboard-step.active {
+  background: var(--accent);
+  color: #fff;
+}
+.onboard-step.done {
+  background: var(--success-bg);
+  color: var(--success);
+}
+.onboard-domain {
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.onboard-domain:hover {
+  box-shadow: var(--shadow);
+}
+.onboard-domain.selected {
+  box-shadow: 0 0 0 3px rgba(108,99,255,0.25);
+}
+
+/* ─── Daily Analysis Card ─── */
+.daily-analysis-card {
+  background: linear-gradient(135deg, var(--accent-bg) 0%, var(--bg-secondary) 100%);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+.daily-analysis-card h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.daily-analysis-card p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+.dac-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ─── Copy button for analysis ─── */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.copy-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
