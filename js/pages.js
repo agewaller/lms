@@ -290,7 +290,10 @@ var Pages = {
             return `<td class="meal-cell">
               <div class="meal-slot">${slotLabels[slot]}</div>
               <div class="meal-title">${esc(title)}</div>
-              ${id ? `<button class="btn btn-sm btn-link" data-recipe-id="${esc(id)}" data-recipe-title="${esc(title)}" onclick="app.openRecipeSheet(this.dataset.recipeId, this.dataset.recipeTitle)">手順を見る</button>` : ''}
+              <div class="meal-cell-actions">
+                ${id ? `<button class="btn btn-sm btn-link" data-recipe-id="${esc(id)}" data-recipe-title="${esc(title)}" onclick="app.openRecipeSheet(this.dataset.recipeId, this.dataset.recipeTitle)">手順</button>` : ''}
+                <button class="btn btn-sm btn-link" data-day="${d}" data-slot="${slot}" onclick="app.swapMealSlot(this.dataset.day, this.dataset.slot)">差し替え</button>
+              </div>
             </td>`;
           }).join('')}
         </tr>
@@ -741,6 +744,16 @@ var Pages = {
             <option value="">選択してください</option>
             ${(field.options || []).map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
           </select>`;
+        case 'multiselect': {
+          const arr = Array.isArray(val) ? val : (val ? [val] : []);
+          return `<div id="${id}" class="chip-row" data-multiselect="${field.key}">
+            ${(field.options || []).map(o => `
+              <label class="chip">
+                <input type="checkbox" name="${field.key}" value="${o}" ${arr.includes(o) ? 'checked' : ''}> ${o}
+              </label>
+            `).join('')}
+          </div>`;
+        }
         default:
           return `<input type="text" id="${id}" class="form-input" value="${val}">`;
       }

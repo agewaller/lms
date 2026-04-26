@@ -17,7 +17,8 @@ var MealPlanner = {
     currentPlan: null,
     currentList: null,
     currentSheet: null,
-    pdfLoaded: false
+    pdfLoaded: false,
+    qrLoaded: false
   },
 
   // ─── Default Rakuten recipe categories ───
@@ -297,11 +298,47 @@ var MealPlanner = {
       </section>
 
       <footer class="sheet-footer">
-        ${sheet.tips?.length ? `<div class="sheet-tips"><strong>コツ</strong> ${sheet.tips.map(t => `・${this._esc(t)}`).join(' ')}</div>` : ''}
-        ${sheet.storage ? `<div class="sheet-storage"><strong>保存</strong> ${this._esc(sheet.storage)}</div>` : ''}
-        ${recipe.source_url ? `<div class="sheet-source">出典: <a href="${recipe.source_url}" target="_blank" rel="noopener">${this._esc(recipe.source || 'recipe')}</a></div>` : ''}
+        <div class="sheet-footer-text">
+          ${sheet.tips?.length ? `<div class="sheet-tips"><strong>コツ</strong> ${sheet.tips.map(t => `・${this._esc(t)}`).join(' ')}</div>` : ''}
+          ${sheet.storage ? `<div class="sheet-storage"><strong>保存</strong> ${this._esc(sheet.storage)}</div>` : ''}
+          ${recipe.source_url ? `<div class="sheet-source">出典: <a href="${this._esc(recipe.source_url)}" target="_blank" rel="noopener">${this._esc(recipe.source || 'recipe')}</a></div>` : ''}
+        </div>
+        ${recipe.source_url ? `
+          <div class="sheet-qr">
+            <canvas data-qr-url="${this._esc(recipe.source_url)}" width="96" height="96"></canvas>
+            <div class="sheet-qr-label">スマホで読むと<br>元レシピへ</div>
+          </div>
+        ` : ''}
       </footer>
     </article>`;
+  },
+
+  // ─── Render QR codes for any canvas[data-qr-url] within a container ───
+  async renderQrCodes(rootEl) {
+    if (!rootEl) return;
+    const targets = rootEl.querySelectorAll('canvas[data-qr-url]');
+    if (!targets.length) return;
+    await this._loadQrLib();
+    if (!window.QRCode) return;
+    targets.forEach(canvas => {
+      const url = canvas.getAttribute('data-qr-url');
+      if (!url) return;
+      try {
+        window.QRCode.toCanvas(canvas, url, { width: 96, margin: 1 });
+      } catch (e) { console.warn('[MealPlanner] QR render failed', e); }
+    });
+  },
+
+  async _loadQrLib() {
+    if (window.QRCode || this.state.qrLoaded) { this.state.qrLoaded = true; return; }
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+    this.state.qrLoaded = true;
   },
 
   printOneSheet(containerId = 'recipeSheet') {

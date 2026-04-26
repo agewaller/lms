@@ -1349,6 +1349,11 @@ var App = class App {
       section.forEach(field => {
         const el = document.getElementById('profile_' + field.key);
         if (!el) return;
+        if (field.type === 'multiselect') {
+          const checked = Array.from(el.querySelectorAll('input[type="checkbox"]:checked')).map(i => i.value);
+          profile[field.key] = checked;
+          return;
+        }
         let val = el.value;
         if (field.type === 'number') val = val === '' ? '' : Number(val);
         profile[field.key] = val;
@@ -2137,6 +2142,108 @@ var App = class App {
     this.openModal('買い物リスト', body);
   }
 
+  // ─── Swap a single meal slot in the latest plan ───
+  async swapMealSlot(day, slot) {
+    const lists = store.get('health_mealPlans') || [];
+    if (!lists.length) { Components.showToast('献立が見つかりません', 'error'); return; }
+    const latest = lists[lists.length - 1];
+    let planObj = {};
+    try { planObj = JSON.parse(latest.plan || '{}'); } catch (e) { /* ignore */ }
+    const current = planObj?.[day]?.[slot];
+
+    // 候補プールが空なら、その場で取り直す
+    if (!MealPlanner.state.candidates?.length) {
+      Components.showToast('代わりの候補を集めています…', 'info');
+      try {
+        const cats = MealPlanner.defaultCategoryIds.slice(0, 2);
+        const fetched = (await Promise.all(cats.map(c => MealPlanner.fetchRecipesByCategory(c, 8)))).flat();
+        MealPlanner.state.candidates = fetched;
+      } catch (e) {
+        Components.showToast('候補を集められませんでした', 'error');
+        return;
+      }
+    }
+    // 既に献立に入っているレシピは候補から外す
+    const usedIds = new Set();
+    Object.values(planObj).forEach(d => ['breakfast','lunch','dinner'].forEach(s => {
+      const rid = d?.[s]?.recipe_id; if (rid) usedIds.add(String(rid));
+    }));
+    const choices = MealPlanner.state.candidates
+      .filter(c => !usedIds.has(String(c.recipe_id)))
+      .slice(0, 12);
+
+    if (!choices.length) {
+      Components.showToast('差し替え候補がありません。「献立をつくり直す」から再生成してください', 'info');
+      return;
+    }
+
+    const esc = (s) => String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+    const dayLabels = { monday:'月', tuesday:'火', wednesday:'水', thursday:'木', friday:'金', saturday:'土', sunday:'日' };
+    const slotLabels = { breakfast:'朝', lunch:'昼', dinner:'夕' };
+
+    const cards = choices.map(c => `
+      <div class="swap-card">
+        <div class="swap-title">${esc(c.title)}</div>
+        <div class="swap-meta">${c.cook_minutes || '?'}分 / ${c.calories || '?'}kcal</div>
+        <button class="btn btn-sm btn-primary"
+          data-recipe-id="${esc(c.recipe_id)}"
+          data-day="${esc(day)}"
+          data-slot="${esc(slot)}"
+          onclick="app.applyMealSwap(this.dataset.day, this.dataset.slot, this.dataset.recipeId)">これにする</button>
+      </div>
+    `).join('');
+
+    const body = `
+      <p class="muted">
+        ${dayLabels[day] || day}曜日の${slotLabels[slot] || slot}を差し替えます。
+        ${current?.title ? `今は <strong>${esc(current.title)}</strong>` : ''}
+      </p>
+      <div class="swap-grid">${cards}</div>
+      <div class="form-actions"><button class="btn btn-secondary" onclick="app.closeModal()">やめる</button></div>
+    `;
+    this.openModal('1食を差し替える', body);
+  }
+
+  applyMealSwap(day, slot, recipeId) {
+    const lists = store.get('health_mealPlans') || [];
+    if (!lists.length) return;
+    const latest = lists[lists.length - 1];
+    let planObj = {};
+    try { planObj = JSON.parse(latest.plan || '{}'); } catch (e) { return; }
+    const candidate = MealPlanner._lookupCandidate(recipeId);
+    if (!candidate) { Components.showToast('レシピが見つかりません', 'error'); return; }
+
+    if (!planObj[day]) planObj[day] = {};
+    planObj[day][slot] = {
+      recipe_id: candidate.recipe_id,
+      title: candidate.title,
+      cook_minutes: candidate.cook_minutes,
+      calories: candidate.calories
+    };
+    latest.plan = JSON.stringify(planObj);
+    store.set('health_mealPlans', lists);
+
+    // レシピ本体を未保存ならここで保存
+    const recipes = store.get('health_recipes') || [];
+    if (!recipes.some(r => String(r.recipe_id) === String(candidate.recipe_id))) {
+      MealPlanner.saveRecipe(candidate);
+    }
+
+    // 買い物リストを再構成
+    const planForList = { id: latest.id || '', plan: planObj };
+    const list = MealPlanner.generateShoppingList(planForList);
+    MealPlanner.linkToStores(list).then(linked => {
+      MealPlanner.saveShoppingList(linked);
+      Components.showToast('買い物リストも更新しました', 'success');
+    });
+
+    this.closeModal();
+    this.renderMain();
+  }
+
   toggleShoppingItem(idx, checked) {
     const lists = store.get('health_shoppingLists') || [];
     if (!lists.length) return;
@@ -2182,7 +2289,11 @@ var App = class App {
         </div>
       `;
       const bodyEl = document.getElementById('modal-body');
-      if (bodyEl) bodyEl.innerHTML = body;
+      if (bodyEl) {
+        bodyEl.innerHTML = body;
+        // QRコードは canvas を innerHTML で挿入してから描く必要がある
+        MealPlanner.renderQrCodes(bodyEl).catch(err => console.warn('[App] QR render error', err));
+      }
     } catch (e) {
       const bodyEl = document.getElementById('modal-body');
       if (bodyEl) bodyEl.innerHTML = `<div class="error">レシピを整えられませんでした：${e.message || e}</div>`;
