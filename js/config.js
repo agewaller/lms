@@ -136,7 +136,8 @@ var CONFIG = {
         activityData:  { label: 'activity',      icon: '🏃' },
         recipes:       { label: 'recipes',       icon: '📖' },
         mealPlans:     { label: 'meal_plans',    icon: '🗓️' },
-        shoppingLists: { label: 'shopping_list', icon: '🛒' }
+        shoppingLists: { label: 'shopping_list', icon: '🛒' },
+        pantry:        { label: 'pantry',        icon: '🥫' }
       },
       dataFields: {
         symptoms: [
@@ -211,6 +212,9 @@ var CONFIG = {
           { key: 'items',            type: 'textarea', label: 'items_json' },
           { key: 'total_budget_est', type: 'number',   label: 'total_budget_est' },
           { key: 'generated_at',     type: 'text',     label: 'generated_at' }
+        ],
+        pantry: [
+          { key: 'name', type: 'text', label: 'item_name' }
         ]
       }
     },

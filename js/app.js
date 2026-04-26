@@ -2124,22 +2124,235 @@ var App = class App {
           ${it.affiliate?.rakuten ? `<a href="${esc(it.affiliate.rakuten)}" target="_blank" rel="noopener" data-store="rakuten" data-name="${esc(it.name)}" onclick="AffiliateEngine.trackClick(this.dataset.store,this.dataset.name,'health')">楽天で買う</a>` : ''}
           ${it.affiliate?.amazon ? `<a href="${esc(it.affiliate.amazon)}" target="_blank" rel="noopener" data-store="amazon_jp" data-name="${esc(it.name)}" onclick="AffiliateEngine.trackClick(this.dataset.store,this.dataset.name,'health')" style="margin-left:8px">Amazonで探す</a>` : ''}
         </td>
+        <td>
+          <button class="btn btn-sm btn-link" data-name="${esc(it.name)}" onclick="app.markPantryFromShopping(this.dataset.name)">常備品</button>
+        </td>
       </tr>
     `).join('');
 
     const body = `
-      <p class="muted">献立に必要な材料です。チェックを入れると「持っているもの／買ったもの」を分けられます。</p>
+      <p class="muted">献立に必要な材料です。チェックを入れると「持っているもの／買ったもの」を分けられます。「常備品」にすると次から自動で除外されます。</p>
       <div class="shopping-list-wrap">
         <table class="shopping-list-table">
-          <thead><tr><th></th><th>食材</th><th>分量</th><th>買う</th></tr></thead>
-          <tbody>${rows || '<tr><td colspan="4">材料がありません</td></tr>'}</tbody>
+          <thead><tr><th></th><th>食材</th><th>分量</th><th>買う</th><th></th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="5">材料がありません</td></tr>'}</tbody>
         </table>
       </div>
       <div class="form-actions">
+        <button class="btn btn-secondary" onclick="app.openPantryList()">常備品リストを開く</button>
         <button class="btn btn-secondary" onclick="app.closeModal()">閉じる</button>
       </div>
     `;
     this.openModal('買い物リスト', body);
+  }
+
+  markPantryFromShopping(name) {
+    this.addToPantry(name);
+    // 既存の買い物リストからもこの食材を外す
+    const lists = store.get('health_shoppingLists') || [];
+    if (!lists.length) return;
+    const latest = lists[lists.length - 1];
+    let items = [];
+    try { items = JSON.parse(latest.items || '[]'); } catch (e) { return; }
+    items = items.filter(it => (it.name || '').trim() !== String(name).trim());
+    latest.items = JSON.stringify(items);
+    store.set('health_shoppingLists', lists);
+    this.openShoppingList();
+  }
+
+  // ─── Plan history ─────────────────────────────────────
+  openMealPlanHistory() {
+    const plans = (store.get('health_mealPlans') || []).slice().reverse();
+    const esc = (s) => String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+    if (!plans.length) {
+      this.openModal('献立の履歴', `<p class="muted">まだ履歴はありません。「今週の献立をつくる」から最初の1週間をつくってみてください。</p><div class="form-actions"><button class="btn btn-secondary" onclick="app.closeModal()">閉じる</button></div>`);
+      return;
+    }
+
+    const rows = plans.map(p => {
+      const date = (p.timestamp || '').slice(0, 10);
+      const note = p.note ? esc(p.note) : '';
+      let count = 0;
+      try {
+        const obj = JSON.parse(p.plan || '{}');
+        Object.values(obj).forEach(d => ['breakfast','lunch','dinner'].forEach(s => { if (d?.[s]?.title) count++; }));
+      } catch (e) { /* ignore */ }
+      return `<tr>
+        <td>${esc(p.week_start_date || '-')}</td>
+        <td>${esc(date)}</td>
+        <td>${count} 食</td>
+        <td>${note}</td>
+        <td>
+          <button class="btn btn-sm btn-link" data-id="${esc(p.id)}" onclick="app.viewPlanFromHistory(this.dataset.id)">中身を見る</button>
+          <button class="btn btn-sm btn-link" data-id="${esc(p.id)}" onclick="app.rebuildShoppingFromPlan(this.dataset.id)">買い物リストを作り直す</button>
+        </td>
+      </tr>`;
+    }).join('');
+
+    this.openModal('献立の履歴', `
+      <div class="meal-history-wrap">
+        <table class="meal-history-table">
+          <thead><tr><th>週はじまり</th><th>作成日</th><th>食数</th><th>メモ</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="form-actions"><button class="btn btn-secondary" onclick="app.closeModal()">閉じる</button></div>
+    `);
+  }
+
+  viewPlanFromHistory(planId) {
+    const plans = store.get('health_mealPlans') || [];
+    const p = plans.find(x => String(x.id) === String(planId));
+    if (!p) { Components.showToast('献立が見つかりません', 'error'); return; }
+    let obj = {};
+    try { obj = JSON.parse(p.plan || '{}'); } catch (e) { /* ignore */ }
+    const esc = (s) => String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+    const dayLabels = { monday:'月', tuesday:'火', wednesday:'水', thursday:'木', friday:'金', saturday:'土', sunday:'日' };
+    const slotLabels = { breakfast:'朝', lunch:'昼', dinner:'夕' };
+    const cells = days.map(d => `
+      <tr><th>${dayLabels[d]}</th>
+      ${['breakfast','lunch','dinner'].map(s => {
+        const m = obj[d]?.[s];
+        if (!m) return `<td>—</td>`;
+        return `<td><div class="meal-slot">${slotLabels[s]}</div>
+          <div>${esc(m.title || '')}</div>
+          ${m.recipe_id ? `<button class="btn btn-sm btn-link" data-recipe-id="${esc(m.recipe_id)}" data-recipe-title="${esc(m.title || '')}" onclick="app.openRecipeSheet(this.dataset.recipeId, this.dataset.recipeTitle)">手順</button>` : ''}
+        </td>`;
+      }).join('')}</tr>
+    `).join('');
+
+    this.openModal(`献立 (${esc(p.week_start_date || '')})`, `
+      <div class="meal-plan-grid-wrap">
+        <table class="meal-plan-grid">
+          <thead><tr><th></th><th>朝</th><th>昼</th><th>夕</th></tr></thead>
+          <tbody>${cells}</tbody>
+        </table>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="app.openMealPlanHistory()">履歴に戻る</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">閉じる</button>
+      </div>
+    `);
+  }
+
+  async rebuildShoppingFromPlan(planId) {
+    const plans = store.get('health_mealPlans') || [];
+    const p = plans.find(x => String(x.id) === String(planId));
+    if (!p) { Components.showToast('献立が見つかりません', 'error'); return; }
+    let obj = {};
+    try { obj = JSON.parse(p.plan || '{}'); } catch (e) { return; }
+    const list = MealPlanner.generateShoppingList({ id: p.id, plan: obj });
+    if (!list.items.length) {
+      Components.showToast('レシピ本体が見つからず、買い物リストを作れませんでした。常備品の見直しか、献立の作り直しを試してください', 'info');
+      return;
+    }
+    const linked = await MealPlanner.linkToStores(list);
+    MealPlanner.saveShoppingList(linked);
+    Components.showToast('買い物リストを作り直しました', 'success');
+    this.closeModal();
+    this.openShoppingList();
+  }
+
+  // ─── Pantry (常備品) ─────────────────────────────────
+  openPantryList() {
+    const items = store.get('health_pantry') || [];
+    const esc = (s) => String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const rows = items.map(it => `
+      <li class="pantry-item">
+        <span>${esc(it.name)}</span>
+        <button class="btn btn-sm btn-link" data-id="${esc(it.id)}" onclick="app.removeFromPantry(this.dataset.id)">外す</button>
+      </li>
+    `).join('');
+    const body = `
+      <p class="muted">買い物リストから常に外したい食材です（塩・醤油・米など）。買い物リスト画面の「常備品にする」からも追加できます。</p>
+      <div class="pantry-add">
+        <input type="text" id="pantryAddInput" class="form-input" placeholder="例: 醤油" />
+        <button class="btn btn-primary" onclick="app.addPantryFromInput()">追加</button>
+      </div>
+      <ul class="pantry-list">${rows || '<li class="muted">まだ常備品はありません</li>'}</ul>
+      <div class="form-actions"><button class="btn btn-secondary" onclick="app.closeModal()">閉じる</button></div>
+    `;
+    this.openModal('常備品リスト', body);
+  }
+
+  addPantryFromInput() {
+    const input = document.getElementById('pantryAddInput');
+    const name = (input?.value || '').trim();
+    if (!name) return;
+    this.addToPantry(name);
+    this.openPantryList();
+  }
+
+  addToPantry(name) {
+    const trimmed = String(name || '').trim();
+    if (!trimmed) return;
+    const existing = store.get('health_pantry') || [];
+    if (existing.some(p => (p.name || '').trim() === trimmed)) {
+      Components.showToast('すでに常備品に登録されています', 'info');
+      return;
+    }
+    store.addDomainEntry('health', 'pantry', { name: trimmed });
+    Components.showToast(`常備品に追加: ${trimmed}`, 'success');
+  }
+
+  removeFromPantry(id) {
+    const items = store.get('health_pantry') || [];
+    const next = items.filter(p => String(p.id) !== String(id));
+    store.set('health_pantry', next);
+    // Firestore 側は store の listener で同期されるが、念のため _docId を持つものは削除フラグだけ立てる
+    this.openPantryList();
+  }
+
+  // ─── Favorites (rated recipes) ────────────────────────
+  rateRecipe(recipeId, stars) {
+    const recipes = store.get('health_recipes') || [];
+    const idx = recipes.findIndex(r => String(r.recipe_id) === String(recipeId));
+    if (idx < 0) {
+      Components.showToast('レシピがまだ保存されていません', 'info');
+      return;
+    }
+    recipes[idx] = { ...recipes[idx], rating: Number(stars) };
+    store.set('health_recipes', recipes);
+    // 一枚紙のスターを即時反映
+    document.querySelectorAll(`.sheet-rating .star[data-recipe-id="${CSS.escape(String(recipeId))}"]`).forEach(btn => {
+      const n = Number(btn.dataset.stars);
+      btn.classList.toggle('on', n <= Number(stars));
+      btn.textContent = n <= Number(stars) ? '★' : '☆';
+    });
+    Components.showToast(`お気に入り度を ${stars}つ星にしました`, 'success');
+  }
+
+  openFavoritesList() {
+    const recipes = (store.get('health_recipes') || [])
+      .filter(r => Number(r.rating || 0) >= 4)
+      .sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
+    const esc = (s) => String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    if (!recipes.length) {
+      this.openModal('お気に入りレシピ', `<p class="muted">まだお気に入りはありません。レシピの一枚紙にある★で評価すると、ここに集まります。</p><div class="form-actions"><button class="btn btn-secondary" onclick="app.closeModal()">閉じる</button></div>`);
+      return;
+    }
+    const cards = recipes.map(r => `
+      <div class="fav-card">
+        <div class="fav-stars">${'★'.repeat(Number(r.rating || 0))}${'☆'.repeat(5 - Number(r.rating || 0))}</div>
+        <div class="fav-title">${esc(r.title)}</div>
+        <div class="fav-meta">${r.cook_minutes || '?'}分 / ${r.calories || '?'}kcal</div>
+        <button class="btn btn-sm btn-primary" data-recipe-id="${esc(r.recipe_id)}" data-recipe-title="${esc(r.title)}" onclick="app.openRecipeSheet(this.dataset.recipeId, this.dataset.recipeTitle)">手順を見る</button>
+      </div>
+    `).join('');
+    this.openModal('お気に入りレシピ', `
+      <div class="fav-grid">${cards}</div>
+      <div class="form-actions"><button class="btn btn-secondary" onclick="app.closeModal()">閉じる</button></div>
+    `);
   }
 
   // ─── Swap a single meal slot in the latest plan ───

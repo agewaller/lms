@@ -167,6 +167,7 @@ var Store = class Store {
       'health_symptoms', 'health_vitals', 'health_bloodTests',
       'health_medications', 'health_supplements', 'health_meals',
       'health_sleepData', 'health_activityData', 'health_photos',
+      'health_recipes', 'health_mealPlans', 'health_shoppingLists', 'health_pantry',
       // Time
       'time_entries', 'time_schedules', 'time_habits', 'time_goals',
       // Work

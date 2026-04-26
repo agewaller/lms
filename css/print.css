@@ -64,6 +64,53 @@
 .swap-title { font-weight: 600; font-size: 14px; }
 .swap-meta { font-size: 12px; color: var(--text-secondary, #666); }
 
+/* ─── Meal plan history ─── */
+.meal-history-wrap { overflow-x: auto; }
+.meal-history-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.meal-history-table th,
+.meal-history-table td { padding: 8px; border-bottom: 1px solid var(--border, #e5e7eb); text-align: left; }
+.meal-history-table th { background: var(--bg-tertiary, #f5f7fa); }
+
+/* ─── Pantry ─── */
+.pantry-add { display: flex; gap: 8px; margin: 8px 0; }
+.pantry-add .form-input { flex: 1 1 auto; }
+.pantry-list { list-style: none; padding: 0; margin: 0; }
+.pantry-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 8px; border-bottom: 1px solid var(--border, #e5e7eb);
+  font-size: 14px;
+}
+
+/* ─── Favorites ─── */
+.fav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  margin: 8px 0;
+}
+.fav-card {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius-sm, 8px);
+  padding: 10px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.fav-stars { color: #f59e0b; font-size: 14px; }
+.fav-title { font-weight: 600; font-size: 14px; }
+.fav-meta { font-size: 12px; color: var(--text-secondary, #666); }
+
+/* ─── Star rating on the one-sheet ─── */
+.recipe-sheet .sheet-rating {
+  display: inline-flex; gap: 2px; margin-left: auto; align-items: center;
+}
+.recipe-sheet .sheet-rating .star {
+  background: none; border: none; padding: 0 2px;
+  font-size: 18px; cursor: pointer; color: #ccc;
+}
+.recipe-sheet .sheet-rating .star.on { color: #f59e0b; }
+@media print {
+  .recipe-sheet .sheet-rating { display: none !important; }
+}
+
 /* ─── Modal: meal planner preferences ─── */
 #mealPlannerPrefs .chip-row {
   display: flex; flex-wrap: wrap; gap: 6px;

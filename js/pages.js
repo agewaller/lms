@@ -313,6 +313,9 @@ var Pages = {
         <div class="meal-plan-actions">
           <button class="btn btn-primary" onclick="app.startMealPlanner()">献立をつくり直す</button>
           <button class="btn btn-secondary" onclick="app.openShoppingList()">買い物リストを開く</button>
+          <button class="btn btn-link" onclick="app.openMealPlanHistory()">履歴</button>
+          <button class="btn btn-link" onclick="app.openPantryList()">常備品</button>
+          <button class="btn btn-link" onclick="app.openFavoritesList()">お気に入り</button>
         </div>
       `;
     } else {
@@ -320,6 +323,10 @@ var Pages = {
         ${Components.emptyState('🍽️', 'まだ献立がありません', 'ボタンを押すと、好みと体調に合わせて1週間分の献立を整えます')}
         <div style="text-align:center;margin-top:12px">
           <button class="btn btn-primary btn-lg" onclick="app.startMealPlanner()">今週の献立をつくる</button>
+        </div>
+        <div style="text-align:center;margin-top:8px">
+          <button class="btn btn-link" onclick="app.openPantryList()">常備品</button>
+          <button class="btn btn-link" onclick="app.openFavoritesList()">お気に入り</button>
         </div>
       `;
     }

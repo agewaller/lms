@@ -178,6 +178,7 @@ var MealPlanner = {
   },
 
   // ─── Generate shopping list from a plan ───
+  // 常備品（health_pantry）に含まれる食材は除外する。
   generateShoppingList(plan) {
     const map = new Map();
     const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
@@ -199,14 +200,19 @@ var MealPlanner = {
       });
     });
 
-    const items = Array.from(map.values()).map(it => ({
-      name: it.name,
-      qty: it.qty || '',
-      unit: it.unit,
-      notes: it.notes.join(' / '),
-      purchased: false,
-      affiliate: { rakuten: '', amazon: '' }
-    }));
+    const pantry = (store.get('health_pantry') || []).map(p => (p.name || '').trim()).filter(Boolean);
+    const matchesPantry = (name) => pantry.some(p => name.includes(p) || p.includes(name));
+
+    const items = Array.from(map.values())
+      .filter(it => !matchesPantry(it.name))
+      .map(it => ({
+        name: it.name,
+        qty: it.qty || '',
+        unit: it.unit,
+        notes: it.notes.join(' / '),
+        purchased: false,
+        affiliate: { rakuten: '', amazon: '' }
+      }));
 
     return {
       plan_id: plan.id || plan.recipe_id || '',
@@ -273,6 +279,14 @@ var MealPlanner = {
       </li>
     `).join('');
 
+    const recipeId = String(recipe.recipe_id || '');
+    const currentRating = Number(recipe.rating || this._currentRecipeRating(recipeId) || 0);
+    const stars = [1,2,3,4,5].map(n => `
+      <button type="button" class="star ${n <= currentRating ? 'on' : ''}" data-recipe-id="${this._esc(recipeId)}" data-stars="${n}"
+        onclick="app.rateRecipe(this.dataset.recipeId, Number(this.dataset.stars))" aria-label="${n}つ星">${n <= currentRating ? '★' : '☆'}</button>
+    `).join('');
+    const ratingBlock = recipeId ? `<div class="sheet-rating no-print" title="お気に入り度">${stars}</div>` : '';
+
     return `<article class="recipe-sheet" id="${opts.id || 'recipeSheet'}">
       <header class="sheet-header">
         <h1>${this._esc(sheet.title || recipe.title)}</h1>
@@ -281,6 +295,7 @@ var MealPlanner = {
           <span>👥 ${sheet.servings || recipe.servings || ''}人分</span>
           <span>⏱ ${sheet.total_minutes || recipe.cook_minutes || ''}分</span>
           ${sheet.tools ? `<span>🍳 ${(sheet.tools || []).join(' / ')}</span>` : ''}
+          ${ratingBlock}
         </div>
       </header>
 
@@ -473,6 +488,11 @@ var MealPlanner = {
 
   _lookupCandidate(recipeId) {
     return (this.state.candidates || []).find(c => String(c.recipe_id) === String(recipeId));
+  },
+
+  _currentRecipeRating(recipeId) {
+    const r = (store.get('health_recipes') || []).find(x => String(x.recipe_id) === String(recipeId));
+    return Number(r?.rating || 0);
   },
 
   _parseJsonResponse(text) {
