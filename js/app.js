@@ -18,6 +18,7 @@ var App = class App {
     if (store.get('isAuthenticated') && store.get('user')) {
       store.set('currentDomain', entryDomain || store.get('currentDomain') || 'health');
       store.set('currentPage', 'home');
+      this.updateStreak();
       this.renderApp();
       this.startInboxPolling();
     }
@@ -27,6 +28,7 @@ var App = class App {
       if (val) {
         store.set('currentDomain', this.entryDomain || store.get('currentDomain') || 'health');
         store.set('currentPage', 'home');
+        this.updateStreak();
         this.renderApp();
         this.startInboxPolling();
       } else {
@@ -39,13 +41,43 @@ var App = class App {
     store.on('currentDomain', () => this.renderApp());
   }
 
+  // ─── Streak tracking ───
+  updateStreak() {
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const last = store.get('lastActiveDate');
+    let streak = store.get('streakDays') || 0;
+
+    if (last === today) return; // already counted today
+
+    if (last) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().slice(0, 10);
+      streak = (last === yesterdayStr) ? streak + 1 : 1;
+    } else {
+      streak = 1;
+    }
+
+    store.set('streakDays', streak);
+    store.set('lastActiveDate', today);
+  }
+
   // ─── Inbox polling: fetch Plaud auto-sent transcripts ───
   startInboxPolling() {
     if (this._inboxPollTimer) return;
 
-    // Poll immediately, then every 2 minutes
+    const minutes = Math.max(1, store.get('plaudPollMinutes') || 2);
     this.pollPlaudInbox();
-    this._inboxPollTimer = setInterval(() => this.pollPlaudInbox(), 2 * 60 * 1000);
+    this._inboxPollTimer = setInterval(() => this.pollPlaudInbox(), minutes * 60 * 1000);
+  }
+
+  savePlaudPollInterval() {
+    const val = parseInt(document.getElementById('plaudPollMin')?.value) || 2;
+    store.set('plaudPollMinutes', Math.max(1, Math.min(60, val)));
+    // Restart polling with new interval
+    this.stopInboxPolling();
+    this.startInboxPolling();
+    Components.showToast(`取込間隔を${val}分に変更しました`, 'success');
   }
 
   stopInboxPolling() {
@@ -196,6 +228,13 @@ var App = class App {
     // Render page content
     mainContent.innerHTML = Pages.render(page, domain);
 
+    // Show onboarding for brand-new users (only on home, not admin/settings)
+    if (page === 'home' && !this._onboardingDone && Pages.isNewUser()) {
+      const overlay = document.createElement('div');
+      overlay.innerHTML = Pages.renderOnboarding();
+      document.body.appendChild(overlay.firstElementChild);
+    }
+
     // Auto-close sidebar on mobile after navigation
     if (window.innerWidth <= 768) {
       const sidebar = document.getElementById('sidebar');
@@ -248,12 +287,54 @@ var App = class App {
       domainLabel.textContent = i18n.t(d);
     }
 
+    // Streak display
+    const streakEl = document.getElementById('sidebar-streak');
+    const streakCount = document.getElementById('streakCount');
+    const days = store.get('streakDays') || 0;
+    if (streakEl && days > 0) {
+      streakEl.style.display = 'flex';
+      if (streakCount) streakCount.textContent = days;
+    }
+
     // Admin mode: show admin nav items via body class only.
     // We avoid setting inline style because CSS `.admin-only { display: none }`
     // and `body.is-admin .admin-only { display: flex }` already handles this,
     // and inline style would override the CSS class toggling.
     const isAdmin = FirebaseBackend.isAdmin();
     document.body.classList.toggle('is-admin', isAdmin);
+  }
+
+  // ─── Onboarding ───
+  onboardingPickDomain(domain) {
+    store.set('currentDomain', domain);
+    document.querySelector('[data-step="1"]').style.display = 'none';
+    const step2 = document.getElementById('onboarding-step2');
+    if (step2) step2.style.display = 'flex';
+  }
+
+  onboardingNext() {
+    const name = document.getElementById('ob-name')?.value?.trim();
+    const age = document.getElementById('ob-age')?.value;
+    const gender = document.getElementById('ob-gender')?.value;
+
+    const profile = store.get('userProfile') || {};
+    if (name) profile.name = name;
+    if (age) profile.age = parseInt(age);
+    if (gender) profile.gender = gender;
+    store.set('userProfile', profile);
+
+    const step2 = document.getElementById('onboarding-step2');
+    const step3 = document.getElementById('onboarding-step3');
+    if (step2) step2.style.display = 'none';
+    if (step3) step3.style.display = 'flex';
+  }
+
+  onboardingFinish() {
+    this._onboardingDone = true;
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) overlay.remove();
+    // Go to record page so user can enter first data
+    store.set('currentPage', 'record');
   }
 
   // ─── Quick Input ───

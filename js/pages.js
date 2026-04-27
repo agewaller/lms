@@ -1855,7 +1855,20 @@ var Pages = {
   // ─── Admin Tab: Firebase ───
   renderAdminTab_firebase() {
     const connected = FirebaseBackend.initialized;
-    return `<div class="card">
+    const pollMin = store.get('plaudPollMinutes') || 2;
+    return `<div class="card" style="margin-bottom:16px">
+      <div class="card-header"><h3>Plaud取込設定</h3></div>
+      <div class="card-body">
+        <div class="form-group">
+          <label>自動取込の間隔（分）</label>
+          <input type="number" id="plaudPollMin" class="form-input" value="${pollMin}" min="1" max="60" style="max-width:120px">
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="app.savePlaudPollInterval()">保存</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
       <div class="card-header">
         <h3>Firebase設定</h3>
         <span class="status-badge ${connected ? 'connected' : 'disconnected'}">${connected ? '接続済' : '未接続'}</span>
@@ -1918,5 +1931,94 @@ var Pages = {
         </div>
       </div>
     </div>`;
+  },
+
+  // ─── Onboarding wizard (shown to brand-new users with zero data) ───
+  renderOnboarding() {
+    const domains = Object.values(CONFIG.domains);
+    return `
+    <div class="onboarding-overlay" id="onboarding-overlay">
+      <div class="onboarding-card">
+        <div class="onboarding-logo">LMS</div>
+        <h2 class="onboarding-title">ようこそ、人生管理の旅へ</h2>
+        <p class="onboarding-subtitle">
+          意識・健康・時間・仕事・関係・資産の6つの領域を<br>
+          まとめて見直し、充実した毎日をつくります。
+        </p>
+
+        <div class="onboarding-steps">
+          <div class="onboarding-step active" data-step="1">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <h3>まずどの領域から始めますか？</h3>
+              <div class="domain-pick-grid">
+                ${domains.map(d => `
+                  <button class="domain-pick-btn" onclick="app.onboardingPickDomain('${d.id}')"
+                    style="border-color:${d.color}">
+                    <span class="domain-pick-icon">${d.icon}</span>
+                    <span>${i18n.t(d.id)}</span>
+                  </button>`).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div class="onboarding-step" data-step="2" id="onboarding-step2" style="display:none">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <h3>プロフィールを入れましょう</h3>
+              <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">
+                あなたに合ったアドバイスをするために使います
+              </p>
+              <div class="form-group">
+                <label class="form-label">お名前</label>
+                <input type="text" class="form-input" id="ob-name" placeholder="例：田中 太郎">
+              </div>
+              <div class="form-group">
+                <label class="form-label">年齢</label>
+                <input type="number" class="form-input" id="ob-age" placeholder="例：67" min="0" max="120">
+              </div>
+              <div class="form-group">
+                <label class="form-label">性別</label>
+                <select class="form-input" id="ob-gender">
+                  <option value="">選択してください</option>
+                  <option value="male">男性</option>
+                  <option value="female">女性</option>
+                  <option value="other">その他</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="app.onboardingNext()">
+                次へ →
+              </button>
+            </div>
+          </div>
+
+          <div class="onboarding-step" data-step="3" id="onboarding-step3" style="display:none">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <h3>準備完了です！</h3>
+              <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">
+                毎日少し記録するだけで、あなたの人生が見えてきます。
+              </p>
+              <div class="onboarding-tips">
+                <div class="ob-tip">📝 毎日の記録 → 変化が見える</div>
+                <div class="ob-tip">💬 相談する → 具体的な提案が届く</div>
+                <div class="ob-tip">🔥 継続 → ストリーク記録が増える</div>
+              </div>
+              <button class="btn btn-primary" style="width:100%;margin-top:16px" onclick="app.onboardingFinish()">
+                はじめる
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  isNewUser() {
+    const allKeys = [
+      'consciousness_observation', 'health_symptoms', 'health_vitals',
+      'time_entries', 'work_tasks', 'relationship_contacts', 'assets_overview'
+    ];
+    return allKeys.every(k => (store.get(k) || []).length === 0);
   }
 };

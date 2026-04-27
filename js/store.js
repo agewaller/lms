@@ -109,7 +109,14 @@ var Store = class Store {
 
       // Notifications
       notifications: [],
-      unreadCount: 0
+      unreadCount: 0,
+
+      // Streak (継続日数)
+      streakDays: 0,
+      lastActiveDate: null,  // ISO date string YYYY-MM-DD
+
+      // Plaud polling
+      plaudPollMinutes: 2
     };
 
     this.listeners = new Map();
@@ -182,7 +189,9 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'streakDays', 'lastActiveDate',
+      'plaudPollMinutes'
     ];
   }
 
@@ -272,7 +281,10 @@ var Store = class Store {
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // Only clear lms_* keys — never localStorage.clear() which wipes Firebase config + OAuth tokens
+    this.persistKeys.forEach(key => {
+      try { localStorage.removeItem(`lms_${key}`); } catch (e) { /* ignore */ }
+    });
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};

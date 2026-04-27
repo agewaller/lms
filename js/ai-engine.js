@@ -4,6 +4,21 @@
    ============================================================ */
 var AIEngine = {
 
+  // ─── In-memory response cache (TTL: 30 minutes) ───
+  _cache: new Map(),
+  _cacheTTL: 30 * 60 * 1000,
+
+  _cacheKey(domain, promptType, model, userMessage) {
+    return `${domain}|${promptType}|${model}|${userMessage.slice(0, 200)}`;
+  },
+
+  _getCached(key) {
+    const hit = this._cache.get(key);
+    if (!hit) return null;
+    if (Date.now() - hit.ts > this._cacheTTL) { this._cache.delete(key); return null; }
+    return hit.value;
+  },
+
   // ─── Main analysis entry point ───
   async analyze(domain, promptType, userData, options = {}) {
     const model = options.model || store.get('selectedModel') || 'claude-sonnet-4-6';
@@ -17,6 +32,40 @@ var AIEngine = {
       const systemPrompt = this.buildSystemPrompt(domain, promptType);
       const userMessage = this.buildUserMessage(domain, userData);
 
+      // Check cache (skip for chat/stream calls)
+      if (!options.noCache) {
+        const cacheKey = this._cacheKey(domain, promptType, model, userMessage);
+        const cached = this._getCached(cacheKey);
+        if (cached) return cached;
+
+        let result;
+        switch (modelConfig.provider) {
+          case 'anthropic':
+            result = await this.callAnthropic(model, systemPrompt, userMessage, modelConfig.maxTokens);
+            break;
+          case 'openai':
+            result = await this.callOpenAI(model, systemPrompt, userMessage, modelConfig.maxTokens);
+            break;
+          case 'google':
+            result = await this.callGemini(model, systemPrompt, userMessage, modelConfig.maxTokens);
+            break;
+          default:
+            throw new Error('Unknown provider: ' + modelConfig.provider);
+        }
+
+        this._cache.set(cacheKey, { value: result, ts: Date.now() });
+
+        const entry = {
+          id: Date.now().toString(36),
+          timestamp: new Date().toISOString(),
+          domain, promptType, model, response: result, userData
+        };
+        store.set('analysisHistory', [...(store.get('analysisHistory') || []), entry]);
+        store.set('latestAnalysis', entry);
+        return result;
+      }
+
+      // noCache path (chat etc.)
       let result;
       switch (modelConfig.provider) {
         case 'anthropic':
@@ -278,8 +327,8 @@ var AIEngine = {
       domain
     });
 
-    // Get AI response
-    const response = await this.analyze(domain, 'daily', { text: userMessage });
+    // Get AI response (no cache — every chat turn is unique)
+    const response = await this.analyze(domain, 'daily', { text: userMessage }, { noCache: true });
 
     // Add AI response
     history.push({
