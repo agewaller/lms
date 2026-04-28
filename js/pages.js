@@ -19,6 +19,46 @@ var Pages = {
     }
   },
 
+  // ─── Onboarding check: has user recorded anything yet? ───
+  isNewUser() {
+    return !Object.keys(CONFIG.domains).some(d => {
+      return Object.keys(CONFIG.domains[d].categories || {}).some(c => {
+        return store.getDomainData(d, c, 365).length > 0;
+      });
+    });
+  },
+
+  renderOnboarding() {
+    const domains = [
+      { id: 'health',       label: '健康',  desc: '体調・お薬・食事の記録から始める' },
+      { id: 'assets',       label: '資産',  desc: '収入・支出・貯金額を記録する' },
+      { id: 'relationship', label: '関係',  desc: '大切な人とのつながりを整理する' },
+      { id: 'time',         label: '時間',  desc: '毎日の過ごし方を記録する' },
+      { id: 'work',         label: '仕事',  desc: '生きがいや副業の可能性を探る' },
+      { id: 'consciousness', label: '意識', desc: '心の状態を振り返る' },
+    ];
+    return `<div class="onboarding-panel">
+      <div class="onboarding-welcome">
+        <div class="onboarding-icon">◈</div>
+        <h2>LMSへようこそ</h2>
+        <p>どの領域から始めますか？<br>気になるところを選んでください。いつでも変えられます。</p>
+      </div>
+      <div class="onboarding-domains">
+        ${domains.map(d => `
+          <button class="onboarding-domain-btn" onclick="app.switchDomain('${d.id}');app.navigate('record')">
+            <strong>${d.label}</strong>
+            <span>${d.desc}</span>
+          </button>
+        `).join('')}
+      </div>
+      <div class="onboarding-skip">
+        <button class="btn btn-secondary btn-sm" onclick="store.set('onboardingDone', true);app.render()">
+          あとで自分で探す
+        </button>
+      </div>
+    </div>`;
+  },
+
   // ═══════════════════════════════════════════════════════════
   //  HOME PAGE (per domain)
   // ═══════════════════════════════════════════════════════════
@@ -26,6 +66,11 @@ var Pages = {
     const domainConfig = CONFIG.domains[domain];
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
+
+    // Show onboarding for brand new users who haven't dismissed it
+    if (this.isNewUser() && !store.get('onboardingDone')) {
+      return `<div class="page-home">${this.renderOnboarding()}</div>`;
+    }
 
     // Quick input bar
     let html = `<div class="page-home">
