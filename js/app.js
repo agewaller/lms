@@ -29,6 +29,7 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        this.checkAndShowOnboarding();
       } else {
         this.stopInboxPolling();
       }
@@ -1927,6 +1928,164 @@ var App = class App {
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();
+  }
+
+  // ─── Onboarding wizard ───
+  // 初回ログイン時に表示。データが全くない場合に自動でトリガー。
+  checkAndShowOnboarding() {
+    const profile = store.get('userProfile') || {};
+    const dismissed = localStorage.getItem('lms_onboarding_done');
+    if (dismissed) return;
+
+    // データが全くない新規ユーザーにのみ表示
+    const hasAnyData = store.persistKeys.some(k => {
+      const v = store.get(k);
+      return Array.isArray(v) && v.length > 0;
+    });
+    if (!hasAnyData && !profile.name) {
+      setTimeout(() => this.showOnboarding(), 800);
+    }
+  }
+
+  showOnboarding() {
+    const user = store.get('user') || {};
+    const firstName = (user.displayName || '').split(' ')[0] || 'さん';
+
+    const html = `<div class="onboarding-wizard">
+      <div class="onboarding-steps" id="onboardingSteps">
+
+        <!-- Step 1: Welcome -->
+        <div class="onboarding-step active" data-step="1">
+          <div class="ob-icon">◈</div>
+          <h2>ようこそ、${Components.escapeHtml(firstName)}さん</h2>
+          <p>LMSは、あなたの人生を<strong>6つの領域</strong>で<br>まるごとサポートするシステムです。</p>
+          <div class="ob-domains">
+            <span style="color:#6C63FF">一 意識</span>
+            <span style="color:#10b981">二 健康</span>
+            <span style="color:#f59e0b">三 時間</span>
+            <span style="color:#3b82f6">四 仕事</span>
+            <span style="color:#ef4444">五 関係</span>
+            <span style="color:#d97706">六 資産</span>
+          </div>
+          <p class="ob-sub">最初の設定は5分で終わります。一緒にやってみましょう。</p>
+          <button class="btn btn-primary btn-lg" onclick="app.onboardingNext(2)">はじめる →</button>
+        </div>
+
+        <!-- Step 2: Profile basics -->
+        <div class="onboarding-step" data-step="2">
+          <div class="ob-icon">👤</div>
+          <h2>基本情報を教えてください</h2>
+          <p>あなたに合ったアドバイスをお届けするために使います。後から変更できます。</p>
+          <div class="ob-form">
+            <div class="form-group">
+              <label>お名前</label>
+              <input type="text" id="ob_name" class="form-input" placeholder="山田 花子" value="${Components.escapeHtml(user.displayName || '')}">
+            </div>
+            <div class="form-group">
+              <label>生年月日（任意）</label>
+              <input type="date" id="ob_birthdate" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>お住まいの都道府県（任意）</label>
+              <select id="ob_prefecture" class="form-input">
+                <option value="">選択してください</option>
+                ${['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'].map(p => `<option>${p}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="ob-nav">
+            <button class="btn btn-secondary" onclick="app.onboardingNext(1)">← 戻る</button>
+            <button class="btn btn-primary" onclick="app.onboardingSaveProfile()">次へ →</button>
+          </div>
+        </div>
+
+        <!-- Step 3: Health goal -->
+        <div class="onboarding-step" data-step="3">
+          <div class="ob-icon">💚</div>
+          <h2>健康で一番気になることは？</h2>
+          <p>最もよく使われる領域は<strong>健康</strong>です。今の状態を教えてください。</p>
+          <div class="ob-choices">
+            ${[
+              { v: 'sleep', label: '😴 睡眠の質を上げたい' },
+              { v: 'diet',  label: '🥗 食事・体重を管理したい' },
+              { v: 'pain',  label: '🤕 慢性的な痛みや不調がある' },
+              { v: 'mental', label: '🧘 ストレスや気持ちの安定' },
+              { v: 'meds',  label: '💊 薬やサプリを管理したい' },
+              { v: 'check', label: '📊 健診の結果を把握したい' }
+            ].map(c => `
+              <label class="ob-choice">
+                <input type="checkbox" value="${c.v}" name="healthGoal">
+                <span>${c.label}</span>
+              </label>
+            `).join('')}
+          </div>
+          <div class="ob-nav">
+            <button class="btn btn-secondary" onclick="app.onboardingNext(2)">← 戻る</button>
+            <button class="btn btn-primary" onclick="app.onboardingSaveHealthGoal()">次へ →</button>
+          </div>
+        </div>
+
+        <!-- Step 4: Done -->
+        <div class="onboarding-step" data-step="4">
+          <div class="ob-icon">🎉</div>
+          <h2>準備完了！</h2>
+          <p>設定が終わりました。さっそく今日の健康状態を記録してみましょう。</p>
+          <div class="ob-tips">
+            <div class="ob-tip">📝 毎日1回の記録が習慣になると、変化が見えてきます</div>
+            <div class="ob-tip">💬 「相談する」に何でも話しかけてみてください</div>
+            <div class="ob-tip">📱 スマホのホーム画面に追加すると毎日使いやすくなります</div>
+          </div>
+          <button class="btn btn-primary btn-lg" onclick="app.onboardingFinish()">記録を始める</button>
+        </div>
+      </div>
+
+      <!-- Progress dots -->
+      <div class="ob-progress">
+        ${[1,2,3,4].map(i => `<span class="ob-dot ${i===1 ? 'active' : ''}" data-step="${i}"></span>`).join('')}
+      </div>
+    </div>`;
+
+    this.openModal('LMSへようこそ', html);
+  }
+
+  onboardingNext(step) {
+    document.querySelectorAll('.onboarding-step').forEach(el => {
+      el.classList.toggle('active', parseInt(el.dataset.step) === step);
+    });
+    document.querySelectorAll('.ob-dot').forEach(el => {
+      el.classList.toggle('active', parseInt(el.dataset.step) === step);
+    });
+  }
+
+  onboardingSaveProfile() {
+    const name = document.getElementById('ob_name')?.value?.trim();
+    const birthdate = document.getElementById('ob_birthdate')?.value;
+    const prefecture = document.getElementById('ob_prefecture')?.value;
+
+    const profile = store.get('userProfile') || {};
+    if (name) profile.name = name;
+    if (birthdate) profile.birthdate = birthdate;
+    if (prefecture) profile.prefecture = prefecture;
+    store.set('userProfile', profile);
+
+    this.onboardingNext(3);
+  }
+
+  onboardingSaveHealthGoal() {
+    const checks = document.querySelectorAll('input[name="healthGoal"]:checked');
+    const goals = Array.from(checks).map(c => c.value);
+    const profile = store.get('userProfile') || {};
+    profile.healthGoals = goals;
+    store.set('userProfile', profile);
+    this.onboardingNext(4);
+  }
+
+  onboardingFinish() {
+    localStorage.setItem('lms_onboarding_done', '1');
+    this.closeModal();
+    store.set('currentDomain', 'health');
+    store.set('currentPage', 'record');
+    this.renderApp();
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───

@@ -269,6 +269,47 @@ var Store = class Store {
     return score;
   }
 
+  // ─── Streak: 連続記録日数 ───
+
+  calculateStreak() {
+    // 全ドメインの全カテゴリのエントリを集め、記録した日付セットを作る
+    const dateSet = new Set();
+    this.persistKeys.forEach(key => {
+      const arr = this.state[key];
+      if (!Array.isArray(arr)) return;
+      arr.forEach(e => {
+        if (e.timestamp) dateSet.add(e.timestamp.slice(0, 10));
+      });
+    });
+
+    if (dateSet.size === 0) return 0;
+
+    const today = new Date();
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      if (dateSet.has(key)) {
+        streak++;
+      } else if (i > 0) {
+        // i=0 は今日なのでスキップ（まだ記録前の可能性がある）
+        break;
+      }
+    }
+    return streak;
+  }
+
+  // ─── Check if recorded today (任意のドメイン) ───
+  hasRecordToday(domain) {
+    const today = new Date().toISOString().slice(0, 10);
+    const domainKeys = this.persistKeys.filter(k => k.startsWith(domain + '_'));
+    return domainKeys.some(key => {
+      const arr = this.state[key];
+      return Array.isArray(arr) && arr.some(e => e.timestamp?.slice(0, 10) === today);
+    });
+  }
+
   // ─── Clear ───
 
   clearAll() {

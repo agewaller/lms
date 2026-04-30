@@ -8,6 +8,7 @@ var Pages = {
   render(page, domain) {
     switch (page) {
       case 'home':         return this.renderHome(domain);
+      case 'overview':     return this.renderOverview();
       case 'data':         return this.renderDataBrowser(domain);
       case 'integrations': return this.renderIntegrations(domain);
       case 'record':   return this.renderRecord(domain);
@@ -20,6 +21,110 @@ var Pages = {
   },
 
   // ═══════════════════════════════════════════════════════════
+  //  OVERVIEW (6領域まとめ表示)
+  // ═══════════════════════════════════════════════════════════
+  renderOverview() {
+    const user = store.get('user') || {};
+    const firstName = (user.displayName || 'あなた').split(' ')[0];
+    const streak = store.calculateStreak();
+    const today = new Date().toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' });
+    const totalDomains = Object.keys(CONFIG.domains).length;
+
+    // Count domains with today's record
+    const activeDomains = Object.keys(CONFIG.domains).filter(d => store.hasRecordToday(d)).length;
+
+    let html = `<div class="page-overview">
+      <div class="overview-header">
+        <div class="overview-greeting">
+          <h2>おはようございます、${Components.escapeHtml(firstName)}さん</h2>
+          <p class="overview-date">${today}</p>
+        </div>
+        <div class="overview-today-stats">
+          ${streak > 0 ? `<div class="ov-streak"><span class="streak-fire-sm">${streak >= 7 ? '🔥' : '✨'}</span> <strong>${streak}日</strong>連続</div>` : ''}
+          <div class="ov-domains-done">${activeDomains}/${totalDomains} 記録済み</div>
+        </div>
+      </div>
+
+      <!-- 6-domain grid -->
+      <div class="overview-domains-grid">`;
+
+    Object.entries(CONFIG.domains).forEach(([domainId, domainConfig]) => {
+      const score = store.calculateDomainScore(domainId);
+      const hasToday = store.hasRecordToday(domainId);
+      const scoreColor = score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444';
+      const catKeys = Object.keys(domainConfig.categories || {});
+      const recentCount = catKeys.reduce((s, c) => s + store.getDomainData(domainId, c, 7).length, 0);
+
+      html += `<div class="ov-domain-card ${hasToday ? 'recorded' : ''}" onclick="app.switchDomain('${domainId}')"
+            style="--dc: ${domainConfig.color}">
+          <div class="ovdc-header">
+            <span class="ovdc-num" style="color:${domainConfig.color}">${domainConfig.icon}</span>
+            <span class="ovdc-name">${i18n.t(domainId)}</span>
+            ${hasToday ? '<span class="ovdc-check">✓</span>' : ''}
+          </div>
+          <div class="ovdc-score" style="color:${scoreColor}">${score}</div>
+          <div class="ovdc-meta">7日間 ${recentCount}件の記録</div>
+          <button class="btn btn-sm ovdc-btn" onclick="event.stopPropagation();app.switchDomain('${domainId}');app.navigate('record')">
+            記録する
+          </button>
+        </div>`;
+    });
+
+    html += `</div>`;
+
+    // Recent activity (across all domains)
+    let allRecent = [];
+    Object.keys(CONFIG.domains).forEach(d => {
+      Object.keys(CONFIG.domains[d].categories || {}).forEach(cat => {
+        const entries = store.getDomainData(d, cat, 3);
+        allRecent = allRecent.concat(entries.map(e => ({ ...e, _domain: d })));
+      });
+    });
+    allRecent.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    if (allRecent.length > 0) {
+      html += `<div class="overview-recent">
+        <h3>最近の記録</h3>
+        <div class="ov-recent-list">`;
+      allRecent.slice(0, 8).forEach(e => {
+        const dc = CONFIG.domains[e._domain];
+        const ts = new Date(e.timestamp).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const preview = e.text || e.content || e.type || Object.values(e).find(v => typeof v === 'string' && v.length > 2) || '';
+        html += `<div class="ov-recent-item" onclick="app.switchDomain('${e._domain}');app.navigate('data')">
+          <span class="ov-recent-domain" style="color:${dc?.color}">${dc?.icon || ''}</span>
+          <span class="ov-recent-text">${Components.escapeHtml(String(preview).slice(0, 40))}</span>
+          <span class="ov-recent-time">${ts}</span>
+        </div>`;
+      });
+      html += `</div></div>`;
+    }
+
+    // Quick action suggestions
+    const todoList = Object.keys(CONFIG.domains)
+      .filter(d => !store.hasRecordToday(d))
+      .slice(0, 3);
+
+    if (todoList.length > 0) {
+      html += `<div class="overview-suggestions">
+        <h3>今日まだ記録していない領域</h3>
+        <div class="ov-todo-list">
+          ${todoList.map(d => {
+            const dc = CONFIG.domains[d];
+            return `<button class="btn btn-secondary ov-todo-btn"
+              onclick="app.switchDomain('${d}');app.navigate('record')"
+              style="border-left:3px solid ${dc.color}">
+              ${dc.icon} ${i18n.t(d)} を記録する
+            </button>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }
+
+    html += `</div>`;
+    return html;
+  },
+
+  // ═══════════════════════════════════════════════════════════
   //  HOME PAGE (per domain)
   // ═══════════════════════════════════════════════════════════
   renderHome(domain) {
@@ -27,9 +132,28 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // ─── Streak banner ───
+    const streak = store.calculateStreak();
+    const hasToday = store.hasRecordToday(domain);
+
+    let html = `<div class="page-home">`;
+
+    // Streak display
+    if (streak > 0 || hasToday) {
+      const fireEmoji = streak >= 30 ? '🔥🔥' : streak >= 7 ? '🔥' : '✨';
+      html += `<div class="streak-banner ${streak >= 7 ? 'streak-hot' : ''}">
+        <div class="streak-inner">
+          <span class="streak-fire">${fireEmoji}</span>
+          <div class="streak-text">
+            <strong>${streak}日連続</strong>で記録中！
+            ${hasToday ? '<span class="streak-today">今日も記録済み ✓</span>' : '<span class="streak-cta">今日もぜひ記録を</span>'}
+          </div>
+        </div>
+      </div>`;
+    }
+
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>

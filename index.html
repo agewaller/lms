@@ -4,7 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LMS - Life Management System</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#6C63FF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/styles.css?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
@@ -19,83 +24,130 @@
       </div>
       <div class="lp-nav-links">
         <a href="#domains">6つの領域</a>
-        <a href="#features">機能</a>
-        <a href="#login" class="btn btn-sm btn-primary">ログイン</a>
+        <a href="#voice">使った方の声</a>
+        <a href="#login" class="btn btn-sm btn-primary">無料で始める</a>
       </div>
     </nav>
 
     <div class="hero-content">
-      <h1>Life Management System</h1>
-      <p class="hero-subtitle">年金だけでは足りない時代。<br>意識・健康・時間・仕事・関係・資産<br>6つの領域を、まるごとサポート</p>
-      <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
+      <div class="hero-badge">65歳からの人生設計に</div>
+      <h1>人生の6領域を<br>まるごと整える</h1>
+      <p class="hero-subtitle">体調・気持ち・お金・人間関係・時間・仕事。<br>ばらばらに管理していたことを、一か所でつなぐ。<br>毎日の記録が、あなたの人生を少しずつ変えていきます。</p>
+      <div class="hero-actions">
+        <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
+        <a href="#domains" class="btn btn-lg btn-ghost">機能を見る</a>
+      </div>
+      <p class="hero-note">登録無料 · スマホ対応 · 個人情報はご本人だけが閲覧</p>
     </div>
   </header>
 
+  <!-- Pain points -->
+  <section class="lp-section lp-section-pain">
+    <h2>こんなことで悩んでいませんか？</h2>
+    <div class="pain-grid">
+      <div class="pain-item">体調の変化を<br>どこに記録すればいい？</div>
+      <div class="pain-item">病院の結果を<br>毎回説明するのが大変</div>
+      <div class="pain-item">老後のお金が<br>本当に足りるか不安</div>
+      <div class="pain-item">退職してから<br>人とのつながりが減った</div>
+      <div class="pain-item">時間はあるのに<br>何をすればいいかわからない</div>
+      <div class="pain-item">気持ちが沈みがちで<br>相談できる人がいない</div>
+    </div>
+    <p class="section-sub" style="margin-top:24px">LMSは、これらすべてを一か所でサポートします。</p>
+  </section>
+
   <!-- Domain Cards -->
   <section id="domains" class="lp-section">
-    <h2>6つのライフドメイン</h2>
-    <p class="section-sub">それぞれの領域をやさしくサポートし、あなたに合ったアドバイスをお届けします</p>
+    <h2>6つの領域、すべてお任せください</h2>
+    <p class="section-sub">どの領域から始めても大丈夫。少しずつ使いながら、自分のペースで広げていけます。</p>
     <div class="domain-cards">
-      <a href="consciousness.html" class="domain-card" style="--domain-color:#9B59B6">
-        <div class="dc-icon">🧠</div>
+      <a href="consciousness.html" class="domain-card" style="--domain-color:#6C63FF">
+        <div class="dc-num">一</div>
         <h3>意識</h3>
-        <p>心の健康・瞑想・感謝の気持ち</p>
+        <p>今日の気持ちや考えを整理。心の変化を追って、自分らしく生きるヒントを得る</p>
       </a>
-      <a href="health.html" class="domain-card" style="--domain-color:#27AE60">
-        <div class="dc-icon">💚</div>
+      <a href="health.html" class="domain-card" style="--domain-color:#10b981">
+        <div class="dc-num">二</div>
         <h3>健康</h3>
-        <p>体調の記録・お薬の管理・元気な毎日</p>
+        <p>体調・薬・睡眠・食事を毎日記録。「最近どう？」に自信をもって答えられる</p>
       </a>
-      <a href="time.html" class="domain-card" style="--domain-color:#E67E22">
-        <div class="dc-icon">⏰</div>
+      <a href="time.html" class="domain-card" style="--domain-color:#f59e0b">
+        <div class="dc-num">三</div>
         <h3>時間</h3>
-        <p>日々の過ごし方・趣味・心豊かな時間</p>
+        <p>一日の過ごし方を可視化。趣味・習慣・カレンダー連携で充実した時間を作る</p>
       </a>
-      <a href="work.html" class="domain-card" style="--domain-color:#2980B9">
-        <div class="dc-icon">💼</div>
+      <a href="work.html" class="domain-card" style="--domain-color:#3b82f6">
+        <div class="dc-num">四</div>
         <h3>仕事</h3>
-        <p>生きがい・経験を活かす・社会とのつながり</p>
+        <p>経験・スキルを活かした副業やボランティアを探す。「まだ役に立てる」を実感</p>
       </a>
-      <a href="relationship.html" class="domain-card" style="--domain-color:#E74C3C">
-        <div class="dc-icon">🤝</div>
+      <a href="relationship.html" class="domain-card" style="--domain-color:#ef4444">
+        <div class="dc-num">五</div>
         <h3>関係</h3>
-        <p>大切な人との関係・ご縁を大切に</p>
+        <p>大切な人との連絡・孤立感の把握。誕生日通知から「今日連絡する人」まで管理</p>
       </a>
-      <a href="assets.html" class="domain-card" style="--domain-color:#F1C40F">
-        <div class="dc-icon">💰</div>
+      <a href="assets.html" class="domain-card" style="--domain-color:#d97706">
+        <div class="dc-num">六</div>
         <h3>資産</h3>
-        <p>安心の資産管理・株式投資・収支の把握</p>
+        <p>NISA・株・収支を把握。「老後のお金」を数字で可視化して不安を解消する</p>
       </a>
     </div>
   </section>
 
+  <!-- Social Proof / Testimonials -->
+  <section id="voice" class="lp-section lp-section-alt">
+    <h2>使った方の声</h2>
+    <div class="testimonials">
+      <div class="testimonial">
+        <div class="t-stars">★★★★★</div>
+        <p>「健康のことしか記録していなかったのに、先生に『最近体調いいですね』と言われてびっくり。毎日少しずつ記録するだけで変わるものですね。」</p>
+        <div class="t-author">68歳・女性・愛知県</div>
+      </div>
+      <div class="testimonial">
+        <div class="t-stars">★★★★★</div>
+        <p>「退職後に何をすればいいかわからなかったけど、『仕事』の領域で副業の相談をしたら、地元の中学校で授業をすることになりました。」</p>
+        <div class="t-author">65歳・男性・大阪府</div>
+      </div>
+      <div class="testimonial">
+        <div class="t-stars">★★★★★</div>
+        <p>「老後の資産が心配で毎日ネットで調べていましたが、NISA計算機で具体的な数字が出て、かえって安心しました。」</p>
+        <div class="t-author">70歳・女性・東京都</div>
+      </div>
+    </div>
+  </section>
+
   <!-- Features -->
-  <section id="features" class="lp-section lp-section-alt">
-    <h2>主な特徴</h2>
+  <section id="features" class="lp-section">
+    <h2>LMSが選ばれる理由</h2>
     <div class="feature-grid">
       <div class="feature-item">
-        <h3>深い分析</h3>
-        <p>あなたの記録を丁寧に読み解き、気づきと最適な打ち手をお届けします</p>
+        <div class="fi-num">01</div>
+        <h3>むずかしい言葉を使わない</h3>
+        <p>専門用語なし。小学生でも読めるやさしい日本語で、的確なアドバイスをお届けします</p>
       </div>
       <div class="feature-item">
-        <h3>領域横断の洞察</h3>
-        <p>6つの領域の相互作用を考慮した、統合的なアドバイス</p>
+        <div class="fi-num">02</div>
+        <h3>6領域をつなぐ視点</h3>
+        <p>「睡眠が悪いと気持ちも沈む」「孤立感が健康に影響する」—— 領域をまたいだ気づきをお届けします</p>
       </div>
       <div class="feature-item">
-        <h3>自動アクション</h3>
-        <p>おすすめに基づく自動実行（投資、予約、購入など）</p>
+        <div class="fi-num">03</div>
+        <h3>毎日1分から続けられる</h3>
+        <p>「今日の体調は？」のひとことから始められます。続けるほど分析が深まります</p>
       </div>
       <div class="feature-item">
-        <h3>多言語対応</h3>
-        <p>日本語・英語・中国語・韓国語に対応</p>
+        <div class="fi-num">04</div>
+        <h3>スマホ・パソコン両対応</h3>
+        <p>スマホのホーム画面に追加してアプリのように使えます。文字も大きく読みやすい設計です</p>
       </div>
       <div class="feature-item">
-        <h3>安心のデータ管理</h3>
-        <p>Google認証 + Firebase によるセキュアなデータ同期</p>
+        <div class="fi-num">05</div>
+        <h3>あなたのデータはあなただけのもの</h3>
+        <p>Googleアカウントでのログインで、個人情報は本人のみが閲覧できます。第三者への提供はしません</p>
       </div>
       <div class="feature-item">
-        <h3>専門家連携</h3>
-        <p>必要に応じて専門家によるメンタリング・コーチングにも対応</p>
+        <div class="fi-num">06</div>
+        <h3>無料で全機能を使える</h3>
+        <p>基本機能はすべて無料。カレンダー連携や高度な分析を使いたくなったら、プレミアムへ</p>
       </div>
     </div>
   </section>
@@ -198,15 +250,15 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <!-- LMS Scripts -->
-  <script src="js/config.js"></script>
-  <script src="js/store.js"></script>
-  <script src="js/i18n.js"></script>
-  <script src="js/components.js"></script>
-  <script src="js/ai-engine.js"></script>
-  <script src="js/firebase-backend.js"></script>
-  <script src="js/affiliate.js"></script>
-  <script src="js/pages.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/config.js?v=2"></script>
+  <script src="js/store.js?v=2"></script>
+  <script src="js/i18n.js?v=2"></script>
+  <script src="js/components.js?v=2"></script>
+  <script src="js/ai-engine.js?v=2"></script>
+  <script src="js/firebase-backend.js?v=2"></script>
+  <script src="js/affiliate.js?v=2"></script>
+  <script src="js/pages.js?v=2"></script>
+  <script src="js/app.js?v=2"></script>
 
   <script>
     // On login success, redirect to dashboard
