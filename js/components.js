@@ -3,6 +3,17 @@
    ============================================================ */
 var Components = {
 
+  // ─── HTML Escape (XSS prevention) ───
+  escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
   // ─── Score Gauge (circular) ───
   scoreGauge(score, size = 120, label = '') {
     const pct = Math.max(0, Math.min(100, score));
@@ -123,7 +134,10 @@ var Components = {
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => {
+          const safe = /^(https?:\/\/|\/)/i.test(url) ? url : '#';
+          return `<a href="${safe}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+        })
       .replace(/^### (.+)$/gm, '<h4>$1</h4>')
       .replace(/^## (.+)$/gm, '<h3>$1</h3>')
       .replace(/^# (.+)$/gm, '<h2>$1</h2>')

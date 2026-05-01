@@ -29,12 +29,14 @@ var Pages = {
 
     // Quick input bar
     let html = `<div class="page-home">
+      ${this.renderOnboarding()}
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
-      <div id="quickResponse"></div>`;
+      <div id="quickResponse"></div>
+      ${this.renderStreakBanner()}`;
 
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
@@ -158,6 +160,43 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Onboarding Card (初回ユーザー向け) ───
+  renderOnboarding() {
+    const dismissed = localStorage.getItem('lms_onboarding_done');
+    if (dismissed) return '';
+
+    const ICONS = { consciousness:'🧠', health:'💪', time:'⏰', work:'💼', relationship:'❤️', assets:'💰' };
+
+    const domainList = Object.entries(CONFIG.domains).map(([id, d]) =>
+      `<button class="onboarding-domain-btn" style="border-color:${d.color}20"
+          onclick="app.switchDomain('${id}');localStorage.setItem('lms_onboarding_done','1');app.renderApp()">
+        <span class="onboarding-domain-icon">${ICONS[id] || d.icon}</span>
+        <span>${i18n.t(id)}</span>
+      </button>`
+    ).join('');
+
+    return `<div class="onboarding-card">
+      <h2>ようこそ、LMSへ</h2>
+      <p>6つの領域であなたの人生を整理しましょう。<br>まず、どの領域から始めますか？</p>
+      <div class="onboarding-domains">${domainList}</div>
+      <button class="btn btn-secondary btn-sm" onclick="localStorage.setItem('lms_onboarding_done','1');app.renderApp()">後で選ぶ</button>
+    </div>`;
+  },
+
+  // ─── Streak Banner ───
+  renderStreakBanner() {
+    const streak = store.get('streak') || 0;
+    if (streak < 2) return '';
+
+    const emojis = streak >= 30 ? '🔥🔥🔥' : streak >= 14 ? '🔥🔥' : '🔥';
+    const longest = store.get('longestStreak') || streak;
+    const isRecord = streak >= longest;
+    return `<div class="streak-banner${isRecord ? ' streak-record' : ''}">
+      <span class="streak-flame">${emojis}</span>
+      <span class="streak-text"><strong>${streak}日</strong>連続で記録中！${isRecord && streak > 1 ? '&nbsp;自己新記録！' : ''}</span>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───

@@ -1797,3 +1797,67 @@ body.is-admin .admin-only { display: flex; }
   .sim-cards { grid-template-columns: 1fr; }
   .top-bar-title { font-size: 13px; }
 }
+
+/* ─── Streak Banner ─── */
+.streak-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #fff7ed, #fef3c7);
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #92400e;
+  animation: streak-pop 0.4s ease;
+}
+.streak-banner.streak-record {
+  background: linear-gradient(135deg, #fef9c3, #fde68a);
+  border-color: #f59e0b;
+}
+.streak-flame { font-size: 20px; line-height: 1; }
+@keyframes streak-pop {
+  0%   { transform: scale(0.95); opacity: 0; }
+  60%  { transform: scale(1.02); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ─── Onboarding Card ─── */
+.onboarding-card {
+  background: linear-gradient(135deg, var(--accent-bg), #f0f9ff);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.onboarding-card h2 { font-size: 20px; margin: 0 0 8px; color: var(--text-primary); }
+.onboarding-card p  { font-size: 14px; color: var(--text-secondary); margin: 0 0 16px; }
+.onboarding-domains {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.onboarding-domain-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.18s;
+  font-size: 13px;
+  min-width: 80px;
+}
+.onboarding-domain-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  transform: translateY(-2px);
+}
+.onboarding-domain-icon { font-size: 22px; }

@@ -16,6 +16,7 @@ var App = class App {
 
     // Check if already authenticated
     if (store.get('isAuthenticated') && store.get('user')) {
+      store.updateStreak();
       store.set('currentDomain', entryDomain || store.get('currentDomain') || 'health');
       store.set('currentPage', 'home');
       this.renderApp();
@@ -25,6 +26,7 @@ var App = class App {
     // Listen for auth changes
     store.on('isAuthenticated', (val) => {
       if (val) {
+        store.updateStreak();
         store.set('currentDomain', this.entryDomain || store.get('currentDomain') || 'health');
         store.set('currentPage', 'home');
         this.renderApp();
@@ -238,7 +240,11 @@ var App = class App {
     if (nameEl) nameEl.textContent = user?.displayName || user?.email || 'ゲスト';
     if (avatarEl) {
       if (user?.photoURL) {
-        avatarEl.innerHTML = `<img src="${user.photoURL}" alt="">`;
+        const img = document.createElement('img');
+        img.src = user.photoURL;
+        img.alt = '';
+        avatarEl.textContent = '';
+        avatarEl.appendChild(img);
       } else {
         avatarEl.textContent = (user?.displayName || user?.email || '?').charAt(0).toUpperCase();
       }
@@ -302,7 +308,7 @@ var App = class App {
 
       input.value = '';
     } catch (e) {
-      if (responseEl) responseEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (responseEl) responseEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message)}</div>`;
     }
   }
 
@@ -512,7 +518,7 @@ var App = class App {
       if (resultEl) {
         resultEl.innerHTML = `<div class="error-msg">
           <strong>分析できませんでした</strong><br>
-          ${e.message || 'もう一度お試しください'}
+          ${Components.escapeHtml(e.message || 'もう一度お試しください')}
         </div>`;
       }
     }
@@ -1141,7 +1147,7 @@ var App = class App {
       textarea.value = '';
       Components.showToast('分析が完了しました', 'success');
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message)}</div>`;
     }
   }
 
@@ -1519,7 +1525,7 @@ var App = class App {
       const result = await AIEngine.analyze(null, 'text_analysis', { text: 'テスト' });
       if (resultEl) resultEl.innerHTML = '<div class="toast toast-success" style="position:static;opacity:1;margin-top:10px;">✓ 接続成功</div>';
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = '<div class="toast toast-error" style="position:static;opacity:1;margin-top:10px;">✗ ' + e.message + '</div>';
+      if (resultEl) resultEl.innerHTML = '<div class="toast toast-error" style="position:static;opacity:1;margin-top:10px;">✗ ' + Components.escapeHtml(e.message) + '</div>';
     }
   }
 

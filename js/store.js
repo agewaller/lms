@@ -109,7 +109,12 @@ var Store = class Store {
 
       // Notifications
       notifications: [],
-      unreadCount: 0
+      unreadCount: 0,
+
+      // Streak (連続利用日数)
+      streak: 0,
+      longestStreak: 0,
+      lastActiveDate: null
     };
 
     this.listeners = new Map();
@@ -182,7 +187,8 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'streak', 'longestStreak', 'lastActiveDate'
     ];
   }
 
@@ -267,6 +273,22 @@ var Store = class Store {
     scores[domain] = score;
     this.set('domainScores', scores);
     return score;
+  }
+
+  // ─── Streak Tracking ───
+
+  updateStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    const last = this.state.lastActiveDate;
+    if (last === today) return;
+
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const newStreak = last === yesterday ? (this.state.streak || 0) + 1 : 1;
+    const newLongest = Math.max(newStreak, this.state.longestStreak || 0);
+
+    this.set('streak', newStreak);
+    this.set('longestStreak', newLongest);
+    this.set('lastActiveDate', today);
   }
 
   // ─── Clear ───
