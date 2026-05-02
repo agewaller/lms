@@ -1,0 +1,42 @@
+{
+  "name": "LMS - Life Management System",
+  "short_name": "LMS",
+  "description": "人生の6領域を統合管理するアプリ",
+  "start_url": "/dashboard.html",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f1117",
+  "theme_color": "#6C63FF",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "lifestyle", "productivity"],
+  "shortcuts": [
+    {
+      "name": "記録する",
+      "short_name": "記録",
+      "description": "今日のデータを記録",
+      "url": "/dashboard.html?page=record",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "相談する",
+      "short_name": "相談",
+      "description": "分析・アドバイスを受ける",
+      "url": "/dashboard.html?page=ask_ai",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

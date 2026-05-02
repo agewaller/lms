@@ -27,14 +27,36 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
-    // Quick input bar
-    let html = `<div class="page-home">
+    let html = `<div class="page-home">`;
+
+    // ─── Onboarding banner (new users with no data) ───
+    const onboardingDone = store.get('onboardingComplete');
+    const hasAnyData = Object.keys(CONFIG.domains).some(d =>
+      Object.keys(CONFIG.domains[d].categories || {}).some(cat =>
+        (store.get(`${d}_${cat}`) || []).length > 0
+      )
+    );
+    if (!onboardingDone && !hasAnyData) {
+      html += this.renderOnboardingBanner();
+    }
+
+    // ─── Quick input bar ───
+    html += `
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
-      <div id="quickResponse"></div>`;
+      <div id="quickResponse"></div>
+
+      <div class="daily-actions-bar">
+        <button class="btn btn-daily-analysis" onclick="app.generateRecommendations('${domain}')">
+          今日の${i18n.t(domain)}を分析
+        </button>
+        <button class="btn btn-sm btn-secondary" onclick="app.generateRecommendations('holistic')">
+          6領域まとめて見る
+        </button>
+      </div>`;
 
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
@@ -158,6 +180,34 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Onboarding Banner (new users) ───
+  renderOnboardingBanner() {
+    const steps = [
+      { icon: '①', text: 'プロフィールを設定する', action: "app.navigate('settings')" },
+      { icon: '②', text: '今日の健康を記録してみる', action: "app.switchDomain('health');app.navigate('record')" },
+      { icon: '③', text: '分析ボタンを押して結果を見る', action: null }
+    ];
+    return `<div class="onboarding-banner">
+      <div class="onboarding-header">
+        <span class="onboarding-wave">👋</span>
+        <div>
+          <h3 style="margin:0 0 4px;">LMSへようこそ</h3>
+          <p style="margin:0;font-size:13px;color:var(--text-secondary);">まず3ステップで始めましょう</p>
+        </div>
+        <button class="btn btn-sm btn-ghost" onclick="store.set('onboardingComplete',true);app.renderApp()">スキップ</button>
+      </div>
+      <div class="onboarding-steps">
+        ${steps.map(s => `
+          <div class="onboarding-step" ${s.action ? `onclick="${s.action}"` : ''} ${s.action ? 'style="cursor:pointer"' : ''}>
+            <span class="step-icon">${s.icon}</span>
+            <span class="step-text">${s.text}</span>
+            ${s.action ? '<span class="step-arrow">→</span>' : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
