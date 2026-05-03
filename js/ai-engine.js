@@ -4,6 +4,22 @@
    ============================================================ */
 var AIEngine = {
 
+  // ─── Model ID → Actual API ID mapping ───
+  // Config keys are short/stable; API IDs have datestamps that Anthropic rotates.
+  // Update the right-hand values here when Anthropic retires model IDs.
+  MODEL_MAP: {
+    'claude-opus-4-7':   'claude-opus-4-7-20251101',
+    'claude-opus-4-6':   'claude-opus-4-6-20260201',
+    'claude-sonnet-4-6': 'claude-sonnet-4-6-20260101',
+    'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+    'gpt-4o':            'gpt-4o',
+    'gemini-pro':        'gemini-2.0-flash'
+  },
+
+  resolveModelId(configId) {
+    return this.MODEL_MAP[configId] || configId;
+  },
+
   // ─── Main analysis entry point ───
   async analyze(domain, promptType, userData, options = {}) {
     const model = options.model || store.get('selectedModel') || 'claude-sonnet-4-6';
@@ -134,6 +150,7 @@ var AIEngine = {
     const apiKey = this.getApiKey('anthropic');
     if (!apiKey) throw new Error('Anthropic APIキーが設定されていません。管理者にご連絡ください。');
 
+    const apiModelId = this.resolveModelId(model);
     const endpoint = CONFIG.endpoints.anthropic;
 
     // ─── Direct browser mode (no proxy) ───
@@ -161,7 +178,7 @@ var AIEngine = {
     }
 
     console.log('[LMS] Calling Anthropic', isDirect ? '(direct)' : 'via proxy:', url);
-    console.log('[LMS] Model:', model, 'Max tokens:', maxTokens);
+    console.log('[LMS] Model:', apiModelId, '(config:', model + ')', 'Max tokens:', maxTokens);
 
     let res;
     try {
@@ -169,7 +186,7 @@ var AIEngine = {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model,
+          model: apiModelId,
           max_tokens: maxTokens,
           system: system,
           messages: [{ role: 'user', content: userMsg }]
@@ -207,7 +224,7 @@ var AIEngine = {
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: model,
+        model: this.resolveModelId(model),
         max_tokens: maxTokens,
         messages: [
           { role: 'system', content: system },
@@ -228,7 +245,7 @@ var AIEngine = {
     const apiKey = this.getApiKey('google');
     if (!apiKey) throw new Error('Google API key not set');
 
-    const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
+    const url = `${CONFIG.endpoints.google}/${this.resolveModelId(model)}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

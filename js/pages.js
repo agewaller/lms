@@ -653,7 +653,8 @@ var Pages = {
 
     // Helper: render a form field from schema definition
     const renderField = (field, value) => {
-      const val = value ?? '';
+      const raw = value ?? '';
+      const val = Components.escapeHtml(String(raw));
       const id = 'profile_' + field.key;
       switch (field.type) {
         case 'number':
@@ -667,7 +668,7 @@ var Pages = {
         case 'select':
           return `<select id="${id}" class="form-input">
             <option value="">選択してください</option>
-            ${(field.options || []).map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
+            ${(field.options || []).map(o => `<option value="${Components.escapeHtml(o)}" ${raw === o ? 'selected' : ''}>${Components.escapeHtml(o)}</option>`).join('')}
           </select>`;
         default:
           return `<input type="text" id="${id}" class="form-input" value="${val}">`;
@@ -792,24 +793,25 @@ var Pages = {
   // ─── Resume Settings (Contribution domain) ───
   renderResumeSettings() {
     const r = store.get('userResume') || {};
+    const esc = Components.escapeHtml.bind(Components);
     return `<div class="settings-section">
       <h3>📄 レジュメ・職務経歴</h3>
       <p>ここに登録した内容を求人プラットフォームにワンクリックで送信できます。</p>
       <div class="form-group">
         <label>お名前</label>
-        <input type="text" id="resumeName" class="form-input" value="${r.name || ''}" placeholder="山田花子">
+        <input type="text" id="resumeName" class="form-input" value="${esc(r.name || '')}" placeholder="山田花子">
       </div>
       <div class="form-group">
         <label>職務要約・自己PR</label>
-        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${r.summary || ''}</textarea>
+        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${esc(r.summary || '')}</textarea>
       </div>
       <div class="form-group">
         <label>スキル・資格（カンマ区切り）</label>
-        <input type="text" id="resumeSkills" class="form-input" value="${(r.skills || []).join(', ')}" placeholder="例：看護師免許, 英検2級, Excel">
+        <input type="text" id="resumeSkills" class="form-input" value="${esc((r.skills || []).join(', '))}" placeholder="例：看護師免許, 英検2級, Excel">
       </div>
       <div class="form-group">
         <label>職務経歴</label>
-        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${r.history || ''}</textarea>
+        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${esc(r.history || '')}</textarea>
       </div>
       <div class="form-group">
         <label>希望する働き方</label>
@@ -1889,6 +1891,95 @@ var Pages = {
           <button class="btn btn-primary" onclick="app.saveFirebaseConfig()">保存</button>
           <button class="btn btn-danger" onclick="app.clearFirebaseConfig()">削除</button>
         </div>
+      </div>
+    </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  ONBOARDING WIZARD (first-time user)
+  // ═══════════════════════════════════════════════════════════
+  renderOnboarding() {
+    const step = store.get('onboardingStep') || 1;
+    const profile = store.get('userProfile') || {};
+
+    const steps = [
+      { label: 'プロフィール', icon: '👤' },
+      { label: '関心の領域', icon: '🎯' },
+      { label: 'はじめの一歩', icon: '🚀' }
+    ];
+
+    const stepDots = steps.map((s, i) => {
+      const n = i + 1;
+      const cls = n < step ? 'done' : n === step ? 'active' : '';
+      return `<div class="ob-step ${cls}">
+        <div class="ob-step-dot">${n < step ? '✓' : n}</div>
+        <div class="ob-step-label">${s.label}</div>
+      </div>`;
+    }).join('<div class="ob-step-line"></div>');
+
+    let body = '';
+    if (step === 1) {
+      body = `
+        <p class="ob-desc">まず、あなたのことを少し教えてください。<br>より的確なアドバイスができるようになります。</p>
+        <div class="form-group">
+          <label>お名前（ニックネームでもOK）</label>
+          <input type="text" id="ob_name" class="form-input" value="${Components.escapeHtml(profile.name || '')}" placeholder="例：花子">
+        </div>
+        <div class="form-group">
+          <label>今のお年齢</label>
+          <input type="number" id="ob_age" class="form-input" value="${Components.escapeHtml(String(profile.age || ''))}" min="0" max="120" placeholder="65">
+        </div>
+        <div class="form-group">
+          <label>いちばん気になっていること</label>
+          <select id="ob_goal" class="form-input">
+            <option value="">選択してください</option>
+            <option value="health" ${profile.mainGoal === 'health' ? 'selected' : ''}>健康・体のこと</option>
+            <option value="assets" ${profile.mainGoal === 'assets' ? 'selected' : ''}>お金・資産のこと</option>
+            <option value="relationship" ${profile.mainGoal === 'relationship' ? 'selected' : ''}>人間関係・孤独</option>
+            <option value="work" ${profile.mainGoal === 'work' ? 'selected' : ''}>生きがい・仕事のこと</option>
+            <option value="time" ${profile.mainGoal === 'time' ? 'selected' : ''}>時間の使い方</option>
+            <option value="consciousness" ${profile.mainGoal === 'consciousness' ? 'selected' : ''}>心・意識のこと</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-lg btn-block" onclick="app.onboardingNext(1)">次へ →</button>`;
+    } else if (step === 2) {
+      const domains = CONFIG.domains;
+      body = `
+        <p class="ob-desc">6つの領域の中で、まず取り組みたいものを選んでください。<br>後から変更・追加できます。</p>
+        <div class="ob-domain-grid">
+          ${Object.values(domains).map(d => `
+            <button class="ob-domain-btn ${(profile.focusDomains || []).includes(d.id) ? 'selected' : ''}"
+              style="--dc:${d.color}"
+              onclick="app.toggleFocusDomain('${d.id}')">
+              <span class="ob-domain-num">${d.icon}</span>
+              <span class="ob-domain-name">${i18n.t(d.id)}</span>
+            </button>
+          `).join('')}
+        </div>
+        <div class="form-actions" style="margin-top:16px">
+          <button class="btn btn-secondary" onclick="app.onboardingNext(2, true)">← 戻る</button>
+          <button class="btn btn-primary btn-lg" onclick="app.onboardingNext(2)">次へ →</button>
+        </div>`;
+    } else {
+      const mainDomain = (profile.focusDomains || [])[0] || profile.mainGoal || 'health';
+      const dc = CONFIG.domains[mainDomain] || CONFIG.domains.health;
+      body = `
+        <div class="ob-finish">
+          <div class="ob-finish-icon" style="color:${dc.color}">${dc.icon}</div>
+          <h3>準備完了！</h3>
+          <p>「${i18n.t(mainDomain)}」からスタートしましょう。<br>いつでも他の領域に切り替えられます。</p>
+          <button class="btn btn-primary btn-lg btn-block" onclick="app.onboardingFinish('${mainDomain}')">${i18n.t(mainDomain)}を開く</button>
+          <button class="btn btn-secondary" style="margin-top:8px;width:100%" onclick="app.onboardingFinish('health')">ホームに進む</button>
+        </div>`;
+    }
+
+    return `<div class="ob-overlay" id="ob-overlay">
+      <div class="ob-modal">
+        <div class="ob-header">
+          <div class="ob-logo">◈ LMS へようこそ</div>
+          <div class="ob-steps">${stepDots}</div>
+        </div>
+        <div class="ob-body">${body}</div>
       </div>
     </div>`;
   },

@@ -196,6 +196,9 @@ var App = class App {
     // Render page content
     mainContent.innerHTML = Pages.render(page, domain);
 
+    // Show first-time onboarding overlay (injected on top of content)
+    this.maybeShowOnboarding();
+
     // Auto-close sidebar on mobile after navigation
     if (window.innerWidth <= 768) {
       const sidebar = document.getElementById('sidebar');
@@ -254,6 +257,71 @@ var App = class App {
     // and inline style would override the CSS class toggling.
     const isAdmin = FirebaseBackend.isAdmin();
     document.body.classList.toggle('is-admin', isAdmin);
+  }
+
+  // ─── First-time Onboarding ───
+  maybeShowOnboarding() {
+    if (store.get('onboardingDone')) return;
+    const profile = store.get('userProfile') || {};
+    // Skip if user already has a meaningful profile
+    if (profile.age && profile.name) return;
+    // Inject the overlay into the page
+    const el = document.getElementById('ob-overlay');
+    if (el) return; // already shown
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = Pages.renderOnboarding();
+    document.body.appendChild(wrapper.firstElementChild);
+  }
+
+  onboardingNext(currentStep, goBack = false) {
+    if (goBack) {
+      store.set('onboardingStep', currentStep - 1);
+    } else if (currentStep === 1) {
+      // Save step 1 data
+      const name = document.getElementById('ob_name')?.value?.trim();
+      const age = document.getElementById('ob_age')?.value;
+      const goal = document.getElementById('ob_goal')?.value;
+      const profile = store.get('userProfile') || {};
+      if (name) profile.name = name;
+      if (age) profile.age = Number(age);
+      if (goal) profile.mainGoal = goal;
+      store.set('userProfile', profile);
+      store.set('onboardingStep', 2);
+    } else if (currentStep === 2) {
+      store.set('onboardingStep', 3);
+    }
+    // Re-render onboarding overlay
+    const el = document.getElementById('ob-overlay');
+    if (el) {
+      el.outerHTML = Pages.renderOnboarding();
+    }
+  }
+
+  toggleFocusDomain(domainId) {
+    const profile = store.get('userProfile') || {};
+    let focus = profile.focusDomains || [];
+    if (focus.includes(domainId)) {
+      focus = focus.filter(d => d !== domainId);
+    } else {
+      focus = [...focus, domainId];
+    }
+    profile.focusDomains = focus;
+    store.set('userProfile', profile);
+    // Re-render step 2
+    const el = document.getElementById('ob-overlay');
+    if (el) el.outerHTML = Pages.renderOnboarding();
+  }
+
+  onboardingFinish(startDomain) {
+    const el = document.getElementById('ob-overlay');
+    if (el) el.remove();
+    store.set('onboardingDone', true);
+    store.set('onboardingStep', 1);
+    // Trigger Firestore sync by updating the profile key
+    store.set('userProfile', store.get('userProfile') || {});
+    // Navigate to chosen domain
+    this.switchDomain(startDomain || 'health');
+    Components.showToast('ようこそ！さっそく始めましょう', 'success');
   }
 
   // ─── Quick Input ───

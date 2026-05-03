@@ -24,6 +24,7 @@ var CONFIG = {
 
   // ─── AI Models ───
   aiModels: {
+    'claude-opus-4-7':    { name: 'Claude Opus 4.7',   provider: 'anthropic', maxTokens: 8192 },
     'claude-sonnet-4-6':  { name: 'Claude Sonnet 4.6', provider: 'anthropic', maxTokens: 4096 },
     'claude-opus-4-6':    { name: 'Claude Opus 4.6',   provider: 'anthropic', maxTokens: 4096 },
     'claude-haiku-4-5':   { name: 'Claude Haiku 4.5',  provider: 'anthropic', maxTokens: 4096 },
