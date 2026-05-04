@@ -266,5 +266,77 @@ var Components = {
       </div>
       <div class="record-summary">${summary}</div>
     </div>`;
+  },
+
+  // ─── Escape HTML (XSS prevention) ───
+  escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
+
+  // ─── Async Confirm Dialog (replaces window.confirm — mobile safe) ───
+  confirmDialog(message, confirmText, cancelText) {
+    if (!confirmText) confirmText = '実行する';
+    if (!cancelText) cancelText = 'キャンセル';
+    return new Promise(resolve => {
+      const el = document.createElement('div');
+      el.className = 'modal-overlay active';
+      el.style.cssText = 'z-index:9999;';
+      el.innerHTML = `<div class="modal" style="max-width:380px;">
+        <div class="modal-body" style="padding:28px;text-align:center;">
+          <p style="margin-bottom:24px;font-size:15px;line-height:1.7;">${this.escapeHtml(message)}</p>
+          <div style="display:flex;gap:12px;justify-content:center;">
+            <button class="btn btn-danger" style="min-width:110px;" id="conf-ok">${this.escapeHtml(confirmText)}</button>
+            <button class="btn btn-secondary" style="min-width:110px;" id="conf-cancel">${this.escapeHtml(cancelText)}</button>
+          </div>
+        </div>
+      </div>`;
+      document.body.appendChild(el);
+      el.querySelector('#conf-ok').onclick = () => { el.remove(); resolve(true); };
+      el.querySelector('#conf-cancel').onclick = () => { el.remove(); resolve(false); };
+      el.addEventListener('click', e => { if (e.target === el) { el.remove(); resolve(false); } });
+    });
+  },
+
+  // ─── Async Input Dialog (replaces window.prompt — mobile safe) ───
+  inputDialog(message, placeholder, defaultValue) {
+    if (!placeholder) placeholder = '';
+    if (!defaultValue) defaultValue = '';
+    return new Promise(resolve => {
+      const el = document.createElement('div');
+      el.className = 'modal-overlay active';
+      el.style.cssText = 'z-index:9999;';
+      el.innerHTML = `<div class="modal" style="max-width:420px;">
+        <div class="modal-header">
+          <h3 class="modal-title">${this.escapeHtml(message)}</h3>
+        </div>
+        <div class="modal-body" style="padding:20px;">
+          <input type="text" id="inp-dlg-val" class="form-input"
+            value="${this.escapeHtml(defaultValue)}"
+            placeholder="${this.escapeHtml(placeholder)}"
+            style="margin-bottom:16px;">
+          <div style="display:flex;gap:12px;justify-content:flex-end;">
+            <button class="btn btn-secondary" id="inp-cancel">キャンセル</button>
+            <button class="btn btn-primary" id="inp-ok">OK</button>
+          </div>
+        </div>
+      </div>`;
+      document.body.appendChild(el);
+      const inp = el.querySelector('#inp-dlg-val');
+      setTimeout(() => { inp.focus(); inp.select(); }, 50);
+      const done = () => { const v = inp.value.trim(); el.remove(); resolve(v || null); };
+      el.querySelector('#inp-ok').onclick = done;
+      el.querySelector('#inp-cancel').onclick = () => { el.remove(); resolve(null); };
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter') done();
+        else if (e.key === 'Escape') { el.remove(); resolve(null); }
+      });
+      el.addEventListener('click', e => { if (e.target === el) { el.remove(); resolve(null); } });
+    });
   }
 };

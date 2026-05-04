@@ -19,6 +19,36 @@ var Pages = {
     }
   },
 
+  // ─── Helpers: streak + today check ───
+  calcStreak(domain) {
+    const cats = Object.keys(CONFIG.domains[domain]?.categories || {});
+    const dates = new Set();
+    cats.forEach(cat => {
+      store.getDomainData(domain, cat, 365).forEach(e => {
+        if (e.timestamp) dates.add(e.timestamp.slice(0, 10));
+      });
+    });
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    let start = dates.has(today) ? today : (dates.has(yesterday) ? yesterday : null);
+    if (!start) return 0;
+    let streak = 0;
+    let cur = new Date(start);
+    while (true) {
+      const ds = cur.toISOString().slice(0, 10);
+      if (dates.has(ds)) { streak++; cur.setDate(cur.getDate() - 1); }
+      else break;
+    }
+    return streak;
+  },
+
+  hasTodayRecord(domain) {
+    const today = new Date().toISOString().slice(0, 10);
+    return Object.keys(CONFIG.domains[domain]?.categories || {}).some(cat =>
+      store.getDomainData(domain, cat, 7).some(e => e.timestamp && e.timestamp.startsWith(today))
+    );
+  },
+
   // ═══════════════════════════════════════════════════════════
   //  HOME PAGE (per domain)
   // ═══════════════════════════════════════════════════════════
@@ -26,6 +56,8 @@ var Pages = {
     const domainConfig = CONFIG.domains[domain];
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
+    const streak = this.calcStreak(domain);
+    const hasToday = this.hasTodayRecord(domain);
 
     // Quick input bar
     let html = `<div class="page-home">
@@ -35,6 +67,26 @@ var Pages = {
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
       <div id="quickResponse"></div>`;
+
+    // Daily reminder banner (when no record for today yet)
+    if (!hasToday) {
+      html += `<div class="today-reminder" onclick="app.navigate('record')" style="cursor:pointer;">
+        <span class="reminder-icon">📝</span>
+        <div class="reminder-text">
+          <strong>今日の記録がまだです</strong>
+          <span>タップして${i18n.t(domain)}の記録をつけましょう</span>
+        </div>
+        <span class="reminder-arrow">›</span>
+      </div>`;
+    }
+
+    // Streak display
+    if (streak >= 2) {
+      html += `<div class="streak-banner" style="--streak-color:${color}">
+        <span class="streak-fire">🔥</span>
+        <span class="streak-count">${streak}日連続記録中！</span>
+      </div>`;
+    }
 
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
