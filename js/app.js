@@ -3,7 +3,8 @@
    ============================================================ */
 var App = class App {
   constructor() {
-    this.entryDomain = null; // Which sub-site the user entered from
+    this.entryDomain = null;
+    this._onboardingShown = false;
   }
 
   // ─── Initialize ───
@@ -29,6 +30,8 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        // Onboarding for first-time users (delay to let Firestore data load)
+        setTimeout(() => this.checkOnboarding(), 1800);
       } else {
         this.stopInboxPolling();
       }
@@ -179,7 +182,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -1940,7 +1943,106 @@ var App = class App {
     if (overlay) overlay.classList.toggle('active', !isOpen);
   }
 
-  // ─── Modal ───
+  // ─── First-time User Onboarding ───
+  checkOnboarding() {
+    if (this._onboardingShown) return;
+    const profile = store.get('userProfile') || {};
+    if (!profile.onboarded) {
+      this._onboardingShown = true;
+      this.showOnboarding();
+    } else {
+      this._onboardingShown = true;
+    }
+  }
+
+  showOnboarding() {
+    const user = store.get('user');
+    const firstName = Components.escapeHtml((user?.displayName || '').split(/[\s　]/)[0] || '');
+    const greeting = firstName ? `、${firstName}さん` : '';
+    this.openModal('', `
+      <div class="onboarding-modal">
+        <div class="onboarding-progress">
+          <div class="onboarding-dot active" id="odot-1"></div>
+          <div class="onboarding-dot" id="odot-2"></div>
+          <div class="onboarding-dot" id="odot-3"></div>
+        </div>
+        <div id="ob-step-1">
+          <h2 style="font-size:22px;margin-bottom:12px">ようこそ${greeting}！</h2>
+          <p style="color:var(--text-secondary);line-height:1.9;margin-bottom:24px">
+            LMSへようこそ。まず、あなたのことを少し教えてください。<br>
+            あなたに合った使い方をご提案します。
+          </p>
+          <button class="btn btn-primary btn-block" onclick="app.onboardingNext(2)">始める</button>
+          <div style="margin-top:12px">
+            <a href="javascript:void(0)" onclick="app.dismissOnboarding()" style="font-size:13px;color:var(--text-muted)">スキップして始める</a>
+          </div>
+        </div>
+        <div id="ob-step-2" style="display:none">
+          <h2 style="font-size:20px;margin-bottom:8px">年齢を教えてください</h2>
+          <p style="color:var(--text-secondary);font-size:14px;margin-bottom:16px">あなたに合ったアドバイスのために使います</p>
+          <div class="onboarding-choices">
+            <button class="onboarding-choice" onclick="app.selectAge('65-70')">65〜70歳</button>
+            <button class="onboarding-choice" onclick="app.selectAge('70-75')">70〜75歳</button>
+            <button class="onboarding-choice" onclick="app.selectAge('75-80')">75〜80歳</button>
+            <button class="onboarding-choice" onclick="app.selectAge('80+')">80歳以上</button>
+          </div>
+          <a href="javascript:void(0)" onclick="app.onboardingNext(3)" style="font-size:13px;color:var(--text-muted)">スキップ</a>
+        </div>
+        <div id="ob-step-3" style="display:none">
+          <h2 style="font-size:20px;margin-bottom:8px">今、一番気になることは？</h2>
+          <p style="color:var(--text-secondary);font-size:14px;margin-bottom:16px">まず集中する領域を決めましょう</p>
+          <div class="onboarding-choices" style="grid-template-columns:1fr 1fr 1fr">
+            <button class="onboarding-choice" onclick="app.selectConcern('health')"><div style="font-size:20px;font-weight:700;color:#10b981">二</div><div>健康</div></button>
+            <button class="onboarding-choice" onclick="app.selectConcern('assets')"><div style="font-size:20px;font-weight:700;color:#d97706">六</div><div>資産・お金</div></button>
+            <button class="onboarding-choice" onclick="app.selectConcern('relationship')"><div style="font-size:20px;font-weight:700;color:#ef4444">五</div><div>人間関係</div></button>
+            <button class="onboarding-choice" onclick="app.selectConcern('time')"><div style="font-size:20px;font-weight:700;color:#f59e0b">三</div><div>時間の使い方</div></button>
+            <button class="onboarding-choice" onclick="app.selectConcern('work')"><div style="font-size:20px;font-weight:700;color:#3b82f6">四</div><div>生きがい</div></button>
+            <button class="onboarding-choice" onclick="app.selectConcern('consciousness')"><div style="font-size:20px;font-weight:700;color:#6C63FF">一</div><div>心・意識</div></button>
+          </div>
+        </div>
+      </div>
+    `);
+    // Hide the modal close button during onboarding
+    const closeBtn = document.querySelector('#modal-overlay .modal-close');
+    if (closeBtn) closeBtn.style.visibility = 'hidden';
+  }
+
+  onboardingNext(step) {
+    for (let i = 1; i <= 3; i++) {
+      const dot = document.getElementById('odot-' + i);
+      if (dot) dot.classList.toggle('active', i <= step);
+      const s = document.getElementById('ob-step-' + i);
+      if (s) s.style.display = i === step ? '' : 'none';
+    }
+  }
+
+  selectAge(ageRange) {
+    const profile = store.get('userProfile') || {};
+    store.set('userProfile', { ...profile, ageRange });
+    document.querySelectorAll('#ob-step-2 .onboarding-choice').forEach(btn => {
+      btn.classList.toggle('selected', btn.textContent === ageRange.replace('80+', '80歳以上').replace('65-70', '65〜70歳').replace('70-75', '70〜75歳').replace('75-80', '75〜80歳'));
+    });
+    setTimeout(() => this.onboardingNext(3), 300);
+  }
+
+  selectConcern(domain) {
+    const profile = store.get('userProfile') || {};
+    store.set('userProfile', { ...profile, primaryConcern: domain, onboarded: true });
+    const closeBtn = document.querySelector('#modal-overlay .modal-close');
+    if (closeBtn) closeBtn.style.visibility = '';
+    this.closeModal();
+    this.switchDomain(domain);
+    Components.showToast(`${i18n.t(domain)}領域から始めましょう！`, 'success');
+  }
+
+  dismissOnboarding() {
+    const profile = store.get('userProfile') || {};
+    store.set('userProfile', { ...profile, onboarded: true });
+    const closeBtn = document.querySelector('#modal-overlay .modal-close');
+    if (closeBtn) closeBtn.style.visibility = '';
+    this.closeModal();
+  }
+
   openModal(title, bodyHtml) {
     const overlay = document.getElementById('modal-overlay');
     const titleEl = document.getElementById('modal-title');
