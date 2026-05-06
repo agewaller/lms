@@ -29,6 +29,8 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        // Show onboarding for brand-new users (no profile set yet)
+        setTimeout(() => this.maybeShowOnboarding(), 600);
       } else {
         this.stopInboxPolling();
       }
@@ -254,6 +256,147 @@ var App = class App {
     // and inline style would override the CSS class toggling.
     const isAdmin = FirebaseBackend.isAdmin();
     document.body.classList.toggle('is-admin', isAdmin);
+  }
+
+  // ─── Onboarding Wizard (new users) ───
+  maybeShowOnboarding() {
+    const profile = store.get('userProfile') || {};
+    const dismissed = localStorage.getItem('lms_onboarding_done');
+    if (dismissed) return;
+    // Show if profile has almost nothing filled in
+    if (profile.age || profile.lifeGoals || profile.concerns) return;
+    this.showOnboarding();
+  }
+
+  showOnboarding(step = 1) {
+    const steps = {
+      1: this._onboardingStep1(),
+      2: this._onboardingStep2(),
+      3: this._onboardingStep3()
+    };
+    const body = steps[step];
+    if (!body) return;
+
+    const overlay = document.getElementById('modal-overlay');
+    const title = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+    if (!overlay || !title || !modalBody) return;
+
+    title.textContent = `ようこそ LMS へ（${step}/3）`;
+    modalBody.innerHTML = body;
+    overlay.style.display = 'flex';
+    this._onboardingStep = step;
+  }
+
+  _onboardingStep1() {
+    return `
+      <div class="onboarding-step">
+        <p style="font-size:16px;line-height:1.7;margin-bottom:20px">
+          LMSへようこそ！<br>
+          まず、あなたが今一番気になっていることを教えてください。<br>
+          あとから変更できます。
+        </p>
+        <div class="domain-pick-grid">
+          ${Object.entries(CONFIG.domains).map(([id, d]) => `
+            <button class="domain-pick-btn" data-domain="${id}"
+              onclick="app._pickDomain('${id}')"
+              style="--dc:${d.color}">
+              <span class="dp-num" style="background:${d.color}">${d.icon}</span>
+              <span>${CONFIG.domains[id] ? (id === 'consciousness' ? '意識・心' : id === 'health' ? '健康・体' : id === 'time' ? '時間・習慣' : id === 'work' ? '仕事・副業' : id === 'relationship' ? '関係・孤独' : '資産・お金') : id}</span>
+            </button>
+          `).join('')}
+        </div>
+        <p style="font-size:13px;color:#94a3b8;margin-top:16px;text-align:center">複数選べます。後で変更可能です。</p>
+        <div style="text-align:right;margin-top:24px">
+          <button class="btn btn-sm btn-secondary" onclick="app._skipOnboarding()">あとで</button>
+          <button class="btn btn-primary" onclick="app.showOnboarding(2)" style="margin-left:8px">次へ →</button>
+        </div>
+      </div>`;
+  }
+
+  _onboardingStep2() {
+    return `
+      <div class="onboarding-step">
+        <p style="font-size:15px;line-height:1.7;margin-bottom:20px">
+          プロフィールを少し教えてください。<br>
+          <span style="font-size:13px;color:#94a3b8">入力した内容がアドバイスの精度を高めます。すべて任意です。</span>
+        </p>
+        <div class="form-group">
+          <label>年齢（だいたいで大丈夫です）</label>
+          <input type="number" id="ob_age" class="form-input" placeholder="例：68" min="0" max="120">
+        </div>
+        <div class="form-group">
+          <label>性別</label>
+          <select id="ob_gender" class="form-input">
+            <option value="">選択しない</option>
+            <option value="male">男性</option>
+            <option value="female">女性</option>
+            <option value="other">その他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>今、一番困っていること・心配なこと</label>
+          <textarea id="ob_concerns" class="form-input" rows="3"
+            placeholder="例：退職後の生活費が心配。膝が痛くて外出が減った。老後が不安。"></textarea>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:24px">
+          <button class="btn btn-sm btn-secondary" onclick="app.showOnboarding(1)">← 戻る</button>
+          <div>
+            <button class="btn btn-sm btn-secondary" onclick="app.showOnboarding(3)">スキップ</button>
+            <button class="btn btn-primary" onclick="app._saveOnboardingStep2()" style="margin-left:8px">次へ →</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  _onboardingStep3() {
+    return `
+      <div class="onboarding-step" style="text-align:center">
+        <div style="font-size:56px;margin-bottom:16px">🎉</div>
+        <h3 style="font-size:20px;font-weight:700;margin-bottom:12px">準備完了！</h3>
+        <p style="font-size:15px;color:#64748b;line-height:1.7;margin-bottom:28px">
+          まず「記録する」から今日の状態を入力してみましょう。<br>
+          記録が増えるほど、あなただけのアドバイスが届きます。
+        </p>
+        <div style="display:flex;flex-direction:column;gap:12px;max-width:280px;margin:0 auto">
+          <button class="btn btn-primary btn-lg" onclick="app._finishOnboarding('record')">今日の記録を入力する</button>
+          <button class="btn btn-secondary" onclick="app._finishOnboarding('home')">まずホームを見てみる</button>
+        </div>
+      </div>`;
+  }
+
+  _pickDomain(domainId) {
+    // Visual toggle only — no state change needed here
+    const btn = document.querySelector(`.domain-pick-btn[data-domain="${domainId}"]`);
+    if (btn) btn.classList.toggle('selected');
+  }
+
+  async _saveOnboardingStep2() {
+    const age = document.getElementById('ob_age')?.value;
+    const gender = document.getElementById('ob_gender')?.value;
+    const concerns = document.getElementById('ob_concerns')?.value?.trim();
+
+    const profile = { ...(store.get('userProfile') || {}) };
+    if (age) profile.age = parseInt(age, 10);
+    if (gender) profile.gender = gender;
+    if (concerns) profile.concerns = concerns;
+    store.set('userProfile', profile);
+    try { await FirebaseBackend.saveUserProfile(profile); } catch (e) {}
+
+    this.showOnboarding(3);
+  }
+
+  _skipOnboarding() {
+    localStorage.setItem('lms_onboarding_done', '1');
+    this.closeModal();
+  }
+
+  _finishOnboarding(action) {
+    localStorage.setItem('lms_onboarding_done', '1');
+    this.closeModal();
+    if (action === 'record') {
+      store.set('currentPage', 'record');
+    }
   }
 
   // ─── Quick Input ───

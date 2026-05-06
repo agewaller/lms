@@ -36,6 +36,9 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>`;
 
+    // Profile completion CTA (shown only when profile is sparse)
+    html += this.renderProfileCompletionBanner();
+
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
       html += this.renderStockAnalysisWidget();
@@ -158,6 +161,29 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Profile Completion Banner ───
+  renderProfileCompletionBanner() {
+    const profile = store.get('userProfile') || {};
+    const fields = ['age', 'gender', 'location', 'concerns', 'lifeGoals'];
+    const filled = fields.filter(f => profile[f]).length;
+    if (filled >= 3) return ''; // already reasonably complete
+
+    const pct = Math.round((filled / fields.length) * 100);
+    return `<div class="profile-completion-banner">
+      <div class="pcb-left">
+        <div class="pcb-icon">👤</div>
+        <div>
+          <div class="pcb-title">プロフィールを完成させると、より深いアドバイスが届きます</div>
+          <div class="pcb-bar-wrap">
+            <div class="pcb-bar" style="width:${pct}%"></div>
+          </div>
+          <div class="pcb-meta">完成度 ${pct}%（あと${5-filled}項目）</div>
+        </div>
+      </div>
+      <button class="btn btn-sm btn-primary" onclick="app.navigate('settings')">入力する</button>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
