@@ -2,6 +2,18 @@
    LMS - AI Engine
    Multi-model AI integration (Claude, GPT-4o, Gemini)
    ============================================================ */
+
+// Central model ID map — update here when providers rotate IDs.
+// Keys = CONFIG.aiModels keys; Values = actual API model IDs.
+const MODEL_MAP = {
+  'claude-opus-4-7':   'claude-opus-4-7',
+  'claude-opus-4-6':   'claude-opus-4-6',
+  'claude-sonnet-4-6': 'claude-sonnet-4-6',
+  'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+  'gpt-4o':            'gpt-4o',
+  'gemini-pro':        'gemini-2.0-flash'
+};
+
 var AIEngine = {
 
   // ─── Main analysis entry point ───
@@ -13,7 +25,6 @@ var AIEngine = {
     store.set('isAnalyzing', true);
 
     try {
-      // Build the prompt
       const systemPrompt = this.buildSystemPrompt(domain, promptType);
       const userMessage = this.buildUserMessage(domain, userData);
 
@@ -32,7 +43,6 @@ var AIEngine = {
           throw new Error('Unknown provider: ' + modelConfig.provider);
       }
 
-      // Save to history
       const entry = {
         id: Date.now().toString(36),
         timestamp: new Date().toISOString(),
@@ -40,7 +50,7 @@ var AIEngine = {
         promptType,
         model,
         response: result,
-        userData: userData
+        userData
       };
       const history = [...(store.get('analysisHistory') || []), entry];
       store.set('analysisHistory', history);
@@ -52,34 +62,28 @@ var AIEngine = {
     }
   },
 
-  // ─── Build system prompt (未病ダイアリー準拠: flat key lookup) ───
+  // ─── Build system prompt (flat key lookup) ───
   buildSystemPrompt(domain, promptType) {
-    // Custom prompts override (from admin panel)
     const custom = store.get('customPrompts') || {};
 
-    // Build the flat key: {domain}_{type}
-    // Legacy aliases for backward compatibility
     let key;
     if (promptType === 'holistic') key = 'universal_holistic';
     else if (promptType === 'quickInput' || promptType === 'text_analysis') key = 'text_analysis';
     else if (promptType === 'imageAnalysis' || promptType === 'image_analysis') key = 'image_analysis';
     else if (promptType === 'transcript_analysis') key = 'consciousness_transcript';
-    else if (promptType === 'stock_analysis') key = 'stock_analysis'; // short inline prompt
-    else if (promptType === 'stock_full') key = 'assets_stock';      // full VM Hands-on
+    else if (promptType === 'stock_analysis') key = 'stock_analysis';
+    else if (promptType === 'stock_full') key = 'assets_stock';
     else if (promptType === 'enrich_contact') key = 'relationship_enrich';
     else if (domain && promptType) key = `${domain}_${promptType}`;
     else if (domain) key = `${domain}_daily`;
     else key = 'universal_daily';
 
-    // Custom admin-edited prompt
     if (custom[key]?.prompt) return custom[key].prompt;
 
-    // Config prompts (object shape with .prompt)
     const p = CONFIG.prompts[key] || CONFIG.inlinePrompts[key];
     if (p && typeof p === 'object') return p.prompt || '';
-    if (typeof p === 'string') return p;  // backward compat
+    if (typeof p === 'string') return p;
 
-    // Fallback to universal daily
     return CONFIG.prompts.universal_daily?.prompt || '';
   },
 
@@ -95,18 +99,15 @@ var AIEngine = {
     msg += '\n\n';
 
     if (domain === 'holistic' || !domain) {
-      // Cross-domain: gather recent data from all domains
       Object.keys(CONFIG.domains).forEach(d => {
         const domainData = this.gatherDomainData(d, 7);
         if (domainData) msg += `[${i18n.t(d)}]\n${domainData}\n\n`;
       });
     } else {
-      // Single domain
       const domainData = this.gatherDomainData(domain, 7);
       if (domainData) msg += `[${i18n.t(domain)} Data]\n${domainData}\n\n`;
     }
 
-    // Append user's direct input if any
     if (userData?.text) msg += `[User Input]\n${userData.text}\n`;
     if (userData?.raw) msg += `\n${JSON.stringify(userData.raw, null, 2)}`;
 
@@ -130,26 +131,17 @@ var AIEngine = {
 
   // ─── API Calls ───
 
-  async callAnthropic(model, system, userMsg, maxTokens) {
+  // messages: optional array of {role, content} for multi-turn. Takes precedence over userMsg.
+  async callAnthropic(model, system, userMsg, maxTokens, messages = null) {
     const apiKey = this.getApiKey('anthropic');
     if (!apiKey) throw new Error('Anthropic APIキーが設定されていません。管理者にご連絡ください。');
 
     const endpoint = CONFIG.endpoints.anthropic;
-
-    // ─── Direct browser mode (no proxy) ───
-    // Used when:
-    //   - endpoint is empty / unset
-    //   - endpoint is the literal "direct"
-    //   - endpoint still contains placeholder "your-account"
-    // Anthropic supports browser-direct calls via the
-    // 'anthropic-dangerous-direct-browser-access' header.
     const isDirect = !endpoint
       || endpoint === 'direct'
       || endpoint.includes('your-account');
 
-    const url = isDirect
-      ? 'https://api.anthropic.com/v1/messages'
-      : endpoint;
+    const url = isDirect ? 'https://api.anthropic.com/v1/messages' : endpoint;
 
     const headers = {
       'Content-Type': 'application/json',
@@ -160,8 +152,10 @@ var AIEngine = {
       headers['anthropic-dangerous-direct-browser-access'] = 'true';
     }
 
-    console.log('[LMS] Calling Anthropic', isDirect ? '(direct)' : 'via proxy:', url);
-    console.log('[LMS] Model:', model, 'Max tokens:', maxTokens);
+    const apiModel = MODEL_MAP[model] || model;
+    const payload = messages || [{ role: 'user', content: userMsg }];
+
+    console.log('[LMS] Anthropic', isDirect ? '(direct)' : 'via proxy', apiModel, `${payload.length} msg(s)`);
 
     let res;
     try {
@@ -169,10 +163,10 @@ var AIEngine = {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model,
+          model: apiModel,
           max_tokens: maxTokens,
-          system: system,
-          messages: [{ role: 'user', content: userMsg }]
+          system,
+          messages: payload
         })
       });
     } catch (e) {
@@ -180,25 +174,28 @@ var AIEngine = {
       throw new Error(
         (isDirect ? 'Anthropicに直接接続できません。' : 'プロキシに接続できません。') + '\n' +
         '原因: ' + (e.message || e.name || 'unknown') + '\n' +
-        'URL: ' + url + '\n' +
-        '\nブラウザのコンソールで詳細を確認してください。'
+        'URL: ' + url + '\n\nブラウザのコンソールで詳細を確認してください。'
       );
     }
 
-    console.log('[LMS] Anthropic responded with status:', res.status);
-
     if (!res.ok) {
       const err = await res.text();
-      console.error('[LMS] Anthropic error body:', err);
+      console.error('[LMS] Anthropic error:', err);
       throw new Error('Claude APIエラー (HTTP ' + res.status + '): ' + err);
     }
     const data = await res.json();
     return data.content?.[0]?.text || '';
   },
 
-  async callOpenAI(model, system, userMsg, maxTokens) {
+  // messages: optional array of {role, content} for multi-turn.
+  async callOpenAI(model, system, userMsg, maxTokens, messages = null) {
     const apiKey = this.getApiKey('openai');
     if (!apiKey) throw new Error('OpenAI API key not set');
+
+    const apiModel = MODEL_MAP[model] || model;
+    const payload = messages
+      ? [{ role: 'system', content: system }, ...messages]
+      : [{ role: 'system', content: system }, { role: 'user', content: userMsg }];
 
     const res = await fetch(CONFIG.endpoints.openai, {
       method: 'POST',
@@ -206,14 +203,7 @@ var AIEngine = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + apiKey
       },
-      body: JSON.stringify({
-        model: model,
-        max_tokens: maxTokens,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: userMsg }
-        ]
-      })
+      body: JSON.stringify({ model: apiModel, max_tokens: maxTokens, messages: payload })
     });
 
     if (!res.ok) {
@@ -228,7 +218,9 @@ var AIEngine = {
     const apiKey = this.getApiKey('google');
     if (!apiKey) throw new Error('Google API key not set');
 
-    const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
+    const apiModel = MODEL_MAP[model] || model;
+    const url = `${CONFIG.endpoints.google}/${apiModel}:generateContent?key=${apiKey}`;
+
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -249,7 +241,6 @@ var AIEngine = {
 
   // ─── API Key Management ───
   getApiKey(provider) {
-    // Try Firebase-stored keys first, then localStorage
     const keys = store.get('_apiKeys') || {};
     return keys[provider] || localStorage.getItem(`lms_apikey_${provider}`) || '';
   },
@@ -266,30 +257,60 @@ var AIEngine = {
     return await this.analyze(null, 'quickInput', { text });
   },
 
-  // ─── Conversation (chat) ───
+  // ─── Conversation (multi-turn chat) ───
   async chat(domain, userMessage) {
+    const model = store.get('selectedModel') || 'claude-sonnet-4-6';
+    const modelConfig = CONFIG.aiModels[model];
+    if (!modelConfig) throw new Error('Unknown model: ' + model);
+
     const history = store.get('conversationHistory') || [];
 
-    // Add user message
+    // Append new user turn
     history.push({
       role: 'user',
       content: userMessage,
       timestamp: new Date().toISOString(),
       domain
     });
+    store.set('conversationHistory', history);
 
-    // Get AI response
-    const response = await this.analyze(domain, 'daily', { text: userMessage });
+    const system = this.buildSystemPrompt(domain, 'daily');
 
-    // Add AI response
+    // Build multi-turn payload from domain-filtered history (last 20 turns)
+    const messages = history
+      .filter(m => m.domain === domain || !m.domain)
+      .slice(-20)
+      .map(m => ({ role: m.role, content: m.content }));
+
+    store.set('isAnalyzing', true);
+    let response;
+    try {
+      switch (modelConfig.provider) {
+        case 'anthropic':
+          response = await this.callAnthropic(model, system, null, modelConfig.maxTokens, messages);
+          break;
+        case 'openai':
+          response = await this.callOpenAI(model, system, null, modelConfig.maxTokens, messages);
+          break;
+        case 'google':
+          // Gemini: single-turn with user message (multi-turn enhancement future work)
+          response = await this.callGemini(model, system, userMessage, modelConfig.maxTokens);
+          break;
+        default:
+          throw new Error('Unknown provider: ' + modelConfig.provider);
+      }
+    } finally {
+      store.set('isAnalyzing', false);
+    }
+
     history.push({
       role: 'assistant',
       content: response,
       timestamp: new Date().toISOString(),
       domain
     });
-
     store.set('conversationHistory', history);
+
     return response;
   }
 };

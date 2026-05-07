@@ -134,6 +134,8 @@ p { margin-bottom: 12px; }
 .btn-lg { padding: 14px 28px; font-size: 16px; }
 .btn-icon { padding: 8px; min-width: 36px; }
 .btn-block { width: 100%; }
+.btn-white { background: #fff; color: #6C63FF; border-color: transparent; font-weight: 600; }
+.btn-white:hover { background: #f0f0ff; }
 
 .btn-google {
   display: flex;
@@ -1141,8 +1143,9 @@ body.is-admin .admin-only { display: flex; }
 }
 
 .home-overview { display: flex; gap: 24px; margin-bottom: 32px; align-items: flex-start; flex-wrap: wrap; }
-.overview-score { flex-shrink: 0; }
+.overview-score { flex-shrink: 0; text-align: center; }
 .overview-stats { flex: 1; display: flex; flex-wrap: wrap; gap: 12px; }
+.streak-badge { display: inline-block; margin-top: 6px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 99px; letter-spacing: 0.03em; }
 
 .all-domains-overview { margin-bottom: 32px; }
 .all-domains-overview h3 { margin-bottom: 16px; }

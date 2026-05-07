@@ -27,9 +27,29 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // First-visit onboarding banner
+    const isFirstVisit = !store.get('onboardingDismissed') && !store.get('hasAnyRecord');
+    const hasRecords = (() => {
+      const cats = Object.keys(domainConfig?.categories || {});
+      return cats.some(cat => store.getDomainData(domain, cat, 365).length > 0);
+    })();
+
+    let html = `<div class="page-home">`;
+
+    if (!hasRecords && !store.get('onboardingDismissed_' + domain)) {
+      html += `<div class="onboarding-banner" style="background:linear-gradient(135deg,${color}15,${color}25);border-left:4px solid ${color};border-radius:12px;padding:20px 24px;margin-bottom:20px;position:relative">
+        <button onclick="store.set('onboardingDismissed_${domain}',true);app.navigate('home')" style="position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;font-size:1.2rem;color:#94a3b8">×</button>
+        <h3 style="margin:0 0 8px;color:${color};font-size:1.05rem">${i18n.t(domain)}へようこそ</h3>
+        <p style="margin:0 0 14px;color:#475569;font-size:0.9rem;line-height:1.6">まずは今日の状態を記録してみましょう。<br>記録が増えるほど、あなたに合ったアドバイスが届きます。</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-primary" onclick="app.navigate('record')" style="background:${color};border-color:${color}">最初の記録をする</button>
+          <button class="btn btn-sm btn-secondary" onclick="app.navigate('ask_ai')">相談してみる</button>
+        </div>
+      </div>`;
+    }
+
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
@@ -42,9 +62,11 @@ var Pages = {
     }
 
     // Domain score + overview
+    const streak = typeof store.getStreak === 'function' ? store.getStreak(domain) : 0;
     html += `<div class="home-overview">
         <div class="overview-score">
           ${Components.scoreGauge(score, 140, i18n.t(domain))}
+          ${streak > 0 ? `<div class="streak-badge" title="${streak}日連続記録中">${streak}日連続</div>` : ''}
         </div>
         <div class="overview-stats">`;
 
@@ -104,7 +126,7 @@ var Pages = {
       html += `<div class="analysis-section">
         <h3>分析結果</h3>
         <div class="analysis-content">${Components.formatMarkdown(latest.response)}</div>
-        <div class="analysis-meta">${latest.model} | ${new Date(latest.timestamp).toLocaleString()}</div>
+        <div class="analysis-meta">${new Date(latest.timestamp).toLocaleString('ja-JP')}</div>
       </div>`;
     }
 

@@ -269,10 +269,33 @@ var Store = class Store {
     return score;
   }
 
+  // ─── Streak (consecutive recording days) ───
+
+  getStreak(domain) {
+    const cats = Object.keys((CONFIG.domains[domain] || {}).categories || {});
+    const today = new Date().toDateString();
+    let streak = 0;
+    let d = new Date();
+
+    while (true) {
+      const dayStr = d.toDateString();
+      const hasRecord = cats.some(cat => {
+        const entries = this.state[`${domain}_${cat}`];
+        return Array.isArray(entries) && entries.some(e => new Date(e.timestamp).toDateString() === dayStr);
+      });
+      if (!hasRecord) break;
+      streak++;
+      d.setDate(d.getDate() - 1);
+    }
+    return streak;
+  }
+
   // ─── Clear ───
 
+  // Clears only LMS-prefixed keys to avoid wiping Firebase config or OAuth tokens.
   clearAll() {
-    localStorage.clear();
+    const lmsKeys = Object.keys(localStorage).filter(k => k.startsWith('lms_'));
+    lmsKeys.forEach(k => localStorage.removeItem(k));
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
