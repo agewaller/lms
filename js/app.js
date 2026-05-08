@@ -17,7 +17,8 @@ var App = class App {
     // Check if already authenticated
     if (store.get('isAuthenticated') && store.get('user')) {
       store.set('currentDomain', entryDomain || store.get('currentDomain') || 'health');
-      store.set('currentPage', 'home');
+      const startPage = store.get('onboardingDone') ? 'home' : 'onboarding';
+      store.set('currentPage', startPage);
       this.renderApp();
       this.startInboxPolling();
     }
@@ -26,7 +27,8 @@ var App = class App {
     store.on('isAuthenticated', (val) => {
       if (val) {
         store.set('currentDomain', this.entryDomain || store.get('currentDomain') || 'health');
-        store.set('currentPage', 'home');
+        const startPage = store.get('onboardingDone') ? 'home' : 'onboarding';
+        store.set('currentPage', startPage);
         this.renderApp();
         this.startInboxPolling();
       } else {
@@ -142,6 +144,59 @@ var App = class App {
     }
   }
 
+  // ─── Onboarding ───
+  completeOnboarding() {
+    const name = document.getElementById('obName')?.value?.trim();
+    const age = parseInt(document.getElementById('obAge')?.value || '0', 10);
+    const location = document.getElementById('obLocation')?.value?.trim();
+    const domainRadio = document.querySelector('input[name="obDomain"]:checked');
+    const domain = domainRadio?.value || 'health';
+
+    const profile = store.get('userProfile') || {};
+    if (name) profile.name = name;
+    if (age > 0) profile.age = age;
+    if (location) profile.location = location;
+    store.set('userProfile', profile);
+
+    store.set('onboardingDone', true);
+    store.set('currentDomain', domain);
+    store.set('currentPage', 'home');
+  }
+
+  // ─── Auto Analysis Scheduler ───
+  async runScheduledAnalysis(domain) {
+    const timestamps = store.get('analysisTimestamps') || {};
+    const lastRun = timestamps[domain] ? new Date(timestamps[domain]) : null;
+    const now = new Date();
+
+    // Skip if already ran in the past 20 hours
+    if (lastRun && (now - lastRun) < 20 * 60 * 60 * 1000) return;
+
+    // Skip if no recent data in this domain
+    const domainConfig = CONFIG.domains[domain];
+    const categories = Object.keys(domainConfig?.categories || {});
+    let hasData = false;
+    categories.forEach(cat => {
+      if (store.getDomainData(domain, cat, 7).length > 0) hasData = true;
+    });
+    if (!hasData) return;
+
+    // Mark as running now to prevent duplicate calls
+    timestamps[domain] = now.toISOString();
+    store.set('analysisTimestamps', timestamps);
+
+    try {
+      await AIEngine.analyze(domain, 'daily', {});
+      Components.showToast('本日の分析が完了しました', 'success');
+      // Re-render to show the latest analysis result
+      this.renderApp();
+    } catch (e) {
+      // Non-blocking – reset timestamp so it can retry later
+      timestamps[domain] = null;
+      store.set('analysisTimestamps', timestamps);
+    }
+  }
+
   toggleAuthMode(mode) {
     document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
     const panel = document.getElementById('auth-' + mode);
@@ -226,6 +281,11 @@ var App = class App {
       setTimeout(() => {
         if (typeof AssetsFeatures !== 'undefined') AssetsFeatures.calculateNISA();
       }, 100);
+    }
+
+    // Run daily auto-analysis in background (throttled to once per 20h)
+    if (page === 'home' && store.get('onboardingDone')) {
+      setTimeout(() => this.runScheduledAnalysis(domain), 2000);
     }
   }
 

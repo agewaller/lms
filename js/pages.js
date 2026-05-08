@@ -7,6 +7,7 @@ var Pages = {
   // ─── Main render dispatcher ───
   render(page, domain) {
     switch (page) {
+      case 'onboarding':   return this.renderOnboarding();
       case 'home':         return this.renderHome(domain);
       case 'data':         return this.renderDataBrowser(domain);
       case 'integrations': return this.renderIntegrations(domain);
@@ -17,6 +18,100 @@ var Pages = {
       case 'admin':    return this.renderAdmin();
       default:         return this.renderHome(domain);
     }
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  ONBOARDING PAGE（初回ログイン時のみ表示）
+  // ═══════════════════════════════════════════════════════════
+  renderOnboarding() {
+    const user = store.get('user') || {};
+    const savedName = user.displayName || '';
+
+    return `<div class="page-onboarding">
+      <div class="onboarding-card">
+        <div class="ob-welcome">
+          <div class="ob-logo">L</div>
+          <h2>LMSへようこそ</h2>
+          <p>あなたの人生の6つの領域を、一緒に整えていきましょう。<br>まず、簡単な情報を教えてください。</p>
+        </div>
+
+        <div class="ob-form">
+          <div class="ob-section">
+            <h3>あなたのことを教えてください</h3>
+
+            <div class="form-group">
+              <label>お名前（呼び名でOK）</label>
+              <input type="text" id="obName" class="form-input" placeholder="例：田中 / たなかさん"
+                value="${Components.escapeHtml(savedName)}">
+            </div>
+
+            <div class="form-group">
+              <label>年齢</label>
+              <input type="number" id="obAge" class="form-input" placeholder="例：68" min="1" max="120">
+            </div>
+
+            <div class="form-group">
+              <label>お住まいの地域（市区町村レベルでOK）</label>
+              <input type="text" id="obLocation" class="form-input" placeholder="例：東京都渋谷区">
+            </div>
+          </div>
+
+          <div class="ob-section">
+            <h3>今一番気になっていることは？</h3>
+            <p>最初に集中する領域を選んでください。あとで変更できます。</p>
+            <div class="ob-domain-grid">
+              ${Object.entries(CONFIG.domains).map(([id, d]) => `
+                <label class="ob-domain-card" onclick="Pages.selectObDomain('${id}', this)">
+                  <input type="radio" name="obDomain" value="${id}" style="display:none"
+                    ${id === 'health' ? 'checked' : ''}>
+                  <div class="obd-icon" style="color:${d.color}">${d.icon}</div>
+                  <div class="obd-num">${d.number || ''}</div>
+                  <div class="obd-name">${d.name}</div>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="ob-section ob-tips">
+            <h3>使い方のポイント</h3>
+            <div class="ob-tip-list">
+              <div class="ob-tip">
+                <div class="ob-tip-icon">📝</div>
+                <div>
+                  <strong>毎日すこしだけ記録する</strong>
+                  <p>気になったことを上の入力欄に書くだけでOKです</p>
+                </div>
+              </div>
+              <div class="ob-tip">
+                <div class="ob-tip-icon">💬</div>
+                <div>
+                  <strong>相談する</strong>
+                  <p>「相談する」ページでいつでも話しかけられます</p>
+                </div>
+              </div>
+              <div class="ob-tip">
+                <div class="ob-tip-icon">📊</div>
+                <div>
+                  <strong>週1回ふりかえる</strong>
+                  <p>週に一度、「分析」ボタンで振り返りのまとめが届きます</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-lg ob-start" onclick="app.completeOnboarding()">
+            はじめる
+          </button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  selectObDomain(id, el) {
+    document.querySelectorAll('.ob-domain-card').forEach(c => c.classList.remove('selected'));
+    if (el) el.classList.add('selected');
+    const radio = el?.querySelector('input[type="radio"]');
+    if (radio) radio.checked = true;
   },
 
   // ═══════════════════════════════════════════════════════════

@@ -535,6 +535,75 @@ select.form-input { appearance: auto; }
 /* Footer */
 .lp-footer { text-align: center; padding: 32px; color: var(--text-muted); font-size: 14px; }
 
+/* Hero extras */
+.hero-badge {
+  display: inline-block; background: rgba(108,99,255,0.12); color: var(--accent);
+  font-size: 13px; font-weight: 600; letter-spacing: 0.05em;
+  padding: 6px 16px; border-radius: 999px; margin-bottom: 20px;
+}
+.hero-note { font-size: 13px; color: var(--text-muted); margin-top: 12px; }
+
+/* Domain number label */
+.dc-num {
+  font-size: 28px; font-weight: 700; color: var(--domain-color, var(--primary));
+  margin-bottom: 10px; font-family: serif;
+}
+
+/* Problem section */
+.lp-section-problem { background: #fafbff; }
+.problem-inner { max-width: 900px; margin: 0 auto; }
+.problem-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px; margin: 32px 0; text-align: left;
+}
+.problem-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: var(--bg-card); border-radius: var(--radius-sm);
+  padding: 16px; box-shadow: var(--shadow);
+}
+.pi-icon { font-size: 24px; flex-shrink: 0; }
+.problem-item p { font-size: 15px; color: var(--text-primary); line-height: 1.6; margin: 0; }
+.problem-solution {
+  font-size: 18px; font-weight: 600; color: var(--accent);
+  margin-top: 8px;
+}
+
+/* Steps */
+.steps-grid {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; margin-top: 40px; flex-wrap: wrap;
+}
+.step-card {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 28px 24px; text-align: center; box-shadow: var(--shadow);
+  min-width: 180px; flex: 1; max-width: 240px;
+}
+.step-num {
+  width: 48px; height: 48px; border-radius: 50%; background: var(--accent);
+  color: #fff; font-size: 22px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 14px;
+}
+.step-card h3 { font-size: 18px; margin-bottom: 8px; }
+.step-card p { font-size: 14px; color: var(--text-light); line-height: 1.7; margin: 0; }
+.step-arrow { font-size: 28px; color: var(--accent); flex-shrink: 0; }
+
+/* CTA section */
+.lp-cta-section { background: linear-gradient(135deg, #6C63FF 0%, #5148c4 100%); max-width: 100%; }
+.lp-cta-section h2, .lp-cta-section p { color: #fff; }
+.lp-cta-section h2 { font-size: 30px; }
+.lp-cta-section p { font-size: 17px; opacity: 0.9; margin-bottom: 28px; }
+.cta-inner { max-width: 600px; margin: 0 auto; }
+.lp-cta-section .btn-primary {
+  background: #fff; color: var(--accent); font-weight: 700;
+}
+.lp-cta-section .btn-primary:hover { background: #f0eeff; }
+
+/* Login card header */
+.login-card-header { margin-bottom: 20px; }
+.login-card-header h2 { font-size: 22px; margin-bottom: 4px; }
+.login-card-header p { color: var(--text-light); font-size: 14px; }
+
 /* ═══════════════════════════════════════════════════════════
    DASHBOARD (未病ダイアリー準拠)
    ═══════════════════════════════════════════════════════════ */
@@ -1728,6 +1797,51 @@ body.is-admin .admin-only { display: flex; }
   justify-content: flex-end;
   gap: 10px;
 }
+
+/* ─── Onboarding ─── */
+.page-onboarding {
+  display: flex; justify-content: center; align-items: flex-start;
+  padding: 24px 16px 60px;
+  min-height: 80vh;
+}
+.onboarding-card {
+  width: 100%; max-width: 600px;
+  background: var(--bg-secondary); border-radius: var(--radius); padding: 32px;
+  box-shadow: var(--shadow);
+}
+.ob-welcome { text-align: center; margin-bottom: 32px; }
+.ob-logo {
+  width: 60px; height: 60px; border-radius: 16px;
+  background: var(--accent); color: #fff;
+  font-size: 28px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+}
+.ob-welcome h2 { font-size: 22px; margin-bottom: 8px; }
+.ob-welcome p { color: var(--text-light); line-height: 1.7; }
+.ob-section { margin-bottom: 28px; }
+.ob-section h3 { font-size: 15px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+.ob-domain-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+}
+.ob-domain-card {
+  border: 2px solid var(--border); border-radius: var(--radius-sm);
+  padding: 12px 8px; text-align: center; cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.ob-domain-card.selected, .ob-domain-card:has(input:checked) {
+  border-color: var(--accent); background: rgba(108,99,255,0.06);
+}
+.obd-icon { font-size: 22px; margin-bottom: 4px; }
+.obd-num { font-size: 10px; color: var(--text-light); }
+.obd-name { font-size: 12px; font-weight: 600; }
+.ob-tips { background: var(--bg-tertiary); border-radius: var(--radius-sm); padding: 16px; }
+.ob-tip-list { display: flex; flex-direction: column; gap: 12px; }
+.ob-tip { display: flex; gap: 12px; align-items: flex-start; }
+.ob-tip-icon { font-size: 20px; flex-shrink: 0; }
+.ob-tip strong { display: block; font-size: 13px; margin-bottom: 2px; }
+.ob-tip p { font-size: 12px; color: var(--text-light); margin: 0; }
+.ob-start { width: 100%; margin-top: 8px; font-size: 16px; padding: 14px; }
 
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
