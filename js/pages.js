@@ -22,6 +22,49 @@ var Pages = {
   // ═══════════════════════════════════════════════════════════
   //  HOME PAGE (per domain)
   // ═══════════════════════════════════════════════════════════
+  isNewUser() {
+    const domainKeys = Object.keys(CONFIG.domains);
+    for (const d of domainKeys) {
+      const cats = Object.keys(CONFIG.domains[d]?.categories || {});
+      for (const cat of cats) {
+        if ((store.getDomainData(d, cat, 365) || []).length > 0) return false;
+      }
+    }
+    return true;
+  },
+
+  renderOnboardingBanner(domain) {
+    if (!this.isNewUser()) return '';
+    const user = store.get('user');
+    const name = user?.displayName?.split(' ')[0] || user?.email?.split('@')[0] || '';
+    const domainConfig = CONFIG.domains[domain];
+    return `
+    <div class="onboarding-banner" id="onboardingBanner">
+      <div class="onboarding-header">
+        <div>
+          <h3>ようこそ、LMSへ${name ? '、' + Components.escapeHtml(name) + 'さん' : ''}！</h3>
+          <p>まずは今日の${domainConfig?.name || ''}の状態を記録してみましょう。3ステップで始められます。</p>
+        </div>
+        <button class="onboarding-close" onclick="document.getElementById('onboardingBanner').style.display='none'" aria-label="閉じる">×</button>
+      </div>
+      <div class="onboarding-steps">
+        <div class="ob-step ob-step-done">
+          <div class="ob-step-num">✓</div>
+          <div class="ob-step-label">ログイン完了</div>
+        </div>
+        <div class="ob-step ob-step-active">
+          <div class="ob-step-num">2</div>
+          <div class="ob-step-label">最初の記録</div>
+        </div>
+        <div class="ob-step">
+          <div class="ob-step-num">3</div>
+          <div class="ob-step-label">分析を受け取る</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="app.navigate('record')" style="margin-top:16px">今日の${domainConfig?.name || ''}を記録する →</button>
+    </div>`;
+  },
+
   renderHome(domain) {
     const domainConfig = CONFIG.domains[domain];
     const score = store.calculateDomainScore(domain);
@@ -35,6 +78,9 @@ var Pages = {
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
       <div id="quickResponse"></div>`;
+
+    // Onboarding banner for first-time users
+    html += this.renderOnboardingBanner(domain);
 
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
