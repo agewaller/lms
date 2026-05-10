@@ -27,6 +27,11 @@ var FirebaseBackend = {
         console.warn('Firestore persistence:', e.code);
       }
 
+      // Handle redirect result from mobile OAuth flow
+      this.auth.getRedirectResult().catch(e => {
+        if (e.code !== 'auth/no-auth-event') console.error('Redirect result error:', e);
+      });
+
       // Listen for auth state changes
       this.auth.onAuthStateChanged(user => this.handleAuthChange(user));
       this.initialized = true;
@@ -58,29 +63,50 @@ var FirebaseBackend = {
   async signInWithGoogle() {
     if (!this.auth) {
       // Local-only mode fallback (Firebase not configured).
-      // Prompt for email so that admin (agewaller@gmail.com) can still log in.
-      const email = (prompt('メールアドレスを入力してください', '') || '').trim().toLowerCase();
-      if (!email) return;
-      store.update({
-        user: {
-          uid: 'local-' + email,
-          displayName: email.split('@')[0],
-          email
-        },
-        isAuthenticated: true,
-        currentPage: 'home'
-      });
+      // Use a modal input instead of prompt() for mobile compatibility.
+      app.openModal('ログイン', `
+        <div class="form-group"><label>メールアドレス</label>
+          <input type="email" id="_localEmail" class="form-input" placeholder="example@email.com" autocomplete="email">
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="FirebaseBackend._localLogin()">ログイン</button>
+          <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        </div>
+      `);
       return;
     }
 
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-    try {
-      await this.auth.signInWithPopup(provider);
-    } catch (e) {
-      console.error('Google sign-in error:', e);
-      Components.showToast(i18n.t('error') + ': ' + e.message, 'error');
+
+    // Mobile browsers block popups — use redirect flow instead
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      try {
+        await this.auth.signInWithRedirect(provider);
+      } catch (e) {
+        console.error('Google redirect sign-in error:', e);
+        Components.showToast(i18n.t('error') + ': ' + e.message, 'error');
+      }
+    } else {
+      try {
+        await this.auth.signInWithPopup(provider);
+      } catch (e) {
+        console.error('Google sign-in error:', e);
+        Components.showToast(i18n.t('error') + ': ' + e.message, 'error');
+      }
     }
+  },
+
+  // Local-mode login helper (called from modal)
+  _localLogin() {
+    const email = (document.getElementById('_localEmail')?.value || '').trim().toLowerCase();
+    if (!email) { Components.showToast('メールアドレスを入力してください', 'error'); return; }
+    app.closeModal();
+    store.update({
+      user: { uid: 'local-' + email, displayName: email.split('@')[0], email },
+      isAuthenticated: true,
+      currentPage: 'home'
+    });
   },
 
   // ─── Email/Password Sign In ───

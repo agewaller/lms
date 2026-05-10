@@ -36,6 +36,9 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>`;
 
+    // Today's progress + streak widget (shown for all domains)
+    html += this.renderTodayProgress(domain);
+
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
       html += this.renderStockAnalysisWidget();
@@ -158,6 +161,55 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Today's Progress + Streak ───
+  renderTodayProgress(domain) {
+    const today = new Date().toISOString().slice(0, 10);
+    const domainConfig = CONFIG.domains[domain];
+    const color = domainConfig?.color || '#6C63FF';
+    const categories = Object.keys(domainConfig?.categories || {});
+
+    const streak = store.get('recordStreak') || 0;
+    const lastDate = store.get('lastRecordDate');
+    // If no record today or yesterday, streak is effectively broken visually
+    const prev = new Date(); prev.setDate(prev.getDate() - 1);
+    const isStreakActive = lastDate === today || lastDate === prev.toISOString().slice(0, 10);
+    const displayStreak = isStreakActive ? streak : 0;
+
+    let done = 0;
+    const items = categories.map(cat => {
+      const data = store.getDomainData(domain, cat, 1);
+      const recorded = data.some(d => d.timestamp && d.timestamp.startsWith(today));
+      if (recorded) done++;
+      return { cat, recorded, label: domainConfig.categories[cat]?.label || cat };
+    });
+
+    const total = items.length;
+    const pct = total > 0 ? Math.round(done / total * 100) : 0;
+    const allDone = done === total && total > 0;
+
+    return `<div class="today-progress-card" style="--domain-color:${color}">
+      <div class="today-header">
+        <span class="today-title">今日の記録</span>
+        ${displayStreak >= 2 ? `<span class="streak-badge" title="${displayStreak}日連続記録中">${displayStreak}日連続</span>` : ''}
+        <span class="today-count">${done}/${total} 項目</span>
+      </div>
+      <div class="today-progress-bar">
+        <div class="today-progress-fill" style="width:${pct}%;background:${color}"></div>
+      </div>
+      <div class="today-items">
+        ${items.map(item => `
+          <span class="today-item ${item.recorded ? 'done' : ''}"
+            onclick="${item.recorded ? '' : "app.navigate('record')"}"
+            style="${item.recorded ? '' : 'cursor:pointer'}">
+            ${item.recorded ? '✓' : '+'} ${i18n.t(item.label) || item.label}
+          </span>
+        `).join('')}
+      </div>
+      ${done === 0 ? `<button class="btn btn-primary btn-sm today-cta" onclick="app.navigate('record')">記録を始める →</button>` : ''}
+      ${allDone ? `<div class="today-complete">今日の記録が完了しました</div>` : ''}
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───

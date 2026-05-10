@@ -249,6 +249,31 @@ var Components = {
     </div>`;
   },
 
+  // ─── Escape HTML (XSS prevention) ───
+  escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  // ─── Confirm Modal (replaces confirm() for iOS/Android compatibility) ───
+  confirmModal(message, onConfirm) {
+    app.openModal('確認', `
+      <p style="margin-bottom:24px;font-size:15px;line-height:1.6">${this.escapeHtml(message)}</p>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="_confirmOkBtn">はい</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+    setTimeout(() => {
+      const btn = document.getElementById('_confirmOkBtn');
+      if (btn) btn.onclick = () => { app.closeModal(); onConfirm(); };
+    }, 0);
+  },
+
   // ─── Record List Item ───
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';

@@ -109,7 +109,12 @@ var Store = class Store {
 
       // Notifications
       notifications: [],
-      unreadCount: 0
+      unreadCount: 0,
+
+      // Onboarding & engagement
+      onboardingComplete: false,
+      recordStreak: 0,
+      lastRecordDate: null
     };
 
     this.listeners = new Map();
@@ -182,7 +187,8 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'onboardingComplete', 'recordStreak', 'lastRecordDate'
     ];
   }
 
@@ -224,6 +230,21 @@ var Store = class Store {
       this.notify(key, this.state[key]);
       this.saveToStorage(key, this.state[key]);
     }
+
+    // Update daily recording streak
+    const today = new Date().toISOString().slice(0, 10);
+    if (this.state.lastRecordDate !== today) {
+      const prev = new Date(today);
+      prev.setDate(prev.getDate() - 1);
+      const yesterday = prev.toISOString().slice(0, 10);
+      this.state.recordStreak = this.state.lastRecordDate === yesterday
+        ? (this.state.recordStreak || 0) + 1
+        : 1;
+      this.state.lastRecordDate = today;
+      this.saveToStorage('recordStreak', this.state.recordStreak);
+      this.saveToStorage('lastRecordDate', this.state.lastRecordDate);
+    }
+
     return entry;
   }
 

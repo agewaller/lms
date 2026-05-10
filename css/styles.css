@@ -1797,3 +1797,128 @@ body.is-admin .admin-only { display: flex; }
   .sim-cards { grid-template-columns: 1fr; }
   .top-bar-title { font-size: 13px; }
 }
+
+/* ──────────────────────────────────────────
+   Today's Progress Widget
+────────────────────────────────────────── */
+.today-progress-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--domain-color, var(--accent));
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.today-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.today-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+  flex: 1;
+}
+.today-count {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.streak-badge {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.today-progress-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.today-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+  min-width: 0;
+}
+.today-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.today-item {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.today-item.done {
+  background: color-mix(in srgb, var(--domain-color, var(--accent)) 12%, transparent);
+  color: var(--domain-color, var(--accent));
+  border-color: var(--domain-color, var(--accent));
+}
+.today-item:not(.done):hover {
+  background: var(--bg-primary);
+  border-color: var(--text-muted);
+}
+.today-cta { margin-top: 4px; }
+.today-complete {
+  font-size: 13px;
+  color: #27ae60;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* ──────────────────────────────────────────
+   Onboarding Wizard
+────────────────────────────────────────── */
+.onboarding-wizard { text-align: center; }
+.onboarding-intro {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+.onboarding-domain-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.onboarding-domain-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+.onboarding-domain-btn:hover {
+  background: var(--bg-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.onboarding-domain-icon {
+  font-size: 24px;
+  font-weight: 700;
+}
+@media (max-width: 480px) {
+  .onboarding-domain-grid { grid-template-columns: repeat(2, 1fr); }
+}
