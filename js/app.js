@@ -17,18 +17,22 @@ var App = class App {
     // Check if already authenticated
     if (store.get('isAuthenticated') && store.get('user')) {
       store.set('currentDomain', entryDomain || store.get('currentDomain') || 'health');
-      store.set('currentPage', 'home');
+      const startPage = store.get('onboardingComplete') ? 'home' : 'onboarding';
+      store.set('currentPage', startPage);
       this.renderApp();
       this.startInboxPolling();
+      this.checkMorningBriefing();
     }
 
     // Listen for auth changes
     store.on('isAuthenticated', (val) => {
       if (val) {
         store.set('currentDomain', this.entryDomain || store.get('currentDomain') || 'health');
-        store.set('currentPage', 'home');
+        const startPage = store.get('onboardingComplete') ? 'home' : 'onboarding';
+        store.set('currentPage', startPage);
         this.renderApp();
         this.startInboxPolling();
+        this.checkMorningBriefing();
       } else {
         this.stopInboxPolling();
       }
@@ -179,7 +183,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', data: 'データを見る', actions: 'アクション', ask_ai: '相談する', integrations: '連携', settings: '設定', admin: '管理', onboarding: 'はじめの設定' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -227,6 +231,79 @@ var App = class App {
         if (typeof AssetsFeatures !== 'undefined') AssetsFeatures.calculateNISA();
       }, 100);
     }
+  }
+
+  // ─── Onboarding ───
+  completeOnboarding(domain) {
+    const name = document.getElementById('onboardingName')?.value?.trim();
+    const age = document.getElementById('onboardingAge')?.value;
+    if (name || age) {
+      const profile = store.get('userProfile') || {};
+      if (name) profile.name = name;
+      if (age) profile.age = parseInt(age);
+      store.set('userProfile', profile);
+    }
+    const selectedDomain = domain || document.querySelector('.ob-domain-card.selected')?.dataset?.domain || 'health';
+    store.set('currentDomain', selectedDomain);
+    store.set('onboardingComplete', true);
+    store.set('currentPage', 'home');
+    Components.showToast('ようこそ！LMSを始めましょう', 'success');
+    this.checkMorningBriefing();
+  }
+
+  selectOnboardingDomain(domain, el) {
+    document.querySelectorAll('.ob-domain-card').forEach(c => c.classList.remove('selected'));
+    if (el) el.classList.add('selected');
+  }
+
+  // ─── Morning Briefing (auto-analysis on first daily open) ───
+  async checkMorningBriefing() {
+    const today = new Date().toISOString().slice(0, 10);
+    if (store.get('lastBriefingDate') === today) return;
+    // Only auto-run if AI is configured
+    if (!AIEngine.getApiKey('anthropic') && !AIEngine.getApiKey('openai') && !AIEngine.getApiKey('google')) return;
+    store.set('lastBriefingDate', today);
+    try {
+      const result = await AIEngine.analyze(null, 'holistic', {});
+      if (result) {
+        store.set('morningBriefing', { text: result, date: today });
+        // Re-render home if on home page
+        if (store.get('currentPage') === 'home') this.renderApp();
+      }
+    } catch (e) {
+      // Silently fail - briefing is non-critical
+    }
+  }
+
+  // ─── Streak calculation ───
+  calculateStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    let streak = 0;
+    let checkDate = new Date();
+
+    // Check up to 365 days back
+    for (let i = 0; i < 365; i++) {
+      const dateStr = checkDate.toISOString().slice(0, 10);
+      let hasEntry = false;
+      Object.keys(CONFIG.domains).forEach(domain => {
+        Object.keys(CONFIG.domains[domain].categories || {}).forEach(cat => {
+          const data = store.getDomainData(domain, cat, 1);
+          // Check if any entry for this date exists
+          const dayData = store.getDomainData(domain, cat, 400);
+          if (dayData.some(e => (e.timestamp || '').slice(0, 10) === dateStr)) hasEntry = true;
+        });
+      });
+      if (hasEntry) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else if (i === 0) {
+        // No entry today yet, check if yesterday is the streak start
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    return streak;
   }
 
   updateSidebar() {

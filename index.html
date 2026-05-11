@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LMS - Life Management System</title>
+  <meta name="description" content="LMS（Life Management System）は、意識・健康・時間・仕事・関係・資産の6つの領域から、あなたの人生をまるごとサポートするWebアプリです。">
+  <title>LMS - Life Management System | 人生の6領域をまるごと管理</title>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -19,90 +20,189 @@
       </div>
       <div class="lp-nav-links">
         <a href="#domains">6つの領域</a>
-        <a href="#features">機能</a>
-        <a href="#login" class="btn btn-sm btn-primary">ログイン</a>
+        <a href="#howto">使い方</a>
+        <a href="#faq">よくある質問</a>
+        <a href="#login" class="btn btn-sm btn-primary">無料で始める</a>
       </div>
     </nav>
 
     <div class="hero-content">
-      <h1>Life Management System</h1>
-      <p class="hero-subtitle">年金だけでは足りない時代。<br>意識・健康・時間・仕事・関係・資産<br>6つの領域を、まるごとサポート</p>
-      <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
+      <div class="hero-badge">65歳からの人生設計</div>
+      <h1>人生の後半を、<br>もっと豊かに。</h1>
+      <p class="hero-subtitle">
+        意識・健康・時間・仕事・関係・資産。<br>
+        6つの視点から毎日を記録し、深く分析。<br>
+        あなたに合った最善の行動が、自動的にわかります。
+      </p>
+      <div class="hero-cta">
+        <a href="#login" class="btn btn-lg btn-primary">無料で始める（2分）</a>
+        <a href="#howto" class="btn btn-lg btn-secondary">どんなことができる？</a>
+      </div>
+      <p class="hero-note">クレジットカード不要。Googleアカウントで即時登録。</p>
     </div>
   </header>
+
+  <!-- Stats Bar -->
+  <div class="lp-stats-bar">
+    <div class="stat-item"><strong>6</strong><span>領域の一元管理</span></div>
+    <div class="stat-item"><strong>毎日</strong><span>自動で分析・提案</span></div>
+    <div class="stat-item"><strong>無料</strong><span>で全機能を試用</span></div>
+    <div class="stat-item"><strong>安全</strong><span>Google認証＋暗号化保存</span></div>
+  </div>
 
   <!-- Domain Cards -->
   <section id="domains" class="lp-section">
     <h2>6つのライフドメイン</h2>
-    <p class="section-sub">それぞれの領域をやさしくサポートし、あなたに合ったアドバイスをお届けします</p>
+    <p class="section-sub">どれか1つから始めて、少しずつ広げていけます</p>
     <div class="domain-cards">
-      <a href="consciousness.html" class="domain-card" style="--domain-color:#9B59B6">
-        <div class="dc-icon">🧠</div>
+      <a href="consciousness.html" class="domain-card" style="--domain-color:#6C63FF">
+        <div class="dc-num">一</div>
         <h3>意識</h3>
-        <p>心の健康・瞑想・感謝の気持ち</p>
+        <p>心の状態・価値観・内なる声を七つのレイヤーで定点観測</p>
+        <span class="dc-link">くわしく →</span>
       </a>
-      <a href="health.html" class="domain-card" style="--domain-color:#27AE60">
-        <div class="dc-icon">💚</div>
+      <a href="health.html" class="domain-card" style="--domain-color:#10b981">
+        <div class="dc-num">二</div>
         <h3>健康</h3>
-        <p>体調の記録・お薬の管理・元気な毎日</p>
+        <p>体調・睡眠・運動・薬・持病を記録して、未病を管理</p>
+        <span class="dc-link">くわしく →</span>
       </a>
-      <a href="time.html" class="domain-card" style="--domain-color:#E67E22">
-        <div class="dc-icon">⏰</div>
+      <a href="time.html" class="domain-card" style="--domain-color:#f59e0b">
+        <div class="dc-num">三</div>
         <h3>時間</h3>
-        <p>日々の過ごし方・趣味・心豊かな時間</p>
+        <p>1日の使い方を可視化し、空き時間を生きがいに変える</p>
+        <span class="dc-link">くわしく →</span>
       </a>
-      <a href="work.html" class="domain-card" style="--domain-color:#2980B9">
-        <div class="dc-icon">💼</div>
+      <a href="work.html" class="domain-card" style="--domain-color:#3b82f6">
+        <div class="dc-num">四</div>
         <h3>仕事</h3>
-        <p>生きがい・経験を活かす・社会とのつながり</p>
+        <p>経験・スキルを活かした副業・ボランティア・生きがい発見</p>
+        <span class="dc-link">くわしく →</span>
       </a>
-      <a href="relationship.html" class="domain-card" style="--domain-color:#E74C3C">
-        <div class="dc-icon">🤝</div>
+      <a href="relationship.html" class="domain-card" style="--domain-color:#ef4444">
+        <div class="dc-num">五</div>
         <h3>関係</h3>
-        <p>大切な人との関係・ご縁を大切に</p>
+        <p>大切な人との距離感・孤立リスク・誕生日リマインダー</p>
+        <span class="dc-link">くわしく →</span>
       </a>
-      <a href="assets.html" class="domain-card" style="--domain-color:#F1C40F">
-        <div class="dc-icon">💰</div>
+      <a href="assets.html" class="domain-card" style="--domain-color:#d97706">
+        <div class="dc-num">六</div>
         <h3>資産</h3>
-        <p>安心の資産管理・株式投資・収支の把握</p>
+        <p>収支・NISA・株式分析をわかりやすく。老後を安心に</p>
+        <span class="dc-link">くわしく →</span>
       </a>
     </div>
   </section>
 
+  <!-- How it works -->
+  <section id="howto" class="lp-section lp-section-alt">
+    <h2>3ステップで始まる、毎日の習慣</h2>
+    <div class="howto-steps">
+      <div class="howto-step">
+        <div class="step-num">1</div>
+        <h3>記録する</h3>
+        <p>気になる領域に、今日の気持ちや体調を簡単に入力。短い一言でも大丈夫です。</p>
+      </div>
+      <div class="howto-arrow">→</div>
+      <div class="howto-step">
+        <div class="step-num">2</div>
+        <h3>分析が届く</h3>
+        <p>記録をもとに、あなたの状態を深く読み解いた分析が自動で表示されます。</p>
+      </div>
+      <div class="howto-arrow">→</div>
+      <div class="howto-step">
+        <div class="step-num">3</div>
+        <h3>行動を選ぶ</h3>
+        <p>「今日できること」が3つ提案されます。気に入ったものを実行するだけ。</p>
+      </div>
+    </div>
+  </section>
+
   <!-- Features -->
-  <section id="features" class="lp-section lp-section-alt">
-    <h2>主な特徴</h2>
+  <section id="features" class="lp-section">
+    <h2>なぜLMSが選ばれるのか</h2>
     <div class="feature-grid">
       <div class="feature-item">
-        <h3>深い分析</h3>
-        <p>あなたの記録を丁寧に読み解き、気づきと最適な打ち手をお届けします</p>
+        <div class="fi-icon fi-analysis"></div>
+        <h3>深い分析、わかりやすい言葉</h3>
+        <p>専門用語ゼロ。小学生でもわかる言葉で、でも内容は本格的。あなたの記録を丁寧に読み解きます。</p>
       </div>
       <div class="feature-item">
-        <h3>領域横断の洞察</h3>
-        <p>6つの領域の相互作用を考慮した、統合的なアドバイス</p>
+        <div class="fi-icon fi-holistic"></div>
+        <h3>6領域の相互作用を把握</h3>
+        <p>「睡眠不足が仕事のやる気を下げている」「人間関係のストレスが体調に影響している」など、領域をまたいだ洞察が届きます。</p>
       </div>
       <div class="feature-item">
-        <h3>自動アクション</h3>
-        <p>おすすめに基づく自動実行（投資、予約、購入など）</p>
+        <div class="fi-icon fi-auto"></div>
+        <h3>朝に今日の要点を自動配信</h3>
+        <p>アプリを開くと、昨日までのデータをもとにした「今日のブリーフィング」が自動で表示されます。</p>
       </div>
       <div class="feature-item">
-        <h3>多言語対応</h3>
-        <p>日本語・英語・中国語・韓国語に対応</p>
+        <div class="fi-icon fi-connect"></div>
+        <h3>外部サービスとスムーズに連携</h3>
+        <p>GoogleカレンダーやPlaud（音声メモ）など、すでに使っているサービスのデータをそのまま取り込めます。</p>
       </div>
       <div class="feature-item">
-        <h3>安心のデータ管理</h3>
-        <p>Google認証 + Firebase によるセキュアなデータ同期</p>
+        <div class="fi-icon fi-streak"></div>
+        <h3>毎日続けたくなる仕組み</h3>
+        <p>記録した日数が積み上がっていく「連続記録」で、自然と習慣になります。3日続けると変化が感じられます。</p>
       </div>
       <div class="feature-item">
-        <h3>専門家連携</h3>
-        <p>必要に応じて専門家によるメンタリング・コーチングにも対応</p>
+        <div class="fi-icon fi-security"></div>
+        <h3>あなただけのデータ</h3>
+        <p>Google認証＋Firebaseで暗号化保存。データは第三者に渡りません。いつでも削除できます。</p>
       </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="lp-section lp-section-alt">
+    <h2>よくある質問</h2>
+    <div class="faq-list">
+      <details class="faq-item">
+        <summary>スマートフォンは苦手でも使えますか？</summary>
+        <p>はい。文字は大きく、操作は「入力して保存」だけです。難しい設定は一切不要です。Googleアカウントがあれば、2分で始められます。</p>
+      </details>
+      <details class="faq-item">
+        <summary>毎日記録しなくてもいいですか？</summary>
+        <p>大丈夫です。週1回でも、思い出したときだけでも活用できます。ただ、毎日少しだけ記録すると、分析の精度がぐっと上がります。</p>
+      </details>
+      <details class="faq-item">
+        <summary>費用はかかりますか？</summary>
+        <p>基本機能は無料でお使いいただけます。より高度な分析や機能をお求めの場合は、有料プランもございます（月額から）。</p>
+      </details>
+      <details class="faq-item">
+        <summary>入力したデータは誰かに見られますか？</summary>
+        <p>見られません。あなたのデータはあなただけが見られます。第三者への提供や広告利用は一切行いません。</p>
+      </details>
+      <details class="faq-item">
+        <summary>6つすべての領域を使わないといけませんか？</summary>
+        <p>いいえ。1つだけでもとても効果的です。気になる領域から始めて、慣れたら少しずつ広げてください。</p>
+      </details>
+      <details class="faq-item">
+        <summary>すでに健康管理アプリや家計アプリを使っています</summary>
+        <p>取り込み機能があります。FitbitやGoogleカレンダー、CSVファイルなどから既存のデータをそのまま引き継げます。</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- Final CTA -->
+  <section class="lp-section lp-cta-section">
+    <div class="lp-cta-box">
+      <h2>今日から、人生を6つの視点で見てみましょう</h2>
+      <p>登録は無料。Googleアカウントで2分もかかりません。</p>
+      <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
     </div>
   </section>
 
   <!-- Login Section -->
   <section id="login" class="lp-section lp-login-section">
     <div class="login-card">
+      <div class="login-card-header">
+        <div class="login-card-logo">◈ LMS</div>
+        <h3>アカウントにログイン</h3>
+      </div>
+
       <!-- Auth mode tabs -->
       <div class="auth-tabs">
         <button class="auth-tab active" onclick="app.toggleAuthMode('login')">ログイン</button>
@@ -113,7 +213,7 @@
       <div class="auth-panel active" id="auth-login">
         <button class="btn btn-google" onclick="app.loginWithGoogle()">
           <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-          Googleでログイン
+          Googleでログイン（おすすめ）
         </button>
 
         <div class="login-divider"><span>またはメールアドレスで</span></div>
@@ -143,7 +243,7 @@
 
         <button class="btn btn-google" onclick="app.loginWithGoogle()">
           <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-          Googleで登録
+          Googleで登録（おすすめ）
         </button>
 
         <div class="login-divider"><span>またはメールアドレスで</span></div>
@@ -189,7 +289,16 @@
 
   <!-- Footer -->
   <footer class="lp-footer">
-    <p>&copy; 2026 LMS - Life Management System. All rights reserved.</p>
+    <div class="lp-footer-inner">
+      <div class="lp-footer-logo">◈ LMS</div>
+      <div class="lp-footer-links">
+        <a href="#domains">6つの領域</a>
+        <a href="#howto">使い方</a>
+        <a href="#faq">よくある質問</a>
+        <a href="#login">ログイン</a>
+      </div>
+      <p>&copy; 2026 LMS - Life Management System.</p>
+    </div>
   </footer>
 
   <!-- Firebase SDK -->
@@ -209,6 +318,11 @@
   <script src="js/app.js"></script>
 
   <script>
+    try {
+      const savedFb = localStorage.getItem('lms_firebaseConfig');
+      if (savedFb) Object.assign(CONFIG.firebase, JSON.parse(savedFb));
+    } catch(e) {}
+
     // On login success, redirect to dashboard
     store.on('isAuthenticated', (val) => {
       if (val) window.location.href = 'dashboard.html';

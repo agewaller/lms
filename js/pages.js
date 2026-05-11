@@ -7,6 +7,7 @@ var Pages = {
   // ─── Main render dispatcher ───
   render(page, domain) {
     switch (page) {
+      case 'onboarding':   return this.renderOnboarding();
       case 'home':         return this.renderHome(domain);
       case 'data':         return this.renderDataBrowser(domain);
       case 'integrations': return this.renderIntegrations(domain);
@@ -20,6 +21,148 @@ var Pages = {
   },
 
   // ═══════════════════════════════════════════════════════════
+  //  ONBOARDING WIZARD (first-time users)
+  // ═══════════════════════════════════════════════════════════
+  renderOnboarding() {
+    const user = store.get('user') || {};
+    const displayName = user.displayName || '';
+    const firstName = displayName.split(' ')[0] || '';
+
+    const domainCards = Object.entries(CONFIG.domains).map(([id, d]) => {
+      const desc = {
+        consciousness: '心の状態・瞑想・価値観を記録する',
+        health: '体調・睡眠・運動を管理する',
+        time: '時間の使い方・予定を最適化する',
+        work: '仕事・副業・生きがいを深める',
+        relationship: '大切な人とのつながりを育てる',
+        assets: '資産・収支・投資を見える化する'
+      }[id] || '';
+      return `<div class="ob-domain-card" data-domain="${id}"
+        onclick="app.selectOnboardingDomain('${id}', this)"
+        style="--domain-color:${d.color}">
+        <div class="ob-domain-num">${d.icon}</div>
+        <div class="ob-domain-info">
+          <div class="ob-domain-name">${i18n.t(id)}</div>
+          <div class="ob-domain-desc">${desc}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="page-onboarding">
+      <div class="ob-card">
+        <div class="ob-header">
+          <div class="ob-logo">LMS</div>
+          <h1>ようこそ${firstName ? '、' + firstName + 'さん' : ''}！</h1>
+          <p>LMSは、あなたの人生を6つの領域からまるごとサポートします。<br>
+          まず、一番気になる領域を選んでください。いつでも変更できます。</p>
+        </div>
+
+        <div class="ob-section">
+          <h3>お名前（任意）</h3>
+          <input type="text" id="onboardingName" class="form-input ob-name-input"
+            value="${Components.escapeHtml(displayName)}" placeholder="山田花子">
+        </div>
+
+        <div class="ob-section">
+          <h3>年齢（任意）</h3>
+          <input type="number" id="onboardingAge" class="form-input ob-age-input"
+            placeholder="65" min="1" max="120" style="max-width:120px;">
+        </div>
+
+        <div class="ob-section">
+          <h3>どの領域から始めますか？</h3>
+          <p style="color:var(--text-secondary);font-size:14px;margin-bottom:16px;">6つすべて使えます。最初に集中したい領域を1つ選んでください。</p>
+          <div class="ob-domains">
+            ${domainCards}
+          </div>
+        </div>
+
+        <div class="ob-actions">
+          <button class="btn btn-primary btn-lg ob-start-btn" onclick="app.completeOnboarding()">
+            始める
+          </button>
+          <button class="btn btn-secondary" onclick="app.completeOnboarding('health')" style="font-size:13px;">
+            スキップしてすぐ始める
+          </button>
+        </div>
+
+        <div class="ob-footer">
+          <p>すべてのデータは安全に保管されます。いつでも削除できます。</p>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  // ─── Streak Widget ───
+  renderStreakWidget() {
+    const streak = typeof app !== 'undefined' ? app.calculateStreak() : 0;
+    const today = new Date().toISOString().slice(0, 10);
+    const hasRecordedToday = (() => {
+      for (const domain of Object.keys(CONFIG.domains)) {
+        for (const cat of Object.keys(CONFIG.domains[domain].categories || {})) {
+          const data = store.getDomainData(domain, cat, 400);
+          if (data.some(e => (e.timestamp || '').slice(0, 10) === today)) return true;
+        }
+      }
+      return false;
+    })();
+
+    const msg = streak >= 30 ? '1ヶ月継続！素晴らしい' :
+                streak >= 7  ? '1週間継続中！習慣になってきました' :
+                streak >= 3  ? '3日連続！いい調子です' :
+                streak >= 1  ? '記録継続中です' : '今日から始めましょう';
+
+    return `<div class="streak-widget ${hasRecordedToday ? 'streak-done' : 'streak-pending'}">
+      <div class="streak-flame">${streak >= 7 ? '🔥' : streak >= 3 ? '✨' : '📅'}</div>
+      <div class="streak-info">
+        <div class="streak-count">${streak > 0 ? streak + '日連続' : '記録しよう'}</div>
+        <div class="streak-msg">${msg}</div>
+      </div>
+      ${!hasRecordedToday ? `<button class="btn btn-sm btn-primary streak-cta" onclick="app.navigate('record')">今日を記録</button>` : ''}
+    </div>`;
+  },
+
+  // ─── Morning Briefing Card ───
+  renderMorningBriefing() {
+    const briefing = store.get('morningBriefing');
+    const today = new Date().toISOString().slice(0, 10);
+    if (!briefing || briefing.date !== today) return '';
+
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'おはようございます' : hour < 18 ? 'こんにちは' : 'こんばんは';
+
+    return `<div class="morning-briefing-card">
+      <div class="briefing-header">
+        <span class="briefing-greeting">${greeting}</span>
+        <span class="briefing-date">${new Date().toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' })}</span>
+      </div>
+      <div class="briefing-body">${Components.formatMarkdown(briefing.text)}</div>
+      <button class="btn btn-sm btn-secondary" onclick="this.closest('.morning-briefing-card').remove()">閉じる</button>
+    </div>`;
+  },
+
+  // ─── Today's Focus ───
+  renderTodayFocus(domain) {
+    const recs = (store.get('recommendations') || [])
+      .filter(r => r.domain === domain || r.domain === 'all' || !r.domain)
+      .slice(0, 3);
+    if (recs.length === 0) return '';
+
+    return `<div class="today-focus-section">
+      <div class="today-focus-header">
+        <h3>今日のポイント</h3>
+        <button class="btn btn-sm btn-secondary" onclick="app.navigate('actions')">すべて見る</button>
+      </div>
+      <div class="today-focus-list">
+        ${recs.map(r => `<div class="today-focus-item">
+          <div class="tfi-dot" style="background:${CONFIG.domains[r.domain]?.color || 'var(--accent)'}"></div>
+          <div class="tfi-text">${Components.formatMarkdown(typeof r.text === 'string' ? r.text.split('\n')[0].slice(0, 120) : '')}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════
   //  HOME PAGE (per domain)
   // ═══════════════════════════════════════════════════════════
   renderHome(domain) {
@@ -29,6 +172,8 @@ var Pages = {
 
     // Quick input bar
     let html = `<div class="page-home">
+      ${this.renderStreakWidget()}
+      ${this.renderMorningBriefing()}
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
@@ -51,6 +196,9 @@ var Pages = {
     // Domain-specific stats
     html += this.getDomainStats(domain);
     html += `</div></div>`;
+
+    // Today's focus
+    html += this.renderTodayFocus(domain);
 
     // All domain scores overview (mini)
     html += `<div class="all-domains-overview">
