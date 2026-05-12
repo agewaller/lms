@@ -27,8 +27,30 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
-    // Quick input bar
+    // Today's domain entry counts for the summary bar
+    const todayCounts = {};
+    Object.keys(CONFIG.domains).forEach(d => {
+      let n = 0;
+      Object.keys((CONFIG.domains[d] || {}).categories || {}).forEach(cat => {
+        n += store.getDomainData(d, cat, 1).length;
+      });
+      todayCounts[d] = n;
+    });
+
+    const streak = store.get('streak') || {};
+    const checkedIn = store.checkedInToday();
+    const motivationMsg = checkedIn
+      ? (streak.current >= 7 ? `${streak.current}日連続達成中！素晴らしいペースです` : `今日の記録済み`)
+      : `今日まだ記録していません。チェックインしましょう`;
+
+    // Quick input bar + streak header
     let html = `<div class="page-home">
+      <div class="home-top-bar">
+        ${Components.streakBadge(streak)}
+        <span class="home-motivation ${checkedIn ? 'done' : 'nudge'}">${motivationMsg}</span>
+        ${!checkedIn ? `<button class="btn btn-sm btn-primary" onclick="app.showDailyCheckin()">チェックイン</button>` : ''}
+      </div>
+      ${Components.todaySummaryBar(todayCounts)}
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">

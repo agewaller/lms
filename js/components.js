@@ -266,5 +266,36 @@ var Components = {
       </div>
       <div class="record-summary">${summary}</div>
     </div>`;
+  },
+
+  // ─── Streak Badge ───
+  streakBadge(streak) {
+    const n = streak?.current || 0;
+    const best = streak?.best || 0;
+    const icon = n >= 30 ? '🔥' : n >= 7 ? '⚡' : n >= 3 ? '✨' : '◎';
+    return `<div class="streak-badge" title="最高記録: ${best}日連続">
+      <span class="streak-icon">${icon}</span>
+      <span class="streak-count">${n}</span>
+      <span class="streak-unit">日連続</span>
+    </div>`;
+  },
+
+  // ─── Today Summary Bar ───
+  todaySummaryBar(domainCounts) {
+    const domains = Object.keys(CONFIG.domains);
+    const items = domains.map(d => {
+      const n = domainCounts[d] || 0;
+      const cfg = CONFIG.domains[d];
+      return `<div class="today-domain-dot ${n > 0 ? 'done' : ''}" title="${i18n.t(d)}: ${n}件" style="--dot-color:${cfg.color}">
+        <span class="tdd-icon">${cfg.icon}</span>
+        ${n > 0 ? `<span class="tdd-count">${n}</span>` : ''}
+      </div>`;
+    }).join('');
+    const total = Object.values(domainCounts).reduce((a, b) => a + b, 0);
+    return `<div class="today-summary-bar">
+      <span class="tsb-label">今日の記録</span>
+      <div class="tsb-dots">${items}</div>
+      <span class="tsb-total">${total}件</span>
+    </div>`;
   }
 };

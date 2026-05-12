@@ -109,7 +109,11 @@ var Store = class Store {
 
       // Notifications
       notifications: [],
-      unreadCount: 0
+      unreadCount: 0,
+
+      // Streak & onboarding
+      streak: { current: 0, lastDate: null, best: 0 },
+      onboardingComplete: false
     };
 
     this.listeners = new Map();
@@ -182,7 +186,8 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'streak', 'onboardingComplete'
     ];
   }
 
@@ -267,6 +272,32 @@ var Store = class Store {
     scores[domain] = score;
     this.set('domainScores', scores);
     return score;
+  }
+
+  // ─── Streak ───
+
+  updateStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    const s = this.state.streak || { current: 0, lastDate: null, best: 0 };
+    if (s.lastDate === today) return s;
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yStr = yesterday.toISOString().slice(0, 10);
+
+    const newCurrent = s.lastDate === yStr ? s.current + 1 : 1;
+    const updated = {
+      current: newCurrent,
+      lastDate: today,
+      best: Math.max(newCurrent, s.best || 0)
+    };
+    this.set('streak', updated);
+    return updated;
+  }
+
+  checkedInToday() {
+    const today = new Date().toISOString().slice(0, 10);
+    return (this.state.streak || {}).lastDate === today;
   }
 
   // ─── Clear ───

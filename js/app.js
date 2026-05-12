@@ -20,6 +20,7 @@ var App = class App {
       store.set('currentPage', 'home');
       this.renderApp();
       this.startInboxPolling();
+      setTimeout(() => this._postLoginChecks(), 800);
     }
 
     // Listen for auth changes
@@ -29,6 +30,7 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        setTimeout(() => this._postLoginChecks(), 800);
       } else {
         this.stopInboxPolling();
       }
@@ -1908,25 +1910,21 @@ var App = class App {
   }
 
   generateDemoData() {
-    if (!confirm('デモデータを生成しますか？既存データに追加されます。')) return;
-    // Generate sample entries for each domain
-    const today = new Date();
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      store.addDomainEntry('health', 'symptoms', { condition_level: 5 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
-      store.addDomainEntry('health', 'sleepData', { quality: 6 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
-    }
-    Components.showToast('デモデータを生成しました', 'success');
-    this.renderApp();
+    this.openModal('デモデータの生成', `
+      <p>過去7日分のサンプルデータを健康ドメインに追加します。既存データはそのまま残ります。</p>
+      <div class="modal-footer" style="padding:16px 0 0">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn btn-primary" onclick="app._doGenerateDemo()">生成する</button>
+      </div>`);
   }
 
   deleteAllData() {
-    if (!confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
-    if (!confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
-    store.clearAll();
-    Components.showToast('すべてのデータを削除しました', 'info');
-    window.location.reload();
+    this.openModal('全データの削除', `
+      <p style="color:var(--error,#ef4444)"><strong>警告：</strong>この操作は元に戻せません。すべての記録・設定が完全に削除されます。</p>
+      <div class="modal-footer" style="padding:16px 0 0">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn btn-danger" style="background:#ef4444;color:#fff" onclick="app._doDeleteAll()">完全に削除する</button>
+      </div>`);
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───
@@ -1953,6 +1951,196 @@ var App = class App {
   closeModal() {
     const overlay = document.getElementById('modal-overlay');
     if (overlay) overlay.classList.remove('active');
+  }
+
+  // ─── Post-login checks ───
+  _postLoginChecks() {
+    if (!store.get('onboardingComplete')) {
+      const profile = store.get('userProfile') || {};
+      const hasData = Object.keys(CONFIG.domains).some(d =>
+        Object.keys((CONFIG.domains[d] || {}).categories || {}).some(cat =>
+          (store.getDomainData(d, cat, 365) || []).length > 0
+        )
+      );
+      if (!profile.name && !hasData) {
+        this.showOnboarding();
+        return;
+      }
+      store.set('onboardingComplete', true);
+    }
+    if (!store.checkedInToday()) {
+      this.showDailyCheckin();
+    }
+  }
+
+  // ─── Onboarding ───
+  showOnboarding() {
+    const overlay = document.createElement('div');
+    overlay.id = 'onboardingModal';
+    overlay.className = 'checkin-modal-overlay';
+    overlay.innerHTML = `
+      <div class="checkin-modal onboarding-modal">
+        <div class="checkin-header">
+          <div class="checkin-greeting">ようこそ！</div>
+          <div class="checkin-sub">まず、あなたのことを少し教えてください</div>
+        </div>
+        <div class="checkin-item">
+          <label>お名前（ニックネームでもOK）</label>
+          <input type="text" id="ob_name" class="form-input" placeholder="山田 花子">
+        </div>
+        <div class="checkin-item">
+          <label>生まれた年</label>
+          <input type="number" id="ob_year" class="form-input" placeholder="1955" min="1930" max="2005">
+        </div>
+        <div class="checkin-item">
+          <label>今、最も気になっていること</label>
+          <select id="ob_concern" class="form-input">
+            <option value="">選んでください</option>
+            <option value="health">体の調子・健康</option>
+            <option value="assets">お金・資産のこと</option>
+            <option value="relationship">人間関係・孤独感</option>
+            <option value="work">仕事・生きがい</option>
+            <option value="time">時間の使い方</option>
+            <option value="consciousness">気持ち・心の安定</option>
+          </select>
+        </div>
+        <div class="checkin-actions">
+          <button class="btn btn-primary" onclick="app.saveOnboarding()">はじめる →</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+
+  saveOnboarding() {
+    const name = document.getElementById('ob_name')?.value?.trim();
+    const year = document.getElementById('ob_year')?.value;
+    const concern = document.getElementById('ob_concern')?.value;
+
+    const profile = store.get('userProfile') || {};
+    if (name) profile.name = name;
+    if (year) profile.birthYear = +year;
+    if (concern) profile.primaryConcern = concern;
+    store.set('userProfile', profile);
+    store.set('onboardingComplete', true);
+
+    document.getElementById('onboardingModal')?.remove();
+
+    if (concern) {
+      store.set('currentDomain', concern);
+      store.set('currentPage', 'home');
+      this.renderApp();
+    }
+
+    Components.showToast(`ようこそ、${name || 'さん'}！一緒に始めましょう`, 'success');
+    setTimeout(() => this.showDailyCheckin(), 600);
+  }
+
+  // ─── Daily Check-in ───
+  showDailyCheckin() {
+    if (document.getElementById('dailyCheckinModal')) return;
+
+    const profile = store.get('userProfile') || {};
+    const user = store.get('user');
+    const name = profile.name || user?.displayName?.split(' ')[0] || '';
+    const hour = new Date().getHours();
+    const greeting = hour < 11 ? 'おはようございます' : hour < 17 ? 'こんにちは' : 'こんばんは';
+    const streak = store.get('streak') || {};
+
+    let streakHtml = '';
+    if (streak.current > 1) {
+      streakHtml = `<div class="streak-celebration">
+        ${streak.current >= 7 ? '⚡' : '✨'} <strong>${streak.current}日連続</strong>で続けています！
+      </div>`;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.id = 'dailyCheckinModal';
+    overlay.className = 'checkin-modal-overlay';
+    overlay.innerHTML = `
+      <div class="checkin-modal">
+        <div class="checkin-header">
+          <div class="checkin-greeting">${greeting}${name ? '、' + name + 'さん' : ''}</div>
+          <div class="checkin-sub">今日の調子を30秒で記録しましょう</div>
+        </div>
+        ${streakHtml}
+        <div class="checkin-item">
+          <label>今日の体調は？</label>
+          <div class="checkin-slider-row">
+            <span>低い</span>
+            <input type="range" id="ci_mood" min="1" max="10" value="7"
+              oninput="this.nextElementSibling.textContent=this.value">
+            <span class="checkin-slider-val">7</span>
+            <span>高い</span>
+          </div>
+        </div>
+        <div class="checkin-item">
+          <label>昨夜の眠りは？</label>
+          <div class="checkin-slider-row">
+            <span>浅い</span>
+            <input type="range" id="ci_sleep" min="1" max="10" value="7"
+              oninput="this.nextElementSibling.textContent=this.value">
+            <span class="checkin-slider-val">7</span>
+            <span>深い</span>
+          </div>
+        </div>
+        <div class="checkin-item">
+          <label>今日の一言（任意）</label>
+          <input type="text" id="ci_note" class="form-input" placeholder="気分、予定、なんでも...">
+        </div>
+        <div class="checkin-actions">
+          <button class="btn btn-secondary" onclick="app.skipDailyCheckin()">後で</button>
+          <button class="btn btn-primary" onclick="app.completeDailyCheckin()">記録する →</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+
+  completeDailyCheckin() {
+    const mood = +( document.getElementById('ci_mood')?.value || 7);
+    const sleep = +(document.getElementById('ci_sleep')?.value || 7);
+    const note = document.getElementById('ci_note')?.value?.trim() || '';
+
+    store.addDomainEntry('health', 'vitals', { mood, sleep_quality: sleep });
+    if (note) {
+      store.addDomainEntry('consciousness', 'entries', { type: 'daily_note', text: note });
+    }
+
+    const streak = store.updateStreak();
+    document.getElementById('dailyCheckinModal')?.remove();
+    this.renderApp();
+
+    if (streak.current >= 7 && streak.current % 7 === 0) {
+      Components.showToast(`すごい！${streak.current}日連続達成！`, 'success');
+    } else if (streak.current > 1) {
+      Components.showToast(`${streak.current}日連続！この調子で続けましょう`, 'success');
+    } else {
+      Components.showToast('記録しました！毎日続けると分析が深まります', 'success');
+    }
+  }
+
+  skipDailyCheckin() {
+    document.getElementById('dailyCheckinModal')?.remove();
+  }
+
+  // ─── Admin helpers (confirm() 禁止のため modal で代替) ───
+  _doGenerateDemo() {
+    this.closeModal();
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      store.addDomainEntry('health', 'symptoms', { condition_level: 5 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
+      store.addDomainEntry('health', 'sleepData', { quality: 6 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
+    }
+    Components.showToast('デモデータを生成しました', 'success');
+    this.renderApp();
+  }
+
+  _doDeleteAll() {
+    this.closeModal();
+    store.clearAll();
+    Components.showToast('すべてのデータを削除しました', 'info');
+    window.location.reload();
   }
 };
 
