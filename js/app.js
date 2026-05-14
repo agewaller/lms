@@ -20,6 +20,7 @@ var App = class App {
       store.set('currentPage', 'home');
       this.renderApp();
       this.startInboxPolling();
+      this._maybeShowOnboarding();
     }
 
     // Listen for auth changes
@@ -29,6 +30,7 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        this._maybeShowOnboarding();
       } else {
         this.stopInboxPolling();
       }
@@ -37,6 +39,73 @@ var App = class App {
     // Listen for navigation changes
     store.on('currentPage', () => this.renderApp());
     store.on('currentDomain', () => this.renderApp());
+  }
+
+  // ─── First-time user onboarding ───
+  _maybeShowOnboarding() {
+    if (store.get('_onboardingDone')) return;
+    // Delay slightly so the dashboard renders first
+    setTimeout(() => this._showOnboardingStep(0), 600);
+  }
+
+  _showOnboardingStep(step) {
+    const steps = [
+      {
+        title: 'ようこそ、LMSへ！',
+        body: `
+          <p style="font-size:16px;line-height:1.8;margin:0 0 16px">LMSは、あなたの人生を<strong>6つの領域</strong>でサポートするシステムです。</p>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;text-align:center;font-size:13px">
+            <div style="background:#f8f7ff;padding:8px;border-radius:8px">🌿<br>意識</div>
+            <div style="background:#f0fdf4;padding:8px;border-radius:8px">🌱<br>健康</div>
+            <div style="background:#fffbeb;padding:8px;border-radius:8px">🕰️<br>時間</div>
+            <div style="background:#eff6ff;padding:8px;border-radius:8px">🔷<br>仕事</div>
+            <div style="background:#fff1f2;padding:8px;border-radius:8px">🔴<br>関係</div>
+            <div style="background:#fefce8;padding:8px;border-radius:8px">🟡<br>資産</div>
+          </div>
+          <p style="font-size:14px;color:#6b7280;margin:0">まず「健康」からスタートするのがおすすめです。毎日の体調を記録するだけで、深いアドバイスが届きます。</p>`,
+        next: '次へ',
+        skip: true
+      },
+      {
+        title: 'ホームで今日の状態を入力する',
+        body: `
+          <p style="font-size:15px;line-height:1.8;margin:0 0 16px">各領域のホーム画面の上部にある<strong>入力バー</strong>に、今日のことを書いてみてください。</p>
+          <div style="background:#f8f7ff;border-radius:12px;padding:16px;margin-bottom:16px">
+            <p style="margin:0 0 8px;font-weight:600;font-size:14px">入力例：</p>
+            <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.8">「最近、眠りが浅くて疲れが取れない」<br>「老後の資産が心配になってきた」<br>「孫の世話が増えて少し大変」</p>
+          </div>
+          <p style="font-size:13px;color:#6b7280;margin:0">どんな言葉でもOKです。あなたの状況を読み解いて、丁寧なアドバイスをお届けします。</p>`,
+        next: '始めてみる',
+        skip: false
+      }
+    ];
+
+    const s = steps[step];
+    if (!s) {
+      store.set('_onboardingDone', true);
+      return;
+    }
+
+    const isLast = step === steps.length - 1;
+    const progressDots = steps.map((_, i) =>
+      `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${i === step ? '#6c63ff' : '#e5e7eb'};margin:0 3px"></span>`
+    ).join('');
+
+    this.openModal(s.title, `
+      ${s.body}
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;border-top:1px solid #f3f4f6;padding-top:16px">
+        <div>${progressDots}</div>
+        <div style="display:flex;gap:8px">
+          ${s.skip ? `<button class="btn btn-secondary" onclick="app._skipOnboarding()">スキップ</button>` : ''}
+          <button class="btn btn-primary" onclick="app._showOnboardingStep(${step + 1})">${s.next}</button>
+        </div>
+      </div>
+    `);
+  }
+
+  _skipOnboarding() {
+    store.set('_onboardingDone', true);
+    this.closeModal();
   }
 
   // ─── Inbox polling: fetch Plaud auto-sent transcripts ───
@@ -179,7 +248,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -351,7 +420,7 @@ var App = class App {
     const data = store.getDomainData(domain, category, 1);
     try {
       await AIEngine.analyze(domain, 'daily', { raw: data[data.length - 1] });
-      Components.showToast(i18n.t('ai_analysis') + ' ✓', 'success');
+      Components.showToast('分析が完了しました ✓', 'success');
       this.renderApp();
     } catch (e) {
       Components.showToast(e.message, 'error');
@@ -381,7 +450,7 @@ var App = class App {
 
     try {
       await AIEngine.analyze(domain, 'daily', { text });
-      Components.showToast(i18n.t('ai_analysis') + ' ✓', 'success');
+      Components.showToast('分析が完了しました ✓', 'success');
       this.renderApp();
     } catch (e) {
       Components.showToast(e.message, 'error');
@@ -704,10 +773,10 @@ var App = class App {
     const formHtml = `<form id="editForm">
       ${fields.map(([k, v]) => `
         <div class="form-group">
-          <label>${i18n.t(k) || k}</label>
+          <label>${Components.escapeHtml(i18n.t(k) || k)}</label>
           ${typeof v === 'string' && v.length > 50
-            ? `<textarea name="${k}" class="form-input" rows="3">${v}</textarea>`
-            : `<input type="${typeof v === 'number' ? 'number' : 'text'}" name="${k}" class="form-input" value="${v}">`}
+            ? `<textarea name="${Components.escapeHtml(k)}" class="form-input" rows="3">${Components.escapeHtml(v)}</textarea>`
+            : `<input type="${typeof v === 'number' ? 'number' : 'text'}" name="${Components.escapeHtml(k)}" class="form-input" value="${Components.escapeHtml(v)}">`}
         </div>
       `).join('')}
       <div class="form-actions">
@@ -740,8 +809,8 @@ var App = class App {
     this.renderApp();
   }
 
-  deleteDataEntry(domain, category, id) {
-    if (!confirm('この記録を削除しますか？')) return;
+  async deleteDataEntry(domain, category, id) {
+    if (!await this.confirmModal('この記録を削除しますか？')) return;
     const key = `${domain}_${category}`;
     const entries = (store.get(key) || []).filter(e => e.id !== id);
     store.set(key, entries);
@@ -823,8 +892,8 @@ var App = class App {
     gmailIntegration.connect();
   }
 
-  fitbitDisconnect() {
-    if (!confirm('Fitbit接続を解除しますか？')) return;
+  async fitbitDisconnect() {
+    if (!await this.confirmModal('Fitbit接続を解除しますか？')) return;
     if (typeof fitbit !== 'undefined') fitbit.disconnect();
     Components.showToast('接続を解除しました', 'info');
     this.renderApp();
@@ -873,8 +942,8 @@ var App = class App {
     }
   }
 
-  gcalDisconnect() {
-    if (!confirm('Googleカレンダー接続を解除しますか？')) return;
+  async gcalDisconnect() {
+    if (!await this.confirmModal('Googleカレンダー接続を解除しますか？')) return;
     if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
     Components.showToast('接続を解除しました', 'info');
     this.renderApp();
@@ -908,8 +977,8 @@ var App = class App {
     }
   }
 
-  outlookDisconnect() {
-    if (!confirm('Outlook接続を解除しますか？')) return;
+  async outlookDisconnect() {
+    if (!await this.confirmModal('Outlook接続を解除しますか？')) return;
     if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
     Components.showToast('接続を解除しました', 'info');
     this.renderApp();
@@ -943,8 +1012,8 @@ var App = class App {
     }
   }
 
-  gmailDisconnect() {
-    if (!confirm('Gmail接続を解除しますか？')) return;
+  async gmailDisconnect() {
+    if (!await this.confirmModal('Gmail接続を解除しますか？')) return;
     if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
     Components.showToast('接続を解除しました', 'info');
     this.renderApp();
@@ -1478,8 +1547,8 @@ var App = class App {
     this.renderApp();
   }
 
-  deletePrompt(key) {
-    if (!confirm('このプロンプトを削除しますか？')) return;
+  async deletePrompt(key) {
+    if (!await this.confirmModal('このプロンプトを削除しますか？')) return;
     delete CONFIG.prompts[key];
     const custom = store.get('customPrompts') || {};
     delete custom[key];
@@ -1489,7 +1558,21 @@ var App = class App {
   }
 
   addNewPrompt() {
-    const key = prompt('プロンプトのキー名を入力（例: work_custom）');
+    this.openModal('プロンプトを追加', `
+      <div class="form-group">
+        <label>キー名（例: work_custom）</label>
+        <input type="text" id="newPromptKey" class="form-input" placeholder="work_custom">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="app._createNewPrompt()">追加</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+  }
+
+  _createNewPrompt() {
+    const key = (document.getElementById('newPromptKey')?.value || '').trim();
+    this.closeModal();
     if (!key) return;
     if (CONFIG.prompts[key]) {
       Components.showToast('そのキーは既に存在します', 'error');
@@ -1523,8 +1606,8 @@ var App = class App {
     }
   }
 
-  clearApiKeys() {
-    if (!confirm('すべてのAPIキーを削除しますか？')) return;
+  async clearApiKeys() {
+    if (!await this.confirmModal('すべてのAPIキーを削除しますか？', { danger: true })) return;
     ['anthropic', 'openai', 'google'].forEach(p => {
       localStorage.removeItem('lms_apikey_' + p);
     });
@@ -1558,8 +1641,8 @@ var App = class App {
     Components.showToast('保存しました（再読み込みが必要です）', 'success');
   }
 
-  clearFirebaseConfig() {
-    if (!confirm('Firebase設定を削除しますか？')) return;
+  async clearFirebaseConfig() {
+    if (!await this.confirmModal('Firebase設定を削除しますか？', { danger: true })) return;
     localStorage.removeItem('lms_firebaseConfig');
     Components.showToast('削除しました（再読み込みが必要です）', 'info');
   }
@@ -1648,23 +1731,36 @@ var App = class App {
   }
 
   // ─── Admin User Management ───
-  async addAdminEmail() {
-    const email = prompt('管理者として追加するメールアドレスを入力してください');
-    if (!email || !email.trim()) return;
+  addAdminEmail() {
+    this.openModal('管理者を追加', `
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" id="newAdminEmail" class="form-input" placeholder="admin@example.com">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="app._doAddAdminEmail()">追加</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+  }
 
-    const trimmed = email.trim().toLowerCase();
-    if (!/^[^@]+@[^@]+\.[^@]+$/.test(trimmed)) {
+  async _doAddAdminEmail() {
+    const email = (document.getElementById('newAdminEmail')?.value || '').trim().toLowerCase();
+    this.closeModal();
+    if (!email) return;
+
+    if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
       Components.showToast('有効なメールアドレスを入力してください', 'error');
       return;
     }
 
     const list = store.get('adminEmails') || ['agewaller@gmail.com'];
-    if (list.includes(trimmed)) {
+    if (list.includes(email)) {
       Components.showToast('すでに管理者です', 'info');
       return;
     }
 
-    list.push(trimmed);
+    list.push(email);
     store.set('adminEmails', list);
 
     // Sync to Firestore admin/config
@@ -1678,7 +1774,7 @@ var App = class App {
       ).catch(e => console.warn(e));
     }
 
-    Components.showToast(`${trimmed} を管理者に追加しました`, 'success');
+    Components.showToast(`${email} を管理者に追加しました`, 'success');
     this.renderApp();
   }
 
@@ -1687,7 +1783,7 @@ var App = class App {
       Components.showToast('オーナーアカウントは削除できません', 'error');
       return;
     }
-    if (!confirm(`${email} を管理者から外しますか？`)) return;
+    if (!await this.confirmModal(`${email} を管理者から外しますか？`)) return;
 
     const list = (store.get('adminEmails') || ['agewaller@gmail.com']).filter(e => e !== email);
     store.set('adminEmails', list);
@@ -1907,8 +2003,8 @@ var App = class App {
     this.openModal(user.displayName || user.email || 'ユーザー詳細', body);
   }
 
-  generateDemoData() {
-    if (!confirm('デモデータを生成しますか？既存データに追加されます。')) return;
+  async generateDemoData() {
+    if (!await this.confirmModal('デモデータを生成しますか？既存データに追加されます。')) return;
     // Generate sample entries for each domain
     const today = new Date();
     for (let i = 0; i < 7; i++) {
@@ -1921,9 +2017,9 @@ var App = class App {
     this.renderApp();
   }
 
-  deleteAllData() {
-    if (!confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
-    if (!confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
+  async deleteAllData() {
+    if (!await this.confirmModal('本当にすべてのデータを削除しますか？この操作は元に戻せません。', { danger: true })) return;
+    if (!await this.confirmModal('最終確認：すべてのデータを完全に削除します。よろしいですか？', { danger: true })) return;
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();
@@ -1953,6 +2049,29 @@ var App = class App {
   closeModal() {
     const overlay = document.getElementById('modal-overlay');
     if (overlay) overlay.classList.remove('active');
+    // Resolve any pending confirmModal with false (user dismissed)
+    const resolve = this._confirmResolve;
+    this._confirmResolve = null;
+    if (resolve) resolve(false);
+  }
+
+  // Promise-based confirm dialog (replaces window.confirm for mobile compatibility)
+  confirmModal(message, { danger = false } = {}) {
+    return new Promise(resolve => {
+      const btnClass = danger ? 'btn-danger' : 'btn-primary';
+      this.openModal('確認', `
+        <p style="margin:0 0 20px;font-size:15px;line-height:1.6">${Components.escapeHtml(message)}</p>
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+          <button class="btn btn-secondary" onclick="app._confirmResolve(false)">キャンセル</button>
+          <button class="btn ${btnClass}" onclick="app._confirmResolve(true)">はい</button>
+        </div>
+      `);
+      this._confirmResolve = (val) => {
+        this._confirmResolve = null;
+        this.closeModal();
+        resolve(val);
+      };
+    });
   }
 };
 
