@@ -66,14 +66,26 @@ var Pages = {
     html += this.getDomainStats(domain);
     html += `</div></div>`;
 
-    // All domain scores overview (mini)
+    // All domain scores overview (mini) + week activity summary
+    const domainColors = Object.fromEntries(Object.entries(CONFIG.domains).map(([k, v]) => [k, v.color]));
     html += `<div class="all-domains-overview">
-      <h3>${i18n.t('holistic_analysis')}</h3>
-      <div class="domain-scores-grid">
-        ${Object.keys(CONFIG.domains).map(d => {
+      <div class="ado-header">
+        <h3>今週の6領域</h3>
+        <button class="btn btn-sm btn-secondary" onclick="app.generateRecommendations('holistic')">総合分析</button>
+      </div>
+      <div class="domain-week-grid">
+        ${Object.entries(CONFIG.domains).map(([d, dc]) => {
           const s = store.get('domainScores')?.[d] || 0;
-          return `<div class="mini-score ${d === domain ? 'current' : ''}" onclick="app.switchDomain('${d}')">
-            ${Components.scoreGauge(s, 70, i18n.t(d))}
+          const cats = Object.keys(dc.categories || {});
+          let weekEntries = 0;
+          cats.forEach(cat => { weekEntries += store.getDomainData(d, cat, 7).length; });
+          const isActive = d === domain;
+          return `<div class="domain-week-card ${isActive ? 'active' : ''}" onclick="app.switchDomain('${d}')"
+            style="--dc:${dc.color}">
+            <div class="dwc-num">${dc.icon || d.charAt(0)}</div>
+            <div class="dwc-name">${i18n.t(d)}</div>
+            <div class="dwc-score" style="color:${s >= 70 ? '#10b981' : s >= 40 ? '#f59e0b' : '#ef4444'}">${s}</div>
+            <div class="dwc-entries">${weekEntries > 0 ? weekEntries + '件' : '未記録'}</div>
           </div>`;
         }).join('')}
       </div>

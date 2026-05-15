@@ -1857,6 +1857,37 @@ body.is-admin .admin-only { display: flex; }
 }
 .ob-step.done .ob-step-num { background: var(--success); }
 
+/* ─── Domain Week Overview ─── */
+.all-domains-overview { margin-bottom: 20px; }
+.ado-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.ado-header h3 { margin: 0; font-size: 15px; }
+.domain-week-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+.domain-week-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.domain-week-card:hover { border-color: var(--dc, var(--accent)); transform: translateY(-1px); }
+.domain-week-card.active { border-color: var(--dc, var(--accent)); background: rgba(108,99,255,0.04); }
+.dwc-num { font-size: 18px; font-weight: 700; color: var(--dc, var(--accent)); font-family: serif; }
+.dwc-name { font-size: 11px; color: var(--text-secondary); margin: 2px 0; }
+.dwc-score { font-size: 18px; font-weight: 700; line-height: 1.2; }
+.dwc-entries { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+@media (max-width: 600px) {
+  .domain-week-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 360px) {
+  .domain-week-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* ─── Today's Reminder ─── */
 .today-reminder {
   display: flex;
