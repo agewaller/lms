@@ -1035,8 +1035,8 @@ var Pages = {
             <div class="data-entry-fields">
               ${fields.map(([k, v]) => {
                 const label = i18n.t(k) || k;
-                const val = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
-                return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${val}</span></div>`;
+                const raw = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
+                return `<div class="data-field"><span class="data-field-key">${Components.escapeHtml(label)}</span><span class="data-field-val">${Components.escapeHtml(raw)}</span></div>`;
               }).join('')}
             </div>
           </div>`;

@@ -140,15 +140,17 @@ var RelationshipFeatures = {
     birthdayList.forEach(c => {
       const bd = new Date(c.birthday);
       const dateStr = `${bd.getMonth() + 1}月${bd.getDate()}日`;
+      const eName = Components.escapeHtml(c.name);
+      const jsName = JSON.stringify(c.name);
       html += `<div class="contact-suggest birthday-suggest">
         <div class="cs-icon">🎂</div>
         <div class="cs-info">
-          <div class="cs-name">${c.name}さん</div>
+          <div class="cs-name">${eName}さん</div>
           <div class="cs-reason">お誕生日が${dateStr}です！おめでとうのメッセージを送りましょう</div>
         </div>
         <div class="cs-actions">
-          ${c.phone ? `<a href="tel:${c.phone}" class="btn btn-sm btn-primary">📞 電話</a>` : ''}
-          <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContact('${c.name}','message')">💬 連絡済み</button>
+          ${c.phone ? `<a href="tel:${Components.escapeHtml(c.phone)}" class="btn btn-sm btn-primary">📞 電話</a>` : ''}
+          <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContact(${jsName},'message')">💬 連絡済み</button>
         </div>
       </div>`;
     });
@@ -158,16 +160,18 @@ var RelationshipFeatures = {
       const contact = contacts.find(c => c.name === d.name);
       const distLabel = CONFIG.domains.relationship?.distanceLevels?.[d.distance]?.description || '';
       const suggestion = this.getSuggestion(d);
+      const eName = Components.escapeHtml(d.name);
+      const jsName = JSON.stringify(d.name);
 
       html += `<div class="contact-suggest ${d.urgency >= 5 ? 'urgent' : ''}">
         <div class="cs-icon">${d.urgency >= 5 ? '⚠️' : '💭'}</div>
         <div class="cs-info">
-          <div class="cs-name">${d.name}さん <span class="cs-dist">${distLabel}</span></div>
+          <div class="cs-name">${eName}さん <span class="cs-dist">${Components.escapeHtml(distLabel)}</span></div>
           <div class="cs-reason">${d.daysSince}日間ご連絡していません${suggestion ? '。' + suggestion : ''}</div>
         </div>
         <div class="cs-actions">
-          ${contact?.phone ? `<a href="tel:${contact.phone}" class="btn btn-sm btn-primary">📞 電話</a>` : ''}
-          <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContact('${d.name}','call')">📝 連絡済み</button>
+          ${contact?.phone ? `<a href="tel:${Components.escapeHtml(contact.phone)}" class="btn btn-sm btn-primary">📞 電話</a>` : ''}
+          <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContact(${jsName},'call')">📝 連絡済み</button>
         </div>
       </div>`;
     });
