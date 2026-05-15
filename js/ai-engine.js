@@ -107,11 +107,34 @@ var AIEngine = {
     const profile = store.get('userProfile') || {};
     const lang = i18n.currentLang;
 
-    let msg = `[User Profile] Language: ${lang}`;
-    if (profile.age) msg += `, Age: ${profile.age}`;
-    if (profile.gender) msg += `, Gender: ${profile.gender}`;
-    if (profile.location) msg += `, Location: ${profile.location}`;
-    msg += '\n\n';
+    let msg = `[ユーザー情報] 言語: ${lang}`;
+    if (profile.age) msg += `、年齢: ${profile.age}歳`;
+    if (profile.gender) msg += `、性別: ${{ male: '男性', female: '女性', other: 'その他' }[profile.gender] || profile.gender}`;
+    if (profile.location) msg += `、居住地: ${profile.location}`;
+    if (profile.householdComposition) msg += `、世帯: ${profile.householdComposition}`;
+    if (profile.occupation) msg += `、職業: ${profile.occupation}`;
+    msg += '\n';
+
+    // Health-specific profile context
+    if (domain === 'health' || domain === 'holistic' || !domain) {
+      if (Array.isArray(profile.diseases) && profile.diseases.length > 0) {
+        msg += `持病・既往症: ${profile.diseases.join('、')}\n`;
+      }
+      if (profile.medications) {
+        msg += `服薬中: ${profile.medications}\n`;
+      }
+      if (profile.allergies) {
+        msg += `アレルギー: ${profile.allergies}\n`;
+      }
+    }
+
+    // Goals and concerns for holistic analysis
+    if (domain === 'holistic' || !domain) {
+      if (profile.lifeGoals) msg += `人生の目標: ${profile.lifeGoals}\n`;
+      if (profile.concerns) msg += `現在の悩み: ${profile.concerns}\n`;
+    }
+
+    msg += '\n';
 
     if (domain === 'holistic' || !domain) {
       // Cross-domain: gather recent data from all domains
