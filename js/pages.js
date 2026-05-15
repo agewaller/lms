@@ -132,7 +132,7 @@ var Pages = {
       }
     }
 
-    // Weekly report (shown on any domain's home)
+    // Weekly report (only for users who have some data)
     const weeklyReport = store.get('weeklyReport');
     if (weeklyReport) {
       const reportDate = new Date(weeklyReport.timestamp).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
@@ -144,7 +144,7 @@ var Pages = {
         </div>
         <div class="wr-body">${Components.formatMarkdown(weeklyReport.text)}</div>
       </div>`;
-    } else {
+    } else if (!isNewUser) {
       html += `<div class="weekly-report-prompt">
         <button class="btn btn-secondary" onclick="app.generateWeeklyReport()">今週の振り返りを見る</button>
       </div>`;
