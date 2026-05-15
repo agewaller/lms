@@ -76,6 +76,7 @@ var AIEngine = {
     // Legacy aliases for backward compatibility
     let key;
     if (promptType === 'holistic') key = 'universal_holistic';
+    else if (promptType === 'weekly') key = 'universal_weekly';
     else if (promptType === 'quickInput' || promptType === 'text_analysis') key = 'text_analysis';
     else if (promptType === 'imageAnalysis' || promptType === 'image_analysis') key = 'image_analysis';
     else if (promptType === 'transcript_analysis') key = 'consciousness_transcript';
