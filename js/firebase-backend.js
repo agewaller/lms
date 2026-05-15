@@ -27,6 +27,13 @@ var FirebaseBackend = {
         console.warn('Firestore persistence:', e.code);
       }
 
+      // Handle redirect result (mobile Google sign-in)
+      this.auth.getRedirectResult().catch(e => {
+        if (e.code !== 'auth/no-auth-event') {
+          console.warn('Redirect result error:', e.code);
+        }
+      });
+
       // Listen for auth state changes
       this.auth.onAuthStateChanged(user => this.handleAuthChange(user));
       this.initialized = true;
@@ -76,7 +83,13 @@ var FirebaseBackend = {
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     try {
-      await this.auth.signInWithPopup(provider);
+      // Use redirect on mobile to avoid popup blocker issues
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        await this.auth.signInWithRedirect(provider);
+      } else {
+        await this.auth.signInWithPopup(provider);
+      }
     } catch (e) {
       console.error('Google sign-in error:', e);
       Components.showToast(i18n.t('error') + ': ' + e.message, 'error');

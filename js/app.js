@@ -29,6 +29,7 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        this.checkFirstLogin();
       } else {
         this.stopInboxPolling();
       }
@@ -37,6 +38,18 @@ var App = class App {
     // Listen for navigation changes
     store.on('currentPage', () => this.renderApp());
     store.on('currentDomain', () => this.renderApp());
+  }
+
+  // ─── First login check ───
+  checkFirstLogin() {
+    const profile = store.get('userProfile') || {};
+    const hasProfile = !!(profile.age || profile.name || profile.location);
+    if (!hasProfile) {
+      // Show welcome toast after a short delay
+      setTimeout(() => {
+        Components.showToast('ようこそ！まずはプロフィールを設定してください', 'info');
+      }, 1500);
+    }
   }
 
   // ─── Inbox polling: fetch Plaud auto-sent transcripts ───
