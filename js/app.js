@@ -825,12 +825,19 @@ var App = class App {
   }
 
   deleteDataEntry(domain, category, id) {
-    if (!confirm('この記録を削除しますか？')) return;
+    const confirmHtml = `<p>この記録を削除しますか？削除後は元に戻せません。</p>
+      <div class="form-actions">
+        <button class="btn btn-danger" onclick="app._confirmDeleteEntry('${domain}','${category}','${id}')">削除する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>`;
+    this.openModal('記録を削除', confirmHtml);
+  }
+
+  _confirmDeleteEntry(domain, category, id) {
     const key = `${domain}_${category}`;
     const entries = (store.get(key) || []).filter(e => e.id !== id);
     store.set(key, entries);
 
-    // Also delete from Firestore if connected
     if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.db) {
       const uid = store.get('user')?.uid;
       if (uid) {
@@ -838,6 +845,7 @@ var App = class App {
       }
     }
 
+    this.closeModal();
     Components.showToast('削除しました', 'info');
     this.renderApp();
   }
