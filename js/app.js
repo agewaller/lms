@@ -240,6 +240,11 @@ var App = class App {
         if (typeof AssetsFeatures !== 'undefined') AssetsFeatures.calculateNISA();
       }, 100);
     }
+
+    // Initialize health vitals chart
+    if (domain === 'health' && page === 'home') {
+      setTimeout(() => Pages.initHealthVitalsChart(), 100);
+    }
   }
 
   updateSidebar() {

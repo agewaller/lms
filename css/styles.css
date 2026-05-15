@@ -1979,3 +1979,13 @@ body.is-admin .admin-only { display: flex; }
 @media (max-width: 480px) {
   .mrw-item { flex-direction: column; align-items: flex-start; }
 }
+
+/* ─── Health Vitals Trend Panel ─── */
+.health-vitals-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+.health-vitals-panel h3 { font-size: 15px; font-weight: 600; margin: 0 0 14px; }

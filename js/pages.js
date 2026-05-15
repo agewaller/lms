@@ -148,9 +148,10 @@ var Pages = {
 
     // ─── Domain-specific widgets ───
 
-    // Health domain: medication reminder + vitals trend
+    // Health domain: medication reminder + vitals trend chart
     if (domain === 'health') {
       html += this.renderMedicationReminder();
+      html += this.renderHealthVitalsPanel();
     }
 
     // Consciousness domain: 7-layer visualization + transcript input
@@ -454,6 +455,87 @@ var Pages = {
   },
 
   // ─── Domain-specific stat cards ───
+  // ─── Health Vitals Trend Panel (last 14 days) ───
+  renderHealthVitalsPanel() {
+    const vitals = store.getDomainData('health', 'vitals', 14);
+    if (vitals.length < 2) return '';
+
+    return `<div class="health-vitals-panel">
+      <h3>バイタルの推移（14日間）</h3>
+      <canvas id="healthVitalsChart" height="180"></canvas>
+    </div>`;
+  },
+
+  // Called by app.js after renderApp() to initialize Chart.js
+  initHealthVitalsChart() {
+    const canvas = document.getElementById('healthVitalsChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const vitals = store.getDomainData('health', 'vitals', 14);
+    if (vitals.length < 2) return;
+
+    // Build label + data series
+    const sorted = [...vitals].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const labels = sorted.map(v => new Date(v.timestamp).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }));
+    const systolic = sorted.map(v => v.bp_systolic || null);
+    const diastolic = sorted.map(v => v.bp_diastolic || null);
+    const weight = sorted.map(v => v.weight || null);
+
+    const hasBP = systolic.some(v => v !== null);
+    const hasWeight = weight.some(v => v !== null);
+
+    if (!hasBP && !hasWeight) return;
+
+    const datasets = [];
+    if (hasBP) {
+      datasets.push({
+        label: '収縮期血圧 (mmHg)',
+        data: systolic, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)',
+        tension: 0.3, spanGaps: true, yAxisID: 'yBP'
+      });
+      datasets.push({
+        label: '拡張期血圧 (mmHg)',
+        data: diastolic, borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.1)',
+        tension: 0.3, spanGaps: true, yAxisID: 'yBP'
+      });
+    }
+    if (hasWeight) {
+      datasets.push({
+        label: '体重 (kg)',
+        data: weight, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)',
+        tension: 0.3, spanGaps: true, yAxisID: 'yWeight'
+      });
+    }
+
+    // Destroy previous chart instance if any
+    if (this._healthChart) { this._healthChart.destroy(); }
+
+    const scales = {};
+    if (hasBP) {
+      scales.yBP = {
+        type: 'linear', position: 'left', title: { display: true, text: '血圧(mmHg)' },
+        grid: { color: 'rgba(0,0,0,0.06)' }
+      };
+    }
+    if (hasWeight) {
+      scales.yWeight = {
+        type: 'linear', position: hasBP ? 'right' : 'left',
+        title: { display: true, text: '体重(kg)' },
+        grid: { drawOnChartArea: !hasBP, color: 'rgba(0,0,0,0.06)' }
+      };
+    }
+
+    this._healthChart = new Chart(canvas, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+        scales
+      }
+    });
+  },
+
   // ─── Medication Reminder Widget ───
   renderMedicationReminder() {
     const allMeds = store.getDomainData('health', 'medications', 90);
