@@ -92,6 +92,10 @@ var Pages = {
     });
     allRecent.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
+    // Check if user recorded today
+    const today = new Date().toISOString().slice(0, 10);
+    const recordedToday = allRecent.some(e => (e.timestamp || e.date || '').slice(0, 10) === today);
+
     if (allRecent.length === 0) {
       html += Components.emptyState(domainConfig?.icon || '📭', i18n.t('no_data'),
         `${i18n.t('record')} → ${i18n.t('save')}`);
@@ -102,6 +106,14 @@ var Pages = {
     }
 
     html += `</div></div>`;
+
+    // Today's reminder if no entry yet
+    if (!recordedToday && allRecent.length > 0) {
+      html += `<div class="today-reminder">
+        <div class="tr-body">今日の記録がまだありません。1分でできます。</div>
+        <button class="btn btn-sm btn-primary" onclick="app.navigate('record')">今日を記録する</button>
+      </div>`;
+    }
 
     // Recommendations
     const recs = (store.get('recommendations') || []).filter(r => r.domain === domain || !r.domain);
@@ -632,7 +644,7 @@ var Pages = {
     // Action items (todos)
     if (actions.length > 0) {
       html += `<div class="action-items">
-        <h3>📋 Action Items</h3>
+        <h3>やること</h3>
         ${actions.map((a, i) => `
           <div class="action-item ${a.done ? 'done' : ''}">
             <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${a.text}</label>
