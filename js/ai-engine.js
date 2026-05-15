@@ -326,28 +326,82 @@ var AIEngine = {
 
   // ─── Conversation (chat) ───
   async chat(domain, userMessage) {
-    const history = store.get('conversationHistory') || [];
+    const allHistory = store.get('conversationHistory') || [];
+    const domainHistory = allHistory.filter(m => m.domain === domain || !m.domain);
 
-    // Add user message
-    history.push({
+    // Add user message to history
+    allHistory.push({
       role: 'user',
       content: userMessage,
       timestamp: new Date().toISOString(),
       domain
     });
 
-    // Get AI response
-    const response = await this.analyze(domain, 'daily', { text: userMessage });
+    // Build the multi-turn message list (last 10 turns to stay within token limits)
+    const recentTurns = domainHistory.slice(-10);
+    const messages = recentTurns.map(m => ({
+      role: m.role === 'user' ? 'user' : 'assistant',
+      content: m.content
+    }));
+    // Add current user message
+    messages.push({ role: 'user', content: userMessage });
 
-    // Add AI response
-    history.push({
+    const model = store.get('selectedModel') || 'claude-sonnet-4-6';
+    const modelConfig = CONFIG.aiModels[model];
+    if (!modelConfig) throw new Error('Unknown model: ' + model);
+
+    const systemPrompt = this.buildSystemPrompt(domain, 'daily');
+    const profileContext = this.buildUserMessage(domain, {});
+
+    let response;
+    if (modelConfig.provider === 'anthropic') {
+      response = await this.callAnthropicMultiTurn(model, systemPrompt + '\n\n' + profileContext, messages, modelConfig.maxTokens);
+    } else {
+      // For non-Anthropic providers, fall back to single-turn with context
+      const contextMsg = profileContext + '\n[会話]\n' + messages.map(m => `${m.role === 'user' ? 'ユーザー' : 'あなた'}: ${m.content}`).join('\n');
+      response = await this.analyze(domain, 'daily', { text: contextMsg });
+    }
+
+    // Save AI response to history
+    allHistory.push({
       role: 'assistant',
       content: response,
       timestamp: new Date().toISOString(),
       domain
     });
 
-    store.set('conversationHistory', history);
+    store.set('conversationHistory', allHistory);
     return response;
+  },
+
+  // ─── Multi-turn conversation for Anthropic ───
+  async callAnthropicMultiTurn(model, system, messages, maxTokens) {
+    const apiKey = this.getApiKey('anthropic');
+    if (!apiKey) throw new Error('Anthropic APIキーが設定されていません。管理者にご連絡ください。');
+
+    const endpoint = CONFIG.endpoints.anthropic;
+    const isDirect = !endpoint || endpoint === 'direct' || endpoint.includes('your-account');
+    const url = isDirect ? 'https://api.anthropic.com/v1/messages' : endpoint;
+    const apiModelId = this.resolveModelId(model);
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    };
+    if (isDirect) headers['anthropic-dangerous-direct-browser-access'] = 'true';
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ model: apiModelId, max_tokens: maxTokens, system, messages })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('Claude APIエラー (HTTP ' + res.status + '): ' + err);
+    }
+    const data = await res.json();
+    return data.content?.[0]?.text || '';
   }
 };
