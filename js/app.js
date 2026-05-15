@@ -476,6 +476,17 @@ var App = class App {
     Components.showToast('Action: ' + type, 'info');
   }
 
+  // ─── Medication Taken (one-tap from health home) ───
+  logMedicineTaken(medicineName) {
+    store.addDomainEntry('health', 'medications', {
+      name: medicineName,
+      timing: 'taken',
+      notes: '服薬記録（ワンタップ）'
+    });
+    Components.showToast(`${medicineName}の服薬を記録しました`, 'success');
+    this.renderApp();
+  }
+
   // ─── Stock Analysis (Assets domain) ───
   // Uses the VM Hands-on prompt (assets_stock) configured by admin.
   // The prompt is loaded via AIEngine.buildSystemPrompt which maps

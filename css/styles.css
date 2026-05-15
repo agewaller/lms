@@ -1923,3 +1923,59 @@ body.is-admin .admin-only { display: flex; }
 }
 .domain-hero .hero-content h1 { color: #fff; }
 .domain-hero .hero-subtitle { color: rgba(255,255,255,0.8); }
+
+/* ─── Medication Reminder Widget ─── */
+.medication-reminder-widget {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+.mrw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.mrw-header h3 { font-size: 16px; font-weight: 600; margin: 0; }
+.mrw-list { display: flex; flex-direction: column; gap: 10px; }
+.mrw-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.mrw-info { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.mrw-name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.mrw-dose { font-size: 13px; color: var(--text-secondary); }
+.mrw-timing {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  background: var(--accent-light, rgba(108,99,255,0.12));
+  color: var(--accent);
+  border-radius: 20px;
+}
+.mrw-none { font-size: 14px; color: var(--text-muted); margin: 8px 0 0; }
+.mrw-other {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.mrw-other-label { font-weight: 500; }
+.mrw-other-name {
+  display: inline-block;
+  margin: 2px 4px;
+  padding: 1px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 12px;
+  font-size: 12px;
+}
+@media (max-width: 480px) {
+  .mrw-item { flex-direction: column; align-items: flex-start; }
+}

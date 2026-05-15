@@ -148,6 +148,11 @@ var Pages = {
 
     // ─── Domain-specific widgets ───
 
+    // Health domain: medication reminder + vitals trend
+    if (domain === 'health') {
+      html += this.renderMedicationReminder();
+    }
+
     // Consciousness domain: 7-layer visualization + transcript input
     if (domain === 'consciousness') {
       html += this.renderConsciousnessLayers();
@@ -449,6 +454,69 @@ var Pages = {
   },
 
   // ─── Domain-specific stat cards ───
+  // ─── Medication Reminder Widget ───
+  renderMedicationReminder() {
+    const allMeds = store.getDomainData('health', 'medications', 90);
+    if (allMeds.length === 0) return '';
+
+    // Deduplicate by name+timing — keep most recent entry for each
+    const map = {};
+    allMeds.forEach(m => {
+      if (!m.name) return;
+      const key = (m.name + '_' + (m.timing || 'as_needed')).toLowerCase();
+      if (!map[key] || new Date(m.timestamp) > new Date(map[key].timestamp)) map[key] = m;
+    });
+    const meds = Object.values(map);
+
+    const hour = new Date().getHours();
+    const timingLabel = { morning: '朝', noon: '昼', evening: '夕', bedtime: '就寝前', as_needed: '必要時' };
+    const timingOrder = hour < 10 ? ['morning', 'as_needed'] :
+                        hour < 14 ? ['noon', 'as_needed'] :
+                        hour < 19 ? ['evening', 'as_needed'] :
+                        ['bedtime', 'as_needed'];
+
+    const dueMeds = meds.filter(m => timingOrder.includes(m.timing || 'as_needed'));
+    const otherMeds = meds.filter(m => !timingOrder.includes(m.timing || 'as_needed'));
+
+    const timePeriod = hour < 10 ? '朝' : hour < 14 ? '昼' : hour < 19 ? '夕方' : '就寝前';
+
+    let html = `<div class="medication-reminder-widget">
+      <div class="mrw-header">
+        <h3>💊 ${timePeriod}のお薬</h3>
+        <button class="btn btn-sm btn-secondary" onclick="app.navigate('record');app.showCategory('medications',null)">お薬を追加</button>
+      </div>`;
+
+    if (dueMeds.length === 0) {
+      html += `<p class="mrw-none">この時間帯のお薬はありません</p>`;
+    } else {
+      html += `<div class="mrw-list">`;
+      dueMeds.forEach(m => {
+        const eName = Components.escapeHtml(m.name);
+        const eDose = Components.escapeHtml(m.dosage || '');
+        const jsName = JSON.stringify(m.name);
+        html += `<div class="mrw-item">
+          <div class="mrw-info">
+            <span class="mrw-name">${eName}</span>
+            ${eDose ? `<span class="mrw-dose">${eDose}</span>` : ''}
+            <span class="mrw-timing">${timingLabel[m.timing] || ''}</span>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="app.logMedicineTaken(${jsName})">飲みました</button>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    if (otherMeds.length > 0) {
+      html += `<div class="mrw-other">
+        <span class="mrw-other-label">その他のお薬: </span>
+        ${otherMeds.map(m => `<span class="mrw-other-name">${Components.escapeHtml(m.name)}</span>`).join('、')}
+      </div>`;
+    }
+
+    html += `</div>`;
+    return html;
+  },
+
   getDomainStats(domain) {
     const stats = [];
 
