@@ -196,6 +196,8 @@ var FirebaseBackend = {
         if (data.userProfile) store.set('userProfile', data.userProfile);
         if (data.subscription) store.set('subscription', data.subscription);
         if (data.domainScores) store.set('domainScores', data.domainScores);
+        if (data.weeklyReport) store.set('weeklyReport', data.weeklyReport);
+        if (data.lastWeeklyReport) store.set('lastWeeklyReport', data.lastWeeklyReport);
       }
 
       // ─── Load ADMIN-SHARED config (AI model, prompts, API keys, admin list) ───
@@ -295,7 +297,7 @@ var FirebaseBackend = {
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
       'workProvisionPrefs', 'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
       'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments',
-      'adminPromptFilter', 'dataBrowserFilter'
+      'adminPromptFilter', 'dataBrowserFilter', 'weeklyReport', 'lastWeeklyReport'
     ];
     userProfileFields.forEach(key => {
       store.on(key, (value) => {

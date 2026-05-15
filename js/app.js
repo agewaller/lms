@@ -30,6 +30,7 @@ var App = class App {
         this.renderApp();
         this.startInboxPolling();
         this.checkFirstLogin();
+        this.checkWeeklyReport();
       } else {
         this.stopInboxPolling();
       }
@@ -45,10 +46,64 @@ var App = class App {
     const profile = store.get('userProfile') || {};
     const hasProfile = !!(profile.age || profile.name || profile.location);
     if (!hasProfile) {
-      // Show welcome toast after a short delay
       setTimeout(() => {
         Components.showToast('ようこそ！まずはプロフィールを設定してください', 'info');
       }, 1500);
+    }
+  }
+
+  // ─── Weekly report: auto-generate if not done this week ───
+  checkWeeklyReport() {
+    const lastWeekly = store.get('lastWeeklyReport');
+    if (lastWeekly) {
+      const daysSince = (Date.now() - new Date(lastWeekly).getTime()) / 86400000;
+      if (daysSince < 6) return;
+    }
+
+    // Only trigger if user has some data
+    let hasData = false;
+    Object.keys(CONFIG.domains).forEach(d => {
+      Object.keys(CONFIG.domains[d]?.categories || {}).forEach(cat => {
+        if (store.getDomainData(d, cat, 7).length > 0) hasData = true;
+      });
+    });
+    if (!hasData) return;
+
+    // Delay to let the UI settle
+    setTimeout(async () => {
+      try {
+        const result = await AIEngine.analyze(null, 'weekly', {});
+        const report = {
+          text: result,
+          timestamp: new Date().toISOString(),
+          type: 'weekly'
+        };
+        store.set('weeklyReport', report);
+        store.set('lastWeeklyReport', report.timestamp);
+        Components.showToast('今週の振り返りレポートが完成しました', 'success');
+        this.renderApp();
+      } catch (e) {
+        console.warn('Weekly report error:', e);
+      }
+    }, 3000);
+  }
+
+  // ─── Weekly report: manual trigger ───
+  async generateWeeklyReport() {
+    Components.showToast('週次レポートを作成中です...', 'info');
+    try {
+      const result = await AIEngine.analyze(null, 'weekly', {});
+      const report = {
+        text: result,
+        timestamp: new Date().toISOString(),
+        type: 'weekly'
+      };
+      store.set('weeklyReport', report);
+      store.set('lastWeeklyReport', report.timestamp);
+      Components.showToast('週次レポートが完成しました', 'success');
+      this.renderApp();
+    } catch (e) {
+      Components.showToast(e.message, 'error');
     }
   }
 

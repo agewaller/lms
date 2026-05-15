@@ -127,6 +127,24 @@ var Pages = {
       </div>`;
     }
 
+    // Weekly report (shown on any domain's home)
+    const weeklyReport = store.get('weeklyReport');
+    if (weeklyReport) {
+      const reportDate = new Date(weeklyReport.timestamp).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
+      html += `<div class="weekly-report-card">
+        <div class="wr-header">
+          <h3>今週の振り返り</h3>
+          <span class="wr-date">${reportDate}</span>
+          <button class="btn btn-sm btn-secondary" onclick="app.generateWeeklyReport()">更新</button>
+        </div>
+        <div class="wr-body">${Components.formatMarkdown(weeklyReport.text)}</div>
+      </div>`;
+    } else {
+      html += `<div class="weekly-report-prompt">
+        <button class="btn btn-secondary" onclick="app.generateWeeklyReport()">今週の振り返りを見る</button>
+      </div>`;
+    }
+
     // Recommendations
     const recs = (store.get('recommendations') || []).filter(r => r.domain === domain || !r.domain);
     if (recs.length > 0) {
