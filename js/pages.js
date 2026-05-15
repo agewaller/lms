@@ -119,12 +119,17 @@ var Pages = {
 
     html += `</div></div>`;
 
-    // Today's reminder if no entry yet
-    if (!recordedToday && allRecent.length > 0) {
-      html += `<div class="today-reminder">
-        <div class="tr-body">今日の記録がまだありません。1分でできます。</div>
-        <button class="btn btn-sm btn-primary" onclick="app.navigate('record')">今日を記録する</button>
-      </div>`;
+    // Today's reminder / quick check-in
+    if (!recordedToday) {
+      if (domain === 'health') {
+        // Inline quick check-in for health domain
+        html += this.renderQuickCheckin();
+      } else if (allRecent.length > 0) {
+        html += `<div class="today-reminder">
+          <div class="tr-body">今日の記録がまだありません。1分でできます。</div>
+          <button class="btn btn-sm btn-primary" onclick="app.navigate('record')">今日を記録する</button>
+        </div>`;
+      }
     }
 
     // Weekly report (shown on any domain's home)
@@ -473,6 +478,39 @@ var Pages = {
   },
 
   // ─── Domain-specific stat cards ───
+  // ─── Quick Health Check-in (inline 3-slider entry) ───
+  renderQuickCheckin() {
+    return `<div class="quick-checkin-card">
+      <h3>今日の体調チェック</h3>
+      <p>3つのスライダーを動かすだけで記録できます</p>
+      <div class="qc-sliders">
+        <div class="qc-row">
+          <label class="qc-label">体調</label>
+          <input type="range" id="qcCondition" min="1" max="10" value="7" class="qc-slider"
+            oninput="document.getElementById('qcConditionVal').textContent=this.value">
+          <span id="qcConditionVal" class="qc-val">7</span>
+        </div>
+        <div class="qc-row">
+          <label class="qc-label">気分</label>
+          <input type="range" id="qcMood" min="1" max="10" value="7" class="qc-slider"
+            oninput="document.getElementById('qcMoodVal').textContent=this.value">
+          <span id="qcMoodVal" class="qc-val">7</span>
+        </div>
+        <div class="qc-row">
+          <label class="qc-label">睡眠</label>
+          <input type="range" id="qcSleep" min="1" max="10" value="7" class="qc-slider"
+            oninput="document.getElementById('qcSleepVal').textContent=this.value">
+          <span id="qcSleepVal" class="qc-val">7</span>
+        </div>
+      </div>
+      <textarea id="qcNote" class="form-input qc-note" rows="2" placeholder="今日の気づき・メモ（省略可）"></textarea>
+      <div class="qc-actions">
+        <button class="btn btn-primary" onclick="app.saveQuickCheckin()">記録する</button>
+        <button class="btn btn-secondary" onclick="app.navigate('record')">詳しく記録する</button>
+      </div>
+    </div>`;
+  },
+
   // ─── Health Vitals Trend Panel (last 14 days) ───
   renderHealthVitalsPanel() {
     const vitals = store.getDomainData('health', 'vitals', 14);

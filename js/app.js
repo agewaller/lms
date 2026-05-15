@@ -536,6 +536,35 @@ var App = class App {
     Components.showToast('Action: ' + type, 'info');
   }
 
+  // ─── Quick Health Check-in (3 sliders from home page) ───
+  async saveQuickCheckin() {
+    const condition = parseInt(document.getElementById('qcCondition')?.value || 7);
+    const mood = parseInt(document.getElementById('qcMood')?.value || 7);
+    const sleep = parseInt(document.getElementById('qcSleep')?.value || 7);
+    const note = document.getElementById('qcNote')?.value?.trim() || '';
+
+    // Save condition/mood to health_symptoms
+    store.addDomainEntry('health', 'symptoms', {
+      condition_level: condition,
+      mood_level: mood,
+      notes: note || undefined
+    });
+
+    // Save sleep quality to health_sleepData
+    store.addDomainEntry('health', 'sleepData', {
+      quality: sleep
+    });
+
+    Components.showToast('今日の体調を記録しました ✓', 'success');
+
+    // Auto-analyze if possible
+    try {
+      await AIEngine.analyze('health', 'daily', { raw: { condition, mood, sleep, note } });
+    } catch (e) { /* silently fail if no API key */ }
+
+    this.renderApp();
+  }
+
   // ─── Medication Taken (one-tap from health home) ───
   logMedicineTaken(medicineName) {
     store.addDomainEntry('health', 'medications', {

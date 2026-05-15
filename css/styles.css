@@ -2011,3 +2011,21 @@ body.is-admin .admin-only { display: flex; }
 .wr-body h2, .wr-body h3, .wr-body h4 { color: var(--text-primary); margin: 10px 0 6px; }
 .wr-body ul { padding-left: 20px; margin: 6px 0; }
 .weekly-report-prompt { text-align: center; padding: 8px 0 16px; }
+
+/* ─── Quick Health Check-in Card ─── */
+.quick-checkin-card {
+  background: linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(16,185,129,0.02) 100%);
+  border: 1px solid rgba(16,185,129,0.25);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.quick-checkin-card h3 { font-size: 16px; margin-bottom: 4px; }
+.quick-checkin-card > p { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+.qc-sliders { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; }
+.qc-row { display: flex; align-items: center; gap: 12px; }
+.qc-label { font-size: 14px; font-weight: 500; min-width: 40px; color: var(--text-secondary); }
+.qc-slider { flex: 1; accent-color: #10b981; height: 6px; cursor: pointer; }
+.qc-val { font-size: 18px; font-weight: 700; min-width: 28px; text-align: right; color: #10b981; }
+.qc-note { margin-bottom: 14px; font-size: 14px; }
+.qc-actions { display: flex; gap: 10px; }
