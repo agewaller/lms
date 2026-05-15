@@ -56,8 +56,8 @@ var Components = {
         <span class="rec-domain-badge" style="background:${CONFIG.domains[rec.domain]?.color || '#666'}">${CONFIG.domains[rec.domain]?.icon || ''} ${i18n.t(rec.domain)}</span>
         <span class="rec-priority">${i18n.t(rec.priority || 'medium')}</span>
       </div>
-      <div class="rec-body">${rec.text || ''}</div>
-      ${rec.action ? `<button class="btn btn-sm btn-primary" onclick="app.executeAction('${rec.actionType}','${rec.actionData || ''}')">${rec.action}</button>` : ''}
+      <div class="rec-body">${this.formatMarkdown(rec.text || '')}</div>
+      ${rec.action ? `<button class="btn btn-sm btn-primary" onclick="app.executeAction(${JSON.stringify(rec.actionType || '')},${JSON.stringify(rec.actionData || '')})">${this.escapeHtml(rec.action)}</button>` : ''}
     </div>`;
   },
 
@@ -129,12 +129,15 @@ var Components = {
   // ─── Markdown Formatter ───
   formatMarkdown(text) {
     if (!text) return '';
-    return text
+    // Escape HTML first to prevent injection, then apply markdown
+    return this.escapeHtml(text)
       .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, url) =>
+        /^https?:\/\//i.test(url) ? `<a href="${url}" target="_blank" rel="noopener">${label}</a>` : label
+      )
       .replace(/^### (.+)$/gm, '<h4>$1</h4>')
       .replace(/^## (.+)$/gm, '<h3>$1</h3>')
       .replace(/^# (.+)$/gm, '<h2>$1</h2>')
@@ -268,7 +271,7 @@ var Components = {
     const summary = Object.entries(entry)
       .filter(([k]) => !['id','timestamp','domain','category','_synced'].includes(k))
       .slice(0, 3)
-      .map(([k, v]) => `${i18n.t(k)}: ${v}`)
+      .map(([k, v]) => `${i18n.t(k)}: ${this.escapeHtml(String(v))}`)
       .join(' | ');
     return `<div class="record-item" style="border-left-color:${color}">
       <div class="record-header">
