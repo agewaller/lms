@@ -1387,44 +1387,54 @@ var App = class App {
     const file = event.target.files[0];
     if (!file) return;
 
-    Components.showToast('ファイルをアップロード中...', 'info');
+    const isImage = file.type.startsWith('image/');
+    Components.showToast(isImage ? '写真を分析中です...' : 'ファイルをアップロード中...', 'info');
 
-    // Upload to Firebase Storage (server-side storage, not localStorage)
+    // Upload to Firebase Storage
     let url = null;
     if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.uploadFile) {
       url = await FirebaseBackend.uploadFile(file, `${domain}/files`);
     }
 
-    // Determine target category
     const categories = CONFIG.domains[domain]?.categories || {};
     const targetCat = 'photos' in categories ? 'photos' : Object.keys(categories)[0] || 'entries';
 
-    if (url) {
-      // File uploaded to Firebase Storage; save URL as metadata only
+    // Read file as data URL for AI vision analysis
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const dataUrl = e.target.result;
+      const base64 = isImage ? dataUrl.split(',')[1] : null;
+
+      // Save the file record
       store.addDomainEntry(domain, targetCat, {
-        type: file.type.startsWith('image/') ? 'image' : 'file',
+        type: isImage ? 'image' : 'file',
         filename: file.name,
         size: file.size,
         mimeType: file.type,
-        url: url // Firebase Storage URL
+        url: url || dataUrl
       });
-      Components.showToast('アップロードしました', 'success');
-    } else {
-      // Fallback: read content locally (used if Firebase Storage unavailable)
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        store.addDomainEntry(domain, targetCat, {
-          type: file.type.startsWith('image/') ? 'image' : 'file',
-          filename: file.name,
-          size: file.size,
-          mimeType: file.type,
-          data: e.target.result
-        });
+
+      if (isImage && base64) {
+        // Analyze image with vision AI
+        try {
+          const result = await AIEngine.analyze(domain, 'image_analysis', {},
+            { imageBase64: base64, imageMime: file.type });
+          const responseEl = document.getElementById('quickResponse');
+          if (responseEl) {
+            responseEl.innerHTML = `<div class="quick-response">${Components.formatMarkdown(result)}</div>`;
+          }
+          Components.showToast('写真の分析が完了しました', 'success');
+        } catch (e) {
+          Components.showToast(isImage ? '保存しました（分析には設定が必要です）' : '保存しました', 'success');
+        }
+      } else {
         Components.showToast('保存しました', 'success');
-      };
-      if (file.type.startsWith('image/')) reader.readAsDataURL(file);
-      else reader.readAsText(file);
-    }
+      }
+      this.renderApp();
+    };
+
+    if (isImage) reader.readAsDataURL(file);
+    else reader.readAsText(file);
   }
 
   // ─── Settings ───
