@@ -432,15 +432,16 @@ select.form-input { appearance: auto; }
   padding: 16px 40px; position: relative; z-index: 10;
 }
 .lp-logo { display: flex; align-items: center; gap: 8px; }
-.logo-icon { font-size: 24px; color: var(--primary); }
-.logo-text { font-size: 22px; font-weight: 700; color: var(--text); }
+.logo-icon { font-size: 24px; color: var(--accent-light); }
+.logo-text { font-size: 20px; font-weight: 700; color: #fff; }
 .logo-link { display: flex; align-items: center; gap: 8px; color: inherit; }
 .lp-nav-links { display: flex; align-items: center; gap: 20px; }
-.lp-nav-links a { color: var(--text-light); font-size: 16px; }
+.lp-nav-links a { color: rgba(255,255,255,0.85); font-size: 14px; }
+.lp-nav-links a:hover { color: #fff; }
 
 /* Hero */
 .lp-hero {
-  background: linear-gradient(135deg, #f5f3ff 0%, #e8e6ff 50%, #dbeafe 100%);
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   min-height: 70vh; display: flex; flex-direction: column;
 }
 .hero-content {
@@ -448,15 +449,14 @@ select.form-input { appearance: auto; }
   align-items: center; justify-content: center; text-align: center;
   padding: 40px 20px;
 }
-.hero-content h1 { font-size: clamp(32px, 5vw, 56px); margin-bottom: 16px; }
-.hero-subtitle { font-size: clamp(18px, 2.5vw, 24px); color: var(--text-light); margin-bottom: 40px; line-height: 2.0; }
+.hero-content h1 { font-size: clamp(28px, 4.5vw, 46px); margin-bottom: 16px; color: #fff; }
+.hero-subtitle { font-size: clamp(15px, 2.2vw, 19px); color: rgba(255,255,255,0.8); margin-bottom: 40px; line-height: 1.9; }
 .hero-icon { font-size: 64px; margin-bottom: 16px; }
+.hero-eyebrow { font-size: 13px; letter-spacing: 2px; font-weight: 600; margin-bottom: 16px; display: block; }
 
 /* Domain-specific hero */
 .domain-hero {
-  background: linear-gradient(135deg,
-    color-mix(in srgb, var(--domain-color, var(--primary)) 10%, white) 0%,
-    color-mix(in srgb, var(--domain-color, var(--primary)) 20%, white) 100%);
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, rgba(0,0,0,0.85) 100%);
 }
 
 /* Sections */
@@ -533,7 +533,7 @@ select.form-input { appearance: auto; }
 }
 
 /* Footer */
-.lp-footer { text-align: center; padding: 32px; color: var(--text-muted); font-size: 14px; }
+.lp-footer { text-align: center; padding: 32px 40px; background: #1a1a2e; color: rgba(255,255,255,0.5); font-size: 13px; }
 
 /* ═══════════════════════════════════════════════════════════
    DASHBOARD (未病ダイアリー準拠)
@@ -1797,3 +1797,81 @@ body.is-admin .admin-only { display: flex; }
   .sim-cards { grid-template-columns: 1fr; }
   .top-bar-title { font-size: 13px; }
 }
+
+/* ─── Onboarding Banner ─── */
+.onboarding-banner {
+  background: linear-gradient(135deg, var(--accent-bg), #f0f4ff);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+.ob-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.ob-title { font-weight: 600; font-size: 14px; color: var(--accent); }
+.ob-progress-text { font-size: 12px; color: var(--text-muted); }
+.ob-progress-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.ob-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.ob-steps { display: flex; gap: 12px; flex-wrap: wrap; }
+.ob-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+}
+.ob-step:not(.done):hover { border-color: var(--accent); background: var(--accent-bg); }
+.ob-step.done { opacity: 0.6; cursor: default; }
+.ob-step-num {
+  width: 20px;
+  height: 20px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.ob-step.done .ob-step-num { background: var(--success); }
+
+/* ─── LP domain number icons ─── */
+.dc-num {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  font-family: serif;
+}
+
+/* ─── LP hero domain-specific ─── */
+.domain-hero .hero-eyebrow {
+  font-size: 13px;
+  letter-spacing: 2px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  display: block;
+}
+.domain-hero .hero-content h1 { color: #fff; }
+.domain-hero .hero-subtitle { color: rgba(255,255,255,0.8); }

@@ -3,14 +3,108 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LMS - Life Management System</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <title>LMS - 人生の6領域をサポート | 65歳からの生活管理</title>
+  <meta name="description" content="意識・健康・時間・仕事・関係・資産の6つの領域を統合的にサポート。65歳以上の方が自分らしく生きるための記録・分析・行動ツール。">
+  <link rel="stylesheet" href="css/styles.css?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* ─── LP-specific overrides ─── */
+    .lp-hero { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: #fff; padding: 0; }
+    .lp-nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; }
+    .lp-logo { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; font-size: 20px; }
+    .logo-icon { font-size: 24px; color: var(--accent-light); }
+    .lp-nav-links { display: flex; align-items: center; gap: 24px; }
+    .lp-nav-links a { color: rgba(255,255,255,0.85); font-size: 14px; }
+    .lp-nav-links a:hover { color: #fff; }
+    .hero-content { text-align: center; padding: 80px 40px 100px; max-width: 800px; margin: 0 auto; }
+    .hero-eyebrow { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-light); margin-bottom: 20px; opacity: 0.9; }
+    .hero-content h1 { font-size: clamp(28px, 5vw, 46px); font-weight: 700; color: #fff; line-height: 1.3; margin-bottom: 20px; }
+    .hero-subtitle { font-size: clamp(15px, 2.5vw, 18px); color: rgba(255,255,255,0.8); line-height: 1.8; margin-bottom: 40px; }
+    .hero-cta-group { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn-hero-primary { background: var(--accent); color: #fff; padding: 16px 40px; border-radius: 40px; font-size: 16px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 20px rgba(108,99,255,0.4); }
+    .btn-hero-primary:hover { background: var(--accent-light); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(108,99,255,0.5); }
+    .btn-hero-secondary { background: transparent; color: #fff; padding: 16px 40px; border-radius: 40px; font-size: 16px; font-weight: 500; border: 2px solid rgba(255,255,255,0.3); cursor: pointer; transition: all 0.2s; }
+    .btn-hero-secondary:hover { border-color: rgba(255,255,255,0.7); }
+    .hero-trust { margin-top: 48px; display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
+    .trust-item { color: rgba(255,255,255,0.7); font-size: 13px; display: flex; align-items: center; gap: 6px; }
+    .trust-check { color: #10b981; font-size: 16px; }
+
+    /* ─── Domains ─── */
+    .lp-section { padding: 80px 40px; max-width: 1100px; margin: 0 auto; }
+    .lp-section-full { padding: 80px 40px; }
+    .lp-section-alt { background: var(--bg-tertiary); }
+    .lp-section h2 { text-align: center; font-size: clamp(22px, 4vw, 32px); margin-bottom: 12px; }
+    .section-sub { text-align: center; color: var(--text-secondary); font-size: 15px; margin-bottom: 48px; line-height: 1.8; max-width: 600px; margin-left: auto; margin-right: auto; }
+    .domain-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
+    .domain-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 20px; text-align: center; cursor: pointer; transition: all 0.2s; display: block; text-decoration: none; color: var(--text-primary); }
+    .domain-card:hover { border-color: var(--domain-color, var(--accent)); box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-2px); }
+    .dc-num { font-size: 28px; font-weight: 700; color: var(--domain-color, var(--accent)); margin-bottom: 10px; font-family: serif; }
+    .domain-card h3 { font-size: 16px; margin-bottom: 8px; }
+    .domain-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin: 0; }
+
+    /* ─── How it works ─── */
+    .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 32px; max-width: 900px; margin: 0 auto; }
+    .step-item { text-align: center; padding: 32px 24px; background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); }
+    .step-num { width: 52px; height: 52px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; margin: 0 auto 16px; }
+    .step-item h3 { font-size: 16px; margin-bottom: 10px; }
+    .step-item p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin: 0; }
+
+    /* ─── Who it's for ─── */
+    .persona-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+    .persona-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+    .persona-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; color: var(--accent); }
+    .persona-age { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+    .persona-text { font-size: 14px; color: var(--text-secondary); line-height: 1.8; border-left: 3px solid var(--accent-border); padding-left: 12px; }
+
+    /* ─── Features ─── */
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
+    .feature-item { padding: 28px 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); }
+    .feature-item h3 { font-size: 15px; margin-bottom: 10px; color: var(--text-primary); }
+    .feature-item p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin: 0; }
+
+    /* ─── Login ─── */
+    .lp-login-section { background: linear-gradient(135deg, #f8f9fc, #eef0f8); }
+    .login-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 40px; max-width: 420px; margin: 0 auto; box-shadow: var(--shadow-lg); }
+    .login-card h2 { text-align: center; margin-bottom: 8px; }
+    .login-card .login-desc { text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 28px; }
+    .auth-tabs { display: flex; gap: 0; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 24px; }
+    .auth-tab { flex: 1; padding: 10px; border: none; background: transparent; cursor: pointer; font-size: 14px; font-family: var(--font-main); color: var(--text-secondary); transition: all 0.2s; }
+    .auth-tab.active { background: var(--accent); color: #fff; font-weight: 600; }
+    .auth-panel { display: none; }
+    .auth-panel.active { display: block; }
+    .btn-google { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; font-size: 14px; font-family: var(--font-main); cursor: pointer; transition: all 0.2s; }
+    .btn-google:hover { border-color: #4285F4; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .login-divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--text-muted); font-size: 13px; }
+    .login-divider::before, .login-divider::after { content: ''; flex: 1; border-top: 1px solid var(--border); }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text-primary); }
+    .form-input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; font-family: var(--font-main); background: var(--bg-primary); transition: border-color 0.2s; }
+    .form-input:focus { outline: none; border-color: var(--accent); }
+    .btn-block { width: 100%; margin-top: 4px; }
+    .btn-primary { background: var(--accent); color: #fff; border: none; }
+    .btn-sm { padding: 8px 16px; font-size: 13px; }
+    .auth-help { margin-top: 16px; text-align: center; font-size: 13px; color: var(--text-secondary); }
+    .auth-help a { color: var(--accent); }
+
+    /* ─── Footer ─── */
+    .lp-footer { text-align: center; padding: 32px 40px; background: #1a1a2e; color: rgba(255,255,255,0.5); font-size: 13px; }
+    .lp-footer-links { display: flex; justify-content: center; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
+    .lp-footer-links a { color: rgba(255,255,255,0.6); font-size: 13px; }
+
+    @media (max-width: 768px) {
+      .lp-nav { padding: 16px 20px; }
+      .hero-content { padding: 60px 20px 80px; }
+      .lp-section { padding: 60px 20px; }
+      .lp-section-full { padding: 60px 20px; }
+      .login-card { padding: 28px 20px; }
+      .hero-trust { gap: 16px; }
+    }
+  </style>
 </head>
 <body class="landing-page">
 
-  <!-- Hero Section -->
+  <!-- Hero -->
   <header class="lp-hero">
     <nav class="lp-nav">
       <div class="lp-logo">
@@ -19,83 +113,146 @@
       </div>
       <div class="lp-nav-links">
         <a href="#domains">6つの領域</a>
-        <a href="#features">機能</a>
-        <a href="#login" class="btn btn-sm btn-primary">ログイン</a>
+        <a href="#how">使い方</a>
+        <a href="#login" class="btn btn-sm btn-primary" style="background:var(--accent);color:#fff;border-radius:20px;">無料で始める</a>
       </div>
     </nav>
 
     <div class="hero-content">
-      <h1>Life Management System</h1>
-      <p class="hero-subtitle">年金だけでは足りない時代。<br>意識・健康・時間・仕事・関係・資産<br>6つの領域を、まるごとサポート</p>
-      <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
+      <div class="hero-eyebrow">Life Management System</div>
+      <h1>65歳からの人生を、<br>6つの視点で見直す</h1>
+      <p class="hero-subtitle">
+        年金だけでは足りない時代。健康・お金・人とのつながり——<br>
+        大切なことを記録して、毎日少しずつ整えていく。
+      </p>
+      <div class="hero-cta-group">
+        <a href="#login" class="btn-hero-primary">無料で始める（登録3分）</a>
+        <a href="#how" class="btn-hero-secondary">使い方を見る</a>
+      </div>
+      <div class="hero-trust">
+        <span class="trust-item"><span class="trust-check">✓</span> 登録・基本機能は無料</span>
+        <span class="trust-item"><span class="trust-check">✓</span> 個人情報は暗号化して保護</span>
+        <span class="trust-item"><span class="trust-check">✓</span> 65歳以上の方に最適化</span>
+      </div>
     </div>
   </header>
 
   <!-- Domain Cards -->
   <section id="domains" class="lp-section">
     <h2>6つのライフドメイン</h2>
-    <p class="section-sub">それぞれの領域をやさしくサポートし、あなたに合ったアドバイスをお届けします</p>
+    <p class="section-sub">人生の大切な6領域を、まとめてサポートします。気になる領域から始められます。</p>
     <div class="domain-cards">
-      <a href="consciousness.html" class="domain-card" style="--domain-color:#9B59B6">
-        <div class="dc-icon">🧠</div>
+      <a href="consciousness.html" class="domain-card" style="--domain-color:#6C63FF">
+        <div class="dc-num">一</div>
         <h3>意識</h3>
-        <p>心の健康・瞑想・感謝の気持ち</p>
+        <p>心の状態・瞑想・毎日の定点観測</p>
       </a>
-      <a href="health.html" class="domain-card" style="--domain-color:#27AE60">
-        <div class="dc-icon">💚</div>
+      <a href="health.html" class="domain-card" style="--domain-color:#10b981">
+        <div class="dc-num">二</div>
         <h3>健康</h3>
-        <p>体調の記録・お薬の管理・元気な毎日</p>
+        <p>体調記録・お薬・睡眠・運動の管理</p>
       </a>
-      <a href="time.html" class="domain-card" style="--domain-color:#E67E22">
-        <div class="dc-icon">⏰</div>
+      <a href="time.html" class="domain-card" style="--domain-color:#f59e0b">
+        <div class="dc-num">三</div>
         <h3>時間</h3>
-        <p>日々の過ごし方・趣味・心豊かな時間</p>
+        <p>日々の過ごし方・習慣・余暇の記録</p>
       </a>
-      <a href="work.html" class="domain-card" style="--domain-color:#2980B9">
-        <div class="dc-icon">💼</div>
+      <a href="work.html" class="domain-card" style="--domain-color:#3b82f6">
+        <div class="dc-num">四</div>
         <h3>仕事</h3>
-        <p>生きがい・経験を活かす・社会とのつながり</p>
+        <p>生きがい・経験を活かす・社会参加</p>
       </a>
-      <a href="relationship.html" class="domain-card" style="--domain-color:#E74C3C">
-        <div class="dc-icon">🤝</div>
+      <a href="relationship.html" class="domain-card" style="--domain-color:#ef4444">
+        <div class="dc-num">五</div>
         <h3>関係</h3>
-        <p>大切な人との関係・ご縁を大切に</p>
+        <p>大切な方との絆・孤立を防ぐ仕組み</p>
       </a>
-      <a href="assets.html" class="domain-card" style="--domain-color:#F1C40F">
-        <div class="dc-icon">💰</div>
+      <a href="assets.html" class="domain-card" style="--domain-color:#d97706">
+        <div class="dc-num">六</div>
         <h3>資産</h3>
-        <p>安心の資産管理・株式投資・収支の把握</p>
+        <p>家計管理・NISA・老後の安心設計</p>
       </a>
     </div>
   </section>
 
+  <!-- Who it's for -->
+  <section class="lp-section-full lp-section-alt">
+    <div class="lp-section" style="padding-top:0;padding-bottom:0;">
+      <h2>こんな方に使っていただいています</h2>
+      <p class="section-sub">「難しそう」と思っていた方も、3日で使い始めています</p>
+      <div class="persona-grid">
+        <div class="persona-card">
+          <div class="persona-name">山田 照子さん</div>
+          <div class="persona-age">72歳・東京都</div>
+          <p class="persona-text">「病院でもらった薬の名前が多くて混乱していました。このアプリで管理するようになってから、先生への相談がスムーズになりました」</p>
+        </div>
+        <div class="persona-card">
+          <div class="persona-name">鈴木 一郎さん</div>
+          <div class="persona-age">67歳・大阪府</div>
+          <p class="persona-text">「定年後に友人が減った気がして心配でした。つながりの地図を見て、意外と大事な人がいることに気づきました」</p>
+        </div>
+        <div class="persona-card">
+          <div class="persona-name">田中 幸子さん</div>
+          <div class="persona-age">69歳・愛知県</div>
+          <p class="persona-text">「NISAを始めたいのに難しくて。ここで毎日少しずつ勉強して、初めて積立を設定できました。分かりやすくて本当によかった」</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section id="how" class="lp-section">
+    <h2>3ステップで始められます</h2>
+    <p class="section-sub">難しい設定はありません。Googleアカウントがあればすぐに使えます</p>
+    <div class="steps-grid">
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <h3>無料登録（3分）</h3>
+        <p>Googleアカウント、またはメールアドレスで登録できます。個人情報の入力は最小限です。</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <h3>気になる領域を選ぶ</h3>
+        <p>健康でも、家計でも、人間関係でも。気になる1つの領域から始めれば大丈夫です。</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <h3>毎日少しずつ記録する</h3>
+        <p>1日1〜2分の記録でOK。蓄積されるほど、あなたに合った提案が届くようになります。</p>
+      </div>
+    </div>
+  </section>
+
   <!-- Features -->
-  <section id="features" class="lp-section lp-section-alt">
-    <h2>主な特徴</h2>
-    <div class="feature-grid">
-      <div class="feature-item">
-        <h3>深い分析</h3>
-        <p>あなたの記録を丁寧に読み解き、気づきと最適な打ち手をお届けします</p>
-      </div>
-      <div class="feature-item">
-        <h3>領域横断の洞察</h3>
-        <p>6つの領域の相互作用を考慮した、統合的なアドバイス</p>
-      </div>
-      <div class="feature-item">
-        <h3>自動アクション</h3>
-        <p>おすすめに基づく自動実行（投資、予約、購入など）</p>
-      </div>
-      <div class="feature-item">
-        <h3>多言語対応</h3>
-        <p>日本語・英語・中国語・韓国語に対応</p>
-      </div>
-      <div class="feature-item">
-        <h3>安心のデータ管理</h3>
-        <p>Google認証 + Firebase によるセキュアなデータ同期</p>
-      </div>
-      <div class="feature-item">
-        <h3>専門家連携</h3>
-        <p>必要に応じて専門家によるメンタリング・コーチングにも対応</p>
+  <section class="lp-section-full lp-section-alt">
+    <div class="lp-section" style="padding-top:0;padding-bottom:0;">
+      <h2>選ばれる理由</h2>
+      <p class="section-sub">専門家でなくても、パソコンに詳しくなくても使えます</p>
+      <div class="feature-grid">
+        <div class="feature-item">
+          <h3>小学生でも分かる言葉</h3>
+          <p>難しい専門用語は使いません。説明はすべて、日常の言葉で書かれています。</p>
+        </div>
+        <div class="feature-item">
+          <h3>6領域をまとめて管理</h3>
+          <p>健康・お金・人間関係などを別々に記録するのは大変。LMSなら1ヶ所で管理できます。</p>
+        </div>
+        <div class="feature-item">
+          <h3>自動で分析・提案</h3>
+          <p>記録するだけで、あなたの状況を分析して「次にやること」を教えてくれます。</p>
+        </div>
+        <div class="feature-item">
+          <h3>Google連携で安心ログイン</h3>
+          <p>パスワードを覚える必要がありません。Googleアカウントでワンタッチでログイン。</p>
+        </div>
+        <div class="feature-item">
+          <h3>データはずっと安全に保存</h3>
+          <p>Googleのサーバーに暗号化して保存。スマホを買い替えてもデータは消えません。</p>
+        </div>
+        <div class="feature-item">
+          <h3>スマホでもパソコンでも</h3>
+          <p>どの端末でも同じ画面が使えます。外出先ではスマホ、自宅ではパソコンで。</p>
+        </div>
       </div>
     </div>
   </section>
@@ -103,6 +260,9 @@
   <!-- Login Section -->
   <section id="login" class="lp-section lp-login-section">
     <div class="login-card">
+      <h2>無料で始める</h2>
+      <p class="login-desc">登録は3分。基本機能はずっと無料です。</p>
+
       <!-- Auth mode tabs -->
       <div class="auth-tabs">
         <button class="auth-tab active" onclick="app.toggleAuthMode('login')">ログイン</button>
@@ -111,9 +271,9 @@
 
       <!-- Login Panel -->
       <div class="auth-panel active" id="auth-login">
-        <button class="btn btn-google" onclick="app.loginWithGoogle()">
+        <button class="btn-google" onclick="app.loginWithGoogle()">
           <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-          Googleでログイン
+          Googleでログイン（おすすめ）
         </button>
 
         <div class="login-divider"><span>またはメールアドレスで</span></div>
@@ -138,12 +298,9 @@
 
       <!-- Register Panel -->
       <div class="auth-panel" id="auth-register">
-        <h3>新規登録</h3>
-        <p class="auth-desc">無料でアカウントを作成できます</p>
-
-        <button class="btn btn-google" onclick="app.loginWithGoogle()">
+        <button class="btn-google" onclick="app.loginWithGoogle()">
           <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-          Googleで登録
+          Googleで登録（おすすめ）
         </button>
 
         <div class="login-divider"><span>またはメールアドレスで</span></div>
@@ -174,7 +331,7 @@
       <!-- Password Reset Panel -->
       <div class="auth-panel" id="auth-reset">
         <h3>パスワードの再設定</h3>
-        <p class="auth-desc">ご登録のメールアドレスにパスワード再設定のリンクをお送りします</p>
+        <p style="font-size:14px;color:var(--text-secondary);margin-bottom:20px;">ご登録のメールアドレスに再設定のリンクをお送りします</p>
         <div class="form-group">
           <label>メールアドレス</label>
           <input type="email" id="resetEmail" class="form-input" placeholder="ご登録のメールアドレス">
@@ -189,27 +346,32 @@
 
   <!-- Footer -->
   <footer class="lp-footer">
+    <div class="lp-footer-links">
+      <a href="index.html">トップ</a>
+      <a href="health.html">健康</a>
+      <a href="assets.html">資産</a>
+      <a href="relationship.html">関係</a>
+    </div>
     <p>&copy; 2026 LMS - Life Management System. All rights reserved.</p>
   </footer>
 
   <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
   <!-- LMS Scripts -->
-  <script src="js/config.js"></script>
-  <script src="js/store.js"></script>
-  <script src="js/i18n.js"></script>
-  <script src="js/components.js"></script>
-  <script src="js/ai-engine.js"></script>
-  <script src="js/firebase-backend.js"></script>
-  <script src="js/affiliate.js"></script>
-  <script src="js/pages.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/config.js?v=2"></script>
+  <script src="js/store.js?v=2"></script>
+  <script src="js/i18n.js?v=2"></script>
+  <script src="js/components.js?v=2"></script>
+  <script src="js/ai-engine.js?v=2"></script>
+  <script src="js/firebase-backend.js?v=2"></script>
+  <script src="js/affiliate.js?v=2"></script>
+  <script src="js/pages.js?v=2"></script>
+  <script src="js/app.js?v=2"></script>
 
   <script>
-    // On login success, redirect to dashboard
     store.on('isAuthenticated', (val) => {
       if (val) window.location.href = 'dashboard.html';
     });

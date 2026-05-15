@@ -27,9 +27,23 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // Count total entries across all domains to detect new users
+    let totalEntries = 0;
+    Object.keys(CONFIG.domains).forEach(d => {
+      const cats = Object.keys(CONFIG.domains[d]?.categories || {});
+      cats.forEach(cat => { totalEntries += store.getDomainData(d, cat, 365).length; });
+    });
+    const isNewUser = totalEntries < 3;
+
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    let html = `<div class="page-home">`;
+
+    // Onboarding banner for new users
+    if (isNewUser) {
+      html += this.renderOnboardingBanner(domain);
+    }
+
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
@@ -104,7 +118,7 @@ var Pages = {
       html += `<div class="analysis-section">
         <h3>分析結果</h3>
         <div class="analysis-content">${Components.formatMarkdown(latest.response)}</div>
-        <div class="analysis-meta">${latest.model} | ${new Date(latest.timestamp).toLocaleString()}</div>
+        <div class="analysis-meta">${new Date(latest.timestamp).toLocaleString('ja-JP')}</div>
       </div>`;
     }
 
@@ -158,6 +172,33 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Onboarding Banner (new users) ───
+  renderOnboardingBanner(domain) {
+    const steps = [
+      { done: !!store.get('userProfile')?.age, label: 'プロフィールを登録', action: "app.navigate('settings')" },
+      { done: store.getDomainData(domain, Object.keys(CONFIG.domains[domain]?.categories || {})[0] || 'entries', 365).length > 0, label: '最初の記録をつける', action: "app.navigate('record')" },
+      { done: (store.get('recommendations') || []).length > 0, label: '分析を受け取る', action: "app.navigate('record')" }
+    ];
+    const doneCount = steps.filter(s => s.done).length;
+    const pct = Math.round(doneCount / steps.length * 100);
+
+    return `<div class="onboarding-banner">
+      <div class="ob-header">
+        <div class="ob-title">ようこそ！まず3つのステップを完了しましょう</div>
+        <div class="ob-progress-text">${doneCount} / ${steps.length} 完了</div>
+      </div>
+      <div class="ob-progress-bar"><div class="ob-progress-fill" style="width:${pct}%"></div></div>
+      <div class="ob-steps">
+        ${steps.map((s, i) => `
+          <div class="ob-step ${s.done ? 'done' : ''}" onclick="${s.done ? '' : s.action}">
+            <div class="ob-step-num">${s.done ? '✓' : i + 1}</div>
+            <div class="ob-step-label">${s.label}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
