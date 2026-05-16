@@ -132,6 +132,41 @@ var Components = {
       .replace(/\n/g, '<br>');
   },
 
+  // ─── XSS-safe escape ───
+  escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  // ─── Confirm Dialog (replaces browser confirm() which breaks on mobile) ───
+  showConfirm(message, confirmLabel, onConfirm) {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    if (!overlay || !titleEl || !bodyEl) { if (onConfirm) onConfirm(); return; }
+
+    titleEl.textContent = '確認';
+    bodyEl.innerHTML = `
+      <p style="margin-bottom:20px;line-height:1.6">${this.escapeHtml(message)}</p>
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <button class="btn btn-secondary" id="confirmCancelBtn">キャンセル</button>
+        <button class="btn btn-danger" id="confirmOkBtn">${this.escapeHtml(confirmLabel || '実行する')}</button>
+      </div>`;
+    overlay.classList.add('active');
+
+    document.getElementById('confirmOkBtn').onclick = () => {
+      overlay.classList.remove('active');
+      if (onConfirm) onConfirm();
+    };
+    document.getElementById('confirmCancelBtn').onclick = () => {
+      overlay.classList.remove('active');
+    };
+  },
+
   // ─── Toast Notification (未病ダイアリー方式) ───
   showToast(message, type = 'info') {
     const container = document.getElementById('toast-container') || document.body;

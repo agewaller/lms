@@ -271,8 +271,38 @@ var Store = class Store {
 
   // ─── Clear ───
 
+  // ─── Streak Calculation ───
+
+  calculateStreak() {
+    const dates = new Set();
+    const dataKeys = this.persistKeys.filter(k =>
+      ['consciousness','health','time','work','relationship','assets'].includes(k.split('_')[0])
+    );
+    dataKeys.forEach(key => {
+      const entries = this.state[key];
+      if (Array.isArray(entries)) {
+        entries.forEach(e => { if (e && e.timestamp) dates.add(e.timestamp.slice(0, 10)); });
+      }
+    });
+
+    const today = new Date().toISOString().slice(0, 10);
+    const check = new Date();
+    if (!dates.has(today)) check.setDate(check.getDate() - 1);
+
+    let streak = 0;
+    while (true) {
+      const d = check.toISOString().slice(0, 10);
+      if (dates.has(d)) { streak++; check.setDate(check.getDate() - 1); }
+      else break;
+    }
+    return streak;
+  }
+
   clearAll() {
-    localStorage.clear();
+    // Only clear LMS-owned keys — never wipe the whole localStorage
+    this.persistKeys.forEach(key => {
+      try { localStorage.removeItem(`lms_${key}`); } catch (e) { /* ignore */ }
+    });
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};

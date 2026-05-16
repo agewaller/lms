@@ -27,9 +27,51 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // Check for new-user onboarding
+    const dataKeys = ['consciousness_entries','health_symptoms','health_vitals','health_sleepData',
+      'time_entries','time_habits','work_tasks','relationship_contacts','assets_overview','assets_expenses'];
+    const hasAnyData = dataKeys.some(k => (store.get(k) || []).length > 0);
+    const onboardingDone = (() => { try { return !!localStorage.getItem('lms_onboarding_dismissed'); } catch(e) { return true; } })();
+
+    // Streak counter
+    const streak = store.calculateStreak();
+
+    let html = `<div class="page-home">`;
+
+    // Onboarding banner (new users only)
+    if (!hasAnyData && !onboardingDone) {
+      html += `<div class="onboarding-banner" id="onboardingBanner">
+        <button class="onboarding-close" onclick="try{localStorage.setItem('lms_onboarding_dismissed','1')}catch(e){}document.getElementById('onboardingBanner').remove()" title="閉じる">×</button>
+        <h3>LMSへようこそ</h3>
+        <p>まずは3ステップで始めましょう。</p>
+        <div class="onboarding-steps">
+          <div class="ob-step" onclick="app.navigate('settings')">
+            <div class="ob-num">1</div>
+            <div class="ob-text"><strong>プロフィールを設定する</strong><span>年齢・持病・目標を入力</span></div>
+          </div>
+          <div class="ob-step" onclick="app.navigate('record')">
+            <div class="ob-num">2</div>
+            <div class="ob-text"><strong>今日の記録を入力する</strong><span>気になることを何でも記録</span></div>
+          </div>
+          <div class="ob-step" onclick="app.navigate('ask_ai')">
+            <div class="ob-num">3</div>
+            <div class="ob-text"><strong>アドバイザーに相談する</strong><span>何でも気軽に質問できます</span></div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    // Streak banner
+    if (streak >= 2) {
+      html += `<div class="streak-banner">
+        <span class="streak-flame">◈</span>
+        <span class="streak-num">${streak}</span>
+        <span class="streak-label">日連続記録中</span>
+      </div>`;
+    }
+
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
