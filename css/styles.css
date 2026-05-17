@@ -1797,3 +1797,62 @@ body.is-admin .admin-only { display: flex; }
   .sim-cards { grid-template-columns: 1fr; }
   .top-bar-title { font-size: 13px; }
 }
+
+/* ─── Streak Bar ─── */
+.streak-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #fff7ed, #fef3c7);
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.streak-bar.streak-new { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-color: #bbf7d0; }
+.streak-bar.streak-empty { background: var(--bg-secondary); border-color: var(--border); }
+.streak-flame { font-size: 20px; flex-shrink: 0; }
+.streak-sub { color: var(--text-secondary); font-weight: 400; font-size: 12px; margin-left: auto; }
+@media (max-width: 480px) { .streak-sub { display: none; } }
+
+/* ─── Confirm / Prompt Dialogs ─── */
+.confirm-body { padding: 8px 0; }
+.confirm-body > p { margin: 0 0 20px; line-height: 1.7; }
+.confirm-actions { display: flex; gap: 12px; justify-content: flex-end; }
+.confirm-actions .btn { min-width: 90px; }
+
+/* ─── Welcome Modal ─── */
+.welcome-body { text-align: center; padding: 8px 0; }
+.welcome-greeting { font-size: 18px; margin-bottom: 8px; }
+.welcome-desc { color: var(--text-secondary); margin-bottom: 20px; line-height: 1.7; }
+.welcome-domains {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.welcome-domain-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--bg-secondary);
+  font-size: 13px;
+}
+.wdc-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.welcome-tip { font-size: 14px; margin-bottom: 20px; line-height: 1.8; }

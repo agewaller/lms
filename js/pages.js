@@ -28,13 +28,34 @@ var Pages = {
     const color = domainConfig?.color || '#6C63FF';
 
     // Quick input bar
+    // Streak (consecutive days with entries)
+    const streak = store.getRecordingStreak(domain);
+    const streakHtml = streak >= 2
+      ? `<div class="streak-bar">
+           <span class="streak-flame">🔥</span>
+           <strong>${streak}日連続記録中！</strong>
+           <span class="streak-sub">この調子で続けましょう</span>
+         </div>`
+      : streak === 1
+        ? `<div class="streak-bar streak-new">
+             <span class="streak-flame">✨</span>
+             <strong>今日も記録しました！</strong>
+             <span class="streak-sub">明日も続けると連続記録がスタート</span>
+           </div>`
+        : `<div class="streak-bar streak-empty">
+             <span class="streak-flame">📋</span>
+             <strong>今日の記録を残しましょう</strong>
+             <span class="streak-sub">毎日の記録がアドバイスの精度を上げます</span>
+           </div>`;
+
     let html = `<div class="page-home">
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
-      <div id="quickResponse"></div>`;
+      <div id="quickResponse"></div>
+      ${streakHtml}`;
 
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {

@@ -109,7 +109,10 @@ var Store = class Store {
 
       // Notifications
       notifications: [],
-      unreadCount: 0
+      unreadCount: 0,
+
+      // Onboarding
+      onboardingDone: false
     };
 
     this.listeners = new Map();
@@ -182,7 +185,8 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'onboardingDone'
     ];
   }
 
@@ -269,10 +273,12 @@ var Store = class Store {
     return score;
   }
 
-  // ─── Clear ───
+  // ─── Clear (only LMS keys — do NOT use localStorage.clear() which wipes Firebase config) ───
 
   clearAll() {
-    localStorage.clear();
+    this.persistKeys.forEach(key => {
+      try { localStorage.removeItem('lms_' + key); } catch (e) {}
+    });
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
@@ -282,6 +288,26 @@ var Store = class Store {
     this.state.currentPage = 'login';
     this.state.currentDomain = 'health';
     this.state.subscription = null;
+  }
+
+  // ─── Streak: consecutive days with at least one entry in any category ───
+  getRecordingStreak(domain) {
+    const dates = new Set();
+    Object.keys(this.state).forEach(key => {
+      if (!key.startsWith(domain + '_')) return;
+      const entries = this.state[key];
+      if (!Array.isArray(entries)) return;
+      entries.forEach(e => { if (e.timestamp) dates.add(e.timestamp.slice(0, 10)); });
+    });
+    if (dates.size === 0) return 0;
+    let streak = 0;
+    const msPerDay = 86400000;
+    const now = new Date();
+    for (let i = 0; i < 366; i++) {
+      const ds = new Date(now.getTime() - i * msPerDay).toISOString().slice(0, 10);
+      if (dates.has(ds)) { streak++; } else { break; }
+    }
+    return streak;
   }
 };
 

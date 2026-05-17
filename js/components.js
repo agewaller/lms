@@ -132,6 +132,50 @@ var Components = {
       .replace(/\n/g, '<br>');
   },
 
+  // ─── HTML Escape (XSS prevention) ───
+  escapeHtml(text) {
+    if (!text) return '';
+    return String(text)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  },
+
+  // ─── Modal Confirm / Prompt (replaces browser confirm/prompt for mobile compat) ───
+  _cb: {},
+  _cbSeq: 0,
+
+  confirm(message, onYes, title) {
+    const seq = ++this._cbSeq;
+    const yKey = '_y' + seq, nKey = '_n' + seq;
+    this._cb[yKey] = () => { delete this._cb[yKey]; delete this._cb[nKey]; onYes && onYes(); };
+    this._cb[nKey] = () => { delete this._cb[yKey]; delete this._cb[nKey]; };
+    app.openModal(title || '確認', `
+      <div class="confirm-body">
+        <p>${this.escapeHtml(message)}</p>
+        <div class="confirm-actions">
+          <button class="btn btn-secondary" onclick="Components._cb['${nKey}']&&Components._cb['${nKey}']();app.closeModal()">キャンセル</button>
+          <button class="btn btn-primary" onclick="Components._cb['${yKey}']&&Components._cb['${yKey}']();app.closeModal()">はい</button>
+        </div>
+      </div>`);
+  },
+
+  inputPrompt(label, placeholder, onSubmit, title) {
+    const seq = ++this._cbSeq;
+    const cbKey = '_p' + seq, inputId = 'cp-input-' + seq;
+    this._cb[cbKey] = (val) => { delete this._cb[cbKey]; onSubmit && onSubmit(val); };
+    app.openModal(title || '入力', `
+      <div class="confirm-body">
+        <div class="form-group">
+          <label>${this.escapeHtml(label)}</label>
+          <input type="text" id="${inputId}" class="form-input" placeholder="${this.escapeHtml(placeholder || '')}" autofocus>
+        </div>
+        <div class="confirm-actions">
+          <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+          <button class="btn btn-primary" onclick="const v=document.getElementById('${inputId}')?.value?.trim();if(v){Components._cb['${cbKey}']&&Components._cb['${cbKey}'](v);app.closeModal();}">OK</button>
+        </div>
+      </div>`);
+  },
+
   // ─── Toast Notification (未病ダイアリー方式) ───
   showToast(message, type = 'info') {
     const container = document.getElementById('toast-container') || document.body;
