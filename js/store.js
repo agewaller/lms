@@ -279,7 +279,18 @@ var Store = class Store {
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // Preserve Firebase config and OAuth tokens before wiping storage
+    const preserved = ['lms_firebaseConfig', 'lms_workerUrl', 'lms_oauthClientIds'].reduce((acc, key) => {
+      const val = localStorage.getItem(key);
+      if (val) acc[key] = val;
+      return acc;
+    }, {});
+
+    this.persistKeys.forEach(key => localStorage.removeItem(`lms_${key}`));
+
+    // Restore preserved keys
+    Object.entries(preserved).forEach(([key, val]) => localStorage.setItem(key, val));
+
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
