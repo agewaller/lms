@@ -7,6 +7,7 @@ var Pages = {
   // ─── Main render dispatcher ───
   render(page, domain) {
     switch (page) {
+      case 'onboarding': return this.renderOnboarding();
       case 'home':         return this.renderHome(domain);
       case 'data':         return this.renderDataBrowser(domain);
       case 'integrations': return this.renderIntegrations(domain);
@@ -17,6 +18,49 @@ var Pages = {
       case 'admin':    return this.renderAdmin();
       default:         return this.renderHome(domain);
     }
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  ONBOARDING WIZARD (3 steps)
+  // ═══════════════════════════════════════════════════════════
+  renderOnboarding() {
+    const user = store.get('user');
+    const name = user?.displayName?.split(' ')[0] || user?.email?.split('@')[0] || 'あなた';
+
+    const domains = [
+      { id: 'health',        emoji: '💚', title: '健康',  desc: '体調・持病・薬の管理をしたい' },
+      { id: 'consciousness', emoji: '🧘', title: '意識',  desc: '心の状態を整えたい・瞑想したい' },
+      { id: 'relationship',  emoji: '🤝', title: '関係',  desc: '家族・友人との関係を大切にしたい' },
+      { id: 'assets',        emoji: '💴', title: '資産',  desc: '老後のお金・投資が不安' },
+      { id: 'time',          emoji: '⏰', title: '時間',  desc: '毎日を充実させたい・趣味を増やしたい' },
+      { id: 'work',          emoji: '💼', title: '仕事',  desc: '社会との繋がり・生きがいが欲しい' }
+    ];
+
+    return `<div class="onboarding-page">
+      <div class="onboarding-card">
+        <div class="onboarding-header">
+          <div class="onboarding-logo">◈ LMS</div>
+          <h2>ようこそ、${Components.escapeHtml(name)}さん</h2>
+          <p class="onboarding-sub">まず、今いちばん気になっていることを選んでください。<br>あとから変えることができます。</p>
+        </div>
+
+        <div class="domain-choice-grid">
+          ${domains.map(d => `
+            <button class="domain-choice-item" onclick="app.completeOnboarding('${d.id}')">
+              <div class="dc-emoji">${d.emoji}</div>
+              <div class="dc-title">${d.title}</div>
+              <div class="dc-desc">${d.desc}</div>
+            </button>
+          `).join('')}
+        </div>
+
+        <div class="onboarding-footer">
+          <button class="btn btn-secondary btn-sm" onclick="app.skipOnboarding()">
+            あとで設定する
+          </button>
+        </div>
+      </div>
+    </div>`;
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -35,6 +79,9 @@ var Pages = {
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
       <div id="quickResponse"></div>`;
+
+    // Daily check-in widget (show if not yet done today)
+    html += this.renderCheckinWidget(domain);
 
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
@@ -158,6 +205,60 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Daily Check-in Widget ───
+  renderCheckinWidget(domain) {
+    const today = new Date().toISOString().slice(0, 10);
+    const lastDate = store.get('lastCheckinDate');
+    const streak = store.get('checkinStreak') || 0;
+    const alreadyDone = lastDate === today;
+
+    const domainConfig = CONFIG.domains[domain];
+    const color = domainConfig?.color || '#6C63FF';
+
+    const streakHtml = streak > 0
+      ? `<div class="streak-badge" style="border-color:${color}">
+           <span class="streak-num">${streak}</span>
+           <span class="streak-label">日連続</span>
+         </div>`
+      : '';
+
+    if (alreadyDone) {
+      return `<div class="checkin-widget checkin-done">
+        <span class="checkin-done-icon">✓</span>
+        <span>今日のチェックイン済み</span>
+        ${streakHtml}
+      </div>`;
+    }
+
+    const moods = [
+      { v: 1, emoji: '😔', label: '辛い' },
+      { v: 2, emoji: '😕', label: '不調' },
+      { v: 3, emoji: '😐', label: 'まあまあ' },
+      { v: 4, emoji: '🙂', label: '良い' },
+      { v: 5, emoji: '😊', label: '絶好調' }
+    ];
+
+    return `<div class="checkin-widget">
+      <div class="checkin-header">
+        <span class="checkin-title">今日のひとこと</span>
+        ${streakHtml}
+      </div>
+      <div class="checkin-mood-row">
+        ${moods.map(m => `
+          <button class="mood-btn" data-mood="${m.v}" onclick="app.selectMood(this, ${m.v})">
+            <span class="mood-emoji">${m.emoji}</span>
+            <span class="mood-label">${m.label}</span>
+          </button>
+        `).join('')}
+      </div>
+      <div class="checkin-note-row">
+        <input type="text" id="checkinNote" class="form-input" placeholder="今日の一言メモ（任意）"
+          onkeydown="if(event.key==='Enter')app.saveCheckin()">
+        <button class="btn btn-primary btn-sm" onclick="app.saveCheckin()">記録</button>
+      </div>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───

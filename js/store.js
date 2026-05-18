@@ -109,7 +109,13 @@ var Store = class Store {
 
       // Notifications
       notifications: [],
-      unreadCount: 0
+      unreadCount: 0,
+
+      // Onboarding & engagement
+      onboardingCompleted: false,
+      checkinStreak: 0,
+      lastCheckinDate: null,
+      weeklyInsight: null
     };
 
     this.listeners = new Map();
@@ -182,7 +188,8 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'onboardingCompleted', 'checkinStreak', 'lastCheckinDate', 'weeklyInsight'
     ];
   }
 

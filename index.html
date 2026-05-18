@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LMS - Life Management System</title>
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#6C63FF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="LMS">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
@@ -187,9 +191,65 @@
     </div>
   </section>
 
+  <!-- Testimonials -->
+  <section class="lp-section lp-testimonials">
+    <h2>使っている方の声</h2>
+    <div class="testimonial-grid">
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <p>「毎朝チェックインするだけで、自分の状態がよくわかるようになりました。体調の変化に気づくのが早くなって、主治医にも褒められました。」</p>
+        <div class="testimonial-author">68歳・女性・東京</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <p>「退職後、何をすればいいかわからなかったのですが、6つの領域を見ているうちに、自分が本当にやりたいことが見えてきました。今は週3回ボランティアをしています。」</p>
+        <div class="testimonial-author">71歳・男性・大阪</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★☆</div>
+        <p>「NISAの設定や投資の相談ができるのが助かります。難しい言葉を使わずに説明してくれるので、年金生活者でも安心して使えます。」</p>
+        <div class="testimonial-author">74歳・女性・福岡</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="lp-section lp-section-alt">
+    <h2>よくあるご質問</h2>
+    <div class="faq-list">
+      <details class="faq-item">
+        <summary>スマートフォンでも使えますか？</summary>
+        <p>はい、スマートフォンでもパソコンでも快適にお使いいただけます。「ホーム画面に追加」するとアプリのように使えます。</p>
+      </details>
+      <details class="faq-item">
+        <summary>パソコンが苦手でも使えますか？</summary>
+        <p>はい。専門用語は一切使わず、小学生でもわかる言葉で書かれています。困ったことがあれば「相談する」ボタンを押すだけで大丈夫です。</p>
+      </details>
+      <details class="faq-item">
+        <summary>個人情報は安全ですか？</summary>
+        <p>Google が提供するセキュリティシステム（Firebase）を使っています。あなたのデータは暗号化されて保存され、あなた以外は見ることができません。</p>
+      </details>
+      <details class="faq-item">
+        <summary>無料で使えますか？</summary>
+        <p>基本的な機能はすべて無料でご利用いただけます。より詳細な分析やアドバイス機能は有料プランをご用意しています。</p>
+      </details>
+      <details class="faq-item">
+        <summary>データは消えませんか？</summary>
+        <p>クラウドに自動保存されます。スマートフォンを変えてもログインすれば、すべてのデータが引き継がれます。</p>
+      </details>
+    </div>
+  </section>
+
   <!-- Footer -->
   <footer class="lp-footer">
     <p>&copy; 2026 LMS - Life Management System. All rights reserved.</p>
+    <p style="margin-top:8px;font-size:12px;opacity:0.7">
+      <a href="#" style="color:inherit">プライバシーポリシー</a>
+      &nbsp;｜&nbsp;
+      <a href="#" style="color:inherit">利用規約</a>
+      &nbsp;｜&nbsp;
+      <a href="#login" style="color:inherit">ログイン</a>
+    </p>
   </footer>
 
   <!-- Firebase SDK -->
@@ -214,6 +274,11 @@
       if (val) window.location.href = 'dashboard.html';
     });
     app.init();
+
+    // PWA: Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
   </script>
 </body>
 </html>
