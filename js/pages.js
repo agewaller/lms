@@ -196,6 +196,9 @@ var Pages = {
       }
     }
 
+    // Weekly summary widget
+    html += this.renderWeeklySummary(domain);
+
     // Domain disclaimers
     if (domain === 'health') {
       html += `<div class="disclaimer">${i18n.t('disclaimer_health')}</div>`;
@@ -205,6 +208,60 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Weekly Summary ───
+  renderWeeklySummary(domain) {
+    const insight = store.get('weeklyInsight');
+    const showInsight = insight && insight.domain === domain;
+    const streak = store.get('checkinStreak') || 0;
+
+    // Count entries this week vs last week
+    const domainConfig = CONFIG.domains[domain];
+    const categories = Object.keys(domainConfig?.categories || {});
+    let thisWeek = 0, lastWeek = 0;
+    categories.forEach(cat => {
+      const all = store.getDomainData(domain, cat, 14);
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
+      all.forEach(e => {
+        const d = new Date(e.timestamp);
+        if (d >= cutoff) thisWeek++;
+        else lastWeek++;
+      });
+    });
+
+    const diff = thisWeek - lastWeek;
+    const trend = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+    const trendClass = diff > 0 ? 'trend-up' : diff < 0 ? 'trend-down' : 'trend-flat';
+
+    return `<div class="weekly-summary-card">
+      <div class="ws-header">
+        <h3>今週のまとめ</h3>
+        <button id="weeklyInsightBtn" class="btn btn-sm btn-outline" onclick="app.generateWeeklyInsight()">
+          まとめを生成
+        </button>
+      </div>
+      <div class="ws-stats">
+        <div class="ws-stat">
+          <div class="ws-val">${thisWeek}</div>
+          <div class="ws-label">今週の記録数</div>
+        </div>
+        <div class="ws-stat ${trendClass}">
+          <div class="ws-val">${trend} ${Math.abs(diff)}</div>
+          <div class="ws-label">先週比</div>
+        </div>
+        <div class="ws-stat">
+          <div class="ws-val">${streak > 0 ? streak + '日' : '—'}</div>
+          <div class="ws-label">連続記録</div>
+        </div>
+      </div>
+      ${showInsight ? `
+        <div class="ws-insight">
+          <div class="ws-insight-body">${Components.formatMarkdown(insight.text)}</div>
+          <div class="ws-insight-meta">${new Date(insight.timestamp).toLocaleDateString('ja-JP')} 生成</div>
+        </div>
+      ` : ''}
+    </div>`;
   },
 
   // ─── Daily Check-in Widget ───

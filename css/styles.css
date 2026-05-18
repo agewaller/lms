@@ -448,9 +448,23 @@ select.form-input { appearance: auto; }
   align-items: center; justify-content: center; text-align: center;
   padding: 40px 20px;
 }
-.hero-content h1 { font-size: clamp(32px, 5vw, 56px); margin-bottom: 16px; }
-.hero-subtitle { font-size: clamp(18px, 2.5vw, 24px); color: var(--text-light); margin-bottom: 40px; line-height: 2.0; }
+.hero-content h1 { font-size: clamp(28px, 4.5vw, 52px); margin-bottom: 20px; color: var(--text-primary); }
+.hero-subtitle { font-size: clamp(16px, 2vw, 20px); color: var(--text-secondary); margin-bottom: 36px; line-height: 2.1; }
 .hero-icon { font-size: 64px; margin-bottom: 16px; }
+.hero-badge {
+  display: inline-block;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+  letter-spacing: 0.5px;
+}
+.hero-cta-group { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.hero-cta-note { font-size: 12px; color: var(--text-muted); }
 
 /* Domain-specific hero */
 .domain-hero {
@@ -1797,6 +1811,49 @@ body.is-admin .admin-only { display: flex; }
   .sim-cards { grid-template-columns: 1fr; }
   .top-bar-title { font-size: 13px; }
 }
+
+/* ─── Weekly Summary Card ─── */
+.weekly-summary-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.ws-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.ws-header h3 { font-size: 16px; }
+.ws-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 0;
+}
+.ws-stat {
+  text-align: center;
+  padding: 12px 8px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+.ws-val { font-size: 22px; font-weight: 800; color: var(--text-primary); line-height: 1.2; }
+.ws-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.ws-stat.trend-up .ws-val { color: var(--success); }
+.ws-stat.trend-down .ws-val { color: var(--danger); }
+.ws-stat.trend-flat .ws-val { color: var(--text-muted); }
+.ws-insight {
+  margin-top: 16px;
+  padding: 14px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+}
+.ws-insight-body { font-size: 13px; line-height: 1.8; color: var(--text-primary); }
+.ws-insight-meta { font-size: 11px; color: var(--text-muted); margin-top: 8px; }
 
 /* ─── Onboarding Wizard ─── */
 .onboarding-page {
