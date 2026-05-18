@@ -1812,6 +1812,63 @@ body.is-admin .admin-only { display: flex; }
   .top-bar-title { font-size: 13px; }
 }
 
+/* ─── PWA Install Banner ─── */
+.pwa-install-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #1e293b;
+  color: #fff;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 9999;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+}
+.pwa-banner-text { flex: 1; }
+.pwa-banner-text strong { display: block; font-size: 14px; margin-bottom: 2px; }
+.pwa-banner-text span { font-size: 12px; opacity: 0.75; }
+.pwa-install-banner .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2); }
+
+/* ─── Profile Completion Card ─── */
+.profile-completion-card {
+  background: var(--warning-bg);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+.profile-completion-card.complete {
+  background: var(--success-bg);
+  border-color: var(--success);
+}
+.pc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.pc-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.pc-pct { font-size: 20px; font-weight: 800; color: var(--warning); }
+.profile-completion-card.complete .pc-pct { color: var(--success); }
+.pc-bar {
+  height: 8px;
+  background: rgba(0,0,0,0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.pc-fill {
+  height: 100%;
+  background: var(--warning);
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+.profile-completion-card.complete .pc-fill { background: var(--success); }
+.pc-msg { font-size: 12px; color: var(--text-secondary); margin: 0; }
+
 /* ─── Weekly Summary Card ─── */
 .weekly-summary-card {
   background: var(--bg-secondary);

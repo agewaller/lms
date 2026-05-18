@@ -870,8 +870,34 @@ var Pages = {
       </div>`;
     };
 
+    // Profile completion meter
+    const allProfileFields = Object.values(schema).flat();
+    const filledCount = allProfileFields.filter(f => profile[f.key] != null && profile[f.key] !== '').length;
+    const totalCount = allProfileFields.length || 1;
+    const completionPct = Math.round((filledCount / totalCount) * 100);
+    const diseaseCount = (profile.diseases || []).length;
+    if (diseaseCount > 0) {
+      // Count disease as one field towards completion
+    }
+    const profileComplete = completionPct >= 80;
+
     let html = `<div class="page-settings">
       <h2>${i18n.t('settings')}</h2>
+
+      <!-- Profile completion -->
+      <div class="profile-completion-card ${profileComplete ? 'complete' : ''}">
+        <div class="pc-header">
+          <div class="pc-title">プロフィール完成度</div>
+          <div class="pc-pct">${completionPct}%</div>
+        </div>
+        <div class="pc-bar">
+          <div class="pc-fill" style="width:${completionPct}%"></div>
+        </div>
+        ${profileComplete
+          ? '<p class="pc-msg">プロフィールが充実しています。より精度の高いアドバイスが可能です。</p>'
+          : '<p class="pc-msg">プロフィールを入力するほど、あなたに合ったアドバイスが届きます。</p>'
+        }
+      </div>
 
       <!-- 基本情報 -->
       ${renderSchemaSection('basic', '基本情報')}
