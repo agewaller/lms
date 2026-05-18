@@ -181,8 +181,14 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', data: 'データ', integrations: '連携', settings: '設定', admin: '管理' };
-    if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
+    const pageNames = { onboarding: 'ようこそ', home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', data: 'データ', integrations: '連携', settings: '設定', admin: '管理' };
+    if (titleEl) {
+      if (page === 'onboarding') {
+        titleEl.textContent = 'ようこそ';
+      } else {
+        titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
+      }
+    }
 
     // Update sidebar nav active states
     document.querySelectorAll('.nav-item').forEach(el => {

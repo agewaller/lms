@@ -1812,6 +1812,48 @@ body.is-admin .admin-only { display: flex; }
   .top-bar-title { font-size: 13px; }
 }
 
+/* ─── First Step Card ─── */
+.first-step-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, var(--accent-bg), #fff);
+  border: 2px dashed var(--accent-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.fs-icon { font-size: 36px; flex-shrink: 0; }
+.fs-body { flex: 1; }
+.fs-msg { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 12px; }
+
+/* ─── Floating Action Button (FAB) ─── */
+.fab-record {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  color: #fff;
+  font-size: 28px;
+  font-weight: 300;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(108,99,255,0.4);
+  z-index: 100;
+  transition: all var(--transition);
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.fab-record:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(108,99,255,0.5); }
+@media (max-width: 768px) {
+  .fab-record { display: flex; }
+}
+
 /* ─── PWA Install Banner ─── */
 .pwa-install-banner {
   position: fixed;

@@ -126,8 +126,7 @@ var Pages = {
     allRecent.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     if (allRecent.length === 0) {
-      html += Components.emptyState(domainConfig?.icon || '📭', i18n.t('no_data'),
-        `${i18n.t('record')} → ${i18n.t('save')}`);
+      html += this.renderFirstStepCard(domain);
     } else {
       allRecent.slice(0, 10).forEach(entry => {
         html += Components.recordItem(entry, domain);
@@ -261,6 +260,27 @@ var Pages = {
           <div class="ws-insight-meta">${new Date(insight.timestamp).toLocaleDateString('ja-JP')} 生成</div>
         </div>
       ` : ''}
+    </div>`;
+  },
+
+  // ─── First Step Card (new users with no data) ───
+  renderFirstStepCard(domain) {
+    const firstSteps = {
+      health:        { icon: '💚', msg: '今の体調を記録してみましょう', action: '体調を記録する' },
+      consciousness: { icon: '🧘', msg: '今日の気づきや気持ちを書いてみましょう', action: '今日の気づきを書く' },
+      relationship:  { icon: '🤝', msg: '大切な人の名前を登録してみましょう', action: '連絡先を追加する' },
+      assets:        { icon: '💴', msg: '今の資産・貯蓄の状況を入力してみましょう', action: '資産を記録する' },
+      time:          { icon: '⏰', msg: '今日の予定や時間の使い方を記録しましょう', action: 'スケジュールを記録する' },
+      work:          { icon: '💼', msg: 'あなたのスキルや経験を入力してみましょう', action: 'スキルを登録する' }
+    };
+    const step = firstSteps[domain] || { icon: '📝', msg: '最初の記録をしてみましょう', action: '記録する' };
+
+    return `<div class="first-step-card">
+      <div class="fs-icon">${step.icon}</div>
+      <div class="fs-body">
+        <div class="fs-msg">まだ記録がありません。<br>${step.msg}</div>
+        <button class="btn btn-primary btn-sm" onclick="app.navigate('record')">${step.action}</button>
+      </div>
     </div>`;
   },
 
