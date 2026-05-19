@@ -130,10 +130,19 @@ var AIEngine = {
 
   // ─── API Calls ───
 
+  // CONFIG key → actual API id (update here when Anthropic rotates model ids)
+  MODEL_MAP: {
+    'claude-opus-4-6':   'claude-opus-4-6-20260201',
+    'claude-sonnet-4-6': 'claude-sonnet-4-6-20260101',
+    'gpt-4o':            'gpt-4o-2025-12-17',
+    'gemini-pro':        'gemini-2.0-flash',
+  },
+
   async callAnthropic(model, system, userMsg, maxTokens) {
     const apiKey = this.getApiKey('anthropic');
     if (!apiKey) throw new Error('Anthropic APIキーが設定されていません。管理者にご連絡ください。');
 
+    const apiModel = this.MODEL_MAP[model] || model;
     const endpoint = CONFIG.endpoints.anthropic;
 
     // ─── Direct browser mode (no proxy) ───
@@ -161,7 +170,7 @@ var AIEngine = {
     }
 
     console.log('[LMS] Calling Anthropic', isDirect ? '(direct)' : 'via proxy:', url);
-    console.log('[LMS] Model:', model, 'Max tokens:', maxTokens);
+    console.log('[LMS] Model:', apiModel, 'Max tokens:', maxTokens);
 
     let res;
     try {
@@ -169,7 +178,7 @@ var AIEngine = {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model,
+          model: apiModel,
           max_tokens: maxTokens,
           system: system,
           messages: [{ role: 'user', content: userMsg }]
@@ -198,8 +207,9 @@ var AIEngine = {
 
   async callOpenAI(model, system, userMsg, maxTokens) {
     const apiKey = this.getApiKey('openai');
-    if (!apiKey) throw new Error('OpenAI API key not set');
+    if (!apiKey) throw new Error('OpenAI APIキーが設定されていません。管理者にご連絡ください。');
 
+    const apiModel = this.MODEL_MAP[model] || model;
     const res = await fetch(CONFIG.endpoints.openai, {
       method: 'POST',
       headers: {
@@ -207,7 +217,7 @@ var AIEngine = {
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: model,
+        model: apiModel,
         max_tokens: maxTokens,
         messages: [
           { role: 'system', content: system },
@@ -218,7 +228,7 @@ var AIEngine = {
 
     if (!res.ok) {
       const err = await res.text();
-      throw new Error('OpenAI API error: ' + err);
+      throw new Error('分析に失敗しました (OpenAI ' + res.status + ')。しばらくしてからお試しください。');
     }
     const data = await res.json();
     return data.choices?.[0]?.message?.content || '';
@@ -226,9 +236,10 @@ var AIEngine = {
 
   async callGemini(model, system, userMsg, maxTokens) {
     const apiKey = this.getApiKey('google');
-    if (!apiKey) throw new Error('Google API key not set');
+    if (!apiKey) throw new Error('Google APIキーが設定されていません。管理者にご連絡ください。');
 
-    const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
+    const apiModel = this.MODEL_MAP[model] || model;
+    const url = `${CONFIG.endpoints.google}/${apiModel}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -241,7 +252,7 @@ var AIEngine = {
 
     if (!res.ok) {
       const err = await res.text();
-      throw new Error('Gemini API error: ' + err);
+      throw new Error('分析に失敗しました (Gemini ' + res.status + ')。しばらくしてからお試しください。');
     }
     const data = await res.json();
     return data.candidates?.[0]?.content?.parts?.[0]?.text || '';

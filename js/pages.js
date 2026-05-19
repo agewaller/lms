@@ -591,7 +591,7 @@ var Pages = {
     // Action items (todos)
     if (actions.length > 0) {
       html += `<div class="action-items">
-        <h3>📋 Action Items</h3>
+        <h3>📋 やること一覧</h3>
         ${actions.map((a, i) => `
           <div class="action-item ${a.done ? 'done' : ''}">
             <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${a.text}</label>

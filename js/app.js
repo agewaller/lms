@@ -179,7 +179,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -237,10 +237,11 @@ var App = class App {
 
     if (nameEl) nameEl.textContent = user?.displayName || user?.email || 'ゲスト';
     if (avatarEl) {
+      const initials = (user?.displayName || user?.email || '?').charAt(0).toUpperCase();
       if (user?.photoURL) {
-        avatarEl.innerHTML = `<img src="${user.photoURL}" alt="">`;
+        avatarEl.innerHTML = `<img src="${user.photoURL}" alt="" onerror="this.parentElement.textContent='${initials}'">`;
       } else {
-        avatarEl.textContent = (user?.displayName || user?.email || '?').charAt(0).toUpperCase();
+        avatarEl.textContent = initials;
       }
     }
     if (domainLabel) {
@@ -458,9 +459,25 @@ var App = class App {
   }
 
   executeAction(type, data) {
-    // Placeholder for action execution (e.g., open affiliate link, book appointment)
-    console.log('Execute action:', type, data);
-    Components.showToast('Action: ' + type, 'info');
+    switch (type) {
+      case 'open_url':
+        if (data?.url) window.open(data.url, '_blank', 'noopener,noreferrer');
+        break;
+      case 'navigate':
+        if (data?.page) this.navigate(data.page, data.domain);
+        break;
+      case 'record':
+        this.navigate('record', data?.domain || store.get('currentDomain'));
+        break;
+      case 'contact':
+        if (data?.name) {
+          this.navigate('ask_ai', store.get('currentDomain'));
+          Components.showToast(`${data.name}への連絡について相談しましょう`, 'info');
+        }
+        break;
+      default:
+        Components.showToast(data?.label || 'アクションを実行しました', 'success');
+    }
   }
 
   // ─── Stock Analysis (Assets domain) ───
@@ -1387,7 +1404,7 @@ var App = class App {
 
     // Save to Firestore if available
     if (Object.keys(keys).length > 0) {
-      FirebaseBackend.saveApiKeys({ ...AIEngine.getApiKey, ...keys });
+      FirebaseBackend.saveApiKeys({ ...(store.get('_apiKeys') || {}), ...keys });
     }
 
     Components.showToast(i18n.t('saved'), 'success');

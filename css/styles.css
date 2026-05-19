@@ -170,7 +170,7 @@ p { margin-bottom: 12px; }
   padding: 10px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  font-size: 14px;
+  font-size: 16px; /* 16px minimum prevents iOS auto-zoom on focus */
   font-family: var(--font-main);
   transition: all var(--transition);
   background: var(--bg-tertiary);
@@ -498,6 +498,34 @@ select.form-input { appearance: auto; }
 .fi-icon { font-size: 32px; margin-bottom: 12px; }
 .feature-item h3 { font-size: 20px; margin-bottom: 10px; }
 .feature-item p { font-size: 16px; color: var(--text-light); line-height: 1.9; }
+
+/* Steps Grid */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 32px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.step-item {
+  text-align: center;
+  padding: 32px 24px;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.step-num {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+}
+.step-item h3 { font-size: 20px; margin-bottom: 10px; }
+.step-item p { font-size: 16px; color: var(--text-light); line-height: 1.8; }
 
 /* Login Section */
 .lp-login-section { display: flex; justify-content: center; padding: 60px 20px; }
