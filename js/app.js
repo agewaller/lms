@@ -179,7 +179,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -204,12 +204,15 @@ var App = class App {
       if (overlay) overlay.classList.remove('active');
     }
 
+    // Close any open modal when navigating
+    this.closeModal();
+
     // Scroll chat to bottom
     if (page === 'ask_ai') {
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         const chat = document.getElementById('chatContainer');
         if (chat) chat.scrollTop = chat.scrollHeight;
-      }, 50);
+      });
     }
 
     // Initialize PayPal
@@ -772,7 +775,7 @@ var App = class App {
     a.href = url;
     a.download = `lms-${domain}-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 500);
   }
 
   // ─── Fitbit ───
@@ -1406,7 +1409,7 @@ var App = class App {
     a.href = url;
     a.download = `lms-export-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 500);
   }
 
   importData(event) {

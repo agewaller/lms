@@ -499,6 +499,42 @@ select.form-input { appearance: auto; }
 .feature-item h3 { font-size: 20px; margin-bottom: 10px; }
 .feature-item p { font-size: 16px; color: var(--text-light); line-height: 1.9; }
 
+/* Hero note */
+.hero-note { font-size: 14px; color: var(--text-muted); margin-top: 12px; opacity: 0.8; }
+
+/* Steps (How it works) */
+.steps-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 32px; margin-top: 48px; text-align: left;
+}
+.step-item {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 32px 28px; box-shadow: var(--shadow);
+  position: relative;
+}
+.step-num {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--primary); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; margin-bottom: 16px;
+}
+.step-item h3 { font-size: 20px; margin-bottom: 10px; }
+.step-item p { font-size: 16px; color: var(--text-light); line-height: 1.9; }
+
+/* Privacy section */
+.lp-privacy { background: var(--bg-secondary); }
+.privacy-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 28px; margin-top: 40px; text-align: left;
+}
+.privacy-item {
+  padding: 24px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--bg-card);
+}
+.privacy-icon { font-size: 28px; color: var(--primary); margin-bottom: 12px; }
+.privacy-item h3 { font-size: 18px; margin-bottom: 8px; }
+.privacy-item p { font-size: 15px; color: var(--text-light); line-height: 1.8; }
+
 /* Login Section */
 .lp-login-section { display: flex; justify-content: center; padding: 60px 20px; }
 .login-card {
@@ -1770,6 +1806,8 @@ body.is-admin .admin-only { display: flex; }
   /* Grids to single column */
   .domain-cards { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
   .feature-grid { grid-template-columns: 1fr; }
+  .steps-grid { grid-template-columns: 1fr; gap: 20px; }
+  .privacy-grid { grid-template-columns: 1fr; gap: 16px; }
   .plan-cards { flex-direction: column; }
   .sim-cards { grid-template-columns: 1fr 1fr; }
   .at-order { flex-direction: column; align-items: flex-start; }
