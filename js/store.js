@@ -269,6 +269,49 @@ var Store = class Store {
     return score;
   }
 
+  // ─── Streak: consecutive days with at least one entry ───
+
+  getStreak(domain) {
+    const allKeys = Object.keys(this.state).filter(k => k.startsWith(domain + '_'));
+    const daySet = new Set();
+    allKeys.forEach(k => {
+      const arr = this.state[k];
+      if (Array.isArray(arr)) {
+        arr.forEach(entry => {
+          if (entry.timestamp) {
+            daySet.add(new Date(entry.timestamp).toDateString());
+          }
+        });
+      }
+    });
+
+    if (daySet.size === 0) return 0;
+
+    let streak = 0;
+    const today = new Date();
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      if (daySet.has(d.toDateString())) {
+        streak++;
+      } else if (i > 0) {
+        break;
+      }
+    }
+    return streak;
+  }
+
+  // Returns true when user has no recorded data in any domain
+  isFirstTimeUser() {
+    const domainKeys = this.persistKeys.filter(k =>
+      k.includes('_') && !['user', 'userProfile', 'subscription', 'domainScores'].some(ex => k.includes(ex))
+    );
+    return domainKeys.every(k => {
+      const v = this.state[k];
+      return !v || (Array.isArray(v) && v.length === 0) || (typeof v === 'object' && Object.keys(v).length === 0);
+    });
+  }
+
   // ─── Clear ───
 
   clearAll() {

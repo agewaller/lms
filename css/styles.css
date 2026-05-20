@@ -499,6 +499,50 @@ select.form-input { appearance: auto; }
 .feature-item h3 { font-size: 20px; margin-bottom: 10px; }
 .feature-item p { font-size: 16px; color: var(--text-light); line-height: 1.9; }
 
+/* ── Welcome banner (first-time user) ── */
+.welcome-banner {
+  background: linear-gradient(135deg, #f0edff 0%, #e8f4fd 100%);
+  border: 1px solid rgba(108, 99, 255, 0.2);
+  border-radius: var(--radius); padding: 32px; margin-bottom: 24px;
+  text-align: center;
+}
+.welcome-inner h2 { font-size: 22px; margin-bottom: 10px; color: var(--text); }
+.welcome-inner p { color: var(--text-light); font-size: 16px; line-height: 1.8; margin-bottom: 20px; }
+.welcome-steps {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  flex-wrap: wrap; margin-bottom: 24px;
+}
+.ws {
+  background: white; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 8px 16px;
+  font-size: 15px; font-weight: 500; cursor: pointer;
+  transition: all var(--transition);
+}
+.ws:hover { background: var(--primary); color: white; border-color: var(--primary); }
+.ws-arrow { color: var(--text-muted); font-size: 18px; }
+
+/* ── Streak badge ── */
+.streak-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: #fff8e1; border: 1px solid #fde68a;
+  border-radius: 20px; padding: 6px 16px;
+  font-size: 14px; font-weight: 600; color: #92400e;
+  margin-bottom: 16px;
+}
+.streak-flame { font-size: 18px; color: var(--primary); }
+
+/* ── Chat starters ── */
+.chat-starters { padding: 24px; text-align: center; }
+.chat-starter-hint { color: var(--text-muted); font-size: 15px; margin-bottom: 16px; }
+.chat-starter-btn {
+  display: inline-block; margin: 6px;
+  background: var(--bg-secondary); border: 1px solid var(--border);
+  border-radius: 20px; padding: 8px 18px;
+  font-size: 14px; font-family: var(--font-main); cursor: pointer;
+  transition: all var(--transition); color: var(--text);
+}
+.chat-starter-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+
 /* Hero note */
 .hero-note { font-size: 14px; color: var(--text-muted); margin-top: 12px; opacity: 0.8; }
 

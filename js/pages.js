@@ -27,9 +27,39 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // First-time user welcome
+    const isFirst = store.isFirstTimeUser();
+
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    let html = `<div class="page-home">`;
+
+    if (isFirst) {
+      html += `<div class="welcome-banner">
+        <div class="welcome-inner">
+          <h2>ようこそ。これがあなたの人生の記録場所です</h2>
+          <p>まずは今日の気持ちや体調を一言入力してみてください。それだけで大丈夫です。</p>
+          <div class="welcome-steps">
+            <span class="ws" onclick="app.navigate('record')">① 記録する</span>
+            <span class="ws-arrow">→</span>
+            <span class="ws" onclick="app.navigate('ask_ai')">② 相談する</span>
+            <span class="ws-arrow">→</span>
+            <span class="ws">③ アドバイスを受ける</span>
+          </div>
+          <button class="btn btn-primary" onclick="app.navigate('record')">さっそく記録する</button>
+        </div>
+      </div>`;
+    }
+
+    // Streak badge
+    const streak = store.getStreak(domain);
+    if (streak > 0) {
+      html += `<div class="streak-badge">
+        <span class="streak-flame">${streak >= 7 ? '◆' : streak >= 3 ? '◇' : '·'}</span>
+        <span>${streak}日連続記録中</span>
+      </div>`;
+    }
+
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
@@ -620,12 +650,25 @@ var Pages = {
       .filter(m => m.domain === domain || !m.domain)
       .slice(-50);
 
+    const starters = {
+      consciousness: ['今の気持ちを整理したい', '最近ストレスが多い気がする', '毎日を穏やかに過ごすには？'],
+      health: ['最近疲れやすいのですが', '睡眠の質を上げるには？', '血圧が少し高めです'],
+      time: ['時間をうまく使えている気がしない', '毎日をもっと充実させたい', '趣味の時間が取れない'],
+      work: ['生きがいをどう見つければいいか', '経験を活かして何かできないか', '社会とのつながりを保ちたい'],
+      relationship: ['友人と疎遠になっている', '家族との関係で悩んでいる', 'もっと人とつながりたい'],
+      assets: ['老後の資産管理が不安', 'NISAを始めるべきか', '毎月の収支を改善したい'],
+    };
+    const domainStarters = starters[domain] || ['何でも相談してください'];
+
     let html = `<div class="page-ask-ai">
       <h2>${i18n.t(domain)} - 相談する</h2>
 
       <div class="chat-container" id="chatContainer">
         ${history.length === 0 ?
-          Components.emptyState('💬', '相談する', i18n.t('quick_input_placeholder')) :
+          `<div class="chat-starters">
+            <p class="chat-starter-hint">どんなことでも気軽にどうぞ。例えば：</p>
+            ${domainStarters.map(q => `<button class="chat-starter-btn" onclick="document.getElementById('chatInput').value='${Components.escapeHtml(q)}';app.sendChat('${domain}')">${Components.escapeHtml(q)}</button>`).join('')}
+          </div>` :
           history.map(m => Components.chatMessage(m)).join('')
         }
       </div>
