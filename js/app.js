@@ -20,6 +20,7 @@ var App = class App {
       store.set('currentPage', 'home');
       this.renderApp();
       this.startInboxPolling();
+      this.scheduleReminder();
     }
 
     // Listen for auth changes
@@ -29,6 +30,7 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        this.scheduleReminder();
       } else {
         this.stopInboxPolling();
       }
@@ -74,6 +76,44 @@ var App = class App {
     } catch (e) {
       console.warn('Inbox poll error:', e);
     }
+  }
+
+  // ─── Daily reminder notification ───
+  scheduleReminder() {
+    if (!('Notification' in window)) return;
+    if (store.get('reminderDisabled')) return;
+
+    const checkAndNotify = () => {
+      const domain = store.get('currentDomain') || 'health';
+      const streak = store.getStreak(domain);
+      const todayStr = new Date().toDateString();
+      const lastReminder = localStorage.getItem('lms_lastReminder');
+      if (lastReminder === todayStr) return;
+
+      const allKeys = Object.keys(store.state || {}).filter(k => Object.keys(CONFIG.domains || {}).some(d => k.startsWith(d + '_')));
+      const hasRecordedToday = allKeys.some(k => {
+        const arr = store.get(k);
+        return Array.isArray(arr) && arr.some(e => e.timestamp && new Date(e.timestamp).toDateString() === todayStr);
+      });
+      if (hasRecordedToday) return;
+
+      const now = new Date();
+      if (now.getHours() < 18) return; // Only remind after 18:00
+
+      if (Notification.permission === 'granted') {
+        const msg = streak > 0
+          ? `${streak}日連続記録中。今日も記録して継続しましょう。`
+          : '今日の記録をつけましょう。小さな記録が大きな気づきになります。';
+        new Notification('LMS - 今日の記録', { body: msg, icon: '/favicon.ico' });
+        localStorage.setItem('lms_lastReminder', todayStr);
+      } else if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    };
+
+    // Check now and every 30 minutes
+    checkAndNotify();
+    setInterval(checkAndNotify, 30 * 60 * 1000);
   }
 
   // ─── Login Methods ───
