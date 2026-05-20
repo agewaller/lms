@@ -521,6 +521,14 @@ select.form-input { appearance: auto; }
 .ws:hover { background: var(--primary); color: white; border-color: var(--primary); }
 .ws-arrow { color: var(--text-muted); font-size: 18px; }
 
+/* ── Today prompt (未記録の日) ── */
+.today-prompt {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #fff3e0; border: 1px solid #fed7aa;
+  border-radius: var(--radius-sm); padding: 12px 16px;
+  margin-bottom: 16px; font-size: 15px; color: #92400e;
+}
+
 /* ── Streak badge ── */
 .streak-badge {
   display: inline-flex; align-items: center; gap: 8px;

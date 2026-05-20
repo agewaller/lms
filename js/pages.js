@@ -59,6 +59,20 @@ var Pages = {
       </div>`;
     }
 
+    // Today's record check (show prompt if no entry today)
+    const todayStr = new Date().toDateString();
+    const allDomainKeys = Object.keys(store.state || {}).filter(k => k.startsWith(domain + '_'));
+    const hasRecordedToday = allDomainKeys.some(k => {
+      const arr = store.get(k);
+      return Array.isArray(arr) && arr.some(e => e.timestamp && new Date(e.timestamp).toDateString() === todayStr);
+    });
+    if (!isFirst && !hasRecordedToday) {
+      html += `<div class="today-prompt">
+        <span>今日はまだ記録がありません</span>
+        <button class="btn btn-sm btn-primary" onclick="app.navigate('record')">今日を記録する</button>
+      </div>`;
+    }
+
     html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
@@ -134,7 +148,7 @@ var Pages = {
       html += `<div class="analysis-section">
         <h3>分析結果</h3>
         <div class="analysis-content">${Components.formatMarkdown(latest.response)}</div>
-        <div class="analysis-meta">${latest.model} | ${new Date(latest.timestamp).toLocaleString()}</div>
+        <div class="analysis-meta">${new Date(latest.timestamp).toLocaleString()}</div>
       </div>`;
     }
 
