@@ -65,6 +65,29 @@ var Pages = {
       </div>
     </div>`;
 
+    // Daily advice section (shown when domain has data)
+    const categories0 = Object.keys(domainConfig?.categories || {});
+    let hasData = false;
+    categories0.forEach(cat => {
+      if (!hasData && store.getDomainData(domain, cat, 3).length > 0) hasData = true;
+    });
+    if (hasData) {
+      const latest0 = store.get('latestAnalysis');
+      const hasFreshAdvice = latest0 && latest0.domain === domain &&
+        (Date.now() - new Date(latest0.timestamp).getTime()) < 12 * 60 * 60 * 1000;
+      html += `<div class="daily-advice-section" style="margin:16px 0;padding:20px;background:var(--bg-secondary);border-radius:var(--radius);border:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <h3 style="margin:0;font-size:16px">本日のアドバイス</h3>
+          <button class="btn btn-sm btn-primary" onclick="app.generateRecommendations('${domain}')">分析する</button>
+        </div>
+        ${hasFreshAdvice
+          ? `<div class="analysis-content" style="font-size:14px;line-height:1.7">${Components.formatMarkdown(latest0.response)}</div>
+             <div style="font-size:11px;color:var(--text-muted);margin-top:8px">${new Date(latest0.timestamp).toLocaleString('ja-JP')}</div>`
+          : `<p style="color:var(--text-muted);font-size:14px;margin:0">「分析する」ボタンを押すと、今日の記録をもとにアドバイスをお届けします。</p>`
+        }
+      </div>`;
+    }
+
     // Recent records
     html += `<div class="recent-section">
       <h3>${i18n.t('recent_records')}</h3>

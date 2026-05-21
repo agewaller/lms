@@ -29,6 +29,8 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        // Show onboarding guide for new users (no domain data yet)
+        setTimeout(() => this.showWelcomeGuide(), 600);
       } else {
         this.stopInboxPolling();
       }
@@ -1927,6 +1929,41 @@ var App = class App {
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();
+  }
+
+  // ─── Welcome Guide (shown once to new users) ───
+  showWelcomeGuide() {
+    if (store.get('welcomeShown')) return;
+    store.set('welcomeShown', true);
+
+    const html = `
+      <div style="text-align:center;padding:8px 0 24px">
+        <div style="font-size:48px;font-weight:700;color:#6C63FF;margin-bottom:16px">L</div>
+        <h3 style="font-size:20px;font-weight:700;margin-bottom:8px">LMSへようこそ</h3>
+        <p style="color:var(--text-muted);font-size:14px;line-height:1.7;margin-bottom:24px">
+          6つの領域から、気になるところを選んで記録を始めましょう。<br>
+          まずは「健康」か「意識」がおすすめです。
+        </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:24px">
+          ${[
+            ['一','意識','consciousness','#6C63FF'],
+            ['二','健康','health','#10b981'],
+            ['三','時間','time','#f59e0b'],
+            ['四','仕事','work','#3b82f6'],
+            ['五','関係','relationship','#ef4444'],
+            ['六','資産','assets','#d97706']
+          ].map(([num,name,domain,color]) => `
+            <button onclick="app.closeModal();app.switchDomain('${domain}');app.navigate('record')"
+              style="background:${color}15;border:1px solid ${color}40;border-radius:10px;padding:12px 8px;cursor:pointer;color:var(--text-primary)">
+              <div style="font-size:18px;font-weight:700;color:${color}">${num}</div>
+              <div style="font-size:12px;margin-top:4px">${name}</div>
+            </button>
+          `).join('')}
+        </div>
+        <button class="btn btn-primary btn-block" onclick="app.closeModal()">始める</button>
+      </div>`;
+
+    this.openModal('LMSへようこそ', html);
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───
