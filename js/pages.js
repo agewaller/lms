@@ -36,6 +36,22 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>`;
 
+    // ─── Daily check-in status + streak ───
+    const isToday = typeof app !== 'undefined' ? app.isTodayRecorded(domain) : false;
+    const streak = typeof app !== 'undefined' ? app.getRecordingStreak(domain) : 0;
+    const statusColor = isToday ? '#10b981' : '#94a3b8';
+    const statusMsg = isToday ? i18n.t('today_recorded') : i18n.t('today_not_recorded');
+    html += `<div class="daily-status-bar ${isToday ? 'status-done' : 'status-pending'}">
+      <div class="status-left">
+        <span class="status-dot" style="background:${statusColor}"></span>
+        <span class="status-msg">${statusMsg}</span>
+      </div>
+      <div class="status-right">
+        ${streak > 1 ? `<span class="streak-badge"><strong>${streak}</strong>${i18n.t('streak_days')}</span>` : ''}
+        ${!isToday ? `<button class="btn btn-sm btn-primary" onclick="app.navigate('record')">記録する</button>` : ''}
+      </div>
+    </div>`;
+
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
       html += this.renderStockAnalysisWidget();
@@ -571,6 +587,20 @@ var Pages = {
           6領域の総合分析
         </button>
       </div>`;
+
+    // Weekly digest
+    const lastDigest = (store.get('weeklyDigests') || [])[0];
+    const lastDigestDate = lastDigest ? new Date(lastDigest.date).toLocaleDateString('ja-JP') : null;
+    html += `<div class="weekly-digest-section">
+      <div class="digest-header">
+        <h3>${i18n.t('weekly_digest')}</h3>
+        ${lastDigestDate ? `<span class="digest-last">前回: ${lastDigestDate}</span>` : ''}
+      </div>
+      <button class="btn btn-secondary" onclick="app.generateWeeklyDigest()">${i18n.t('generate_digest')}</button>
+      <div id="weeklyDigestResult">
+        ${lastDigest ? `<div class="digest-result"><div class="analysis-content">${Components.formatMarkdown(lastDigest.content)}</div><div class="digest-meta" style="font-size:12px;color:var(--text-muted);margin-top:8px;">作成日: ${lastDigestDate}</div></div>` : ''}
+      </div>
+    </div>`;
 
     // Loading state
     if (store.get('isAnalyzing')) {

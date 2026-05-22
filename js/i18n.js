@@ -182,7 +182,7 @@ var i18n = {
       plan_basic: 'ベーシック', plan_premium: 'プレミアム',
 
       // Analysis
-      ai_analysis: '分析', holistic_analysis: '総合分析',
+      ai_analysis: '分析しました', holistic_analysis: '総合分析',
       cross_domain: 'ドメイン横断分析',
       disclaimer_health: '※こちらは参考情報です。健康に関するご判断は、必ずかかりつけ医にご相談ください。',
       disclaimer_assets: '※こちらは参考情報です。投資に関するご判断は、必ず専門家にご相談ください。',
@@ -190,6 +190,16 @@ var i18n = {
       calendar_import: 'カレンダーファイルを取り込む',
       weekly_schedule: '今週の予定', today_schedule: '今日の予定',
       schedule_load: '今週の活動量',
+
+      // Daily status + streak
+      today_recorded: '今日の記録: 完了',
+      today_not_recorded: '今日はまだ記録がありません',
+      streak_days: '日連続記録中',
+      weekly_digest: '週次まとめ',
+      generate_digest: '今週のまとめを作る',
+      onboarding_welcome: 'LMSへようこそ！',
+      onboarding_desc: 'まずは今日の状態を記録してみましょう。毎日の記録があなたの人生をより豊かにします。',
+      first_record: '最初の記録をする',
 
       // Misc
       items: '件', selected: '選択中',
