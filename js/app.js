@@ -179,7 +179,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -741,21 +741,19 @@ var App = class App {
   }
 
   deleteDataEntry(domain, category, id) {
-    if (!confirm('この記録を削除しますか？')) return;
-    const key = `${domain}_${category}`;
-    const entries = (store.get(key) || []).filter(e => e.id !== id);
-    store.set(key, entries);
-
-    // Also delete from Firestore if connected
-    if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.db) {
-      const uid = store.get('user')?.uid;
-      if (uid) {
-        FirebaseBackend.db.collection('users').doc(uid).collection(key).doc(id).delete().catch(e => console.warn(e));
+    this.confirmAction('この記録を削除しますか？', () => {
+      const key = `${domain}_${category}`;
+      const entries = (store.get(key) || []).filter(e => e.id !== id);
+      store.set(key, entries);
+      if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.db) {
+        const uid = store.get('user')?.uid;
+        if (uid) {
+          FirebaseBackend.db.collection('users').doc(uid).collection(key).doc(id).delete().catch(e => console.warn(e));
+        }
       }
-    }
-
-    Components.showToast('削除しました', 'info');
-    this.renderApp();
+      Components.showToast('削除しました', 'info');
+      this.renderApp();
+    }, '削除');
   }
 
   exportDomainData(domain) {
@@ -824,10 +822,11 @@ var App = class App {
   }
 
   fitbitDisconnect() {
-    if (!confirm('Fitbit接続を解除しますか？')) return;
-    if (typeof fitbit !== 'undefined') fitbit.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.confirmAction('Fitbit接続を解除しますか？', () => {
+      if (typeof fitbit !== 'undefined') fitbit.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    }, '解除');
   }
 
   async fitbitImportToday() {
@@ -874,10 +873,11 @@ var App = class App {
   }
 
   gcalDisconnect() {
-    if (!confirm('Googleカレンダー接続を解除しますか？')) return;
-    if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.confirmAction('Googleカレンダー接続を解除しますか？', () => {
+      if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    }, '解除');
   }
 
   async gcalSync() {
@@ -909,10 +909,11 @@ var App = class App {
   }
 
   outlookDisconnect() {
-    if (!confirm('Outlook接続を解除しますか？')) return;
-    if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.confirmAction('Outlook接続を解除しますか？', () => {
+      if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    }, '解除');
   }
 
   async outlookSync() {
@@ -944,10 +945,11 @@ var App = class App {
   }
 
   gmailDisconnect() {
-    if (!confirm('Gmail接続を解除しますか？')) return;
-    if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.confirmAction('Gmail接続を解除しますか？', () => {
+      if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    }, '解除');
   }
 
   async gmailImportContacts() {
@@ -1927,6 +1929,75 @@ var App = class App {
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();
+  }
+
+  // ─── Inline confirmation (replaces native confirm() for iOS compatibility) ───
+  confirmAction(message, onConfirm, confirmLabel = '実行', cancelLabel = 'キャンセル') {
+    this._pendingConfirm = onConfirm;
+    this.openModal('確認', `
+      <p style="margin-bottom:20px;">${message}</p>
+      <div class="form-actions">
+        <button class="btn btn-danger" onclick="app._pendingConfirm && app._pendingConfirm(); app.closeModal();">${confirmLabel}</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">${cancelLabel}</button>
+      </div>
+    `);
+  }
+
+  // ─── Recording streak helpers ───
+  isTodayRecorded(domain) {
+    const today = new Date().toISOString().slice(0, 10);
+    const categories = Object.keys(CONFIG.domains[domain]?.categories || {});
+    return categories.some(cat => {
+      const data = store.getDomainData(domain, cat, 1);
+      return data.some(e => (e.timestamp || '').startsWith(today));
+    });
+  }
+
+  getRecordingStreak(domain) {
+    const categories = Object.keys(CONFIG.domains[domain]?.categories || {});
+    const allDates = new Set();
+    categories.forEach(cat => {
+      const data = store.getDomainData(domain, cat, 365);
+      data.forEach(e => { if (e.timestamp) allDates.add(e.timestamp.slice(0, 10)); });
+    });
+
+    let streak = 0;
+    const now = new Date();
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const ds = d.toISOString().slice(0, 10);
+      if (allDates.has(ds)) { streak++; }
+      else if (i === 0) { continue; } // today not recorded yet, check yesterday
+      else { break; }
+    }
+    return streak;
+  }
+
+  // ─── Weekly Digest ───
+  async generateWeeklyDigest() {
+    const resultEl = document.getElementById('weeklyDigestResult');
+    if (resultEl) resultEl.innerHTML = Components.loading('先週の記録をまとめています...');
+
+    try {
+      const result = await AIEngine.analyze(null, 'holistic', {
+        text: '過去7日間の記録をもとに週次まとめを作成してください。6領域それぞれの傾向と、特に注目すべき点、来週取り組むべき1つのことを教えてください。'
+      });
+
+      const savedAt = new Date().toLocaleDateString('ja-JP');
+      if (resultEl) {
+        resultEl.innerHTML = `<div class="digest-result">
+          <div class="analysis-content">${Components.formatMarkdown(result)}</div>
+          <div class="digest-meta" style="font-size:12px;color:var(--text-muted);margin-top:12px;">作成日: ${savedAt}</div>
+        </div>`;
+      }
+
+      const digests = store.get('weeklyDigests') || [];
+      digests.unshift({ date: new Date().toISOString(), content: result });
+      store.set('weeklyDigests', digests.slice(0, 12));
+    } catch (e) {
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+    }
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───
