@@ -158,6 +158,12 @@ var App = class App {
     }
   }
 
+  // ─── Onboarding ───
+  completeOnboarding() {
+    store.set('onboardingComplete', true);
+    this.renderApp();
+  }
+
   // ─── Navigation ───
   switchDomain(domain) {
     store.set('currentDomain', domain);
@@ -179,7 +185,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -342,8 +348,26 @@ var App = class App {
     });
 
     store.addDomainEntry(domain, category, data);
+    this.updateStreak();
     Components.showToast(i18n.t('saved'), 'success');
     form.reset();
+  }
+
+  // ─── Streak Tracking ───
+  updateStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    const last = store.get('lastRecordDate');
+    let streak = store.get('streak') || 0;
+
+    if (last === today) return; // already recorded today
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+    streak = (last === yesterdayStr) ? streak + 1 : 1;
+    store.set('streak', streak);
+    store.set('lastRecordDate', today);
   }
 
   async saveAndAnalyze(domain, category) {
@@ -351,7 +375,7 @@ var App = class App {
     const data = store.getDomainData(domain, category, 1);
     try {
       await AIEngine.analyze(domain, 'daily', { raw: data[data.length - 1] });
-      Components.showToast(i18n.t('ai_analysis') + ' ✓', 'success');
+      Components.showToast('分析が完了しました ✓', 'success');
       this.renderApp();
     } catch (e) {
       Components.showToast(e.message, 'error');
@@ -368,6 +392,7 @@ var App = class App {
       text: textarea.value.trim()
     });
 
+    this.updateStreak();
     Components.showToast(i18n.t('saved'), 'success');
     textarea.value = '';
   }
@@ -409,13 +434,19 @@ var App = class App {
     try {
       const response = await AIEngine.chat(domain, text);
 
-      // Re-render to show full history
+      // Re-render to show full history, then scroll to bottom
       this.renderApp();
+      const newContainer = document.getElementById('chatContainer');
+      if (newContainer) newContainer.scrollTop = newContainer.scrollHeight;
     } catch (e) {
       if (container) {
+        // Remove loading spinner and show error
+        const loadingEl = container.querySelector('.loading-container');
+        if (loadingEl) loadingEl.remove();
         container.innerHTML += Components.chatMessage({
-          role: 'assistant', content: '⚠️ ' + e.message, timestamp: new Date().toISOString()
+          role: 'assistant', content: '⚠️ ' + Components.escapeHtml(e.message), timestamp: new Date().toISOString()
         });
+        container.scrollTop = container.scrollHeight;
       }
     }
   }

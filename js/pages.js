@@ -20,6 +20,55 @@ var Pages = {
   },
 
   // ═══════════════════════════════════════════════════════════
+  //  ONBOARDING WIZARD (first-time users)
+  // ═══════════════════════════════════════════════════════════
+  renderOnboarding(domain) {
+    const user = store.get('user') || {};
+    const name = user.displayName || 'あなた';
+    const domains = Object.values(CONFIG.domains);
+
+    return `<div class="page-onboarding">
+      <div class="onboarding-card">
+        <div class="onboarding-icon">🌱</div>
+        <h2>ようこそ、${Components.escapeHtml(name)}さん</h2>
+        <p>LMSは、人生の6つの領域を記録・改善するためのアプリです。<br>
+           まず、あなたが最も気になっている領域を選んでください。</p>
+
+        <div class="onboarding-domains">
+          ${domains.map(d => `
+            <button class="onboarding-domain-btn ${d.id === domain ? 'active' : ''}"
+              style="border-color:${d.color};${d.id === domain ? 'background:'+d.color+';color:#fff' : ''}"
+              onclick="app.switchDomain('${d.id}')">
+              <span class="ob-icon">${d.icon}</span>
+              <span class="ob-name">${i18n.t(d.id)}</span>
+            </button>
+          `).join('')}
+        </div>
+
+        <div class="onboarding-steps">
+          <div class="ob-step">
+            <span class="ob-step-num">1</span>
+            <span>「<strong>記録する</strong>」で今日の状態を入力</span>
+          </div>
+          <div class="ob-step">
+            <span class="ob-step-num">2</span>
+            <span>「<strong>相談する</strong>」で気になることを話してみる</span>
+          </div>
+          <div class="ob-step">
+            <span class="ob-step-num">3</span>
+            <span>毎日続けると傾向が分かり、改善提案が届く</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-lg btn-block" onclick="app.completeOnboarding()">
+          はじめる →
+        </button>
+        <p class="onboarding-note">設定はいつでも「設定」メニューから変更できます</p>
+      </div>
+    </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════
   //  HOME PAGE (per domain)
   // ═══════════════════════════════════════════════════════════
   renderHome(domain) {
@@ -27,8 +76,24 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // Onboarding wizard for first-time users
+    if (!store.get('onboardingComplete')) {
+      return this.renderOnboarding(domain);
+    }
+
+    // Streak banner
+    const streak = store.get('streak') || 0;
+    const streakHtml = streak >= 2
+      ? `<div class="streak-banner">
+          <span class="streak-flame">🔥</span>
+          <span class="streak-count">${streak}日連続</span>
+          <span class="streak-label">記録継続中！</span>
+        </div>`
+      : '';
+
     // Quick input bar
     let html = `<div class="page-home">
+      ${streakHtml}
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
