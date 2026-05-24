@@ -10,13 +10,154 @@ var Pages = {
       case 'home':         return this.renderHome(domain);
       case 'data':         return this.renderDataBrowser(domain);
       case 'integrations': return this.renderIntegrations(domain);
-      case 'record':   return this.renderRecord(domain);
-      case 'actions':  return this.renderActions(domain);
-      case 'ask_ai':   return this.renderAskAI(domain);
-      case 'settings': return this.renderSettings(domain);
-      case 'admin':    return this.renderAdmin();
-      default:         return this.renderHome(domain);
+      case 'record':       return this.renderRecord(domain);
+      case 'actions':      return this.renderActions(domain);
+      case 'ask_ai':       return this.renderAskAI(domain);
+      case 'settings':     return this.renderSettings(domain);
+      case 'admin':        return this.renderAdmin();
+      case 'onboarding':   return this.renderOnboarding();
+      default:             return this.renderHome(domain);
     }
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  ONBOARDING WIZARD (new users)
+  // ═══════════════════════════════════════════════════════════
+  renderOnboarding() {
+    const step = store.get('onboardingStep') || 0;
+    const user = store.get('user');
+    const name = (user?.displayName || '').split(' ')[0] || 'あなた';
+
+    const steps = ['ようこそ', 'プロフィール', '最初の記録'];
+
+    const stepDots = steps.map((s, i) =>
+      `<div class="ob-dot ${i === step ? 'active' : i < step ? 'done' : ''}">${i < step ? '✓' : i + 1}</div>`
+    ).join('<div class="ob-line"></div>');
+
+    let body = '';
+
+    if (step === 0) {
+      body = `
+        <div class="ob-hero">
+          <div class="ob-logo">L</div>
+          <h2>${name}さん、ようこそ！</h2>
+          <p>LMSは、あなたの人生を6つの視点で支えるツールです。<br>
+          難しいことは何もありません。<br>
+          まず、簡単なプロフィールを教えてください。</p>
+          <div class="ob-domains">
+            ${Object.entries(CONFIG.domains || {}).map(([id, d]) =>
+              `<div class="ob-domain-chip" style="border-color:${d.color};color:${d.color}">${i18n.t(id)}</div>`
+            ).join('')}
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block btn-lg" onclick="app.onboardingNext()">始める →</button>
+      `;
+    } else if (step === 1) {
+      const profile = store.get('userProfile') || {};
+      body = `
+        <h2>簡単なプロフィール</h2>
+        <p class="ob-desc">入力は任意です。あとから変更できます。</p>
+        <div class="form-group">
+          <label>お名前（呼び名）</label>
+          <input type="text" id="ob_name" class="form-input" value="${Components.escapeHtml(profile.displayName || user?.displayName || '')}" placeholder="山田 花子">
+        </div>
+        <div class="form-group">
+          <label>年齢</label>
+          <input type="number" id="ob_age" class="form-input" value="${profile.age || ''}" placeholder="65" min="1" max="120">
+        </div>
+        <div class="form-group">
+          <label>性別</label>
+          <select id="ob_gender" class="form-input">
+            <option value="">選択しない</option>
+            <option value="female" ${profile.gender === 'female' ? 'selected' : ''}>女性</option>
+            <option value="male"   ${profile.gender === 'male'   ? 'selected' : ''}>男性</option>
+            <option value="other"  ${profile.gender === 'other'  ? 'selected' : ''}>その他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>今、一番気になっていること（任意）</label>
+          <textarea id="ob_concerns" class="form-input" rows="2"
+            placeholder="例：最近眠れない、老後のお金が心配、一人でいることが多い">${Components.escapeHtml(profile.concerns || '')}</textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-outline" onclick="app.onboardingNext()">スキップ</button>
+          <button class="btn btn-primary" onclick="app.onboardingSaveProfile()">保存して次へ →</button>
+        </div>
+      `;
+    } else if (step === 2) {
+      body = `
+        <h2>最初の記録をしてみましょう</h2>
+        <p class="ob-desc">どの領域から始めますか？<br>どれでも大丈夫です。気軽にどうぞ。</p>
+        <div class="ob-domain-buttons">
+          ${Object.entries(CONFIG.domains || {}).map(([id, d]) => `
+            <button class="ob-domain-btn" style="--c:${d.color}"
+              onclick="app.onboardingPickDomain('${id}')">
+              <div class="ob-db-num" style="color:${d.color}">${d.icon || ''}</div>
+              <div class="ob-db-name">${i18n.t(id)}</div>
+              <div class="ob-db-desc">${i18n.t(id + '_sub') || ''}</div>
+            </button>
+          `).join('')}
+        </div>
+        <div style="margin-top:24px;text-align:center">
+          <button class="btn btn-outline btn-secondary" onclick="app.onboardingFinish()">あとで記録する</button>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="page-onboarding">
+        <div class="ob-progress">${stepDots}</div>
+        <div class="ob-body">${body}</div>
+      </div>
+    `;
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  DAILY SUMMARY WIDGET (shown at top of home page)
+  // ═══════════════════════════════════════════════════════════
+  renderDailySummary(domain) {
+    const streak = store.getStreak();
+    const today = new Date();
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+    const dateStr = `${today.getMonth() + 1}月${today.getDate()}日（${weekdays[today.getDay()]}）`;
+
+    const hour = today.getHours();
+    const greeting = hour < 12 ? 'おはようございます' : hour < 17 ? 'こんにちは' : 'こんばんは';
+    const user = store.get('user');
+    const firstName = (user?.displayName || '').split(' ')[0] || '';
+
+    // Which domains have NOT been recorded today?
+    const missing = Object.keys(CONFIG.domains || {}).filter(d => !store.hasRecordedToday(d));
+
+    const streakHtml = streak >= 2
+      ? `<div class="ds-streak"><span class="streak-fire">🔥</span><strong>${streak}日連続</strong>記録中</div>`
+      : `<div class="ds-streak">今日から記録を始めましょう</div>`;
+
+    const missingHtml = missing.length > 0 && missing.length < 6
+      ? `<div class="ds-missing">
+          <span>まだ記録していない領域：</span>
+          ${missing.map(d => {
+            const dc = (CONFIG.domains || {})[d] || {};
+            return `<button class="ds-domain-tag" style="border-color:${dc.color};color:${dc.color}"
+              onclick="app.switchDomain('${d}');app.navigate('record')">${dc.name || d}</button>`;
+          }).join('')}
+        </div>`
+      : '';
+
+    return `
+      <div class="daily-summary">
+        <div class="ds-left">
+          <div class="ds-date">${dateStr}</div>
+          <div class="ds-greeting">${greeting}${firstName ? '、' + firstName + 'さん' : ''}</div>
+          ${streakHtml}
+        </div>
+        <div class="ds-right">
+          ${missingHtml}
+          <button class="btn btn-sm btn-primary ds-record-btn"
+            onclick="app.navigate('record')">今日を記録する</button>
+        </div>
+      </div>
+    `;
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -29,6 +170,7 @@ var Pages = {
 
     // Quick input bar
     let html = `<div class="page-home">
+      ${this.renderDailySummary(domain)}
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">

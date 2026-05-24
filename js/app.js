@@ -7,8 +7,9 @@ var App = class App {
   }
 
   // ─── Initialize ───
-  async init(entryDomain) {
+  async init(entryDomain, entryPage) {
     this.entryDomain = entryDomain || null;
+    this.entryPage   = entryPage   || null;
     this.checkOAuthCallbacks();
 
     // Initialize Firebase
@@ -17,17 +18,14 @@ var App = class App {
     // Check if already authenticated
     if (store.get('isAuthenticated') && store.get('user')) {
       store.set('currentDomain', entryDomain || store.get('currentDomain') || 'health');
-      store.set('currentPage', 'home');
-      this.renderApp();
-      this.startInboxPolling();
+      this._afterLogin(entryPage);
     }
 
     // Listen for auth changes
     store.on('isAuthenticated', (val) => {
       if (val) {
         store.set('currentDomain', this.entryDomain || store.get('currentDomain') || 'health');
-        store.set('currentPage', 'home');
-        this.renderApp();
+        this._afterLogin(this.entryPage);
         this.startInboxPolling();
       } else {
         this.stopInboxPolling();
@@ -37,6 +35,74 @@ var App = class App {
     // Listen for navigation changes
     store.on('currentPage', () => this.renderApp());
     store.on('currentDomain', () => this.renderApp());
+  }
+
+  _afterLogin(entryPage) {
+    store.updateStreak();
+
+    const hasOnboarded = store.get('hasOnboarded');
+    const profile = store.get('userProfile') || {};
+    const isNewUser = !hasOnboarded && !profile.age && !profile.displayName;
+
+    if (isNewUser) {
+      store.set('onboardingStep', 0);
+      store.set('currentPage', 'onboarding');
+    } else {
+      store.set('currentPage', entryPage || 'home');
+    }
+
+    this.renderApp();
+    this.startInboxPolling();
+    this._updateStreakBadge();
+  }
+
+  _updateStreakBadge() {
+    const el = document.getElementById('sidebarStreak');
+    if (!el) return;
+    const streak = store.getStreak();
+    if (streak >= 2) {
+      el.innerHTML = `<span class="streak-badge">🔥 ${streak}日連続</span>`;
+    } else {
+      el.innerHTML = '';
+    }
+  }
+
+  // ─── Onboarding ───
+  onboardingNext() {
+    const step = (store.get('onboardingStep') || 0) + 1;
+    if (step >= 3) {
+      this.onboardingFinish();
+    } else {
+      store.set('onboardingStep', step);
+    }
+  }
+
+  onboardingSaveProfile() {
+    const profile = store.get('userProfile') || {};
+    const name    = document.getElementById('ob_name')?.value?.trim();
+    const age     = document.getElementById('ob_age')?.value;
+    const gender  = document.getElementById('ob_gender')?.value;
+    const concerns = document.getElementById('ob_concerns')?.value?.trim();
+
+    if (name) profile.displayName = name;
+    if (age)  profile.age = parseInt(age, 10);
+    if (gender) profile.gender = gender;
+    if (concerns) profile.concerns = concerns;
+
+    store.set('userProfile', profile);
+    this.onboardingNext();
+  }
+
+  onboardingPickDomain(domain) {
+    store.set('currentDomain', domain);
+    this.onboardingFinish();
+    store.set('currentPage', 'record');
+  }
+
+  onboardingFinish() {
+    store.set('hasOnboarded', true);
+    store.set('currentPage', 'home');
+    Components.showToast('ようこそ！まず気になる領域を選んでください', 'success');
   }
 
   // ─── Inbox polling: fetch Plaud auto-sent transcripts ───
@@ -179,8 +245,15 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
-    if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理', data: 'データを見る', integrations: '連携', onboarding: 'ようこそ' };
+    if (titleEl) {
+      const pageLabel = pageNames[page] || page;
+      if (page === 'onboarding') {
+        titleEl.textContent = 'ようこそ LMS へ';
+      } else {
+        titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageLabel}`;
+      }
+    }
 
     // Update sidebar nav active states
     document.querySelectorAll('.nav-item').forEach(el => {
@@ -192,6 +265,7 @@ var App = class App {
 
     // Update sidebar user info
     this.updateSidebar();
+    this._updateStreakBadge();
 
     // Render page content
     mainContent.innerHTML = Pages.render(page, domain);

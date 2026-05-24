@@ -109,7 +109,11 @@ var Store = class Store {
 
       // Notifications
       notifications: [],
-      unreadCount: 0
+      unreadCount: 0,
+
+      // Onboarding
+      hasOnboarded: false,
+      onboardingStep: 0
     };
 
     this.listeners = new Map();
@@ -182,7 +186,8 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'hasOnboarded'
     ];
   }
 
@@ -269,10 +274,44 @@ var Store = class Store {
     return score;
   }
 
+  // ─── Streak Tracking ───
+
+  updateStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    const last = localStorage.getItem('lms_lastActiveDate');
+    let streak = parseInt(localStorage.getItem('lms_streak') || '0', 10);
+
+    if (last === today) return streak;
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const ymd = yesterday.toISOString().slice(0, 10);
+
+    streak = last === ymd ? streak + 1 : 1;
+    localStorage.setItem('lms_lastActiveDate', today);
+    localStorage.setItem('lms_streak', String(streak));
+    return streak;
+  }
+
+  getStreak() {
+    return parseInt(localStorage.getItem('lms_streak') || '0', 10);
+  }
+
+  hasRecordedToday(domain) {
+    const today = new Date().toISOString().slice(0, 10);
+    const keys = Object.keys(this.state).filter(k => k.startsWith(domain + '_'));
+    return keys.some(k => {
+      const arr = this.state[k];
+      return Array.isArray(arr) && arr.some(e => e.timestamp && e.timestamp.slice(0, 10) === today);
+    });
+  }
+
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    this.persistKeys.forEach(key => {
+      localStorage.removeItem(`lms_${key}`);
+    });
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
