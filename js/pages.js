@@ -151,13 +151,20 @@ var Pages = {
       </div>`;
     }
 
+    // Today's recording status widget
+    html += this.renderTodayStatus(domain);
+
     // Latest analysis
     const latest = store.get('latestAnalysis');
     if (latest && latest.domain === domain) {
       html += `<div class="analysis-section">
-        <h3>分析結果</h3>
+        <h3>最新のアドバイス</h3>
         <div class="analysis-content">${Components.formatMarkdown(latest.response)}</div>
         <div class="analysis-meta">${new Date(latest.timestamp).toLocaleString()}</div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-sm btn-secondary" onclick="app.navigate('actions')">新しい分析を実行</button>
+          <button class="btn btn-sm btn-primary" onclick="app.navigate('ask_ai')">相談する</button>
+        </div>
       </div>`;
     }
 
@@ -211,6 +218,53 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Today's Recording Status ───
+  renderTodayStatus(domain) {
+    const today = new Date().toISOString().slice(0, 10);
+    const domainConfig = CONFIG.domains[domain];
+    const color = domainConfig?.color || '#6C63FF';
+    const categories = Object.entries(domainConfig?.categories || {});
+
+    // Check which categories have data today
+    const todayStatus = categories.map(([key, cat]) => {
+      const data = store.getDomainData(domain, key, 1);
+      const recorded = data.some(e => (e.timestamp || '').slice(0, 10) === today);
+      return { key, cat, recorded };
+    });
+
+    const recorded = todayStatus.filter(s => s.recorded).length;
+    const total = todayStatus.length;
+    if (total === 0) return '';
+
+    // If all recorded today, show a completion badge
+    if (recorded === total) {
+      return `<div class="today-status today-status-done">
+        <span class="ts-check">✓</span>
+        <span>今日の記録は完了しています</span>
+        <button class="btn btn-sm btn-secondary" onclick="app.navigate('data')">データを見る</button>
+      </div>`;
+    }
+
+    // Show what's missing
+    const missing = todayStatus.filter(s => !s.recorded);
+    return `<div class="today-status">
+      <div class="ts-header">
+        <span class="ts-label">今日の記録</span>
+        <span class="ts-count">${recorded}/${total} 完了</span>
+      </div>
+      <div class="ts-progress">
+        <div class="ts-bar" style="width:${Math.round(recorded/total*100)}%;background:${color}"></div>
+      </div>
+      <div class="ts-missing">
+        ${missing.map(s => `
+          <button class="ts-btn" onclick="app.navigateToRecord('${s.key}')" style="--ts-color:${color}">
+            ${s.cat.icon} ${i18n.t(s.cat.label)} を記録する
+          </button>
+        `).join('')}
+      </div>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
@@ -611,18 +665,35 @@ var Pages = {
     const domainConfig = CONFIG.domains[domain];
     const recs = (store.get('recommendations') || []).filter(r => r.domain === domain || !r.domain);
     const actions = (store.get('actionItems') || []).filter(a => a.domain === domain || !a.domain);
+    const color = domainConfig?.color || '#6C63FF';
+
+    const domainAnalysisDesc = {
+      consciousness: '心の状態・意識レイヤーのバランスを分析して、今日からできる実践をご提案します',
+      health: '症状・睡眠・活動の記録を分析して、体調改善のアドバイスをお届けします',
+      time: '時間の使い方・習慣を分析して、より充実した毎日のご提案をします',
+      work: 'スキル・経験・状況を分析して、あなたに合った活動をご提案します',
+      relationship: '人間関係の状況を分析して、孤立リスクと改善策をお伝えします',
+      assets: '収支・資産の状況を分析して、老後の安心につながるアドバイスをします'
+    };
 
     let html = `<div class="page-actions">
-      <h2>${i18n.t(domain)} - ${i18n.t('actions')}</h2>
+      <h2>${i18n.t(domain)} - アドバイス</h2>
+      <p class="page-desc">${domainAnalysisDesc[domain] || '記録をもとに、今のあなたへのアドバイスをお届けします。'}</p>
 
       <!-- Generate recommendations -->
-      <div class="action-generate">
-        <button class="btn btn-primary btn-lg" onclick="app.generateRecommendations('${domain}')">
-          ${i18n.t(domain)}の分析を実行
-        </button>
-        <button class="btn btn-secondary btn-lg" onclick="app.generateRecommendations('holistic')">
-          6領域の総合分析
-        </button>
+      <div class="action-generate-card">
+        <div class="agc-main">
+          <div class="agc-title">今すぐ分析する</div>
+          <div class="agc-desc">これまでの記録をもとに、詳しい分析とアドバイスを生成します</div>
+          <div class="agc-btns">
+            <button class="btn btn-primary" onclick="app.generateRecommendations('${domain}')">
+              ${i18n.t(domain)}の分析
+            </button>
+            <button class="btn btn-secondary" onclick="app.generateRecommendations('holistic')">
+              6領域を総合分析
+            </button>
+          </div>
+        </div>
       </div>`;
 
     // Loading state
@@ -665,6 +736,49 @@ var Pages = {
     return html;
   },
 
+  // ─── Domain-specific chat starter prompts ───
+  _getChatStarters(domain) {
+    const starters = {
+      consciousness: [
+        '今日の気分を教えてください',
+        '最近、何が気になっていますか？',
+        '今の自分に足りないと感じることは？',
+        '今週のよかったことを3つ教えてください'
+      ],
+      health: [
+        '今日の体調はいかがですか？',
+        '最近気になる症状はありますか？',
+        '睡眠や食事について相談したい',
+        'お薬の飲み忘れが心配です'
+      ],
+      time: [
+        '今日はどんな1日でしたか？',
+        '最近、時間を無駄にしていると感じることは？',
+        '毎日続けたい習慣があるのですが',
+        '退職後の時間の使い方に悩んでいます'
+      ],
+      work: [
+        '自分の経験を活かせる仕事を探しています',
+        'ボランティアに興味があります',
+        '副業を始めたいのですが何から？',
+        '定年後の生きがいについて相談したい'
+      ],
+      relationship: [
+        '最近、人と話す機会が減りました',
+        '友人と久しく連絡を取っていません',
+        '家族との関係で悩んでいます',
+        '孤独を感じることが増えてきました'
+      ],
+      assets: [
+        'NISAを始めたいのですが何から？',
+        '老後の生活費はどれくらい必要ですか？',
+        '気になる株について教えてください',
+        '毎月の支出を減らしたいのですが'
+      ]
+    };
+    return starters[domain] || ['今日のことを教えてください'];
+  },
+
   // ═══════════════════════════════════════════════════════════
   //  CHAT PAGE (相談する)
   // ═══════════════════════════════════════════════════════════
@@ -672,20 +786,32 @@ var Pages = {
     const history = (store.get('conversationHistory') || [])
       .filter(m => m.domain === domain || !m.domain)
       .slice(-50);
+    const starters = this._getChatStarters(domain);
+    const domainConfig = CONFIG.domains[domain];
+    const color = domainConfig?.color || '#6C63FF';
 
     let html = `<div class="page-ask-ai">
       <h2>${i18n.t(domain)} - 相談する</h2>
+      <p class="page-desc">どんなことでもお気軽にどうぞ。記録したデータも参考にしてお答えします。</p>
 
       <div class="chat-container" id="chatContainer">
-        ${history.length === 0 ?
-          Components.emptyState('💬', '相談する', i18n.t('quick_input_placeholder')) :
-          history.map(m => Components.chatMessage(m)).join('')
-        }
+        ${history.length === 0 ? `
+          <div class="chat-starters">
+            <p class="starters-label">こんなことが相談できます：</p>
+            <div class="starters-grid">
+              ${starters.map(s => `
+                <button class="starter-btn" onclick="document.getElementById('chatInput').value='${s.replace(/'/g, "\\'")}'">
+                  ${Components.escapeHtml(s)}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        ` : history.map(m => Components.chatMessage(m)).join('')}
       </div>
 
       <div class="chat-input-bar">
         <textarea id="chatInput" class="form-input" rows="2"
-          placeholder="${i18n.t('quick_input_placeholder')}"
+          placeholder="何でもご相談ください..."
           onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();app.sendChat('${domain}')}"></textarea>
         <button class="btn btn-primary" onclick="app.sendChat('${domain}')">${i18n.t('send')}</button>
       </div>

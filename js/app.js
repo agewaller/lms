@@ -168,6 +168,18 @@ var App = class App {
     store.set('currentPage', page);
   }
 
+  // Navigate to record page and pre-select a category
+  navigateToRecord(category) {
+    store.set('_pendingCategory', category);
+    this.navigate('record');
+    // After render, activate the category tab
+    setTimeout(() => {
+      const btn = document.querySelector(`.cat-tab[data-category="${category}"]`) ||
+                  document.querySelectorAll('.cat-tab')[0];
+      if (btn) this.showCategory(category, btn);
+    }, 50);
+  }
+
   // ─── Main Render (未病ダイアリー方式) ───
   renderApp() {
     const page = store.get('currentPage');

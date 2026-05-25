@@ -1357,6 +1357,41 @@ body.is-admin .admin-only { display: flex; }
 .record-time { font-size: 13px; color: var(--text-muted); }
 .record-summary { font-size: 15px; color: var(--text-light); line-height: 1.8; }
 
+/* ─── Today Status Widget ─── */
+.today-status {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+.today-status-done {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--success-bg); border-color: var(--success);
+  color: var(--success);
+}
+.ts-check { font-size: 20px; font-weight: 700; }
+.today-status-done span { font-size: 15px; font-weight: 600; flex: 1; }
+.ts-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.ts-label { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.ts-count { font-size: 13px; color: var(--text-muted); }
+.ts-progress {
+  height: 6px; background: var(--bg-tertiary); border-radius: 3px;
+  margin-bottom: 14px; overflow: hidden;
+}
+.ts-bar { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+.ts-missing { display: flex; flex-wrap: wrap; gap: 8px; }
+.ts-btn {
+  padding: 8px 14px;
+  background: rgba(var(--ts-color, 108,99,255), 0.08);
+  border: 1px solid rgba(var(--ts-color, 108,99,255), 0.2);
+  border-radius: 20px; cursor: pointer;
+  font-size: 13px; font-family: var(--font-main);
+  color: var(--text-secondary); transition: all 0.2s;
+}
+.ts-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+
 /* ─── Record Page ─── */
 .category-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
 .cat-tab {
@@ -1392,8 +1427,36 @@ body.is-admin .admin-only { display: flex; }
 
 /* ─── Actions Page ─── */
 .action-generate { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+.action-generate-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow);
+}
+.agc-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary); }
+.agc-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.7; }
+.agc-btns { display: flex; gap: 12px; flex-wrap: wrap; }
 .recommendations-list { margin-bottom: 24px; }
 .recommendations-list h3, .action-items h3 { margin-bottom: 12px; }
+
+/* ─── Chat Page (相談する) ─── */
+.chat-starters { padding: 20px 0; }
+.starters-label { font-size: 14px; color: var(--text-muted); margin-bottom: 14px; }
+.starters-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.starter-btn {
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: var(--font-main);
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+.starter-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 
 .recommendation-card {
   background: var(--bg-card); border-radius: var(--radius-sm);
