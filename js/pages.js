@@ -19,6 +19,52 @@ var Pages = {
     }
   },
 
+  // ─── First-time user detection ───
+  _isFirstTimeUser() {
+    for (const d of Object.keys(CONFIG.domains)) {
+      const cats = Object.keys(CONFIG.domains[d].categories || {});
+      for (const c of cats) {
+        if ((store.getDomainData(d, c, 1) || []).length > 0) return false;
+      }
+    }
+    return true;
+  },
+
+  // ─── Welcome Banner (first-time users) ───
+  renderWelcomeBanner() {
+    const user = store.get('user');
+    const name = user?.displayName ? user.displayName.split(' ')[0] : 'ようこそ';
+    const domains = [
+      { id: 'consciousness', num: '一', name: '意識', desc: '心の記録を始める', color: '#6C63FF' },
+      { id: 'health',        num: '二', name: '健康', desc: '体調を記録する',   color: '#10b981' },
+      { id: 'time',          num: '三', name: '時間', desc: '時間の使い方を記録', color: '#f59e0b' },
+      { id: 'work',          num: '四', name: '仕事', desc: '副業診断を受ける', color: '#3b82f6' },
+      { id: 'relationship',  num: '五', name: '関係', desc: '連絡先を登録する', color: '#ef4444' },
+      { id: 'assets',        num: '六', name: '資産', desc: 'NISAを計算する',   color: '#d97706' }
+    ];
+    return `<div class="welcome-banner">
+      <div class="welcome-header">
+        <div>
+          <div class="welcome-eyebrow">はじめまして</div>
+          <h2 class="welcome-title">${Components.escapeHtml(name)}さん、LMSへようこそ</h2>
+          <p class="welcome-desc">
+            どの領域から始めても大丈夫です。まず気になるところを選んで、最初の記録をしてみましょう。
+          </p>
+        </div>
+        <button class="btn btn-sm btn-secondary" onclick="store.set('onboardingDismissed',true);app.renderApp()" title="閉じる">&times; 閉じる</button>
+      </div>
+      <div class="welcome-domains">
+        ${domains.map(d => `
+          <button class="welcome-domain-btn" onclick="app.switchDomain('${d.id}');app.navigate('record')" style="--wc:${d.color}">
+            <span class="wd-num">${d.num}</span>
+            <span class="wd-name">${d.name}</span>
+            <span class="wd-desc">${d.desc}</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>`;
+  },
+
   // ═══════════════════════════════════════════════════════════
   //  HOME PAGE (per domain)
   // ═══════════════════════════════════════════════════════════
@@ -27,9 +73,16 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // Check if first-time user (no data in any domain)
+    const isFirstTime = !store.get('onboardingDismissed') && this._isFirstTimeUser();
+    let html = `<div class="page-home">`;
+
+    if (isFirstTime) {
+      html += this.renderWelcomeBanner();
+    }
+
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
@@ -104,7 +157,7 @@ var Pages = {
       html += `<div class="analysis-section">
         <h3>分析結果</h3>
         <div class="analysis-content">${Components.formatMarkdown(latest.response)}</div>
-        <div class="analysis-meta">${latest.model} | ${new Date(latest.timestamp).toLocaleString()}</div>
+        <div class="analysis-meta">${new Date(latest.timestamp).toLocaleString()}</div>
       </div>`;
     }
 
