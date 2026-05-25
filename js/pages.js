@@ -891,8 +891,18 @@ var Pages = {
       </div>`;
     };
 
+    // Check profile completeness
+    const profileFields = (schema.basic || []).map(f => profile[f.key]).filter(Boolean);
+    const profileComplete = profileFields.length >= 2;
+
     let html = `<div class="page-settings">
       <h2>${i18n.t('settings')}</h2>
+
+      ${!profileComplete ? `
+      <div class="settings-onboarding">
+        <div class="so-title">プロフィールを設定しましょう</div>
+        <div class="so-desc">お名前・年齢・体の状態などを入力すると、あなたの状況に合ったアドバイスが届くようになります。入力は任意です。</div>
+      </div>` : ''}
 
       <!-- 基本情報 -->
       ${renderSchemaSection('basic', '基本情報')}

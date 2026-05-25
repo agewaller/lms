@@ -1357,6 +1357,17 @@ body.is-admin .admin-only { display: flex; }
 .record-time { font-size: 13px; color: var(--text-muted); }
 .record-summary { font-size: 15px; color: var(--text-light); line-height: 1.8; }
 
+/* ─── Settings Onboarding ─── */
+.settings-onboarding {
+  background: linear-gradient(135deg, var(--accent-bg) 0%, rgba(108,99,255,0.03) 100%);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+.so-title { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
+.so-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin: 0; }
+
 /* ─── Today Status Widget ─── */
 .today-status {
   background: var(--bg-card);
