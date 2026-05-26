@@ -130,10 +130,18 @@ var AIEngine = {
 
   // ─── API Calls ───
 
+  // CONFIG id → Anthropic API id (update here when Anthropic rotates model IDs)
+  _anthropicModelMap: {
+    'claude-opus-4-6':    'claude-opus-4-6-20260201',
+    'claude-sonnet-4-6':  'claude-sonnet-4-6-20260101',
+    'claude-haiku-4-5':   'claude-haiku-4-5-20251001',
+  },
+
   async callAnthropic(model, system, userMsg, maxTokens) {
     const apiKey = this.getApiKey('anthropic');
     if (!apiKey) throw new Error('Anthropic APIキーが設定されていません。管理者にご連絡ください。');
 
+    const apiModelId = this._anthropicModelMap[model] || model;
     const endpoint = CONFIG.endpoints.anthropic;
 
     // ─── Direct browser mode (no proxy) ───
@@ -161,7 +169,7 @@ var AIEngine = {
     }
 
     console.log('[LMS] Calling Anthropic', isDirect ? '(direct)' : 'via proxy:', url);
-    console.log('[LMS] Model:', model, 'Max tokens:', maxTokens);
+    console.log('[LMS] Model:', apiModelId, '(config:', model, ') Max tokens:', maxTokens);
 
     let res;
     try {
@@ -169,7 +177,7 @@ var AIEngine = {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model,
+          model: apiModelId,
           max_tokens: maxTokens,
           system: system,
           messages: [{ role: 'user', content: userMsg }]
