@@ -104,7 +104,7 @@ var Pages = {
       html += `<div class="analysis-section">
         <h3>分析結果</h3>
         <div class="analysis-content">${Components.formatMarkdown(latest.response)}</div>
-        <div class="analysis-meta">${latest.model} | ${new Date(latest.timestamp).toLocaleString()}</div>
+        <div class="analysis-meta">${new Date(latest.timestamp).toLocaleString('ja-JP')}</div>
       </div>`;
     }
 
@@ -591,7 +591,7 @@ var Pages = {
     // Action items (todos)
     if (actions.length > 0) {
       html += `<div class="action-items">
-        <h3>📋 Action Items</h3>
+        <h3>📋 やること</h3>
         ${actions.map((a, i) => `
           <div class="action-item ${a.done ? 'done' : ''}">
             <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${a.text}</label>
