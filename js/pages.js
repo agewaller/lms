@@ -41,6 +41,9 @@ var Pages = {
       html += this.renderStockAnalysisWidget();
     }
 
+    // Daily check-in streak banner
+    html += this.renderStreakBanner(domain);
+
     // Domain score + overview
     html += `<div class="home-overview">
         <div class="overview-score">
@@ -157,6 +160,53 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Daily check-in streak banner ───
+  renderStreakBanner(domain) {
+    const domainConfig = CONFIG.domains[domain];
+    const categories = Object.keys(domainConfig?.categories || {});
+
+    // Gather all entries across categories, find today's and consecutive days
+    let allEntries = [];
+    categories.forEach(cat => {
+      allEntries = allEntries.concat(store.getDomainData(domain, cat, 365));
+    });
+
+    if (allEntries.length === 0) return ''; // No data — first-step guide handles this
+
+    const today = new Date().toISOString().slice(0, 10);
+    const recordedDays = new Set(allEntries.map(e => (e.timestamp || '').slice(0, 10)));
+    const hasToday = recordedDays.has(today);
+
+    // Calculate streak (consecutive days ending today or yesterday)
+    let streak = 0;
+    const check = new Date();
+    if (!hasToday) check.setDate(check.getDate() - 1); // if not today, check from yesterday
+    for (let i = 0; i < 365; i++) {
+      const d = check.toISOString().slice(0, 10);
+      if (recordedDays.has(d)) { streak++; } else { break; }
+      check.setDate(check.getDate() - 1);
+    }
+
+    if (hasToday) {
+      const msg = streak >= 7
+        ? `${streak}日連続記録中！すばらしい継続力です`
+        : streak >= 3
+        ? `${streak}日連続記録中。このまま続けましょう`
+        : '今日の記録が完了しています';
+      return `<div class="streak-banner streak-done">
+        <span class="streak-flame">🔥</span>
+        <span class="streak-msg">${msg}</span>
+        ${streak > 0 ? `<span class="streak-count">${streak}日継続</span>` : ''}
+      </div>`;
+    } else {
+      return `<div class="streak-banner streak-pending">
+        <span class="streak-flame">📝</span>
+        <span class="streak-msg">今日の${i18n.t(domain)}の記録がまだです</span>
+        <button class="btn btn-sm btn-primary" onclick="app.navigate('record')">記録する</button>
+      </div>`;
+    }
   },
 
   // ─── First-step guide for new users (no data yet) ───
