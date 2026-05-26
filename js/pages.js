@@ -79,8 +79,7 @@ var Pages = {
     allRecent.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     if (allRecent.length === 0) {
-      html += Components.emptyState(domainConfig?.icon || '📭', i18n.t('no_data'),
-        `${i18n.t('record')} → ${i18n.t('save')}`);
+      html += this.renderFirstStepGuide(domain);
     } else {
       allRecent.slice(0, 10).forEach(entry => {
         html += Components.recordItem(entry, domain);
@@ -158,6 +157,95 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── First-step guide for new users (no data yet) ───
+  renderFirstStepGuide(domain) {
+    const guides = {
+      consciousness: {
+        icon: '🪷',
+        title: 'まず、今日の気持ちを書いてみましょう',
+        steps: [
+          { num: '1', text: '「記録する」をタップ' },
+          { num: '2', text: '今日の気分・考えていることを、思いのままに書く' },
+          { num: '3', text: '「相談する」から深掘りしてもらう' },
+        ]
+      },
+      health: {
+        icon: '💚',
+        title: 'まず、今日の体調を記録してみましょう',
+        steps: [
+          { num: '1', text: '「記録する」をタップ' },
+          { num: '2', text: '今日の体調レベル（1〜10）と気になる症状を入力' },
+          { num: '3', text: '「相談する」から気になることを聞いてみる' },
+        ]
+      },
+      time: {
+        icon: '⏰',
+        title: 'まず、今日1日の過ごし方を記録してみましょう',
+        steps: [
+          { num: '1', text: '「記録する」をタップ' },
+          { num: '2', text: '今日どんなことをしたか、簡単に書く' },
+          { num: '3', text: '「連携」からGoogleカレンダーと接続する（任意）' },
+        ]
+      },
+      work: {
+        icon: '🌟',
+        title: 'まず、あなたのこれまでの経験を教えてください',
+        steps: [
+          { num: '1', text: '「記録する」をタップ' },
+          { num: '2', text: '今まで働いてきた仕事・得意なことを入力' },
+          { num: '3', text: '「相談する」から「次にできること」を一緒に考える' },
+        ]
+      },
+      relationship: {
+        icon: '🤝',
+        title: 'まず、大切な人の名前を登録してみましょう',
+        steps: [
+          { num: '1', text: '「記録する」をタップ' },
+          { num: '2', text: '家族・友人・知人の名前と関係性を入力' },
+          { num: '3', text: '「今日連絡する人」が自動で提案されます' },
+        ]
+      },
+      assets: {
+        icon: '💴',
+        title: 'まず、今の収支を入力してみましょう',
+        steps: [
+          { num: '1', text: '「記録する」をタップ' },
+          { num: '2', text: '毎月の収入（年金など）と主な支出を入力' },
+          { num: '3', text: '「相談する」から老後のお金の心配を相談する' },
+        ]
+      }
+    };
+
+    const g = guides[domain] || {
+      icon: '✨',
+      title: 'まず、最初の記録をつけてみましょう',
+      steps: [
+        { num: '1', text: '「記録する」をタップ' },
+        { num: '2', text: '今日の状況を入力' },
+        { num: '3', text: '記録が増えると分析が始まります' },
+      ]
+    };
+
+    return `<div class="first-step-guide">
+      <div class="fsg-icon">${g.icon}</div>
+      <h3 class="fsg-title">${g.title}</h3>
+      <div class="fsg-steps">
+        ${g.steps.map(s => `
+          <div class="fsg-step">
+            <span class="fsg-step-num">${s.num}</span>
+            <span class="fsg-step-text">${s.text}</span>
+          </div>`).join('')}
+      </div>
+      <button class="btn btn-primary btn-lg fsg-cta" onclick="app.navigate('record')">
+        記録する →
+      </button>
+      <p class="fsg-or">または</p>
+      <button class="btn btn-secondary" onclick="app.navigate('ask_ai')">
+        まず相談してみる →
+      </button>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
