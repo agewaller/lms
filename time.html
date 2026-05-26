@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LMS - 時間 - Time Management</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <title>LMS - 時間 | 毎日の過ごし方を豊かにする</title>
+  <meta name="description" content="カレンダー管理から習慣トラッキングまで。毎日の時間の使い方を振り返り、本当にやりたいことに時間を使えるようになります。">
+  <meta name="theme-color" content="#E67E22">
+  <link rel="stylesheet" href="css/styles.css?v=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
@@ -24,7 +26,7 @@
     <div class="hero-content">
       <div class="hero-icon">⏰</div>
       <h1>時間 - Time Management</h1>
-      <p class="hero-subtitle">時間を制する者が人生を制す</p>
+      <p class="hero-subtitle">毎日の過ごし方が、人生の豊かさを決める</p>
       <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
     </div>
   </header>
@@ -32,16 +34,16 @@
   <section class="lp-section">
     <h2>主な機能</h2>
     <div class="feature-grid">
-      <div class="feature-item"><div class="fi-icon">📊</div><h3>時間使用の記録・分析</h3></div>
-      <div class="feature-item"><div class="fi-icon">🤖</div><h3>習慣トラッキング</h3></div>
-      <div class="feature-item"><div class="fi-icon">📈</div><h3>AIによる生産性最適化</h3></div>
-      <div class="feature-item"><div class="fi-icon">⚡</div><h3>スケジュール管理</h3></div>
+      <div class="feature-item"><div class="fi-icon">🗓️</div><h3>スケジュール管理</h3><p>Googleカレンダーとも連携。予定を一か所でまとめて管理できます</p></div>
+      <div class="feature-item"><div class="fi-icon">✅</div><h3>習慣トラッキング</h3><p>続けたいことを記録。続いた日数が見えると、やる気が続きます</p></div>
+      <div class="feature-item"><div class="fi-icon">📈</div><h3>時間の使い方を分析</h3><p>「毎日何に時間を使っているか」を振り返ると、人生の優先順位が見えてきます</p></div>
+      <div class="feature-item"><div class="fi-icon">💼</div><h3>空き時間の活用提案</h3><p>余った時間を収入や生きがいに変える方法をご提案します</p></div>
     </div>
   </section>
 
   <section class="lp-section lp-section-alt">
     <h2>他のドメインとの連携</h2>
-    <p class="section-sub">LMSでは6つの領域を統合的に分析。ドメイン間の相関を考慮した最適な提案を行います。</p>
+    <p class="section-sub">人生は一つの領域だけでは語れません。健康が悪ければ仕事に影響し、関係が薄れれば意識も揺らぎます。LMSは6領域をまとめて見ることで、より深い気づきをお届けします。</p>
     <div class="domain-cards domain-cards-sm">
       <a href="consciousness.html" class="domain-card" style="--domain-color:#9B59B6">
         <div class="dc-icon">🧠</div>
@@ -82,15 +84,15 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="js/config.js"></script>
-  <script src="js/store.js"></script>
-  <script src="js/i18n.js"></script>
-  <script src="js/components.js"></script>
-  <script src="js/ai-engine.js"></script>
-  <script src="js/firebase-backend.js"></script>
-  <script src="js/affiliate.js"></script>
-  <script src="js/pages.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/config.js?v=1"></script>
+  <script src="js/store.js?v=1"></script>
+  <script src="js/i18n.js?v=1"></script>
+  <script src="js/components.js?v=1"></script>
+  <script src="js/ai-engine.js?v=1"></script>
+  <script src="js/firebase-backend.js?v=1"></script>
+  <script src="js/affiliate.js?v=1"></script>
+  <script src="js/pages.js?v=1"></script>
+  <script src="js/app.js?v=1"></script>
   <script>
     document.getElementById('authFormContainer').innerHTML = Components.authForm();
   </script>
