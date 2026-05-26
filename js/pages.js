@@ -708,12 +708,55 @@ var Pages = {
       .filter(m => m.domain === domain || !m.domain)
       .slice(-50);
 
+    const starters = {
+      consciousness: [
+        '最近、気持ちが落ち込みやすいのですが、どうしたらいいですか？',
+        '瞑想を始めたいのですが、何から始めればいいですか？',
+        '毎日がなんとなくつまらない気がします。どう考えればいいですか？',
+      ],
+      health: [
+        '最近、体が重くてだるいのですが、何か原因があるでしょうか？',
+        '睡眠の質を上げるにはどうすればいいですか？',
+        '記録を見て、私の健康状態を教えてください。',
+      ],
+      time: [
+        '毎日何をすればいいかわからなくなってきました。',
+        '時間を有意義に使うために、何から始めればいいですか？',
+        '最近、時間が余って困っています。良い過ごし方を教えてください。',
+      ],
+      work: [
+        '定年後、何か社会の役に立つことがしたいのですが、何がありますか？',
+        '私のスキルや経験を活かせる仕事はありますか？',
+        '副業やボランティアを始めるには、どうすればいいですか？',
+      ],
+      relationship: [
+        '最近、友人や家族とほとんど話していません。どうしたらいいですか？',
+        '久しぶりに連絡したい人がいます。何を話せばいいですか？',
+        '孤独を感じることが増えました。どう対処すればいいですか？',
+      ],
+      assets: [
+        '年金だけで生活できるか心配です。どうすればいいですか？',
+        'NISAを始めようと思っていますが、どうすればいいですか？',
+        '老後の生活費は月いくら必要ですか？',
+      ],
+    };
+    const domainStarters = starters[domain] || [];
+
     let html = `<div class="page-ask-ai">
       <h2>${i18n.t(domain)} - 相談する</h2>
 
       <div class="chat-container" id="chatContainer">
-        ${history.length === 0 ?
-          Components.emptyState('💬', '相談する', i18n.t('quick_input_placeholder')) :
+        ${history.length === 0 ? `
+          <div class="chat-welcome">
+            <div class="chat-welcome-icon">💬</div>
+            <p class="chat-welcome-title">何でもご相談ください</p>
+            <p class="chat-welcome-sub">下の例からえらぶか、自由に入力してください</p>
+            <div class="chat-starters">
+              ${domainStarters.map(s => `
+                <button class="chat-starter-btn" onclick="app.fillChatInput(${JSON.stringify(s)})">${s}</button>
+              `).join('')}
+            </div>
+          </div>` :
           history.map(m => Components.chatMessage(m)).join('')
         }
       </div>

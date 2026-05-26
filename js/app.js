@@ -168,6 +168,15 @@ var App = class App {
     store.set('currentPage', page);
   }
 
+  fillChatInput(text) {
+    const el = document.getElementById('chatInput');
+    if (el) {
+      el.value = text;
+      el.focus();
+      el.dispatchEvent(new Event('input'));
+    }
+  }
+
   // ─── Main Render (未病ダイアリー方式) ───
   renderApp() {
     const page = store.get('currentPage');
