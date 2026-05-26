@@ -106,12 +106,13 @@ var Components = {
 
   // ─── Chat Message ───
   chatMessage(msg) {
-    const cls = msg.role === 'user' ? 'chat-user' : 'chat-ai';
-    const icon = msg.role === 'user' ? 'あ' : 'S';
+    const cls = msg.role === 'user' ? 'chat-user' : 'chat-advisor';
+    const icon = msg.role === 'user' ? '👤' : '🔮';
+    const label = msg.role === 'user' ? 'あなた' : 'アドバイザー';
     return `<div class="chat-msg ${cls}">
-      <div class="chat-icon">${icon}</div>
+      <div class="chat-icon" title="${label}">${icon}</div>
       <div class="chat-content">${this.formatMarkdown(msg.content || '')}</div>
-      <div class="chat-time">${msg.timestamp ? new Date(msg.timestamp).toLocaleString() : ''}</div>
+      <div class="chat-time">${msg.timestamp ? new Date(msg.timestamp).toLocaleString('ja-JP') : ''}</div>
     </div>`;
   },
 

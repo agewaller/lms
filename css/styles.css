@@ -466,6 +466,17 @@ select.form-input { appearance: auto; }
 .lp-section-alt { background: #f1f3f5; max-width: 100%; padding-left: 40px; padding-right: 40px; }
 .lp-section-alt > * { max-width: 1200px; margin-left: auto; margin-right: auto; }
 
+/* Trust section */
+.lp-trust { background: #fff; border-top: 1px solid var(--border); max-width: 100% !important; }
+.trust-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px; margin-top: 40px; max-width: 1200px; margin-left: auto; margin-right: auto;
+}
+.trust-item { text-align: center; padding: 24px 16px; }
+.trust-icon { font-size: 40px; margin-bottom: 12px; }
+.trust-item h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.trust-item p { font-size: 15px; color: var(--text-light); line-height: 1.8; }
+
 /* Domain Cards */
 .domain-cards {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1254,7 +1265,8 @@ body.is-admin .admin-only { display: flex; }
 .chat-msg { display: flex; gap: 10px; margin-bottom: 16px; }
 .chat-icon { font-size: 24px; flex-shrink: 0; }
 .chat-content { background: var(--bg-card); border-radius: var(--radius-sm); padding: 16px 20px; flex: 1; font-size: 17px; line-height: 1.9; }
-.chat-user .chat-content { background: color-mix(in srgb, var(--primary) 10%, white); }
+.chat-user .chat-content { background: color-mix(in srgb, var(--accent) 8%, white); }
+.chat-advisor .chat-content { background: var(--bg-card); }
 .chat-time { font-size: 13px; color: var(--text-muted); align-self: flex-end; }
 .chat-input-bar { display: flex; gap: 10px; }
 .chat-input-bar .form-input { flex: 1; }
