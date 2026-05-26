@@ -27,10 +27,20 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
-    // Quick input bar
+    // Quick input bar — domain-specific placeholder
+    const quickPlaceholders = {
+      health: '今日の体調は？気になる症状や気づきを入力...',
+      consciousness: '今日の気分や考えを入力...（何でも）',
+      time: '今日どんなことをしましたか？',
+      work: '今日やったこと・気になることを入力...',
+      relationship: '今日、誰かと話しましたか？',
+      assets: '家計や投資で気になることを入力...',
+    };
+    const quickPlaceholder = quickPlaceholders[domain] || i18n.t('quick_input_placeholder');
+
     let html = `<div class="page-home">
       <div class="quick-input-bar">
-        <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
+        <input type="text" id="quickInput" class="form-input" placeholder="${quickPlaceholder}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
