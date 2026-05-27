@@ -22,6 +22,47 @@ var Pages = {
   // ═══════════════════════════════════════════════════════════
   //  HOME PAGE (per domain)
   // ═══════════════════════════════════════════════════════════
+  // ─── Onboarding banner for first-time users (no data yet) ───
+  renderOnboardingBanner(domain) {
+    const domainConfig = CONFIG.domains[domain];
+    const dismissed = (store.get('onboardingDismissed') || {})[domain];
+    if (dismissed) return '';
+
+    // Check if user has any data in any category
+    const categories = Object.keys(domainConfig?.categories || {});
+    const hasData = categories.some(cat => (store.getDomainData(domain, cat, 365).length > 0));
+    if (hasData) return '';
+
+    const color = domainConfig?.color || '#6C63FF';
+    const steps = {
+      health:        ['体調を記録する', '薬やサプリを登録する', 'アドバイスをもらう'],
+      consciousness: ['今日の意識レイヤーを観測する', '感謝を書き出す', 'パターンを分析する'],
+      time:          ['今日の過ごし方を記録する', '習慣を登録する', '時間の使い方を見直す'],
+      work:          ['スキルや経験を登録する', '目標を設定する', '新しい活躍の場を探す'],
+      relationship:  ['大切な人を登録する', 'やりとりを記録する', '誕生日アラートを設定する'],
+      assets:        ['資産の全体像を入力する', '収支を記録する', '銘柄分析をしてみる'],
+    };
+    const domainSteps = steps[domain] || ['記録する', '分析する', 'アドバイスをもらう'];
+
+    return `<div class="onboarding-banner" style="--domain-color:${color}">
+      <button class="onboarding-close" onclick="app.dismissOnboarding('${domain}')" aria-label="閉じる">&times;</button>
+      <div class="onboarding-content">
+        <div class="onboarding-icon">${domainConfig?.icon || '◈'}</div>
+        <div>
+          <h3>「${i18n.t(domain)}」領域へようこそ</h3>
+          <p>まずはここから始めてみましょう</p>
+          <ol class="onboarding-steps">
+            ${domainSteps.map(s => `<li>${s}</li>`).join('')}
+          </ol>
+        </div>
+      </div>
+      <div class="onboarding-actions">
+        <button class="btn btn-primary btn-sm" onclick="app.navigate('record')" style="background:${color};border-color:${color}">最初の記録をする</button>
+        <button class="btn btn-secondary btn-sm" onclick="app.navigate('ask_ai')">まず相談する</button>
+      </div>
+    </div>`;
+  },
+
   renderHome(domain) {
     const domainConfig = CONFIG.domains[domain];
     const score = store.calculateDomainScore(domain);
@@ -29,6 +70,7 @@ var Pages = {
 
     // Quick input bar
     let html = `<div class="page-home">
+      ${this.renderOnboardingBanner(domain)}
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">

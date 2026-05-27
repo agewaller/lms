@@ -2,6 +2,18 @@
    LMS - AI Engine
    Multi-model AI integration (Claude, GPT-4o, Gemini)
    ============================================================ */
+// Maps CONFIG model keys to versioned API IDs.
+// Update values here when Anthropic/OpenAI/Google rotate their model IDs;
+// all call sites will pick up the change automatically.
+const MODEL_MAP = {
+  'claude-opus-4-7':   'claude-opus-4-7',
+  'claude-opus-4-6':   'claude-opus-4-6-20260201',
+  'claude-sonnet-4-6': 'claude-sonnet-4-6-20260101',
+  'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+  'gpt-4o':            'gpt-4o-2025-12-17',
+  'gemini-pro':        'gemini-2.0-flash',
+};
+
 var AIEngine = {
 
   // ─── Main analysis entry point ───
@@ -160,8 +172,9 @@ var AIEngine = {
       headers['anthropic-dangerous-direct-browser-access'] = 'true';
     }
 
+    const apiModel = MODEL_MAP[model] || model;
     console.log('[LMS] Calling Anthropic', isDirect ? '(direct)' : 'via proxy:', url);
-    console.log('[LMS] Model:', model, 'Max tokens:', maxTokens);
+    console.log('[LMS] Model:', apiModel, 'Max tokens:', maxTokens);
 
     let res;
     try {
@@ -169,7 +182,7 @@ var AIEngine = {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model,
+          model: apiModel,
           max_tokens: maxTokens,
           system: system,
           messages: [{ role: 'user', content: userMsg }]
@@ -207,7 +220,7 @@ var AIEngine = {
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: model,
+        model: MODEL_MAP[model] || model,
         max_tokens: maxTokens,
         messages: [
           { role: 'system', content: system },
@@ -228,7 +241,7 @@ var AIEngine = {
     const apiKey = this.getApiKey('google');
     if (!apiKey) throw new Error('Google API key not set');
 
-    const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
+    const url = `${CONFIG.endpoints.google}/${MODEL_MAP[model] || model}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

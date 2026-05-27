@@ -109,7 +109,10 @@ var Store = class Store {
 
       // Notifications
       notifications: [],
-      unreadCount: 0
+      unreadCount: 0,
+
+      // Onboarding
+      onboardingDismissed: {}  // { domain: true } once user dismisses the banner
     };
 
     this.listeners = new Map();
@@ -182,7 +185,8 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'onboardingDismissed'
     ];
   }
 
@@ -272,7 +276,10 @@ var Store = class Store {
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // Only remove LMS-specific keys; localStorage.clear() would wipe Firebase config and OAuth tokens
+    this.persistKeys.forEach(key => {
+      try { localStorage.removeItem(`lms_${key}`); } catch (e) {}
+    });
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
