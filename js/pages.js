@@ -7,6 +7,7 @@ var Pages = {
   // ─── Main render dispatcher ───
   render(page, domain) {
     switch (page) {
+      case 'onboarding':   return this.renderOnboarding();
       case 'home':         return this.renderHome(domain);
       case 'data':         return this.renderDataBrowser(domain);
       case 'integrations': return this.renderIntegrations(domain);
@@ -20,6 +21,180 @@ var Pages = {
   },
 
   // ═══════════════════════════════════════════════════════════
+  //  ONBOARDING WIZARD (初回のみ表示)
+  // ═══════════════════════════════════════════════════════════
+  renderOnboarding() {
+    const step = store.get('onboardingStep') || 0;
+    const profile = store.get('userProfile') || {};
+    const steps = [
+      this.renderOnboardingStep0(profile),
+      this.renderOnboardingStep1(profile),
+      this.renderOnboardingStep2(profile),
+    ];
+    const safeStep = Math.max(0, Math.min(step, steps.length - 1));
+    return `<div class="onboarding-wizard">
+      <div class="ob-progress">
+        ${[0,1,2].map(i => `<div class="ob-dot ${i <= safeStep ? 'active' : ''}"></div>`).join('')}
+      </div>
+      ${steps[safeStep]}
+    </div>`;
+  },
+
+  renderOnboardingStep0(profile) {
+    return `<div class="ob-step">
+      <div class="ob-logo">◈</div>
+      <h2>LMSへようこそ</h2>
+      <p class="ob-desc">あなたの人生を、6つの面からまるごとサポートします。<br>まず簡単に教えてください。</p>
+      <div class="form-group">
+        <label>お名前（ニックネームでも大丈夫です）</label>
+        <input type="text" id="ob-name" class="form-input ob-input"
+          value="${Components.escapeHtml(profile.displayName || '')}"
+          placeholder="山田 花子">
+      </div>
+      <div class="form-group">
+        <label>年代を教えてください</label>
+        <div class="ob-choice-grid">
+          ${['50代以下', '60代', '70代', '80代以上'].map(a =>
+            `<button class="ob-choice-btn ${profile.ageGroup === a ? 'selected' : ''}"
+              onclick="app.selectOnboardingAge('${a}')">${a}</button>`
+          ).join('')}
+        </div>
+      </div>
+      <button class="btn btn-primary btn-lg ob-next" onclick="app.nextOnboardingStep(0)">
+        次へ →
+      </button>
+    </div>`;
+  },
+
+  renderOnboardingStep1(profile) {
+    const domains = [
+      { id: 'health',        icon: '二', label: '健康',  desc: '体調・薬・食事の管理' },
+      { id: 'assets',        icon: '六', label: '資産',  desc: '年金・株式・家計の把握' },
+      { id: 'relationship',  icon: '五', label: '関係',  desc: '家族・友人とのつながり' },
+      { id: 'time',          icon: '三', label: '時間',  desc: '充実した毎日の過ごし方' },
+      { id: 'work',          icon: '四', label: '仕事',  desc: '副業・ボランティア・生きがい' },
+      { id: 'consciousness', icon: '一', label: '意識',  desc: '心の健康・瞑想・気づき' },
+    ];
+    return `<div class="ob-step">
+      <h2>今、一番気になることは？</h2>
+      <p class="ob-desc">最初に取り組む領域を選んでください。<br>あとから自由に変えられます。</p>
+      <div class="ob-domain-grid">
+        ${domains.map(d => `
+          <button class="ob-domain-btn ${profile.startDomain === d.id ? 'selected' : ''}"
+            onclick="app.selectOnboardingDomain('${d.id}')">
+            <span class="ob-domain-num">${d.icon}</span>
+            <span class="ob-domain-label">${d.label}</span>
+            <span class="ob-domain-desc">${d.desc}</span>
+          </button>
+        `).join('')}
+      </div>
+      <button class="btn btn-primary btn-lg ob-next" onclick="app.nextOnboardingStep(1)">次へ →</button>
+      <button class="btn ob-skip" onclick="app.completeOnboarding('health')">スキップ</button>
+    </div>`;
+  },
+
+  renderOnboardingStep2(profile) {
+    const name = profile.displayName ? `${Components.escapeHtml(profile.displayName)}さん、` : '';
+    const domainLabels = {
+      health: '健康', assets: '資産', relationship: '関係',
+      time: '時間', work: '仕事', consciousness: '意識'
+    };
+    const startLabel = domainLabels[profile.startDomain] || '健康';
+    return `<div class="ob-step ob-step-final">
+      <div class="ob-logo ob-success">◈</div>
+      <h2>${name}準備できました！</h2>
+      <p class="ob-desc">まず「${startLabel}」から始めましょう。<br>毎日の記録が、あなたへの最適なサポートにつながります。</p>
+      <div class="ob-features">
+        <div class="ob-feature"><span>◦</span> 毎日の記録でスコアが上がる</div>
+        <div class="ob-feature"><span>◦</span> 6つの領域を統合して分析</div>
+        <div class="ob-feature"><span>◦</span> あなたに合った行動提案が届く</div>
+      </div>
+      <button class="btn btn-primary btn-lg" onclick="app.completeOnboarding('${profile.startDomain || 'health'}')">
+        はじめる
+      </button>
+    </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  TODAY BRIEFING (ホーム画面上部の今日の概況)
+  // ═══════════════════════════════════════════════════════════
+  renderTodayBriefing(domain) {
+    const hour = new Date().getHours();
+    const greeting = hour < 10 ? 'おはようございます' : hour < 17 ? 'こんにちは' : 'こんばんは';
+    const profile = store.get('userProfile') || {};
+    const user = store.get('user') || {};
+    const name = profile.displayName || user?.displayName || '';
+
+    // 6領域の平均スコア
+    const scores = store.get('domainScores') || {};
+    const domainIds = Object.keys(CONFIG.domains);
+    const avgScore = Math.round(
+      domainIds.reduce((s, d) => s + (scores[d] || 0), 0) / domainIds.length
+    );
+
+    // 今日の記録状況
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStatus = domainIds.map(d => {
+      const cats = Object.keys(CONFIG.domains[d]?.categories || {});
+      const hasEntry = cats.some(cat =>
+        store.getDomainData(d, cat, 1).some(e => e.timestamp?.slice(0, 10) === todayStr)
+      );
+      return { id: d, hasEntry, cfg: CONFIG.domains[d] };
+    });
+
+    // 連続記録日数
+    const streak = this.calculateStreak();
+
+    return `<div class="today-briefing">
+      <div class="tb-greeting">
+        <div class="tb-text">
+          <div class="tb-hello">${greeting}${name ? `、${Components.escapeHtml(name)}さん` : ''}</div>
+          <div class="tb-sub">今日も一緒に歩んでいきましょう</div>
+        </div>
+        <div class="tb-score">
+          ${Components.scoreGauge(avgScore, 72, '総合')}
+        </div>
+      </div>
+      ${streak >= 2 ? `<div class="tb-streak">🔥 ${streak}日連続記録中</div>` : ''}
+      <div class="tb-domains">
+        ${todayStatus.map(s => `
+          <button class="tb-domain-item ${s.hasEntry ? 'done' : ''} ${s.id === domain ? 'current' : ''}"
+            onclick="app.switchDomain('${s.id}')">
+            <span class="tb-di-num" style="color:${s.cfg.color}">${s.cfg.icon}</span>
+            <span class="tb-di-name">${i18n.t(s.id)}</span>
+            <span class="tb-di-dot ${s.hasEntry ? 'done' : 'empty'}"></span>
+          </button>
+        `).join('')}
+      </div>
+    </div>`;
+  },
+
+  calculateStreak() {
+    const domainPrefixes = Object.keys(CONFIG.domains);
+    const entryDates = new Set();
+    domainPrefixes.forEach(d => {
+      const cats = Object.keys(CONFIG.domains[d]?.categories || {});
+      cats.forEach(cat => {
+        const data = store.get(`${d}_${cat}`);
+        if (!Array.isArray(data)) return;
+        data.forEach(e => { if (e.timestamp) entryDates.add(e.timestamp.slice(0, 10)); });
+      });
+    });
+
+    let streak = 0;
+    const today = new Date();
+    for (let i = 0; i <= 365; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      if (i === 0 && !entryDates.has(dateStr)) continue; // today can be empty
+      if (!entryDates.has(dateStr)) break;
+      streak++;
+    }
+    return streak;
+  },
+
+  // ═══════════════════════════════════════════════════════════
   //  HOME PAGE (per domain)
   // ═══════════════════════════════════════════════════════════
   renderHome(domain) {
@@ -27,8 +202,9 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
-    // Quick input bar
+    // Quick input bar + today briefing
     let html = `<div class="page-home">
+      ${this.renderTodayBriefing(domain)}
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
@@ -759,10 +935,13 @@ var Pages = {
 
       <!-- Data Export/Import -->
       <div class="settings-section">
-        <h3>💾 ${i18n.t('data_export')} / ${i18n.t('data_import')}</h3>
-        <button class="btn btn-secondary" onclick="app.exportData()">${i18n.t('data_export')}</button>
-        <input type="file" id="importFile" accept=".json" onchange="app.importData(event)" style="display:none">
-        <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">${i18n.t('data_import')}</button>
+        <h3>データ管理</h3>
+        <div class="form-actions">
+          <button class="btn btn-secondary" onclick="app.exportData()">${i18n.t('data_export')}</button>
+          <input type="file" id="importFile" accept=".json" onchange="app.importData(event)" style="display:none">
+          <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">${i18n.t('data_import')}</button>
+          <button class="btn btn-secondary" onclick="app.resetOnboarding()">はじめの設定をやり直す</button>
+        </div>
       </div>
 
       <!-- Time Marketplace Settings (Time domain) -->

@@ -170,8 +170,15 @@ var App = class App {
 
   // ─── Main Render (未病ダイアリー方式) ───
   renderApp() {
-    const page = store.get('currentPage');
+    let page = store.get('currentPage');
     const domain = store.get('currentDomain');
+
+    // Show onboarding wizard for first-time users
+    const profile = store.get('userProfile') || {};
+    if (!profile.onboarded && page !== 'onboarding' && page !== 'admin' && page !== 'settings') {
+      store.set('currentPage', 'onboarding');
+      page = 'onboarding';
+    }
 
     const mainContent = document.getElementById('mainContent');
     if (!mainContent) return;
@@ -179,8 +186,8 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
-    if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理', onboarding: 'はじめに' };
+    if (titleEl) titleEl.textContent = page === 'onboarding' ? 'ようこそ' : `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
     document.querySelectorAll('.nav-item').forEach(el => {
@@ -1927,6 +1934,55 @@ var App = class App {
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();
+  }
+
+  // ─── Onboarding ───
+  selectOnboardingAge(age) {
+    const profile = store.get('userProfile') || {};
+    store.set('userProfile', { ...profile, ageGroup: age });
+    document.querySelectorAll('.ob-choice-btn').forEach(btn => {
+      btn.classList.toggle('selected', btn.textContent.trim() === age);
+    });
+  }
+
+  selectOnboardingDomain(domain) {
+    const profile = store.get('userProfile') || {};
+    store.set('userProfile', { ...profile, startDomain: domain });
+    document.querySelectorAll('.ob-domain-btn').forEach(btn => {
+      btn.classList.remove('selected');
+    });
+    const clicked = document.querySelector(`.ob-domain-btn[onclick*="${domain}"]`);
+    if (clicked) clicked.classList.add('selected');
+  }
+
+  nextOnboardingStep(currentStep) {
+    if (currentStep === 0) {
+      const name = document.getElementById('ob-name')?.value?.trim();
+      if (name) {
+        const profile = store.get('userProfile') || {};
+        store.set('userProfile', { ...profile, displayName: name });
+      }
+    }
+    store.set('onboardingStep', currentStep + 1);
+    this.renderApp();
+  }
+
+  completeOnboarding(startDomain) {
+    const profile = store.get('userProfile') || {};
+    store.set('userProfile', { ...profile, onboarded: true });
+    store.set('onboardingStep', 0);
+    store.set('currentDomain', startDomain || 'health');
+    store.set('currentPage', 'home');
+    Components.showToast('ようこそ！記録を始めましょう', 'success');
+    this.renderApp();
+  }
+
+  resetOnboarding() {
+    const profile = store.get('userProfile') || {};
+    store.set('userProfile', { ...profile, onboarded: false });
+    store.set('onboardingStep', 0);
+    store.set('currentPage', 'onboarding');
+    this.renderApp();
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───
