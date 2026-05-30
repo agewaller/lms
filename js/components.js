@@ -263,19 +263,32 @@ var Components = {
   // ─── Record List Item ───
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';
-    const time = new Date(entry.timestamp).toLocaleString();
+    const time = new Date(entry.timestamp).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     const cat = entry.category ? i18n.t(entry.category) : '';
-    const summary = Object.entries(entry)
-      .filter(([k]) => !['id','timestamp','domain','category','_synced'].includes(k))
-      .slice(0, 3)
-      .map(([k, v]) => `${i18n.t(k)}: ${v}`)
-      .join(' | ');
+
+    // Build a readable summary, skipping internal fields and empty values
+    const skipKeys = new Set(['id', 'timestamp', 'domain', 'category', '_synced', 'checkin', 'type', 'emoji']);
+    let summaryParts = [];
+
+    // Special handling for check-in entries
+    if (entry.checkin && entry.emoji && entry.label) {
+      summaryParts.push(`${entry.emoji} ${this.escapeHtml(entry.label)}`);
+    } else if (entry.taken === true && entry.name) {
+      summaryParts.push(`💊 ${this.escapeHtml(entry.name)} 服薬済み`);
+    } else {
+      summaryParts = Object.entries(entry)
+        .filter(([k, v]) => !skipKeys.has(k) && v != null && v !== '' && v !== false)
+        .slice(0, 3)
+        .map(([k, v]) => `${i18n.t(k)}: ${this.escapeHtml(String(v))}`);
+    }
+
+    const summary = summaryParts.join(' · ');
     return `<div class="record-item" style="border-left-color:${color}">
       <div class="record-header">
-        <span class="record-cat">${cat}</span>
+        <span class="record-cat">${this.escapeHtml(cat)}</span>
         <span class="record-time">${time}</span>
       </div>
-      <div class="record-summary">${summary}</div>
+      <div class="record-summary">${summary || '（記録）'}</div>
     </div>`;
   }
 };

@@ -17,5 +17,11 @@
     }
   ],
   "categories": ["health", "lifestyle", "productivity"],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "shortcuts": [
+    { "name": "健康記録", "short_name": "健康", "url": "./dashboard.html?domain=health", "description": "今日の体調を記録" },
+    { "name": "資産管理", "short_name": "資産", "url": "./dashboard.html?domain=assets", "description": "資産・収支の確認" },
+    { "name": "関係", "short_name": "関係", "url": "./dashboard.html?domain=relationship", "description": "大切な人との連絡" },
+    { "name": "相談する", "short_name": "相談", "url": "./dashboard.html#ask_ai", "description": "専門家に相談" }
+  ]
 }
