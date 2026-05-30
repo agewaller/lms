@@ -55,6 +55,9 @@ var Pages = {
       html += this.renderStockAnalysisWidget();
     }
 
+    // Today's summary (when there is data)
+    html += this.renderTodaySummary();
+
     // Domain score + overview
     html += `<div class="home-overview">
         <div class="overview-score">
@@ -484,6 +487,48 @@ var Pages = {
 
     html += `</div></div>`;
     return html;
+  },
+
+  // ─── Today's Summary Card ───
+  renderTodaySummary() {
+    const today = new Date().toISOString().slice(0, 10);
+    const items = [];
+
+    // Check-ins done today
+    const domains = Object.keys(CONFIG.domains);
+    domains.forEach(d => {
+      const cfg = { health: 'symptoms', consciousness: 'entries', time: 'entries', work: 'tasks', relationship: 'interactions', assets: 'overview' };
+      const cat = cfg[d];
+      if (!cat) return;
+      const todayCheckin = store.getDomainData(d, cat, 1).find(e => e.checkin === true && e.timestamp?.startsWith(today));
+      if (todayCheckin) {
+        items.push({ icon: todayCheckin.emoji || CONFIG.domains[d]?.icon, text: `${i18n.t(d)}: ${todayCheckin.label || '記録済み'}`, color: CONFIG.domains[d]?.color });
+      }
+    });
+
+    // Medications taken today
+    const medsTaken = (store.getDomainData('health', 'medications', 1) || [])
+      .filter(m => m.taken === true && m.timestamp?.startsWith(today));
+    if (medsTaken.length > 0) items.push({ icon: '💊', text: `服薬 ${medsTaken.length}件`, color: '#10b981' });
+
+    // Contacts logged today
+    const contacts = store.getDomainData('relationship', 'interactions', 1)
+      .filter(e => e.timestamp?.startsWith(today) && !e.checkin);
+    if (contacts.length > 0) items.push({ icon: '📞', text: `連絡 ${contacts.length}件`, color: '#ef4444' });
+
+    if (items.length === 0) return '';
+
+    const dateLabel = new Date().toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' });
+    return `<div class="today-summary">
+      <div class="ts-date">${dateLabel}の記録</div>
+      <div class="ts-items">
+        ${items.map(it => `
+          <div class="ts-item" style="border-left-color:${it.color || 'var(--accent)'}">
+            <span class="ts-icon">${it.icon}</span>
+            <span class="ts-text">${Components.escapeHtml(it.text)}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
