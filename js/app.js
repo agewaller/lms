@@ -1993,6 +1993,13 @@ var App = class App {
     if (val && this._promptCallback) this._promptCallback(val);
   }
 
+  // ─── Medication Taken ───
+  logMedicationTaken(name) {
+    store.addDomainEntry('health', 'medications', { name, taken: true });
+    Components.showToast(`💊 ${name} — 服用を記録しました`, 'success');
+    this.renderApp();
+  }
+
   // ─── Quick Check-in ───
   quickCheckIn(domain, category, saveKey, value, emoji, label) {
     store.addDomainEntry(domain, category, {

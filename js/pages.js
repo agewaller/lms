@@ -132,6 +132,11 @@ var Pages = {
       html += this.renderHealthTrendChart();
     }
 
+    // Health domain: Medication reminder
+    if (domain === 'health') {
+      html += this.renderMedicationReminder();
+    }
+
     // Consciousness domain: 7-layer visualization + transcript input
     if (domain === 'consciousness') {
       html += this.renderConsciousnessLayers();
@@ -435,6 +440,50 @@ var Pages = {
       <h3>14日間の体調推移</h3>
       <div style="height:160px;position:relative;"><canvas id="${chartId}"></canvas></div>
     </div>`;
+  },
+
+  // ─── Medication Reminder Widget ───
+  renderMedicationReminder() {
+    const meds = store.getDomainData('health', 'medications', 365);
+    if (meds.length === 0) return '';
+
+    // Latest entry per medication name (dedup)
+    const latestByName = new Map();
+    meds.forEach(m => {
+      if (m.name && !latestByName.has(m.name)) latestByName.set(m.name, m);
+    });
+    const medList = [...latestByName.values()].slice(0, 8);
+
+    // Check which meds have been logged as "taken" today
+    const today = new Date().toISOString().slice(0, 10);
+    const takenToday = new Set(
+      meds.filter(m => m.taken === true && m.timestamp?.startsWith(today)).map(m => m.name)
+    );
+
+    const timingLabel = { morning: '朝', noon: '昼', evening: '夜', bedtime: '就寝前', as_needed: '頓服' };
+
+    let html = `<div class="med-reminder-section">
+      <h3>💊 今日のお薬</h3>
+      <div class="med-list">`;
+
+    medList.forEach(m => {
+      const taken = takenToday.has(m.name);
+      const timing = timingLabel[m.timing] || m.timing || '';
+      html += `<div class="med-item ${taken ? 'med-taken' : ''}">
+        <div class="med-info">
+          <span class="med-name">${Components.escapeHtml(m.name)}</span>
+          ${m.dosage ? `<span class="med-dosage">${Components.escapeHtml(m.dosage)}</span>` : ''}
+          ${timing ? `<span class="med-timing">${Components.escapeHtml(timing)}</span>` : ''}
+        </div>
+        ${taken
+          ? `<span class="med-done-badge">✓ 服用済み</span>`
+          : `<button class="btn btn-sm btn-primary" onclick="app.logMedicationTaken('${Components.escapeHtml(m.name)}')">服用済み</button>`
+        }
+      </div>`;
+    });
+
+    html += `</div></div>`;
+    return html;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
