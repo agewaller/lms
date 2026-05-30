@@ -128,6 +128,21 @@ var AIEngine = {
     return parts.length > 0 ? parts.join('\n') : null;
   },
 
+  // ─── Model ID resolution (CONFIG alias → datestamped API id) ───
+  // Update this map when Anthropic/OpenAI/Google rotates their model IDs.
+  // Never hardcode datestamped IDs elsewhere in the codebase.
+  MODEL_MAP: {
+    'claude-opus-4-6':   'claude-opus-4-6-20260201',
+    'claude-sonnet-4-6': 'claude-sonnet-4-6-20260101',
+    'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+    'gpt-4o':            'gpt-4o-2025-12-17',
+    'gemini-pro':        'gemini-2.0-flash'
+  },
+
+  resolveModelId(configId) {
+    return this.MODEL_MAP[configId] || configId;
+  },
+
   // ─── API Calls ───
 
   async callAnthropic(model, system, userMsg, maxTokens) {
@@ -169,7 +184,7 @@ var AIEngine = {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model,
+          model: this.resolveModelId(model),
           max_tokens: maxTokens,
           system: system,
           messages: [{ role: 'user', content: userMsg }]
@@ -207,7 +222,7 @@ var AIEngine = {
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: model,
+        model: this.resolveModelId(model),
         max_tokens: maxTokens,
         messages: [
           { role: 'system', content: system },
@@ -228,7 +243,7 @@ var AIEngine = {
     const apiKey = this.getApiKey('google');
     if (!apiKey) throw new Error('Google API key not set');
 
-    const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
+    const url = `${CONFIG.endpoints.google}/${this.resolveModelId(model)}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -268,28 +283,89 @@ var AIEngine = {
 
   // ─── Conversation (chat) ───
   async chat(domain, userMessage) {
+    const model = store.get('selectedModel') || 'claude-sonnet-4-6';
+    const modelConfig = CONFIG.aiModels[model];
+    if (!modelConfig) throw new Error('Unknown model: ' + model);
+
+    const systemPrompt = this.buildSystemPrompt(domain, 'daily') +
+      '\n\nあなたは相談相手として、会話の文脈を踏まえながら温かく応答してください。';
+
+    // Fetch domain context to prepend to the first system message
+    const domainCtx = this.gatherDomainData(domain, 7);
+    const ctxBlock = domainCtx ? `\n[最近の${i18n.t(domain)}データ]\n${domainCtx}` : '';
+
+    // Build full message array from stored history (last 10 messages for context window)
     const history = store.get('conversationHistory') || [];
+    const domainHistory = history.filter(m => m.domain === domain || !m.domain).slice(-10);
 
-    // Add user message
-    history.push({
-      role: 'user',
-      content: userMessage,
-      timestamp: new Date().toISOString(),
-      domain
+    // Anthropic/OpenAI expect alternating user/assistant (must start with user)
+    const messages = [];
+    domainHistory.forEach(m => {
+      if (m.role === 'user' || m.role === 'assistant') {
+        messages.push({ role: m.role, content: m.content });
+      }
     });
+    messages.push({ role: 'user', content: ctxBlock + '\n\n' + userMessage });
 
-    // Get AI response
-    const response = await this.analyze(domain, 'daily', { text: userMessage });
+    let response;
+    store.set('isAnalyzing', true);
+    try {
+      const apiKey = this.getApiKey(modelConfig.provider);
+      if (!apiKey) throw new Error('APIキーが設定されていません。管理者にご連絡ください。');
 
-    // Add AI response
-    history.push({
-      role: 'assistant',
-      content: response,
-      timestamp: new Date().toISOString(),
-      domain
-    });
+      if (modelConfig.provider === 'anthropic') {
+        response = await this._callAnthropicChat(model, systemPrompt, messages, modelConfig.maxTokens);
+      } else if (modelConfig.provider === 'openai') {
+        response = await this._callOpenAIChat(model, systemPrompt, messages, modelConfig.maxTokens);
+      } else {
+        // Gemini: fallback to single-turn
+        response = await this.callGemini(model, systemPrompt, userMessage, modelConfig.maxTokens);
+      }
+    } finally {
+      store.set('isAnalyzing', false);
+    }
 
-    store.set('conversationHistory', history);
+    // Save user + assistant messages
+    const newHistory = [...history,
+      { role: 'user', content: userMessage, timestamp: new Date().toISOString(), domain },
+      { role: 'assistant', content: response, timestamp: new Date().toISOString(), domain }
+    ].slice(-100); // keep last 100 messages
+    store.set('conversationHistory', newHistory);
     return response;
+  },
+
+  async _callAnthropicChat(model, system, messages, maxTokens) {
+    const apiKey = this.getApiKey('anthropic');
+    const endpoint = CONFIG.endpoints.anthropic;
+    const isDirect = !endpoint || endpoint === 'direct' || endpoint.includes('your-account');
+    const url = isDirect ? 'https://api.anthropic.com/v1/messages' : endpoint;
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    };
+    if (isDirect) headers['anthropic-dangerous-direct-browser-access'] = 'true';
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ model: this.resolveModelId(model), max_tokens: maxTokens, system, messages })
+    });
+    if (!res.ok) { const e = await res.text(); throw new Error('Claude APIエラー: ' + e); }
+    const data = await res.json();
+    return data.content?.[0]?.text || '';
+  },
+
+  async _callOpenAIChat(model, system, messages, maxTokens) {
+    const apiKey = this.getApiKey('openai');
+    const allMsgs = [{ role: 'system', content: system }, ...messages];
+    const res = await fetch(CONFIG.endpoints.openai, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({ model: this.resolveModelId(model), max_tokens: maxTokens, messages: allMsgs })
+    });
+    if (!res.ok) { const e = await res.text(); throw new Error('OpenAI APIエラー: ' + e); }
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || '';
   }
 };
