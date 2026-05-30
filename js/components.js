@@ -50,12 +50,41 @@ var Components = {
     const domainColor = CONFIG.domains[rec.domain]?.color || '#666';
     const domainIcon = CONFIG.domains[rec.domain]?.icon || '';
     const domainLabel = rec.domain && rec.domain !== 'all' ? i18n.t(rec.domain) : '総合';
+
+    const text = rec.text || '';
+    const FOLD = 280;
+    const needsFold = text.length > FOLD;
+    const foldId = 'rec_' + Math.random().toString(36).slice(2, 8);
+    const tsStr = rec.timestamp ? new Date(rec.timestamp).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+
+    // Auto-extract title from first heading or first non-empty line
+    const title = rec.title || (() => {
+      const headingMatch = text.match(/^#+\s*(.+)/m);
+      if (headingMatch) return headingMatch[1].trim().slice(0, 60);
+      const firstLine = text.split('\n').find(l => l.trim().length > 4);
+      return firstLine ? firstLine.replace(/^[#*\->\s]+/, '').slice(0, 60) : '';
+    })();
+
+    const previewHtml = needsFold
+      ? this.formatMarkdown(text.slice(0, FOLD) + '…')
+      : this.formatMarkdown(text);
+    const fullHtml = needsFold ? this.formatMarkdown(text) : '';
+
     return `<div class="recommendation-card ${priorityClass}">
       <div class="rec-header">
         <span class="rec-domain-badge" style="background:${domainColor}">${domainIcon} ${domainLabel}</span>
-        <span class="rec-priority">${i18n.t(rec.priority || 'medium')}</span>
+        <div class="rec-header-right">
+          ${tsStr ? `<span class="rec-ts">${tsStr}</span>` : ''}
+          <button class="btn-icon-xs" onclick="app.deleteRecommendation('${this.escapeHtml(rec.id || rec.timestamp || '')}')" title="削除">✕</button>
+        </div>
       </div>
-      <div class="rec-body">${this.formatMarkdown(rec.text || '')}</div>
+      ${title ? `<div class="rec-title">${this.escapeHtml(title)}</div>` : ''}
+      <div class="rec-body" id="${foldId}-preview">${previewHtml}</div>
+      ${needsFold ? `
+        <div class="rec-body" id="${foldId}-full" style="display:none;">${fullHtml}</div>
+        <button class="btn-link rec-fold-btn" id="${foldId}-btn"
+          onclick="(function(){var p=document.getElementById('${foldId}-preview'),f=document.getElementById('${foldId}-full'),b=document.getElementById('${foldId}-btn');var expand=f.style.display==='none';p.style.display=expand?'none':'';f.style.display=expand?'':'none';b.textContent=expand?'折りたたむ':'続きを読む';})()">続きを読む</button>
+      ` : ''}
       ${rec.action ? `<button class="btn btn-sm btn-primary"
         data-action-type="${this.escapeHtml(rec.actionType || '')}"
         data-action-data="${this.escapeHtml(rec.actionData || '')}"

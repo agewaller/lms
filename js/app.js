@@ -434,6 +434,8 @@ var App = class App {
 
   // ─── Generate AI Recommendations ───
   async generateRecommendations(domain) {
+    store.set('isAnalyzing', true);
+    this.renderApp();
     try {
       const isHolistic = domain === 'holistic';
       const result = await AIEngine.analyze(
@@ -442,22 +444,31 @@ var App = class App {
         {}
       );
 
-      // Parse recommendations from AI response
-      const recs = [{
+      const ts = new Date().toISOString();
+      const existing = store.get('recommendations') || [];
+      store.set('recommendations', [{
+        id: Date.now().toString(36),
         domain: isHolistic ? 'all' : domain,
         text: result,
         priority: 'medium',
-        timestamp: new Date().toISOString()
-      }];
+        timestamp: ts
+      }, ...existing].slice(0, 30));
 
-      const existing = store.get('recommendations') || [];
-      store.set('recommendations', [...recs, ...existing].slice(0, 50));
-
-      this.renderApp();
-      Components.showToast(i18n.t('saved'), 'success');
+      Components.showToast('分析が完了しました', 'success');
     } catch (e) {
       Components.showToast(e.message, 'error');
+    } finally {
+      store.set('isAnalyzing', false);
+      this.renderApp();
     }
+  }
+
+  // ─── Delete a single recommendation ───
+  deleteRecommendation(idOrTs) {
+    const recs = (store.get('recommendations') || [])
+      .filter(r => r.id !== idOrTs && r.timestamp !== idOrTs);
+    store.set('recommendations', recs);
+    this.renderApp();
   }
 
   // ─── Action Items ───
@@ -470,9 +481,41 @@ var App = class App {
   }
 
   executeAction(type, data) {
-    // Placeholder for action execution (e.g., open affiliate link, book appointment)
-    console.log('Execute action:', type, data);
-    Components.showToast('Action: ' + type, 'info');
+    if (!type) return;
+    switch (type) {
+      case 'navigate':
+        // data = page name or domain id
+        if (CONFIG.domains[data]) {
+          store.set('currentDomain', data);
+          store.set('currentPage', 'home');
+        } else {
+          store.set('currentPage', data);
+        }
+        this.renderApp();
+        break;
+      case 'tel':
+        if (data) window.location.href = 'tel:' + data.replace(/[^\d+]/g, '');
+        break;
+      case 'url':
+        if (data) window.open(data, '_blank', 'noopener,noreferrer');
+        break;
+      case 'affiliate': {
+        const cfg = store.get('affiliateConfig') || {};
+        const link = cfg[data] || data;
+        if (link) window.open(link, '_blank', 'noopener,noreferrer');
+        break;
+      }
+      case 'analyze':
+        this.generateRecommendations(data || store.get('currentDomain') || 'health');
+        break;
+      case 'contact':
+        store.set('currentDomain', 'relationship');
+        store.set('currentPage', 'home');
+        this.renderApp();
+        break;
+      default:
+        Components.showToast(data || type, 'info');
+    }
   }
 
   // ─── Stock Analysis (Assets domain) ───
@@ -713,17 +756,20 @@ var App = class App {
     const fields = Object.entries(entry)
       .filter(([k]) => !k.startsWith('_') && k !== 'timestamp' && k !== 'id' && k !== 'domain' && k !== 'category');
 
-    const formHtml = `<form id="editForm">
+    const safeId  = Components.escapeHtml(id);
+    const safeCat = Components.escapeHtml(category);
+    const formHtml = `<form id="editForm" data-domain="${domain}" data-category="${safeCat}" data-id="${safeId}">
       ${fields.map(([k, v]) => `
         <div class="form-group">
-          <label>${i18n.t(k) || k}</label>
+          <label>${Components.escapeHtml(i18n.t(k) || k)}</label>
           ${typeof v === 'string' && v.length > 50
-            ? `<textarea name="${k}" class="form-input" rows="3">${Components.escapeHtml(String(v))}</textarea>`
-            : `<input type="${typeof v === 'number' ? 'number' : 'text'}" name="${k}" class="form-input" value="${Components.escapeHtml(String(v))}">`}
+            ? `<textarea name="${Components.escapeHtml(k)}" class="form-input" rows="3">${Components.escapeHtml(String(v))}</textarea>`
+            : `<input type="${typeof v === 'number' ? 'number' : 'text'}" name="${Components.escapeHtml(k)}" class="form-input" value="${Components.escapeHtml(String(v))}">`}
         </div>
       `).join('')}
       <div class="form-actions">
-        <button type="button" class="btn btn-primary" onclick="app.saveDataEntryEdit('${domain}','${category}','${id}')">保存</button>
+        <button type="button" class="btn btn-primary"
+          onclick="const f=document.getElementById('editForm');app.saveDataEntryEdit(f.dataset.domain,f.dataset.category,f.dataset.id)">保存</button>
         <button type="button" class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
       </div>
     </form>`;
@@ -1912,15 +1958,59 @@ var App = class App {
 
   generateDemoData() {
     this.confirmAction('デモデータを生成しますか？既存データに追加されます。', () => {
-    // Generate sample entries for each domain
-    const today = new Date();
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      store.addDomainEntry('health', 'symptoms', { condition_level: 5 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
-      store.addDomainEntry('health', 'sleepData', { quality: 6 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
-    }
-      Components.showToast('デモデータを生成しました', 'success');
+      const today = new Date();
+      const rand = (min, max) => Math.round(min + Math.random() * (max - min));
+      const ts = (daysAgo, h = 9) => {
+        const d = new Date(today);
+        d.setDate(d.getDate() - daysAgo);
+        d.setHours(h, rand(0, 59));
+        return d.toISOString();
+      };
+
+      // ─── Health: 30 days ───
+      for (let i = 0; i < 30; i++) {
+        const base = 6 + Math.sin(i / 7) * 2;
+        store.addDomainEntry('health', 'symptoms', { condition_level: Math.max(1, Math.min(10, Math.round(base + (Math.random() - 0.5) * 2))), fatigue_level: rand(1, 6), notes: '', timestamp: ts(i) });
+        store.addDomainEntry('health', 'sleepData', { quality: rand(5, 9), sleep_time: '23:00', wake_time: '07:00', timestamp: ts(i, 7) });
+        if (i % 3 === 0) store.addDomainEntry('health', 'activityData', { activity_type: ['walking', 'yoga', 'stretching'][i % 3], duration: rand(20, 60), intensity: rand(3, 7), timestamp: ts(i, 8) });
+      }
+      store.addDomainEntry('health', 'medications', { name: '血圧の薬', dosage: '1錠', timing: 'morning', timestamp: ts(0) });
+      store.addDomainEntry('health', 'vitals', { heart_rate: rand(62, 72), bp_systolic: rand(118, 130), bp_diastolic: rand(72, 82), weight: 58.5, timestamp: ts(0) });
+
+      // ─── Consciousness: 14 days ───
+      for (let i = 0; i < 14; i++) {
+        store.addDomainEntry('consciousness', 'entries', { mood_level: rand(5, 9), gratitude: ['家族の元気', '今日の朝日', '美味しい食事', '良い睡眠'][i % 4], reflection: '穏やかな一日でした', timestamp: ts(i) });
+        if (i % 2 === 0) store.addDomainEntry('consciousness', 'practices', { practice_type: ['meditation', 'breathwork', 'journaling'][i % 3], duration_minutes: rand(10, 30), quality: rand(6, 9), timestamp: ts(i, 6) });
+      }
+
+      // ─── Time: 14 days ───
+      for (let i = 0; i < 14; i++) {
+        store.addDomainEntry('time', 'entries', { activity: ['読書', '散歩', 'NHK鑑賞', '料理', '家族との団らん'][i % 5], category: ['leisure', 'health', 'leisure', 'housework', 'relationships'][i % 5], duration: rand(30, 120), productivity: rand(5, 9), timestamp: ts(i, 14) });
+      }
+
+      // ─── Work/Contribution: ───
+      store.addDomainEntry('work', 'skills', { skill_name: '料理', level: 8, study_hours: 0, notes: '長年の趣味', timestamp: ts(0) });
+      store.addDomainEntry('work', 'skills', { skill_name: '地域のボランティア', level: 6, study_hours: 2, timestamp: ts(5) });
+      store.addDomainEntry('work', 'goals', { goal: '地域の子ども食堂でボランティア', category: 'impact', progress: 40, deadline: '', timestamp: ts(3) });
+
+      // ─── Relationship: ───
+      const contacts = [
+        { name: '田中さん（長男）', distance: '1', relationship: 'family', phone: '', birthday: '' },
+        { name: '山田さん（親友）', distance: '2', relationship: 'close_friend', phone: '', birthday: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 5).toISOString().slice(0, 10) },
+        { name: '佐藤さん（近所）', distance: '3', relationship: 'neighbor', phone: '', birthday: '' }
+      ];
+      contacts.forEach((c, i) => store.addDomainEntry('relationship', 'contacts', { ...c, timestamp: ts(30 + i) }));
+      store.addDomainEntry('relationship', 'interactions', { person: '田中さん（長男）', type: 'call', quality: 4, notes: '元気そうで安心', timestamp: ts(3) });
+      store.addDomainEntry('relationship', 'interactions', { person: '山田さん（親友）', type: 'meeting', quality: 5, notes: 'お茶をしました', timestamp: ts(10) });
+
+      // ─── Assets: ───
+      store.addDomainEntry('assets', 'overview', { total_assets: 8000000, total_debt: 0, notes: 'NISA口座含む', timestamp: ts(0) });
+      for (let i = 0; i < 6; i++) {
+        store.addDomainEntry('assets', 'income', { source: ['年金', '不動産収入'][i % 2], amount: [180000, 50000][i % 2], timestamp: ts(i * 5) });
+        store.addDomainEntry('assets', 'expenses', { category: ['食費', '光熱費', '医療費', '交際費'][i % 4], amount: [30000, 15000, 8000, 10000][i % 4], timestamp: ts(i * 4 + 1) });
+      }
+
+      Components.showToast('デモデータを生成しました（30日分）', 'success');
       this.renderApp();
     });
   }

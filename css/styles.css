@@ -1277,7 +1277,15 @@ body.is-admin .admin-only { display: flex; }
   padding: 4px 14px; border-radius: 14px; font-size: 13px; color: #fff;
 }
 .rec-priority { font-size: 13px; color: var(--text-muted); }
-.rec-body { font-size: 16px; line-height: 1.9; }
+.rec-header-right { display: flex; align-items: center; gap: 8px; }
+.rec-ts { font-size: 11px; color: var(--text-muted); }
+.rec-title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; }
+.rec-body { font-size: 15px; line-height: 1.8; }
+.rec-fold-btn { font-size: 13px; color: var(--accent); padding: 4px 0; margin-top: 6px; display: block; background: none; border: none; cursor: pointer; }
+.rec-fold-btn:hover { text-decoration: underline; }
+.btn-icon-xs { background: none; border: none; color: var(--text-muted); font-size: 12px; cursor: pointer; padding: 2px 6px; border-radius: 4px; line-height: 1; }
+.btn-icon-xs:hover { background: var(--bg-hover); color: var(--text-primary); }
+.btn-link { background: none; border: none; cursor: pointer; }
 
 .action-item {
   display: flex; align-items: center; justify-content: space-between;
