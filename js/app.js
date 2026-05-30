@@ -33,6 +33,10 @@ var App = class App {
         setTimeout(() => this.checkNotifications(), 800);
       } else {
         this.stopInboxPolling();
+        // Redirect to login if session expires on dashboard
+        if (typeof window !== 'undefined' && window.location.pathname.includes('dashboard')) {
+          window.location.href = this.entryDomain ? this.entryDomain + '.html' : 'index.html';
+        }
       }
     });
 
