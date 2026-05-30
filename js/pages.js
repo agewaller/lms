@@ -27,9 +27,21 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // Onboarding: show welcome card for first-time users
+    const hasAnyData = Object.keys(CONFIG.domains).some(d => {
+      const cats = Object.keys(CONFIG.domains[d]?.categories || {});
+      return cats.some(cat => (store.get(`${d}_${cat}`) || []).length > 0);
+    });
+    const onboardingDismissed = store.get('onboardingDismissed');
+
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    let html = `<div class="page-home">`;
+
+    if (!hasAnyData && !onboardingDismissed) {
+      html += this.renderOnboarding();
+    }
+
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
@@ -158,6 +170,56 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Onboarding welcome card ───
+  renderOnboarding() {
+    const steps = [
+      { num: '1', title: 'プロフィールを入力', desc: '年齢・体重・お悩みを設定すると、より的確なアドバイスが届きます', page: 'settings', icon: '👤' },
+      { num: '2', title: '今日の気持ちを記録', desc: '健康・時間・意識など、気になる領域から自由に書いてみてください', page: 'record',   icon: '📝' },
+      { num: '3', title: '分析を受け取る',      desc: '記録が溜まったら「アクション」から分析を実行できます',         page: 'actions',  icon: '✨' }
+    ];
+
+    const domainIntros = [
+      { id: 'consciousness', label: '意識', desc: '毎日の気づき・瞑想・禅トラック', color: '#6C63FF' },
+      { id: 'health',        label: '健康', desc: '体調・服薬・睡眠・運動の記録',   color: '#10b981' },
+      { id: 'time',          label: '時間', desc: '一日の過ごし方・習慣の可視化',   color: '#f59e0b' },
+      { id: 'work',          label: '仕事', desc: '生きがい・スキル・貢献の記録',   color: '#3b82f6' },
+      { id: 'relationship',  label: '関係', desc: '大切な人との関係を見守る',       color: '#ef4444' },
+      { id: 'assets',        label: '資産', desc: '収支・投資・老後の安心設計',     color: '#d97706' }
+    ];
+
+    return `<div class="onboarding-card" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+        <div>
+          <h2 style="margin:0 0 6px;font-size:20px;">ようこそ、LMSへ</h2>
+          <p style="margin:0;color:var(--text-secondary);font-size:14px;">6つの領域で、あなたの人生をまるごとサポートします</p>
+        </div>
+        <button class="btn btn-sm btn-secondary" onclick="store.set('onboardingDismissed',true);app.renderApp()" style="flex-shrink:0;">閉じる</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;">
+        ${steps.map(s => `
+          <div style="background:var(--bg-primary);border-radius:var(--radius-sm);padding:12px;cursor:pointer;" onclick="app.navigate('${s.page}')">
+            <div style="font-size:22px;margin-bottom:6px;">${s.icon}</div>
+            <div style="font-size:12px;font-weight:600;margin-bottom:4px;">${s.num}. ${s.title}</div>
+            <div style="font-size:11px;color:var(--text-secondary);line-height:1.4;">${s.desc}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div style="border-top:1px solid var(--border);padding-top:16px;">
+        <p style="margin:0 0 10px;font-size:13px;color:var(--text-secondary);">どの領域から始めますか？</p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          ${domainIntros.map(d => `
+            <button class="btn btn-sm" style="background:${d.color}15;color:${d.color};border:1px solid ${d.color}40;font-size:12px;"
+              onclick="app.switchDomain('${d.id}');store.set('onboardingDismissed',true)">
+              ${d.label}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
