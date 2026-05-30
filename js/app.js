@@ -1445,9 +1445,9 @@ var App = class App {
     if (openai && !openai.includes('•')) { AIEngine.setApiKey('openai', openai); keys.openai = openai; }
     if (google && !google.includes('•')) { AIEngine.setApiKey('google', google); keys.google = google; }
 
-    // Save to Firestore if available
+    // Save to Firestore if available (merge with existing keys)
     if (Object.keys(keys).length > 0) {
-      FirebaseBackend.saveApiKeys({ ...AIEngine.getApiKey, ...keys });
+      FirebaseBackend.saveApiKeys({ ...(store.state._apiKeys || {}), ...keys });
     }
 
     Components.showToast(i18n.t('saved'), 'success');

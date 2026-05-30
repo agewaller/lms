@@ -185,9 +185,10 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'workProvisionPrefs', 'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
       'onboardingDismissed',
-      'notifications', 'unreadCount'
+      'notifications', 'unreadCount',
+      'latestAnalysis', 'dataBrowserFilter'
     ];
   }
 
