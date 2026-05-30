@@ -69,17 +69,25 @@ var Pages = {
     html += this.getDomainStats(domain);
     html += `</div></div>`;
 
-    // All domain scores overview (mini)
+    // All domain scores overview with today's completion indicator
+    const todayStr = new Date().toISOString().slice(0, 10);
     html += `<div class="all-domains-overview">
-      <h3>${i18n.t('holistic_analysis')}</h3>
+      <div class="all-domains-header">
+        <h3>${i18n.t('holistic_analysis')}</h3>
+        ${this.renderDailyGreeting()}
+      </div>
       <div class="domain-scores-grid">
         ${Object.keys(CONFIG.domains).map(d => {
           const s = store.get('domainScores')?.[d] || 0;
-          return `<div class="mini-score ${d === domain ? 'current' : ''}" onclick="app.switchDomain('${d}')">
+          const cats = Object.keys(CONFIG.domains[d]?.categories || {});
+          const hasToday = cats.some(cat => store.getDomainData(d, cat, 1).some(e => (e.timestamp || '').startsWith(todayStr)));
+          return `<div class="mini-score ${d === domain ? 'current' : ''} ${hasToday ? 'today-done' : ''}" onclick="app.switchDomain('${d}')">
             ${Components.scoreGauge(s, 70, i18n.t(d))}
+            ${hasToday ? '<span class="today-dot">✓</span>' : ''}
           </div>`;
         }).join('')}
       </div>
+      ${this.renderWeeklyStreak()}
     </div>`;
 
     // Streak + trend chart (shown when there are ≥3 days of data)
@@ -322,6 +330,64 @@ var Pages = {
           `).join('')}
         </div>
       </div>
+    </div>`;
+  },
+
+  // ─── Personalized Daily Greeting ───
+  renderDailyGreeting() {
+    const hour = new Date().getHours();
+    const user = store.get('user');
+    const name = user?.displayName?.split(' ')[0] || user?.email?.split('@')[0] || '';
+    const greet = hour < 12 ? 'おはようございます' : hour < 17 ? 'こんにちは' : 'こんばんは';
+    const namePart = name ? `、${Components.escapeHtml(name)}さん` : '';
+    return `<span class="daily-greeting">${greet}${namePart}</span>`;
+  },
+
+  // ─── Weekly Streak Summary (all 6 domains, past 7 days grid) ───
+  renderWeeklyStreak() {
+    const today = new Date();
+    const days = 7;
+    const domainIds = Object.keys(CONFIG.domains);
+
+    const rows = domainIds.map(d => {
+      const cats = Object.keys(CONFIG.domains[d]?.categories || {});
+      const color = CONFIG.domains[d]?.color || '#888';
+      const cells = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const dt = new Date(today);
+        dt.setDate(today.getDate() - i);
+        const key = dt.toISOString().slice(0, 10);
+        const has = cats.some(cat => store.getDomainData(d, cat, days + 1).some(e => (e.timestamp || '').startsWith(key)));
+        cells.push({ key, has, isToday: i === 0 });
+      }
+      return { d, color, cells };
+    });
+
+    const totalFilled = rows.reduce((sum, r) => sum + r.cells.filter(c => c.has).length, 0);
+    const totalPossible = domainIds.length * days;
+    const pct = Math.round(totalFilled / totalPossible * 100);
+
+    if (totalFilled === 0) return '';
+
+    const dayLabels = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const dt = new Date(today);
+      dt.setDate(today.getDate() - i);
+      dayLabels.push(i === 0 ? '今日' : dt.toLocaleDateString('ja-JP', { weekday: 'short' }));
+    }
+
+    return `<div class="weekly-streak-grid">
+      <div class="wsg-header">
+        <span class="wsg-title">今週の記録（${pct}%）</span>
+        <div class="wsg-day-labels">${dayLabels.map(l => `<span>${l}</span>`).join('')}</div>
+      </div>
+      ${rows.map(({ d, color, cells }) => `
+        <div class="wsg-row">
+          <span class="wsg-domain-label" style="color:${color}" onclick="app.switchDomain('${d}')">${CONFIG.domains[d].icon}</span>
+          <div class="wsg-cells">
+            ${cells.map(c => `<div class="wsg-cell ${c.has ? 'filled' : ''} ${c.isToday ? 'today' : ''}" style="${c.has ? `background:${color};` : ''}"></div>`).join('')}
+          </div>
+        </div>`).join('')}
     </div>`;
   },
 
@@ -658,7 +724,7 @@ var Pages = {
       html += `<div class="graph-ring ring-${level}" style="--ring-color: ${levels[level].color}">
         <div class="ring-label">${levels[level].description}（${people.length}人）</div>
         <div class="ring-people">
-          ${people.slice(0, 8).map(p => `<span class="ring-person" title="${p.name}">${(p.name || '').substring(0, 3)}</span>`).join('')}
+          ${people.slice(0, 8).map(p => `<span class="ring-person" title="${Components.escapeHtml(p.name || '')}">${Components.escapeHtml((p.name || '').substring(0, 3))}</span>`).join('')}
           ${people.length > 8 ? `<span class="ring-more">+${people.length - 8}</span>` : ''}
         </div>
       </div>`;
@@ -693,10 +759,11 @@ var Pages = {
     upcoming.forEach(c => {
       const dateStr = c.nextBirthday.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
       const label = c.daysUntil === 0 ? '今日！' : `あと${c.daysUntil}日`;
+      const distLabel = Components.escapeHtml(CONFIG.domains.relationship.distanceLevels[c.distance]?.description || '');
       html += `<div class="birthday-item ${c.daysUntil <= 3 ? 'birthday-soon' : ''}">
-        <span class="birthday-name">${c.name}</span>
-        <span class="birthday-date">${dateStr}（${label}）</span>
-        <span class="birthday-distance">${CONFIG.domains.relationship.distanceLevels[c.distance]?.description || ''}</span>
+        <span class="birthday-name">${Components.escapeHtml(c.name || '')}</span>
+        <span class="birthday-date">${Components.escapeHtml(dateStr)}（${Components.escapeHtml(label)}）</span>
+        <span class="birthday-distance">${distLabel}</span>
       </div>`;
     });
 
