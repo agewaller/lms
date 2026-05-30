@@ -448,9 +448,44 @@ select.form-input { appearance: auto; }
   align-items: center; justify-content: center; text-align: center;
   padding: 40px 20px;
 }
-.hero-content h1 { font-size: clamp(32px, 5vw, 56px); margin-bottom: 16px; }
-.hero-subtitle { font-size: clamp(18px, 2.5vw, 24px); color: var(--text-light); margin-bottom: 40px; line-height: 2.0; }
+.hero-content h1 { font-size: clamp(28px, 5vw, 52px); margin-bottom: 16px; line-height: 1.3; font-weight: 700; }
+.hero-subtitle { font-size: clamp(16px, 2.2vw, 22px); color: var(--text-light); margin-bottom: 32px; line-height: 2.0; }
 .hero-icon { font-size: 64px; margin-bottom: 16px; }
+.hero-badge {
+  display: inline-block;
+  background: #6C63FF18; color: #6C63FF;
+  border: 1px solid #6C63FF40; border-radius: 20px;
+  font-size: 13px; font-weight: 600; padding: 4px 14px;
+  margin-bottom: 16px;
+}
+.hero-cta-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+.hero-learn { background: rgba(255,255,255,0.8); color: var(--text-primary); border-color: rgba(0,0,0,0.15); }
+.hero-note { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+/* Pain section */
+.lp-pain-section { background: #fafafa; max-width: 100%; border-top: 1px solid var(--border); }
+.lp-pain-section > * { max-width: 1200px; margin-left: auto; margin-right: auto; }
+.pain-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px; margin: 32px 0;
+}
+.pain-item {
+  background: var(--bg-card); border-radius: var(--radius); padding: 24px 16px;
+  text-align: center; box-shadow: var(--shadow);
+}
+.pain-icon { font-size: 36px; margin-bottom: 12px; }
+.pain-item p { font-size: 14px; color: var(--text-secondary); line-height: 1.8; }
+.pain-solution {
+  font-size: 18px; font-weight: 600; color: var(--primary);
+  margin-top: 24px; padding: 16px; background: #6C63FF10;
+  border-radius: var(--radius); border-left: 4px solid var(--primary);
+}
+
+/* Feature numbers */
+.feature-num {
+  font-size: 11px; font-weight: 700; color: var(--primary);
+  letter-spacing: 0.05em; margin-bottom: 8px; opacity: 0.7;
+}
 
 /* Domain-specific hero */
 .domain-hero {
