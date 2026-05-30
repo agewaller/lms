@@ -47,13 +47,19 @@ var Components = {
   // ─── Recommendation Card ───
   recommendationCard(rec) {
     const priorityClass = rec.priority === 'high' ? 'priority-high' : rec.priority === 'medium' ? 'priority-med' : 'priority-low';
+    const domainColor = CONFIG.domains[rec.domain]?.color || '#666';
+    const domainIcon = CONFIG.domains[rec.domain]?.icon || '';
+    const domainLabel = rec.domain && rec.domain !== 'all' ? i18n.t(rec.domain) : '総合';
     return `<div class="recommendation-card ${priorityClass}">
       <div class="rec-header">
-        <span class="rec-domain-badge" style="background:${CONFIG.domains[rec.domain]?.color || '#666'}">${CONFIG.domains[rec.domain]?.icon || ''} ${i18n.t(rec.domain)}</span>
+        <span class="rec-domain-badge" style="background:${domainColor}">${domainIcon} ${domainLabel}</span>
         <span class="rec-priority">${i18n.t(rec.priority || 'medium')}</span>
       </div>
-      <div class="rec-body">${rec.text || ''}</div>
-      ${rec.action ? `<button class="btn btn-sm btn-primary" onclick="app.executeAction('${rec.actionType}','${rec.actionData || ''}')">${rec.action}</button>` : ''}
+      <div class="rec-body">${this.formatMarkdown(rec.text || '')}</div>
+      ${rec.action ? `<button class="btn btn-sm btn-primary"
+        data-action-type="${this.escapeHtml(rec.actionType || '')}"
+        data-action-data="${this.escapeHtml(rec.actionData || '')}"
+        onclick="app.executeAction(this.dataset.actionType,this.dataset.actionData)">${this.escapeHtml(rec.action)}</button>` : ''}
     </div>`;
   },
 
