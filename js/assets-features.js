@@ -290,7 +290,7 @@ var AssetsFeatures = {
       });
 
       try {
-        const result = await AIEngine.analyze('assets', 'daily', {
+        const result = await AIEngine.analyze('assets', 'image_analysis', {
           text: `ユーザーが証券口座または銀行のアプリの画面キャプチャをアップロードしました。
 画像の内容を読み取り、以下を分析してください：
 1. 表示されている資産の種類と金額
@@ -299,8 +299,9 @@ var AssetsFeatures = {
 4. 改善の提案（分散投資、リバランスなど）
 5. 注意すべき点
 
-65歳女性のユーザーにわかりやすい言葉で説明してください。
-※画像の内容をテキストとして読み取れない場合は、ユーザーに手入力をお願いしてください。`
+65歳以上のユーザーにわかりやすい言葉で説明してください。
+※画像の内容をテキストとして読み取れない場合は、ユーザーに手入力をお願いしてください。`,
+          imageBase64: dataUrl
         });
 
         if (resultEl) {

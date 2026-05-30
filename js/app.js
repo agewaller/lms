@@ -9,6 +9,7 @@ var App = class App {
   // ─── Initialize ───
   async init(entryDomain) {
     this.entryDomain = entryDomain || null;
+    this.applyStoredFontSize();
     this.checkOAuthCallbacks();
 
     // Initialize Firebase
@@ -411,27 +412,50 @@ var App = class App {
 
     const text = input.value.trim();
     input.value = '';
+    input.style.height = '';
 
-    // Show user message immediately
     const container = document.getElementById('chatContainer');
+
+    // Remove starter buttons if still showing
+    const starters = container?.querySelector('.chat-starters');
+    if (starters) starters.remove();
+
+    // Remove any existing loading indicator
+    const removeLoading = () => {
+      const loadingEl = container?.querySelector('.loading-indicator');
+      if (loadingEl) loadingEl.remove();
+    };
+
+    // Append user message immediately
     if (container) {
-      container.innerHTML += Components.chatMessage({
-        role: 'user', content: text, timestamp: new Date().toISOString()
-      });
-      container.innerHTML += Components.loading(i18n.t('analyzing'));
+      const userDiv = document.createElement('div');
+      userDiv.innerHTML = Components.chatMessage({ role: 'user', content: text, timestamp: new Date().toISOString() });
+      container.appendChild(userDiv.firstElementChild || userDiv);
+
+      const loadingDiv = document.createElement('div');
+      loadingDiv.className = 'loading-indicator';
+      loadingDiv.innerHTML = Components.loading(i18n.t('analyzing'));
+      container.appendChild(loadingDiv);
       container.scrollTop = container.scrollHeight;
     }
 
     try {
       const response = await AIEngine.chat(domain, text);
+      removeLoading();
 
-      // Re-render to show full history
-      this.renderApp();
-    } catch (e) {
       if (container) {
-        container.innerHTML += Components.chatMessage({
-          role: 'assistant', content: '⚠️ ' + e.message, timestamp: new Date().toISOString()
-        });
+        const aiDiv = document.createElement('div');
+        aiDiv.innerHTML = Components.chatMessage({ role: 'assistant', content: response, timestamp: new Date().toISOString() });
+        container.appendChild(aiDiv.firstElementChild || aiDiv);
+        container.scrollTop = container.scrollHeight;
+      }
+    } catch (e) {
+      removeLoading();
+      if (container) {
+        const errDiv = document.createElement('div');
+        errDiv.innerHTML = Components.chatMessage({ role: 'assistant', content: '⚠️ ' + e.message, timestamp: new Date().toISOString() });
+        container.appendChild(errDiv.firstElementChild || errDiv);
+        container.scrollTop = container.scrollHeight;
       }
     }
   }
@@ -2148,6 +2172,7 @@ var App = class App {
 
     const today = new Date();
     const todayStr = today.toISOString().slice(0, 10);
+    const hour = today.getHours();
 
     // Birthday alerts
     const contacts = store.get('relationship_contacts') || [];
@@ -2162,6 +2187,28 @@ var App = class App {
       this.addNotification(
         `bday_${c.name}_${today.getFullYear()}_${bd.getMonth()}_${bd.getDate()}`,
         'birthday', `🎂 ${c.name}さんのお誕生日が${label}です`, 'relationship'
+      );
+    });
+
+    // Medication reminders: alert when current time matches timing window and med not yet logged as taken
+    const meds = store.get('health_medications') || [];
+    const latestByName = new Map();
+    meds.forEach(m => { if (m.name && !latestByName.has(m.name)) latestByName.set(m.name, m); });
+    const takenToday = new Set(
+      meds.filter(m => m.taken === true && m.timestamp?.startsWith(todayStr)).map(m => m.name)
+    );
+    const timingWindows = { morning: [6, 11], noon: [11, 14], evening: [17, 21], bedtime: [20, 24] };
+    latestByName.forEach((m, name) => {
+      if (takenToday.has(name)) return;
+      const window = timingWindows[m.timing];
+      if (!window) return;
+      if (hour < window[0] || hour >= window[1]) return;
+      const timingLabel = { morning: '朝', noon: '昼', evening: '夜', bedtime: '就寝前' };
+      this.addNotification(
+        `med_${name}_${todayStr}_${m.timing}`,
+        'medication',
+        `💊 ${timingLabel[m.timing] || ''}のお薬「${name}」をまだ服用していません`,
+        'health'
       );
     });
 
@@ -2224,6 +2271,73 @@ var App = class App {
   closeModal() {
     const overlay = document.getElementById('modal-overlay');
     if (overlay) overlay.classList.remove('active');
+  }
+
+  // ─── Font size accessibility ───
+  // Levels: 0=normal(16px), 1=large(18px), 2=xlarge(20px), 3=xxlarge(22px)
+  changeFontSize(delta) {
+    const levels = [14, 16, 18, 20, 22];
+    const current = parseInt(localStorage.getItem('lms_fontSize') || '16', 10);
+    const idx = levels.indexOf(current);
+    const nextIdx = Math.max(0, Math.min(levels.length - 1, (idx === -1 ? 1 : idx) + delta));
+    const next = levels[nextIdx];
+    document.documentElement.style.setProperty('--base-font-size', next + 'px');
+    localStorage.setItem('lms_fontSize', String(next));
+    Components.showToast(`文字サイズ: ${next}px`, 'info');
+  }
+
+  applyStoredFontSize() {
+    const stored = localStorage.getItem('lms_fontSize');
+    if (stored) document.documentElement.style.setProperty('--base-font-size', stored + 'px');
+  }
+
+  // ─── Voice input (Web Speech API) ───
+  startVoiceInput(targetId) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { Components.showToast('このブラウザは音声入力に対応していません', 'warning'); return; }
+
+    if (this._voiceRecognition) {
+      this._voiceRecognition.stop();
+      this._voiceRecognition = null;
+      this._updateVoiceBtn(targetId, false);
+      return;
+    }
+
+    const rec = new SR();
+    rec.lang = 'ja-JP';
+    rec.interimResults = true;
+    rec.continuous = false;
+    this._voiceRecognition = rec;
+    this._updateVoiceBtn(targetId, true);
+
+    rec.onresult = (e) => {
+      const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+      const el = document.getElementById(targetId);
+      if (el) el.value = transcript;
+    };
+
+    rec.onend = () => {
+      this._voiceRecognition = null;
+      this._updateVoiceBtn(targetId, false);
+    };
+
+    rec.onerror = (e) => {
+      this._voiceRecognition = null;
+      this._updateVoiceBtn(targetId, false);
+      if (e.error !== 'no-speech' && e.error !== 'aborted') {
+        Components.showToast('音声入力エラー: ' + e.error, 'error');
+      }
+    };
+
+    rec.start();
+  }
+
+  _updateVoiceBtn(targetId, isActive) {
+    const btn = document.querySelector(`[data-voice-for="${targetId}"]`);
+    if (!btn) return;
+    btn.textContent = isActive ? '⏹' : '🎤';
+    btn.title = isActive ? '音声入力を停止' : '音声で入力';
+    btn.classList.toggle('voice-active', isActive);
   }
 };
 

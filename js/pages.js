@@ -46,6 +46,8 @@ var Pages = {
     html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
+        <button class="btn btn-icon btn-secondary" data-voice-for="quickInput"
+          onclick="app.startVoiceInput('quickInput')" title="音声で入力" aria-label="音声入力">🎤</button>
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
       <div id="quickResponse"></div>`;
@@ -1089,6 +1091,8 @@ var Pages = {
         <textarea id="chatInput" class="form-input" rows="2"
           placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();app.sendChat('${domain}')}"></textarea>
+        <button class="btn btn-icon btn-secondary" data-voice-for="chatInput"
+          onclick="app.startVoiceInput('chatInput')" title="音声で入力" aria-label="音声入力">🎤</button>
         <button class="btn btn-primary" onclick="app.sendChat('${domain}')">${i18n.t('send')}</button>
       </div>
 

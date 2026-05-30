@@ -20,13 +20,13 @@ var AIEngine = {
       let result;
       switch (modelConfig.provider) {
         case 'anthropic':
-          result = await this.callAnthropic(model, systemPrompt, userMessage, modelConfig.maxTokens);
+          result = await this.callAnthropic(model, systemPrompt, userMessage, modelConfig.maxTokens, userData?.imageBase64);
           break;
         case 'openai':
-          result = await this.callOpenAI(model, systemPrompt, userMessage, modelConfig.maxTokens);
+          result = await this.callOpenAI(model, systemPrompt, userMessage, modelConfig.maxTokens, userData?.imageBase64);
           break;
         case 'google':
-          result = await this.callGemini(model, systemPrompt, userMessage, modelConfig.maxTokens);
+          result = await this.callGemini(model, systemPrompt, userMessage, modelConfig.maxTokens, userData?.imageBase64);
           break;
         default:
           throw new Error('Unknown provider: ' + modelConfig.provider);
@@ -145,7 +145,7 @@ var AIEngine = {
 
   // ─── API Calls ───
 
-  async callAnthropic(model, system, userMsg, maxTokens) {
+  async callAnthropic(model, system, userMsg, maxTokens, imageBase64 = null) {
     const apiKey = this.getApiKey('anthropic');
     if (!apiKey) throw new Error('Anthropic APIキーが設定されていません。管理者にご連絡ください。');
 
@@ -187,7 +187,25 @@ var AIEngine = {
           model: this.resolveModelId(model),
           max_tokens: maxTokens,
           system: system,
-          messages: [{ role: 'user', content: userMsg }]
+          messages: [{
+            role: 'user',
+            content: imageBase64
+              ? [
+                  {
+                    type: 'image',
+                    source: {
+                      type: 'base64',
+                      media_type: imageBase64.startsWith('data:image/png') ? 'image/png'
+                        : imageBase64.startsWith('data:image/gif') ? 'image/gif'
+                        : imageBase64.startsWith('data:image/webp') ? 'image/webp'
+                        : 'image/jpeg',
+                      data: imageBase64.replace(/^data:image\/[a-z]+;base64,/, '')
+                    }
+                  },
+                  { type: 'text', text: userMsg }
+                ]
+              : userMsg
+          }]
         })
       });
     } catch (e) {
@@ -211,9 +229,16 @@ var AIEngine = {
     return data.content?.[0]?.text || '';
   },
 
-  async callOpenAI(model, system, userMsg, maxTokens) {
+  async callOpenAI(model, system, userMsg, maxTokens, imageBase64 = null) {
     const apiKey = this.getApiKey('openai');
     if (!apiKey) throw new Error('OpenAI API key not set');
+
+    const userContent = imageBase64
+      ? [
+          { type: 'image_url', image_url: { url: imageBase64 } },
+          { type: 'text', text: userMsg }
+        ]
+      : userMsg;
 
     const res = await fetch(CONFIG.endpoints.openai, {
       method: 'POST',
@@ -226,7 +251,7 @@ var AIEngine = {
         max_tokens: maxTokens,
         messages: [
           { role: 'system', content: system },
-          { role: 'user', content: userMsg }
+          { role: 'user', content: userContent }
         ]
       })
     });
@@ -239,9 +264,19 @@ var AIEngine = {
     return data.choices?.[0]?.message?.content || '';
   },
 
-  async callGemini(model, system, userMsg, maxTokens) {
+  async callGemini(model, system, userMsg, maxTokens, imageBase64 = null) {
     const apiKey = this.getApiKey('google');
     if (!apiKey) throw new Error('Google API key not set');
+
+    const parts = [];
+    if (imageBase64) {
+      const mimeType = imageBase64.startsWith('data:image/png') ? 'image/png'
+        : imageBase64.startsWith('data:image/gif') ? 'image/gif'
+        : imageBase64.startsWith('data:image/webp') ? 'image/webp'
+        : 'image/jpeg';
+      parts.push({ inline_data: { mime_type: mimeType, data: imageBase64.replace(/^data:image\/[a-z]+;base64,/, '') } });
+    }
+    parts.push({ text: userMsg });
 
     const url = `${CONFIG.endpoints.google}/${this.resolveModelId(model)}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
@@ -249,7 +284,7 @@ var AIEngine = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         system_instruction: { parts: [{ text: system }] },
-        contents: [{ parts: [{ text: userMsg }] }],
+        contents: [{ parts }],
         generationConfig: { maxOutputTokens: maxTokens }
       })
     });
