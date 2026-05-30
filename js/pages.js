@@ -1276,6 +1276,8 @@ var Pages = {
         <p class="page-desc">これまで記録したすべてのデータを整理して見られます。</p>
       </div>
 
+      ${this.renderDomainTrendChart(domain)}
+
       <!-- Summary -->
       <div class="card" style="margin-bottom:16px;">
         <div class="card-body">
@@ -1359,24 +1361,28 @@ var Pages = {
 
         entries.forEach(entry => {
           const catLabel = entry._category ? i18n.t(categories[entry._category]?.label || entry._category) : '';
+          const safeId = Components.escapeHtml(entry.id || '');
+          const safeCat = Components.escapeHtml(entry._category || '');
           const fields = Object.entries(entry)
-            .filter(([k, v]) => !k.startsWith('_') && k !== 'timestamp' && k !== 'id' && k !== 'domain' && k !== 'category' && v !== null && v !== undefined && v !== '')
+            .filter(([k, v]) => !k.startsWith('_') && k !== 'timestamp' && k !== 'id' && k !== 'domain' && k !== 'category' && k !== 'synced' && k !== '_synced' && v !== null && v !== undefined && v !== '')
             .slice(0, 6);
 
           html += `<div class="data-entry-card">
             <div class="data-entry-header">
-              <span class="data-entry-cat">${catLabel}</span>
+              <span class="data-entry-cat">${Components.escapeHtml(catLabel)}</span>
               <span class="data-entry-time">${new Date(entry.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
               <div class="data-entry-actions">
-                <button class="btn-icon-sm" onclick="app.editDataEntry('${domain}','${entry._category}','${entry.id}')" title="編集">編集</button>
-                <button class="btn-icon-sm" onclick="app.deleteDataEntry('${domain}','${entry._category}','${entry.id}')" title="削除">削除</button>
+                <button class="btn-icon-sm" data-domain="${domain}" data-cat="${safeCat}" data-id="${safeId}"
+                  onclick="app.editDataEntry(this.dataset.domain,this.dataset.cat,this.dataset.id)" title="編集">編集</button>
+                <button class="btn-icon-sm" data-domain="${domain}" data-cat="${safeCat}" data-id="${safeId}"
+                  onclick="app.deleteDataEntry(this.dataset.domain,this.dataset.cat,this.dataset.id)" title="削除">削除</button>
               </div>
             </div>
             <div class="data-entry-fields">
               ${fields.map(([k, v]) => {
-                const label = i18n.t(k) || k;
-                const val = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
-                return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${val}</span></div>`;
+                const label = Components.escapeHtml(i18n.t(k) || k);
+                const raw = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
+                return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${Components.escapeHtml(raw)}</span></div>`;
               }).join('')}
             </div>
           </div>`;
@@ -1388,6 +1394,142 @@ var Pages = {
 
     html += `</div></div>`;
     return html;
+  },
+
+  // ─── Domain-specific trend chart for data browser ───
+  renderDomainTrendChart(domain) {
+    const METRICS = {
+      health:        { cat: 'symptoms',     key: 'condition_level', label: '体調',     min: 0, max: 10, color: '#10b981' },
+      consciousness: { cat: 'entries',      key: 'mood_level',      label: '気分',     min: 0, max: 10, color: '#6C63FF' },
+      time:          { cat: 'entries',      key: 'productivity',    label: '充実度',   min: 0, max: 10, color: '#f59e0b' },
+      work:          { cat: 'reviews',      key: null,              label: '記録数',   min: 0, max: null, color: '#3b82f6' },
+      relationship:  { cat: 'interactions', key: null,              label: 'やりとり数', min: 0, max: null, color: '#ef4444' },
+      assets:        { cat: 'expenses',     key: 'amount',          label: '支出',     min: 0, max: null, color: '#d97706' }
+    };
+    const m = METRICS[domain];
+    if (!m) return '';
+
+    const entries = store.getDomainData(domain, m.cat, 90);
+    if (entries.length === 0) return '';
+
+    const days = 30;
+    const today = new Date();
+    const labels = [];
+    const values = [];
+    let hasData = false;
+
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      labels.push(i % 7 === 0 || i === 0 ? d.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }) : '');
+      const dayEntries = entries.filter(e => (e.timestamp || '').startsWith(key));
+      if (dayEntries.length === 0) {
+        values.push(null);
+      } else if (m.key) {
+        const avg = dayEntries.reduce((s, e) => s + (Number(e[m.key]) || 0), 0) / dayEntries.length;
+        values.push(Math.round(avg * 10) / 10);
+        hasData = true;
+      } else {
+        values.push(dayEntries.length);
+        hasData = true;
+      }
+    }
+
+    if (!hasData) return '';
+
+    // Compute 7-day moving average
+    const maValues = values.map((_, i) => {
+      const window = values.slice(Math.max(0, i - 6), i + 1).filter(v => v !== null);
+      return window.length >= 2 ? Math.round(window.reduce((a, b) => a + b, 0) / window.length * 10) / 10 : null;
+    });
+
+    // Stats: avg, trend
+    const nonNull = values.filter(v => v !== null);
+    const avg = nonNull.length ? Math.round(nonNull.reduce((a, b) => a + b, 0) / nonNull.length * 10) / 10 : 0;
+    const recent = values.slice(-7).filter(v => v !== null);
+    const older  = values.slice(-14, -7).filter(v => v !== null);
+    const recentAvg = recent.length ? recent.reduce((a, b) => a + b, 0) / recent.length : 0;
+    const olderAvg  = older.length  ? older.reduce((a, b) => a + b, 0)  / older.length  : recentAvg;
+    const trend = recentAvg > olderAvg + 0.3 ? '↑' : recentAvg < olderAvg - 0.3 ? '↓' : '→';
+    const trendColor = trend === '↑' ? '#10b981' : trend === '↓' ? '#ef4444' : '#94a3b8';
+
+    const chartId = 'dbtc_' + domain + '_' + Date.now();
+
+    setTimeout(() => {
+      const canvas = document.getElementById(chartId);
+      if (!canvas || !window.Chart) return;
+      if (canvas._chart) canvas._chart.destroy();
+      canvas._chart = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              data: values,
+              borderColor: m.color + 'aa',
+              backgroundColor: 'transparent',
+              borderWidth: 1.5,
+              pointRadius: values.map(v => v !== null ? 2 : 0),
+              pointBackgroundColor: m.color,
+              fill: false,
+              tension: 0.3,
+              spanGaps: false
+            },
+            {
+              data: maValues,
+              borderColor: m.color,
+              backgroundColor: m.color + '18',
+              borderWidth: 2.5,
+              pointRadius: 0,
+              fill: true,
+              tension: 0.5,
+              spanGaps: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              min: m.min,
+              max: m.max || undefined,
+              ticks: { font: { size: 10 }, maxTicksLimit: 5 },
+              grid: { color: 'rgba(0,0,0,0.05)' }
+            },
+            x: {
+              ticks: {
+                font: { size: 10 },
+                maxRotation: 0,
+                callback: (val, i) => labels[i] || ''
+              },
+              grid: { display: false }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => ctx.raw !== null ? `${m.label}: ${ctx.raw}` : 'データなし'
+              }
+            }
+          }
+        }
+      });
+    }, 150);
+
+    return `<div class="db-trend-section">
+      <div class="db-trend-header">
+        <span class="db-trend-title">30日間の${m.label}推移</span>
+        <div class="db-trend-stats">
+          <span class="db-stat">平均 <strong>${avg}</strong></span>
+          <span class="db-trend-arrow" style="color:${trendColor}">${trend}</span>
+          <span class="db-stat" style="color:${trendColor}">直近7日 <strong>${recentAvg.toFixed(1)}</strong></span>
+        </div>
+      </div>
+      <div style="height:140px;position:relative;"><canvas id="${chartId}"></canvas></div>
+    </div>`;
   },
 
   // ═══════════════════════════════════════════════════════════

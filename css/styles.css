@@ -308,6 +308,13 @@ select.form-input { appearance: auto; }
 /* ─── Data Browser ─── */
 .page-data-browser { max-width: 1100px; margin: 0 auto; }
 .data-browser-header { margin-bottom: 16px; }
+.db-trend-section { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+.db-trend-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+.db-trend-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.db-trend-stats { display: flex; align-items: center; gap: 12px; }
+.db-stat { font-size: 12px; color: var(--text-secondary); }
+.db-stat strong { color: var(--text-primary); }
+.db-trend-arrow { font-size: 18px; font-weight: 700; line-height: 1; }
 .data-browser-header h2 { margin-bottom: 4px; }
 .page-desc { color: var(--text-secondary); font-size: 13px; }
 
