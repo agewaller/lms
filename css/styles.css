@@ -2002,7 +2002,33 @@ body.is-admin .admin-only { display: flex; }
 }
 .health-trend-section h3 { margin: 0 0 10px; font-size: 14px; }
 
+/* ─── Chat Starter Questions ─── */
+.chat-starters {
+  padding: 20px;
+  text-align: center;
+}
+.starters-prompt { color: var(--text-secondary); font-size: 13px; margin-bottom: 12px; }
+.starters-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.starter-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-primary);
+  transition: background 0.15s, border-color 0.15s;
+}
+.starter-btn:hover { background: var(--bg-tertiary, var(--border)); border-color: var(--accent); }
+
 @media (max-width: 480px) {
   .checkin-btn-label { display: none; }
   .checkin-btn { padding: 8px 2px; }
+  .starters-grid { grid-template-columns: 1fr; }
 }

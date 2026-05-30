@@ -946,12 +946,29 @@ var Pages = {
       .filter(m => m.domain === domain || !m.domain)
       .slice(-50);
 
+    const starters = {
+      health:       ['最近の体調について聞いてほしい', '薬の飲み合わせが心配です', '睡眠の質を改善したい', '血圧・血糖の管理方法は？'],
+      consciousness:['最近の気分の波を整理したい', 'ストレスをうまく手放したい', '生きがいを見つけるには？', '自分に合った瞑想を教えて'],
+      time:         ['時間の使い方を見直したい', '毎日続けられる習慣のコツは？', '退職後の充実した過ごし方', '趣味を見つけるアドバイスを'],
+      work:         ['自分の経験を活かす方法は？', 'ボランティア・副業を始めるには', 'スキルを活かして社会貢献したい', '退職後の生きがいを見つけたい'],
+      relationship: ['家族との関係で相談があります', '大切な人との距離感について', '孤立感を感じています', '新しい出会いを増やすには？'],
+      assets:       ['老後の資金計画を立てたい', 'NISAを始めるには？', '年金だけで安心できますか？', '資産を守りながら増やすには？']
+    };
+    const domainStarters = starters[domain] || [];
+
     let html = `<div class="page-ask-ai">
       <h2>${i18n.t(domain)} - 相談する</h2>
 
       <div class="chat-container" id="chatContainer">
-        ${history.length === 0 ?
-          Components.emptyState('💬', '相談する', i18n.t('quick_input_placeholder')) :
+        ${history.length === 0 ? `
+          <div class="chat-starters">
+            <p class="starters-prompt">よくある相談：</p>
+            <div class="starters-grid">
+              ${domainStarters.map(q => `
+                <button class="starter-btn" onclick="app.sendChatDirect('${domain}','${Components.escapeHtml(q)}')">${Components.escapeHtml(q)}</button>
+              `).join('')}
+            </div>
+          </div>` :
           history.map(m => Components.chatMessage(m)).join('')
         }
       </div>

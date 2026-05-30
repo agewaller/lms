@@ -394,6 +394,13 @@ var App = class App {
   }
 
   // ─── AI Chat ───
+  // Send a pre-set starter question directly
+  sendChatDirect(domain, text) {
+    const input = document.getElementById('chatInput');
+    if (input) input.value = text;
+    this.sendChat(domain);
+  }
+
   async sendChat(domain) {
     const input = document.getElementById('chatInput');
     if (!input || !input.value.trim()) return;
