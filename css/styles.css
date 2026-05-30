@@ -1729,6 +1729,39 @@ body.is-admin .admin-only { display: flex; }
   gap: 10px;
 }
 
+/* ─── Streak + Trend ─── */
+.trend-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin: 16px 0;
+}
+.streak-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 56px;
+  background: var(--streak-color, #6C63FF)18;
+  border: 2px solid var(--streak-color, #6C63FF)40;
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+.streak-num {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--streak-color, #6C63FF);
+  line-height: 1;
+}
+.streak-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
   /* Sidebar off-canvas */

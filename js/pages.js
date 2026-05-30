@@ -77,6 +77,9 @@ var Pages = {
       </div>
     </div>`;
 
+    // Streak + trend chart (shown when there are ≥3 days of data)
+    html += this.renderStreakAndTrend(domain);
+
     // Recent records
     html += `<div class="recent-section">
       <h3>${i18n.t('recent_records')}</h3>
@@ -170,6 +173,91 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Streak counter + 30-day trend chart ───
+  renderStreakAndTrend(domain) {
+    const domainConfig = CONFIG.domains[domain];
+    const color = domainConfig?.color || '#6C63FF';
+    const categories = Object.keys(domainConfig?.categories || {});
+
+    // Build a set of days with at least one record (past 90 days)
+    const daySet = new Set();
+    categories.forEach(cat => {
+      store.getDomainData(domain, cat, 90).forEach(e => {
+        if (e.timestamp) daySet.add(e.timestamp.slice(0, 10));
+      });
+    });
+
+    if (daySet.size < 3) return ''; // not enough data to show chart
+
+    // Calculate current streak (consecutive days ending today)
+    const today = new Date();
+    let streak = 0;
+    for (let i = 0; i < 90; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      if (daySet.has(key)) streak++;
+      else if (i > 0) break; // gap found
+    }
+
+    // Last 30 days for chart
+    const chartDays = 30;
+    const labels = [];
+    const values = [];
+    for (let i = chartDays - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      labels.push(i === 0 ? '今日' : i === 1 ? '昨日' : `${i}日前`);
+      values.push(daySet.has(key) ? 1 : 0);
+    }
+
+    const chartId = 'trend-chart-' + domain;
+
+    // Schedule chart render after DOM is ready
+    setTimeout(() => {
+      const canvas = document.getElementById(chartId);
+      if (!canvas || typeof Chart === 'undefined') return;
+      if (canvas._chart) canvas._chart.destroy();
+      canvas._chart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: values.map(v => v ? color + 'cc' : '#e2e8f0'),
+            borderRadius: 3,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: {
+            callbacks: { label: ctx => ctx.raw ? '記録あり' : '記録なし' }
+          }},
+          scales: {
+            x: { display: false },
+            y: { display: false, min: 0, max: 1 }
+          }
+        }
+      });
+    }, 100);
+
+    return `<div class="trend-section">
+      <div class="streak-badge" style="--streak-color:${color}">
+        <span class="streak-num">${streak}</span>
+        <span class="streak-label">日連続</span>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">過去30日の記録</div>
+        <div style="height:48px;">
+          <canvas id="${chartId}"></canvas>
+        </div>
+      </div>
+    </div>`;
   },
 
   // ─── Onboarding welcome card ───
