@@ -3,6 +3,13 @@
    ============================================================ */
 var Components = {
 
+  // ─── HTML escaping (XSS prevention) ───
+  escapeHtml(str) {
+    const s = String(str ?? '');
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  },
+
   // ─── Score Gauge (circular) ───
   scoreGauge(score, size = 120, label = '') {
     const pct = Math.max(0, Math.min(100, score));

@@ -931,25 +931,32 @@ var Pages = {
     // Helper: render a form field from schema definition
     const renderField = (field, value) => {
       const val = value ?? '';
+      const safeVal = Components.escapeHtml(String(val));
       const id = 'profile_' + field.key;
       switch (field.type) {
         case 'number':
-          return `<input type="number" id="${id}" class="form-input" value="${val}" ${field.step ? `step="${field.step}"` : ''}>`;
+          return `<input type="number" id="${id}" class="form-input" value="${safeVal}" ${field.step ? `step="${Components.escapeHtml(String(field.step))}"` : ''}>`;
         case 'text':
-          return `<input type="text" id="${id}" class="form-input" value="${val}">`;
+          return `<input type="text" id="${id}" class="form-input" value="${safeVal}">`;
         case 'date':
-          return `<input type="date" id="${id}" class="form-input" value="${val}">`;
+          return `<input type="date" id="${id}" class="form-input" value="${safeVal}">`;
         case 'textarea':
-          return `<textarea id="${id}" class="form-input" rows="3">${val}</textarea>`;
+          return `<textarea id="${id}" class="form-input" rows="3">${safeVal}</textarea>`;
         case 'select':
           return `<select id="${id}" class="form-input">
             <option value="">選択してください</option>
-            ${(field.options || []).map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
+            ${(field.options || []).map(o => `<option value="${Components.escapeHtml(o)}" ${val === o ? 'selected' : ''}>${Components.escapeHtml(o)}</option>`).join('')}
           </select>`;
         default:
-          return `<input type="text" id="${id}" class="form-input" value="${val}">`;
+          return `<input type="text" id="${id}" class="form-input" value="${safeVal}">`;
       }
     };
+
+    // Profile completion percentage
+    const allFields = Object.values(schema).flat();
+    const filledFields = allFields.filter(f => profile[f.key] != null && profile[f.key] !== '');
+    const completePct = allFields.length > 0 ? Math.round(filledFields.length / allFields.length * 100) : 0;
+    const completeColor = completePct >= 80 ? '#27AE60' : completePct >= 40 ? '#F39C12' : '#E74C3C';
 
     const renderSchemaSection = (sectionKey, sectionTitle) => {
       const fields = schema[sectionKey] || [];
@@ -991,6 +998,16 @@ var Pages = {
 
     let html = `<div class="page-settings">
       <h2>${i18n.t('settings')}</h2>
+
+      <!-- Profile completion bar -->
+      <div class="profile-completion">
+        <div class="pc-header">
+          <span>プロフィール完成度</span>
+          <strong style="color:${completeColor}">${completePct}%</strong>
+        </div>
+        <div class="pc-bar"><div class="pc-fill" style="width:${completePct}%;background:${completeColor}"></div></div>
+        ${completePct < 60 ? `<p class="pc-hint">プロフィールを充実させると、より正確なアドバイスが得られます</p>` : ''}
+      </div>
 
       <!-- 基本情報 -->
       ${renderSchemaSection('basic', '基本情報')}
@@ -1074,19 +1091,19 @@ var Pages = {
       <p>ここに登録した内容を求人プラットフォームにワンクリックで送信できます。</p>
       <div class="form-group">
         <label>お名前</label>
-        <input type="text" id="resumeName" class="form-input" value="${r.name || ''}" placeholder="山田花子">
+        <input type="text" id="resumeName" class="form-input" value="${Components.escapeHtml(r.name || '')}" placeholder="山田花子">
       </div>
       <div class="form-group">
         <label>職務要約・自己PR</label>
-        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${r.summary || ''}</textarea>
+        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${Components.escapeHtml(r.summary || '')}</textarea>
       </div>
       <div class="form-group">
         <label>スキル・資格（カンマ区切り）</label>
-        <input type="text" id="resumeSkills" class="form-input" value="${(r.skills || []).join(', ')}" placeholder="例：看護師免許, 英検2級, Excel">
+        <input type="text" id="resumeSkills" class="form-input" value="${Components.escapeHtml((r.skills || []).join(', '))}" placeholder="例：看護師免許, 英検2級, Excel">
       </div>
       <div class="form-group">
         <label>職務経歴</label>
-        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${r.history || ''}</textarea>
+        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${Components.escapeHtml(r.history || '')}</textarea>
       </div>
       <div class="form-group">
         <label>希望する働き方</label>

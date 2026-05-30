@@ -1950,6 +1950,19 @@ body.is-admin .admin-only { display: flex; }
 .notif-message { display: block; font-size: 13px; line-height: 1.5; }
 .notif-date { display: block; font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
 
+/* ─── Profile Completion Bar ─── */
+.profile-completion {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+.pc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; }
+.pc-bar { background: var(--bg-tertiary, var(--border)); border-radius: 999px; height: 8px; overflow: hidden; }
+.pc-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+.pc-hint { margin: 8px 0 0; font-size: 12px; color: var(--text-secondary); }
+
 /* ─── Health Trend Section ─── */
 .health-trend-section {
   background: var(--bg-secondary);
