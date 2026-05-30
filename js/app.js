@@ -20,6 +20,7 @@ var App = class App {
       store.set('currentPage', 'home');
       this.renderApp();
       this.startInboxPolling();
+      setTimeout(() => this.checkNotifications(), 800);
     }
 
     // Listen for auth changes
@@ -29,6 +30,7 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        setTimeout(() => this.checkNotifications(), 800);
       } else {
         this.stopInboxPolling();
       }
@@ -195,6 +197,9 @@ var App = class App {
 
     // Render page content
     mainContent.innerHTML = Pages.render(page, domain);
+
+    // Refresh notification badge after every render
+    this.updateNotifBadge();
 
     // Auto-close sidebar on mobile after navigation
     if (window.innerWidth <= 768) {
@@ -1986,6 +1991,116 @@ var App = class App {
     const val = document.getElementById(inputId)?.value?.trim();
     this.closeModal();
     if (val && this._promptCallback) this._promptCallback(val);
+  }
+
+  // ─── Quick Check-in ───
+  quickCheckIn(domain, category, saveKey, value, emoji, label) {
+    store.addDomainEntry(domain, category, {
+      [saveKey]: value,
+      checkin: true,
+      type: 'daily_check',
+      emoji,
+      label
+    });
+    Components.showToast(`${emoji} ${label} — 記録しました`, 'success');
+    this.renderApp();
+  }
+
+  clearTodayCheckin(domain, category) {
+    const today = new Date().toISOString().slice(0, 10);
+    const key = `${domain}_${category}`;
+    const data = store.get(key) || [];
+    store.set(key, data.filter(e => !(e.timestamp?.startsWith(today) && e.checkin === true)));
+    this.renderApp();
+  }
+
+  // ─── Notifications ───
+  addNotification(id, type, message, domain) {
+    const notifs = store.get('notifications') || [];
+    if (notifs.some(n => n.id === id)) return; // dedup
+    store.set('notifications', [
+      { id, type, message, domain: domain || null, timestamp: new Date().toISOString(), read: false },
+      ...notifs
+    ].slice(0, 50));
+    store.set('unreadCount', (store.get('notifications') || []).filter(n => !n.read).length);
+    this.updateNotifBadge();
+  }
+
+  updateNotifBadge() {
+    const badge = document.getElementById('notifBadge');
+    const count = store.get('unreadCount') || 0;
+    if (!badge) return;
+    badge.textContent = count > 9 ? '9+' : String(count);
+    badge.style.display = count > 0 ? 'flex' : 'none';
+  }
+
+  checkNotifications() {
+    if (sessionStorage.getItem('lms_notif_checked')) { this.updateNotifBadge(); return; }
+    sessionStorage.setItem('lms_notif_checked', '1');
+
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+
+    // Birthday alerts
+    const contacts = store.get('relationship_contacts') || [];
+    contacts.forEach(c => {
+      if (!c.birthday) return;
+      const bd = new Date(c.birthday);
+      const next = new Date(today.getFullYear(), bd.getMonth(), bd.getDate());
+      if (next < today) next.setFullYear(next.getFullYear() + 1);
+      const daysUntil = Math.ceil((next - today) / (1000 * 60 * 60 * 24));
+      if (daysUntil > 7) return;
+      const label = daysUntil === 0 ? '今日' : `${daysUntil}日後`;
+      this.addNotification(
+        `bday_${c.name}_${today.getFullYear()}_${bd.getMonth()}_${bd.getDate()}`,
+        'birthday', `🎂 ${c.name}さんのお誕生日が${label}です`, 'relationship'
+      );
+    });
+
+    // Overdue contact alert
+    if (typeof RelationshipFeatures !== 'undefined') {
+      const iso = RelationshipFeatures.calculateIsolationScore();
+      if (iso.level === 'warning' && iso.overdueCount > 0) {
+        this.addNotification(
+          `overdue_${todayStr}`,
+          'overdue_contact',
+          `⚠️ ${iso.overdueCount}人の大切な方と、しばらく連絡できていません`,
+          'relationship'
+        );
+      }
+    }
+
+    this.updateNotifBadge();
+  }
+
+  openNotificationsPanel() {
+    const notifs = store.get('notifications') || [];
+    if (notifs.length === 0) {
+      this.openModal('お知らせ', '<p style="margin:0;color:var(--text-secondary);">現在のお知らせはありません。</p>');
+      return;
+    }
+    let html = `<div style="margin-bottom:10px;text-align:right;">
+      <button class="btn btn-sm btn-secondary" onclick="app.markAllRead()">すべて既読</button>
+    </div><div class="notif-list">`;
+    notifs.slice(0, 25).forEach(n => {
+      const date = new Date(n.timestamp).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+      html += `<div class="notif-item${n.read ? ' notif-read' : ''}">
+        <div class="notif-body">
+          <span class="notif-message">${Components.escapeHtml(n.message)}</span>
+          <span class="notif-date">${date}</span>
+        </div>
+        ${n.domain ? `<button class="btn btn-sm btn-secondary" onclick="app.switchDomain('${n.domain}');app.closeModal()">見る</button>` : ''}
+      </div>`;
+    });
+    html += '</div>';
+    this.openModal('お知らせ', html);
+    this.markAllRead();
+  }
+
+  markAllRead() {
+    store.set('notifications', (store.get('notifications') || []).map(n => ({ ...n, read: true })));
+    store.set('unreadCount', 0);
+    this.updateNotifBadge();
   }
 
   // ─── Modal ───

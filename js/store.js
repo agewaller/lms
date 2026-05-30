@@ -186,7 +186,8 @@ var Store = class Store {
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
       'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
-      'onboardingDismissed'
+      'onboardingDismissed',
+      'notifications', 'unreadCount'
     ];
   }
 

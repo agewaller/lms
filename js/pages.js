@@ -41,6 +41,8 @@ var Pages = {
       html += this.renderOnboarding();
     }
 
+    html += this.renderQuickCheckIn(domain);
+
     html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
@@ -124,6 +126,11 @@ var Pages = {
     }
 
     // ─── Domain-specific widgets ───
+
+    // Health domain: 14-day trend chart
+    if (domain === 'health') {
+      html += this.renderHealthTrendChart();
+    }
 
     // Consciousness domain: 7-layer visualization + transcript input
     if (domain === 'consciousness') {
@@ -307,6 +314,126 @@ var Pages = {
           `).join('')}
         </div>
       </div>
+    </div>`;
+  },
+
+  // ─── Quick Daily Check-in Widget ───
+  renderQuickCheckIn(domain) {
+    const configs = {
+      health:       { title: '今日の体調', category: 'symptoms',     saveKey: 'condition_level',
+        levels: [{e:'😊',l:'快調',v:10},{e:'😌',l:'普通',v:7},{e:'😔',l:'疲れ気味',v:5},{e:'🤒',l:'体調悪い',v:3},{e:'😴',l:'非常に辛い',v:1}] },
+      consciousness:{ title: '今日の心の状態', category: 'entries',   saveKey: 'mood',
+        levels: [{e:'✨',l:'活き活き',v:10},{e:'😊',l:'穏やか',v:7},{e:'😐',l:'まあまあ',v:5},{e:'😔',l:'落ち込み',v:3},{e:'😫',l:'辛い',v:1}] },
+      time:         { title: '今日の充実度', category: 'entries',     saveKey: 'productivity',
+        levels: [{e:'💪',l:'超充実',v:10},{e:'😊',l:'まずまず',v:7},{e:'😐',l:'普通',v:5},{e:'😞',l:'やや無駄',v:3},{e:'😴',l:'だらだら',v:1}] },
+      work:         { title: '今日の仕事の調子', category: 'tasks',   saveKey: 'energy',
+        levels: [{e:'🔥',l:'絶好調',v:10},{e:'😊',l:'順調',v:7},{e:'😐',l:'普通',v:5},{e:'😓',l:'厳しい',v:3},{e:'😩',l:'しんどい',v:1}] },
+      relationship: { title: '今日のつながり感', category: 'interactions', saveKey: 'connection_level',
+        levels: [{e:'❤️',l:'充実',v:10},{e:'😊',l:'良い',v:7},{e:'😐',l:'普通',v:5},{e:'😔',l:'少し寂しい',v:3},{e:'💔',l:'孤独感',v:1}] },
+      assets:       { title: '今日の安心度', category: 'overview',   saveKey: 'confidence',
+        levels: [{e:'📈',l:'安心',v:10},{e:'😊',l:'まずまず',v:7},{e:'😐',l:'普通',v:5},{e:'😟',l:'少し不安',v:3},{e:'😰',l:'とても不安',v:1}] }
+    };
+    const cfg = configs[domain];
+    if (!cfg) return '';
+
+    const color = CONFIG.domains[domain]?.color || '#6C63FF';
+    const today = new Date().toISOString().slice(0, 10);
+    const existing = store.getDomainData(domain, cfg.category, 1)
+      .filter(e => e.timestamp?.startsWith(today) && e.checkin === true);
+    const todayEntry = existing[existing.length - 1];
+
+    if (todayEntry) {
+      const found = cfg.levels.find(lv => lv.v === todayEntry[cfg.saveKey]);
+      return `<div class="checkin-widget checkin-done" style="--domain-color:${color}">
+        <div class="checkin-done-inner">
+          <span class="checkin-emoji">${found?.e || '✓'}</span>
+          <div>
+            <div class="checkin-done-title">今日は記録済み</div>
+            <div class="checkin-done-label">${Components.escapeHtml(found?.l || '記録済')}</div>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-secondary" onclick="app.clearTodayCheckin('${domain}','${cfg.category}')">変更する</button>
+      </div>`;
+    }
+
+    return `<div class="checkin-widget" style="--domain-color:${color}">
+      <div class="checkin-title">${Components.escapeHtml(cfg.title)}は？</div>
+      <div class="checkin-buttons">
+        ${cfg.levels.map(lv => `
+          <button class="checkin-btn"
+            onclick="app.quickCheckIn('${domain}','${cfg.category}','${cfg.saveKey}',${lv.v},'${Components.escapeHtml(lv.e)}','${Components.escapeHtml(lv.l)}')"
+            title="${Components.escapeHtml(lv.l)}">
+            <span class="checkin-btn-emoji">${lv.e}</span>
+            <span class="checkin-btn-label">${Components.escapeHtml(lv.l)}</span>
+          </button>`).join('')}
+      </div>
+    </div>`;
+  },
+
+  // ─── Health 14-day condition trend chart ───
+  renderHealthTrendChart() {
+    const symptoms = store.getDomainData('health', 'symptoms', 30);
+    if (symptoms.length < 2) return '';
+
+    const days = 14;
+    const today = new Date();
+    const labels = [];
+    const values = [];
+
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      labels.push(d.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }));
+      const dayData = symptoms.filter(s => s.timestamp?.startsWith(key));
+      if (dayData.length > 0) {
+        const avg = dayData.reduce((s, e) => s + (e.condition_level || 5), 0) / dayData.length;
+        values.push(Math.round(avg * 10) / 10);
+      } else {
+        values.push(null);
+      }
+    }
+
+    if (values.every(v => v === null)) return '';
+
+    const chartId = 'htc_' + Date.now();
+    setTimeout(() => {
+      const canvas = document.getElementById(chartId);
+      if (!canvas || !window.Chart) return;
+      new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16,185,129,0.1)',
+            borderWidth: 2,
+            pointRadius: 3,
+            pointBackgroundColor: '#10b981',
+            fill: true,
+            tension: 0.4,
+            spanGaps: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { min: 0, max: 10, ticks: { stepSize: 2, font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+            x: { ticks: { font: { size: 10 }, maxRotation: 40 } }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => ctx.raw !== null ? `体調: ${ctx.raw}/10` : 'データなし' } }
+          }
+        }
+      });
+    }, 120);
+
+    return `<div class="health-trend-section">
+      <h3>14日間の体調推移</h3>
+      <div style="height:160px;position:relative;"><canvas id="${chartId}"></canvas></div>
     </div>`;
   },
 
