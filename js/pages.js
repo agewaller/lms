@@ -149,6 +149,11 @@ var Pages = {
       }
     }
 
+    // Health domain: Dashboard widget
+    if (domain === 'health') {
+      html += this.renderHealthDashboard();
+    }
+
     // Domain disclaimers
     if (domain === 'health') {
       html += `<div class="disclaimer">${i18n.t('disclaimer_health')}</div>`;
@@ -331,6 +336,159 @@ var Pages = {
 
     html += `</div></div>`;
     return html;
+  },
+
+  // ─── Health Dashboard Widget ───
+  renderHealthDashboard() {
+    const symptoms  = store.getDomainData('health', 'symptoms',  14);
+    const vitals    = store.getDomainData('health', 'vitals',     7);
+    const sleep     = store.getDomainData('health', 'sleepData',  7);
+    const activity  = store.getDomainData('health', 'activityData', 7);
+    const meds      = store.getDomainData('health', 'medications', 60);
+
+    // ── Condition trend sparkline (last 7 days) ──
+    const today = new Date();
+    const last7 = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const daySym = symptoms.filter(s => (s.date || (s.timestamp || '').slice(0, 10)) === dateStr);
+      const avg = daySym.length > 0
+        ? daySym.reduce((sum, s) => sum + (parseFloat(s.condition_level) || 5), 0) / daySym.length
+        : null;
+      last7.push({ d, avg });
+    }
+
+    const W = 280, H = 64, P = 12;
+    const pts = last7.map((item, i) => ({
+      x: P + (i / 6) * (W - 2 * P),
+      y: item.avg != null ? H - P - ((item.avg - 1) / 9) * (H - 2 * P) : null,
+      avg: item.avg,
+      day: ['日','月','火','水','木','金','土'][item.d.getDay()]
+    }));
+    const valid = pts.filter(p => p.y != null);
+    const sparkPath = valid.length > 1
+      ? `<path d="M ${valid.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L ')}"
+          fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`
+      : '';
+    const dots = valid.map(p => {
+      const c = p.avg >= 7 ? '#27AE60' : p.avg >= 4 ? '#F39C12' : '#E74C3C';
+      return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="${c}" stroke="white" stroke-width="1.5"/>`;
+    }).join('');
+    const gridLines = [1, 4, 7, 10].map(v => {
+      const y = H - P - ((v - 1) / 9) * (H - 2 * P);
+      return `<line x1="${P}" y1="${y.toFixed(1)}" x2="${W - P}" y2="${y.toFixed(1)}" stroke="#f0f0f0" stroke-width="1"/>
+        <text x="${P - 4}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="#bbb">${v}</text>`;
+    }).join('');
+    const labels = pts.map(p =>
+      `<text x="${p.x.toFixed(1)}" y="${H + 16}" text-anchor="middle" font-size="10" fill="#999">${p.day}</text>`
+    ).join('');
+
+    // ── Latest vitals ──
+    const latestV = vitals.length > 0 ? vitals[vitals.length - 1] : null;
+
+    // ── Sleep & Activity summaries ──
+    const avgSleep = sleep.length > 0
+      ? (sleep.reduce((s, e) => s + (parseFloat(e.quality) || 0), 0) / sleep.length).toFixed(1)
+      : null;
+    const totalActMin = activity.reduce((s, e) => s + (parseInt(e.duration) || 0), 0);
+
+    // ── Active medications (deduplicated by name) ──
+    const seenMeds = new Set();
+    const activeMeds = meds.filter(m => {
+      if (seenMeds.has(m.name)) return false;
+      seenMeds.add(m.name);
+      return true;
+    }).slice(0, 4);
+
+    return `<div class="health-dashboard-section">
+      <h3>健康ダッシュボード</h3>
+
+      <!-- Condition trend -->
+      <div class="health-trend-card">
+        <div class="health-card-header">
+          <span class="health-card-title">体調の推移（7日間）</span>
+          <span class="health-card-sub">${valid.length > 0 ? valid.length + '日分の記録' : '記録なし'}</span>
+        </div>
+        <div class="sparkline-wrap">
+          <svg width="${W}" height="${H + 20}" viewBox="0 0 ${W} ${H + 20}" style="overflow:visible">
+            ${gridLines}
+            ${sparkPath}
+            ${dots}
+            ${labels}
+          </svg>
+          ${valid.length === 0
+            ? `<p class="health-empty-hint">「記録する」→「症状・体調」から入力するとグラフが表示されます</p>`
+            : ''}
+        </div>
+      </div>
+
+      <!-- Vitals + Sleep + Activity metrics -->
+      <div class="health-metrics-row">
+        <div class="health-metric-card">
+          <div class="hm-value">${latestV && latestV.heart_rate ? latestV.heart_rate + '<small>bpm</small>' : '—'}</div>
+          <div class="hm-label">心拍数</div>
+          ${latestV && latestV.bp_systolic
+            ? `<div class="hm-sub">${latestV.bp_systolic}/${latestV.bp_diastolic || '?'}<small>mmHg</small></div>`
+            : ''}
+        </div>
+        <div class="health-metric-card">
+          <div class="hm-value">${latestV && latestV.weight ? latestV.weight + '<small>kg</small>' : '—'}</div>
+          <div class="hm-label">体重</div>
+        </div>
+        <div class="health-metric-card">
+          <div class="hm-value">${avgSleep !== null ? avgSleep + '<small>/10</small>' : '—'}</div>
+          <div class="hm-label">睡眠スコア</div>
+          <div class="hm-sub">${sleep.length > 0 ? sleep.length + '日分' : ''}</div>
+        </div>
+        <div class="health-metric-card">
+          <div class="hm-value">${totalActMin > 0 ? Math.round(totalActMin / 60) + '<small>h</small>' : '—'}</div>
+          <div class="hm-label">今週の運動</div>
+          <div class="hm-sub">${activity.length > 0 ? activity.length + '回' : ''}</div>
+        </div>
+      </div>
+
+      <!-- Medications -->
+      ${activeMeds.length > 0
+        ? `<div class="health-meds-card">
+          <div class="health-card-header">
+            <span class="health-card-title">今日のお薬・サプリ</span>
+            <button class="btn btn-sm btn-secondary" onclick="app.navigate('record')">記録する</button>
+          </div>
+          <div class="meds-list">
+            ${activeMeds.map(m => `
+              <div class="med-item">
+                <span class="med-name">${Components.escapeHtml(m.name || '不明')}</span>
+                <span class="med-dosage">${Components.escapeHtml(m.dosage || '')}</span>
+                <span class="med-timing">${i18n.t(m.timing || 'as_needed')}</span>
+              </div>`).join('')}
+          </div>
+        </div>`
+        : `<div class="health-meds-empty">
+          <span>💊 お薬・サプリを登録するとここに表示されます</span>
+          <button class="btn btn-sm btn-secondary" onclick="app.navigate('record')">登録する</button>
+        </div>`}
+
+      <!-- Quick record shortcuts -->
+      <div class="health-quick-actions">
+        <button class="health-quick-btn" onclick="app.navigate('record');setTimeout(()=>app.showCategory('symptoms'),100)">
+          <span class="hqa-icon">🤒</span><span>体調</span>
+        </button>
+        <button class="health-quick-btn" onclick="app.navigate('record');setTimeout(()=>app.showCategory('vitals'),100)">
+          <span class="hqa-icon">❤️</span><span>バイタル</span>
+        </button>
+        <button class="health-quick-btn" onclick="app.navigate('record');setTimeout(()=>app.showCategory('sleepData'),100)">
+          <span class="hqa-icon">😴</span><span>睡眠</span>
+        </button>
+        <button class="health-quick-btn" onclick="app.navigate('record');setTimeout(()=>app.showCategory('activityData'),100)">
+          <span class="hqa-icon">🏃</span><span>運動</span>
+        </button>
+        <button class="health-quick-btn" onclick="app.navigate('record');setTimeout(()=>app.showCategory('meals'),100)">
+          <span class="hqa-icon">🍽️</span><span>食事</span>
+        </button>
+      </div>
+    </div>`;
   },
 
   // ─── Stock Analysis Widget (Assets domain) ───
