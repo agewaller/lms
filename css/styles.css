@@ -532,8 +532,84 @@ select.form-input { appearance: auto; }
   content: ''; flex: 1; height: 1px; background: var(--border);
 }
 
+/* Hero extras */
+.hero-badge {
+  display: inline-block; background: rgba(108,99,255,0.12); color: var(--primary);
+  border: 1px solid rgba(108,99,255,0.3); border-radius: 20px;
+  padding: 6px 16px; font-size: 14px; font-weight: 600; margin-bottom: 20px;
+}
+.hero-cta-group { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+.hero-cta-sub { background: rgba(255,255,255,0.9); color: var(--primary); border: 1.5px solid var(--primary); }
+.hero-note { font-size: 14px; color: var(--text-muted); }
+
+/* How it works */
+.how-steps {
+  display: flex; align-items: flex-start; justify-content: center;
+  gap: 8px; flex-wrap: wrap; margin-top: 40px;
+}
+.how-step {
+  background: var(--bg-card); border-radius: var(--radius); padding: 32px 24px;
+  box-shadow: var(--shadow); flex: 1; min-width: 200px; max-width: 280px; text-align: center;
+}
+.step-num {
+  width: 48px; height: 48px; border-radius: 50%; background: var(--primary); color: white;
+  font-size: 22px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+}
+.how-step h3 { font-size: 20px; margin-bottom: 10px; }
+.how-step p { font-size: 15px; color: var(--text-light); line-height: 1.8; }
+.how-step-arrow { font-size: 28px; color: var(--text-muted); align-self: center; padding: 0 4px; }
+
+/* Feature icon in LP */
+.feature-icon-lp {
+  font-size: 22px; color: var(--primary); font-weight: 700;
+  margin-bottom: 10px; display: block;
+}
+
+/* Domain card number icon */
+.dc-icon {
+  font-size: 32px; font-weight: 700; color: var(--domain-color, var(--primary));
+  margin-bottom: 12px;
+}
+
+/* Testimonials */
+.lp-testimonials { background: var(--primary); }
+.lp-testimonials h2 { color: white; }
+.testimonial-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px; margin-top: 40px;
+}
+.testimonial-card {
+  background: rgba(255,255,255,0.12); border-radius: var(--radius); padding: 28px;
+  color: white; text-align: left;
+}
+.testimonial-card p { font-size: 16px; line-height: 1.9; margin-bottom: 16px; }
+.testimonial-author { font-size: 14px; opacity: 0.7; }
+
+/* CTA section */
+.lp-cta-section { background: #f8f9fa; }
+.lp-cta-section h2 { font-size: 28px; margin-bottom: 12px; }
+
 /* Footer */
-.lp-footer { text-align: center; padding: 32px; color: var(--text-muted); font-size: 14px; }
+.lp-footer {
+  text-align: center; padding: 40px 20px 32px; color: var(--text-muted); font-size: 14px;
+  border-top: 1px solid var(--border);
+}
+.footer-links { display: flex; justify-content: center; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
+.footer-links a { color: var(--text-light); font-size: 15px; }
+.footer-links a:hover { color: var(--primary); }
+.footer-note { margin-top: 8px; font-size: 13px; }
+
+/* ─── First-run welcome banner ─── */
+.welcome-banner {
+  background: linear-gradient(135deg, #f0eeff 0%, #e8f0fe 100%);
+  border: 1.5px solid rgba(108,99,255,0.25);
+  border-radius: var(--radius); padding: 28px 32px;
+  margin-bottom: 24px;
+}
+.wb-text h2 { font-size: 22px; margin-bottom: 10px; color: var(--primary); }
+.wb-text p { font-size: 16px; color: var(--text-light); line-height: 1.9; margin-bottom: 20px; }
+.wb-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 
 /* ═══════════════════════════════════════════════════════════
    DASHBOARD (未病ダイアリー準拠)
@@ -1784,6 +1860,11 @@ body.is-admin .admin-only { display: flex; }
 
   .lp-nav-links a:not(.btn) { display: none; }
   .login-card { padding: 24px 16px; }
+  .how-steps { flex-direction: column; align-items: center; }
+  .how-step-arrow { transform: rotate(90deg); }
+  .hero-cta-group { flex-direction: column; align-items: center; }
+  .testimonial-grid { grid-template-columns: 1fr; }
+  .footer-links { gap: 16px; }
 
   /* Modal full-screen on mobile */
   .modal { width: 95%; max-height: 90vh; }

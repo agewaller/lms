@@ -27,8 +27,33 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // First-run: check if user has no data in any domain
+    const hasAnyData = Object.keys(CONFIG.domains).some(d =>
+      Object.keys(CONFIG.domains[d].categories || {}).some(c =>
+        store.getDomainData(d, c, 1).length > 0
+      )
+    );
+    const profileSet = !!(store.get('userProfile')?.name || store.get('user')?.displayName);
+
+    let html = `<div class="page-home">`;
+
+    // Welcome banner for brand-new users
+    if (!hasAnyData && !profileSet) {
+      html += `<div class="welcome-banner">
+        <div class="wb-text">
+          <h2>ようこそ！はじめましょう</h2>
+          <p>まずプロフィールを設定すると、あなたに合ったアドバイスが届くようになります。<br>
+          記録は1日1〜2分でできます。気になる領域から始めてみてください。</p>
+          <div class="wb-actions">
+            <button class="btn btn-primary" onclick="app.navigate('settings')">プロフィールを設定する</button>
+            <button class="btn btn-secondary" onclick="app.navigate('record')">さっそく記録してみる</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
     // Quick input bar
-    let html = `<div class="page-home">
+    html += `
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
