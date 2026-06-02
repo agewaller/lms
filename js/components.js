@@ -89,6 +89,7 @@ var Components = {
         return `<textarea name="${name}" class="form-input" rows="3" placeholder="${i18n.t(f.label)}"></textarea>`;
       case 'select':
         return `<select name="${name}" class="form-input">
+          <option value="">${i18n.t(f.label)}</option>
           ${(f.options||[]).map(o => `<option value="${o}">${i18n.t(o)}</option>`).join('')}
         </select>`;
       case 'toggle':
@@ -128,7 +129,8 @@ var Components = {
       .replace(/^## (.+)$/gm, '<h3>$1</h3>')
       .replace(/^# (.+)$/gm, '<h2>$1</h2>')
       .replace(/^- (.+)$/gm, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+      // 連続する<li>をまとめて1つの<ul>に（グリーディ展開で非連続リストを分断しない）
+      .replace(/(<li>[^\n]*<\/li>(?:\n<li>[^\n]*<\/li>)*)/g, '<ul>$1</ul>')
       .replace(/\n/g, '<br>');
   },
 
@@ -137,10 +139,27 @@ var Components = {
     const container = document.getElementById('toast-container') || document.body;
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    toast.textContent = message;
+    // エラーは7秒、その他は5秒（65歳以上が読める時間）
+    const timeout = type === 'error' ? 7000 : 5000;
+    let timer;
+    const dismiss = () => {
+      clearTimeout(timer);
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 300);
+    };
+    const msgSpan = document.createElement('span');
+    msgSpan.className = 'toast-msg';
+    msgSpan.textContent = message;
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'toast-close';
+    closeBtn.setAttribute('aria-label', '閉じる');
+    closeBtn.textContent = '✕';
+    closeBtn.addEventListener('click', dismiss);
+    toast.appendChild(msgSpan);
+    toast.appendChild(closeBtn);
     container.appendChild(toast);
     setTimeout(() => toast.classList.add('show'), 10);
-    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
+    timer = setTimeout(dismiss, timeout);
   },
 
   // ─── Loading Spinner ───

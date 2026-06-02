@@ -561,13 +561,35 @@ var App = class App {
     reader.readAsText(file);
   }
 
+  parseCSVLine(line) {
+    const fields = [];
+    let field = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          if (line[i + 1] === '"') { field += '"'; i++; }
+          else inQuotes = false;
+        } else {
+          field += ch;
+        }
+      } else {
+        if (ch === '"') { inQuotes = true; }
+        else if (ch === ',') { fields.push(field.trim()); field = ''; }
+        else { field += ch; }
+      }
+    }
+    fields.push(field.trim());
+    return fields;
+  }
+
   parseCSVContacts(csv) {
     const lines = csv.split('\n').filter(l => l.trim());
     if (lines.length < 2) return [];
-
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const headers = this.parseCSVLine(lines[0]);
     return lines.slice(1).map(line => {
-      const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+      const values = this.parseCSVLine(line);
       const obj = {};
       headers.forEach((h, i) => { obj[h] = values[i] || ''; });
       return obj;
@@ -1123,7 +1145,6 @@ var App = class App {
     if (resultEl) resultEl.innerHTML = Components.loading('七つのレイヤーで分析中...');
 
     try {
-      const prompt = CONFIG.prompts.consciousness.transcript_analysis || CONFIG.prompts.consciousness.daily;
       const result = await AIEngine.analyze('consciousness', 'transcript_analysis', {
         text: `<<<TRANSCRIPT_START\n${text}\nTRANSCRIPT_END>>>`
       });
@@ -1148,9 +1169,10 @@ var App = class App {
   parseAndSaveObservation(aiResponse) {
     // Try to extract JSON from AI response to auto-populate observation
     try {
-      const jsonMatch = aiResponse.match(/\{[\s\S]*"conscious_focus"[\s\S]*\}/);
-      if (jsonMatch) {
-        const data = JSON.parse(jsonMatch[0]);
+      const extracted = this.extractJsonFromResponse(aiResponse);
+      if (!extracted) return;
+      const data = JSON.parse(extracted);
+      if (data.conscious_focus) {
         const dims = data.conscious_focus?.dims_pct || {};
         const signals = data.signals || {};
 
