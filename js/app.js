@@ -1501,8 +1501,21 @@ var App = class App {
   }
 
   addNewPrompt() {
-    const key = prompt('プロンプトのキー名を入力（例: work_custom）');
+    this.openModal('プロンプトを追加', `
+      <div class="form-group"><label>キー名（例: work_custom）</label>
+        <input type="text" id="newPromptKey" class="form-input" placeholder="domain_type">
+      </div>
+      <div class="form-actions" style="margin-top:16px;">
+        <button class="btn btn-primary" onclick="app._confirmNewPrompt()">追加</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+  }
+
+  _confirmNewPrompt() {
+    const key = document.getElementById('newPromptKey')?.value?.trim();
     if (!key) return;
+    this.closeModal();
     if (CONFIG.prompts[key]) {
       Components.showToast('そのキーは既に存在します', 'error');
       return;
@@ -1662,9 +1675,22 @@ var App = class App {
   }
 
   // ─── Admin User Management ───
-  async addAdminEmail() {
-    const email = prompt('管理者として追加するメールアドレスを入力してください');
+  addAdminEmail() {
+    this.openModal('管理者を追加', `
+      <div class="form-group"><label>追加するメールアドレス</label>
+        <input type="email" id="newAdminEmail" class="form-input" placeholder="user@example.com">
+      </div>
+      <div class="form-actions" style="margin-top:16px;">
+        <button class="btn btn-primary" onclick="app._confirmAddAdmin()">追加</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+  }
+
+  async _confirmAddAdmin() {
+    const email = document.getElementById('newAdminEmail')?.value;
     if (!email || !email.trim()) return;
+    this.closeModal();
 
     const trimmed = email.trim().toLowerCase();
     if (!/^[^@]+@[^@]+\.[^@]+$/.test(trimmed)) {
