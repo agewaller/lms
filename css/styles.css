@@ -534,6 +534,91 @@ select.form-input { appearance: auto; }
 
 /* Footer */
 .lp-footer { text-align: center; padding: 32px; color: var(--text-muted); font-size: 14px; }
+.footer-links { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 16px; }
+.footer-links a { color: var(--text-muted); font-size: 15px; }
+.footer-links a:hover { color: var(--accent); }
+
+/* Hero Enhancements */
+.hero-badge {
+  display: inline-block; background: rgba(108, 99, 255, 0.12);
+  color: var(--accent); border: 1px solid var(--accent-border);
+  border-radius: 999px; padding: 6px 18px; font-size: 14px; font-weight: 600;
+  margin-bottom: 20px;
+}
+.hero-cta-group { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+.hero-note { font-size: 14px; color: var(--text-muted); margin-bottom: 0; }
+.hero-stats {
+  display: flex; justify-content: center; gap: 40px; flex-wrap: wrap;
+  padding: 28px 40px; background: rgba(255,255,255,0.6); backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(255,255,255,0.8);
+}
+.hero-stat { text-align: center; }
+.stat-num { display: block; font-size: 28px; font-weight: 700; color: var(--accent); line-height: 1.2; }
+.stat-label { font-size: 14px; color: var(--text-light); }
+
+/* Domain Card Enhancements */
+.dc-num {
+  font-size: 36px; font-weight: 700; color: var(--domain-color, var(--primary));
+  margin-bottom: 12px; line-height: 1;
+}
+.dc-cta { display: block; margin-top: 12px; font-size: 14px; color: var(--accent); font-weight: 600; }
+
+/* Pain Points Section */
+.pain-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px; margin: 32px 0; text-align: left;
+}
+.pain-item {
+  background: var(--bg-card); border-radius: var(--radius); padding: 24px 20px;
+  display: flex; align-items: flex-start; gap: 16px; box-shadow: var(--shadow);
+}
+.pain-icon { font-size: 28px; flex-shrink: 0; }
+.pain-item p { font-size: 16px; color: var(--text-primary); line-height: 1.8; margin: 0; }
+.pain-solve { margin-top: 40px; }
+.pain-solve p { font-size: 20px; color: var(--text-primary); margin-bottom: 24px; line-height: 1.9; }
+.pain-solve strong { color: var(--accent); }
+
+/* Feature Grid 2-column */
+.feature-grid-2col { grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); }
+.feature-item-lg { padding: 36px 32px; }
+.fi-icon-lg { font-size: 44px; margin-bottom: 16px; }
+.feature-item-lg h3 { font-size: 22px; margin-bottom: 12px; }
+.feature-item-lg p { font-size: 17px; }
+
+/* Voices Section */
+.voices-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px; margin-top: 40px;
+}
+.voice-card {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 28px; box-shadow: var(--shadow); text-align: left;
+  border-left: 4px solid var(--accent);
+}
+.voice-text { font-size: 16px; line-height: 1.9; color: var(--text-primary); margin-bottom: 16px; font-style: italic; }
+.voice-author { font-size: 14px; color: var(--text-muted); font-weight: 600; }
+
+/* Steps Section */
+.steps-grid {
+  display: flex; align-items: flex-start; justify-content: center;
+  gap: 16px; margin-top: 40px; flex-wrap: wrap;
+}
+.step-item {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 28px 24px; width: 220px; text-align: center; box-shadow: var(--shadow);
+}
+.step-num {
+  width: 48px; height: 48px; border-radius: 50%; background: var(--accent);
+  color: #fff; font-size: 22px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+}
+.step-item h3 { font-size: 18px; margin-bottom: 10px; }
+.step-item p { font-size: 15px; color: var(--text-light); line-height: 1.8; margin: 0; }
+.step-arrow { font-size: 28px; color: var(--text-muted); align-self: center; padding-top: 12px; }
+
+/* Login Section with heading */
+.lp-login-section h2 { font-size: 28px; margin-bottom: 12px; }
+.lp-login-section .section-sub { margin-bottom: 32px; }
 
 /* ═══════════════════════════════════════════════════════════
    DASHBOARD (未病ダイアリー準拠)
@@ -1106,6 +1191,26 @@ body.is-admin .admin-only { display: flex; }
 }
 .sub-nav-btn:hover { color: var(--text); }
 .sub-nav-btn.active { font-weight: 600; }
+
+/* ─── Daily Digest ─── */
+.daily-digest {
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius); padding: 20px 24px;
+  margin-bottom: 20px; position: relative;
+}
+.daily-digest-empty { text-align: center; }
+.daily-digest-empty .dd-msg { font-size: 15px; color: var(--text-secondary); margin-bottom: 16px; }
+.dd-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.dd-date { font-size: 13px; color: var(--accent); font-weight: 600; }
+.dd-close { background: none; border: none; color: var(--text-muted); font-size: 16px; cursor: pointer; padding: 4px 8px; }
+.dd-highlights { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.dd-highlight {
+  background: rgba(255,255,255,0.7); border-radius: var(--radius-sm);
+  padding: 6px 14px; font-size: 14px; color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+.dd-footer { display: flex; gap: 10px; flex-wrap: wrap; }
 
 /* ─── Home Page ─── */
 .quick-input-bar { display: flex; gap: 10px; margin-bottom: 20px; }
@@ -1784,6 +1889,15 @@ body.is-admin .admin-only { display: flex; }
 
   .lp-nav-links a:not(.btn) { display: none; }
   .login-card { padding: 24px 16px; }
+  .feature-grid-2col { grid-template-columns: 1fr; }
+  .steps-grid { flex-direction: column; align-items: center; }
+  .step-arrow { transform: rotate(90deg); padding: 0; }
+  .step-item { width: 100%; max-width: 360px; }
+  .hero-stats { gap: 20px; padding: 20px; }
+  .stat-num { font-size: 22px; }
+  .pain-grid { grid-template-columns: 1fr; }
+  .voices-grid { grid-template-columns: 1fr; }
+  .hero-cta-group { flex-direction: column; align-items: center; }
 
   /* Modal full-screen on mobile */
   .modal { width: 95%; max-height: 90vh; }

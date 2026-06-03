@@ -36,6 +36,9 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>`;
 
+    // Daily digest (shown once per day on first domain visit)
+    html += this.renderDailyDigest(domain);
+
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
       html += this.renderStockAnalysisWidget();
@@ -158,6 +161,78 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Daily Digest (今日のまとめ) ───
+  renderDailyDigest(domain) {
+    const today = new Date().toDateString();
+    const lastShown = store.get('dailyDigestDate');
+    // Only show once per day on the first domain visited
+    if (lastShown === today) return '';
+
+    store.set('dailyDigestDate', today);
+
+    const todayStr = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+
+    // Collect today's highlights across all domains
+    const highlights = [];
+
+    // Health: today's condition
+    const todaySymptoms = store.getDomainData('health', 'symptoms', 1);
+    if (todaySymptoms.length > 0) {
+      const cond = todaySymptoms[0].condition_level;
+      const icon = cond >= 7 ? '🟢' : cond >= 4 ? '🟡' : '🔴';
+      highlights.push(`${icon} 健康: 体調 ${cond || '-'}/10`);
+    }
+
+    // Relationship: upcoming birthdays
+    const contacts = store.get('relationship_contacts') || [];
+    const now = new Date();
+    const soonBd = contacts.find(c => {
+      if (!c.birthday) return false;
+      const bd = new Date(c.birthday);
+      const next = new Date(now.getFullYear(), bd.getMonth(), bd.getDate());
+      if (next < now) next.setFullYear(next.getFullYear() + 1);
+      return Math.ceil((next - now) / (1000 * 60 * 60 * 24)) <= 7;
+    });
+    if (soonBd) highlights.push(`🎂 関係: ${soonBd.name}さんの誕生日まであと数日`);
+
+    // Assets: portfolio count
+    const stocks = store.get('assets_stocks') || [];
+    if (stocks.length > 0) highlights.push(`📈 資産: ${stocks.length}銘柄を保有中`);
+
+    // Consciousness: latest net_value
+    const obs = store.getDomainData('consciousness', 'observation', 1);
+    if (obs.length > 0 && obs[0].net_value) {
+      highlights.push(`✨ 意識: 純価値 ${obs[0].net_value}/100`);
+    }
+
+    // Work: pending tasks
+    const tasks = store.getDomainData('work', 'tasks', 7);
+    const pending = tasks.filter(t => t.status !== 'done').length;
+    if (pending > 0) highlights.push(`✅ 仕事: 未完了タスク ${pending}件`);
+
+    if (highlights.length === 0) {
+      return `<div class="daily-digest daily-digest-empty">
+        <div class="dd-date">${todayStr}</div>
+        <p class="dd-msg">今日の記録を始めましょう。<strong>記録する</strong> から最初のメモを残してください。</p>
+        <button class="btn btn-primary btn-sm" onclick="app.navigate('record')">記録する</button>
+      </div>`;
+    }
+
+    return `<div class="daily-digest">
+      <div class="dd-header">
+        <span class="dd-date">${todayStr}</span>
+        <button class="dd-close btn-icon" onclick="this.parentElement.parentElement.remove()">✕</button>
+      </div>
+      <div class="dd-highlights">
+        ${highlights.map(h => `<div class="dd-highlight">${h}</div>`).join('')}
+      </div>
+      <div class="dd-footer">
+        <button class="btn btn-sm btn-primary" onclick="app.generateRecommendations('holistic')">6領域まとめて分析</button>
+        <button class="btn btn-sm btn-secondary" onclick="app.navigate('record')">今日の記録をつける</button>
+      </div>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───

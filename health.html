@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#6C63FF">
   <title>LMS - 健康 - 未病ダイアリー</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
@@ -24,7 +26,7 @@
     <div class="hero-content">
       <div class="hero-icon">💚</div>
       <h1>健康 - 未病ダイアリー</h1>
-      <p class="hero-subtitle">未病から健康へ。データとAIで最適な健康管理を</p>
+      <p class="hero-subtitle">未病から健康へ。毎日の記録と丁寧な分析で、体の声を聞く</p>
       <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
     </div>
   </header>
@@ -33,7 +35,7 @@
     <h2>主な機能</h2>
     <div class="feature-grid">
       <div class="feature-item"><div class="fi-icon">📊</div><h3>症状・バイタルの記録</h3></div>
-      <div class="feature-item"><div class="fi-icon">🤖</div><h3>AIによる健康分析</h3></div>
+      <div class="feature-item"><div class="fi-icon">🔍</div><h3>あなたの状態を深く分析</h3></div>
       <div class="feature-item"><div class="fi-icon">📈</div><h3>薬・サプリメント管理</h3></div>
       <div class="feature-item"><div class="fi-icon">⚡</div><h3>睡眠・運動トラッキング</h3></div>
     </div>
@@ -82,15 +84,15 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="js/config.js"></script>
-  <script src="js/store.js"></script>
-  <script src="js/i18n.js"></script>
-  <script src="js/components.js"></script>
-  <script src="js/ai-engine.js"></script>
-  <script src="js/firebase-backend.js"></script>
-  <script src="js/affiliate.js"></script>
-  <script src="js/pages.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/config.js?v=1"></script>
+  <script src="js/store.js?v=1"></script>
+  <script src="js/i18n.js?v=1"></script>
+  <script src="js/components.js?v=1"></script>
+  <script src="js/ai-engine.js?v=1"></script>
+  <script src="js/firebase-backend.js?v=1"></script>
+  <script src="js/affiliate.js?v=1"></script>
+  <script src="js/pages.js?v=1"></script>
+  <script src="js/app.js?v=1"></script>
   <script>
     document.getElementById('authFormContainer').innerHTML = Components.authForm();
   </script>
