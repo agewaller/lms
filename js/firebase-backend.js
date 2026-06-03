@@ -29,6 +29,12 @@ var FirebaseBackend = {
 
       // Listen for auth state changes
       this.auth.onAuthStateChanged(user => this.handleAuthChange(user));
+
+      // Handle redirect result (mobile Google sign-in)
+      this.auth.getRedirectResult().then(result => {
+        if (result && result.user) this.handleAuthChange(result.user);
+      }).catch(e => console.warn('Redirect result:', e));
+
       this.initialized = true;
     } catch (e) {
       console.error('Firebase init error:', e);
@@ -57,26 +63,20 @@ var FirebaseBackend = {
   // ─── Google Sign In ───
   async signInWithGoogle() {
     if (!this.auth) {
-      // Local-only mode fallback (Firebase not configured).
-      // Prompt for email so that admin (agewaller@gmail.com) can still log in.
-      const email = (prompt('メールアドレスを入力してください', '') || '').trim().toLowerCase();
-      if (!email) return;
-      store.update({
-        user: {
-          uid: 'local-' + email,
-          displayName: email.split('@')[0],
-          email
-        },
-        isAuthenticated: true,
-        currentPage: 'home'
-      });
+      // Local-only mode: use email login instead of Google (Firebase not configured)
+      Components.showToast('Firebaseが未設定です。メールアドレスでログインしてください。', 'info');
       return;
     }
 
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     try {
-      await this.auth.signInWithPopup(provider);
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        await this.auth.signInWithRedirect(provider);
+      } else {
+        await this.auth.signInWithPopup(provider);
+      }
     } catch (e) {
       console.error('Google sign-in error:', e);
       Components.showToast(i18n.t('error') + ': ' + e.message, 'error');
