@@ -1192,6 +1192,36 @@ body.is-admin .admin-only { display: flex; }
 .sub-nav-btn:hover { color: var(--text); }
 .sub-nav-btn.active { font-weight: 600; }
 
+/* ─── Onboarding Modal ─── */
+.onboarding-modal { max-width: 480px; margin: 0 auto; }
+.onb-welcome { text-align: center; margin-bottom: 24px; }
+.onb-icon { font-size: 48px; margin-bottom: 12px; color: var(--accent); }
+.onb-welcome h3 { font-size: 22px; margin-bottom: 8px; }
+.onb-welcome p { font-size: 16px; color: var(--text-secondary); }
+.onb-steps { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+.onb-step {
+  display: flex; gap: 16px; align-items: flex-start;
+  background: var(--bg-tertiary); border-radius: var(--radius-sm); padding: 16px;
+}
+.onb-step-num {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--accent);
+  color: #fff; font-size: 16px; font-weight: 700; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.onb-step strong { display: block; font-size: 15px; margin-bottom: 4px; }
+.onb-step p { font-size: 14px; color: var(--text-secondary); margin: 0 0 8px; }
+.onb-footer { text-align: center; }
+
+/* ─── Keyboard Shortcuts ─── */
+.shortcut-list { display: flex; flex-direction: column; gap: 10px; }
+.shortcut-item { display: flex; align-items: center; gap: 16px; font-size: 15px; }
+kbd {
+  background: var(--bg-tertiary); border: 1px solid var(--border);
+  border-radius: 4px; padding: 3px 10px; font-size: 13px;
+  font-family: monospace; min-width: 40px; text-align: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
 /* ─── Daily Digest ─── */
 .daily-digest {
   background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);

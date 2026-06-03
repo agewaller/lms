@@ -20,7 +20,12 @@ var App = class App {
       store.set('currentPage', 'home');
       this.renderApp();
       this.startInboxPolling();
+      this.checkOnboarding();
+      this.checkWeeklyReport();
     }
+
+    // Initialize keyboard shortcuts once
+    this.initKeyboardShortcuts();
 
     // Listen for auth changes
     store.on('isAuthenticated', (val) => {
@@ -29,6 +34,8 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        this.checkOnboarding();
+        this.checkWeeklyReport();
       } else {
         this.stopInboxPolling();
       }
@@ -1927,6 +1934,131 @@ var App = class App {
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();
+  }
+
+  // ─── Onboarding (初回ログイン時のガイド) ───
+  checkOnboarding() {
+    const profile = store.get('userProfile') || {};
+    if (profile.onboardingCompleted) return;
+
+    const user = store.get('user');
+    const name = user?.displayName ? user.displayName.split(' ')[0] : 'ようこそ';
+
+    const body = `<div class="onboarding-modal">
+      <div class="onb-welcome">
+        <div class="onb-icon">◈</div>
+        <h3>${name}さん、はじめまして！</h3>
+        <p>LMSは6つの領域を通じて、あなたの人生をサポートするアプリです。</p>
+      </div>
+
+      <div class="onb-steps">
+        <div class="onb-step">
+          <div class="onb-step-num">1</div>
+          <div>
+            <strong>プロフィールを設定する</strong>
+            <p>年齢・健康状態・目標を登録すると、あなた専用のアドバイスが届きます</p>
+            <button class="btn btn-sm btn-secondary" onclick="app.closeModal();app.navigate('settings')">プロフィールを設定 →</button>
+          </div>
+        </div>
+        <div class="onb-step">
+          <div class="onb-step-num">2</div>
+          <div>
+            <strong>気になる領域から記録を始める</strong>
+            <p>健康・時間・関係・資産…どれか1つから始めるだけでOK</p>
+          </div>
+        </div>
+        <div class="onb-step">
+          <div class="onb-step-num">3</div>
+          <div>
+            <strong>1週間続けると分析が深まる</strong>
+            <p>記録が積み重なるほど、あなたに合ったアドバイスが精度を増します</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="onb-footer">
+        <button class="btn btn-primary btn-lg" onclick="app.completeOnboarding()">始める</button>
+        <p style="font-size:13px;color:var(--text-muted);margin-top:12px;">左サイドバーから領域を切り替えられます</p>
+      </div>
+    </div>`;
+
+    setTimeout(() => this.openModal('LMSへようこそ', body), 500);
+  }
+
+  completeOnboarding() {
+    const profile = store.get('userProfile') || {};
+    profile.onboardingCompleted = true;
+    store.set('userProfile', profile);
+    this.closeModal();
+    Components.showToast('さっそく記録を始めましょう！', 'success');
+    this.navigate('record');
+  }
+
+  // ─── Weekly report trigger ───
+  checkWeeklyReport() {
+    const today = new Date();
+    if (today.getDay() !== 1) return; // Monday only
+
+    const lastReport = store.get('weeklyReportDate');
+    const thisWeek = `${today.getFullYear()}-W${String(Math.ceil(today.getDate() / 7)).padStart(2, '0')}`;
+    if (lastReport === thisWeek) return;
+
+    // Check if there's enough health data
+    const symptoms = store.getDomainData('health', 'symptoms', 7);
+    if (symptoms.length < 3) return;
+
+    store.set('weeklyReportDate', thisWeek);
+    Components.showToast('今週の健康まとめを作成中です...', 'info');
+
+    setTimeout(async () => {
+      try {
+        const result = await AIEngine.analyze('health', 'weekly', {});
+        const existing = store.get('recommendations') || [];
+        store.set('recommendations', [{
+          domain: 'health',
+          text: `📋 **今週の健康まとめ**\n\n${result}`,
+          priority: 'high',
+          timestamp: new Date().toISOString()
+        }, ...existing].slice(0, 50));
+        Components.showToast('今週の健康まとめができました。アクションページでご確認ください。', 'success');
+      } catch (e) {
+        console.warn('Weekly report failed:', e);
+      }
+    }, 2000);
+  }
+
+  // ─── Keyboard shortcuts ───
+  initKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      // Skip if user is typing in an input/textarea
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      const domainKeys = { '1': 'consciousness', '2': 'health', '3': 'time', '4': 'work', '5': 'relationship', '6': 'assets' };
+      if (domainKeys[e.key]) {
+        this.switchDomain(domainKeys[e.key]);
+        return;
+      }
+
+      switch (e.key) {
+        case 'h': this.navigate('home'); break;
+        case 'r': this.navigate('record'); break;
+        case 'a': this.navigate('actions'); break;
+        case 'c': this.navigate('ask_ai'); break;
+        case '?':
+          this.openModal('キーボードショートカット', `
+            <div class="shortcut-list">
+              <div class="shortcut-item"><kbd>1〜6</kbd> 領域を切り替え</div>
+              <div class="shortcut-item"><kbd>h</kbd> ホーム</div>
+              <div class="shortcut-item"><kbd>r</kbd> 記録する</div>
+              <div class="shortcut-item"><kbd>a</kbd> アクション</div>
+              <div class="shortcut-item"><kbd>c</kbd> 相談する</div>
+              <div class="shortcut-item"><kbd>?</kbd> このヘルプを表示</div>
+            </div>
+          `);
+          break;
+      }
+    });
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───
