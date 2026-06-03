@@ -249,6 +249,35 @@ var Components = {
     </div>`;
   },
 
+  // ─── Confirm Dialog (confirm() の代替・iOS/Android対応) ───
+  confirm(message, onConfirm, options = {}) {
+    const title = options.title || '確認';
+    const confirmText = options.confirmText || 'はい';
+    const cancelText = options.cancelText || 'キャンセル';
+    const danger = options.danger !== false;
+
+    const id = 'confirm_' + Date.now();
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    if (!overlay || !bodyEl) { if (onConfirm) onConfirm(); return; }
+
+    if (titleEl) titleEl.textContent = title;
+    bodyEl.innerHTML = `<div class="confirm-dialog">
+      <p style="font-size:16px;line-height:1.8;margin-bottom:24px;">${this.escapeHtml(message)}</p>
+      <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="app.closeModal()">${cancelText}</button>
+        <button id="${id}" class="btn ${danger ? 'btn-danger' : 'btn-primary'}">${confirmText}</button>
+      </div>
+    </div>`;
+    overlay.classList.add('active');
+
+    document.getElementById(id).addEventListener('click', () => {
+      app.closeModal();
+      if (onConfirm) onConfirm();
+    });
+  },
+
   // ─── Record List Item ───
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';
