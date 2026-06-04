@@ -659,12 +659,28 @@ var Pages = {
       .filter(m => m.domain === domain || !m.domain)
       .slice(-50);
 
+    const starterPrompts = {
+      consciousness: ['今日の気持ちを整理したい', '瞑想を始めたいけど何から？', '自分の価値観について考えたい'],
+      health: ['最近疲れやすいのですが', '睡眠の質を上げたい', '今の体調をまとめてほしい'],
+      time: ['時間を有効に使えていない', '毎日の過ごし方を改善したい', '習慣を作るコツは？'],
+      work: ['定年後の働き方について相談したい', '得意なことを活かした副業は？', 'やりがいを見つけたい'],
+      relationship: ['最近連絡が減った友人のこと', '家族との関係をよくしたい', '孤独感を感じている'],
+      assets: ['NISA について教えて', '老後の資金が心配', '節約しながら投資したい']
+    };
+    const starters = starterPrompts[domain] || ['今日の状況を話したい', '何でも相談してください', 'アドバイスをお願いします'];
+
     let html = `<div class="page-ask-ai">
       <h2>${i18n.t(domain)} - 相談する</h2>
 
       <div class="chat-container" id="chatContainer">
-        ${history.length === 0 ?
-          Components.emptyState('💬', '相談する', i18n.t('quick_input_placeholder')) :
+        ${history.length === 0 ? `
+          <div class="chat-welcome">
+            <div class="cw-icon" style="color:${CONFIG.domains[domain]?.color || 'var(--accent)'}">◈</div>
+            <p class="cw-text">何でもお気軽にどうぞ。あなたの${i18n.t(domain)}に関して、どんな小さなことでもお答えします。</p>
+            <div class="cw-starters">
+              ${starters.map(s => `<button class="starter-btn" onclick="document.getElementById('chatInput').value='${Components.escapeHtml(s)}';app.sendChat('${domain}')">${Components.escapeHtml(s)}</button>`).join('')}
+            </div>
+          </div>` :
           history.map(m => Components.chatMessage(m)).join('')
         }
       </div>
