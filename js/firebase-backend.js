@@ -29,6 +29,15 @@ var FirebaseBackend = {
 
       // Listen for auth state changes
       this.auth.onAuthStateChanged(user => this.handleAuthChange(user));
+
+      // Catch errors from signInWithRedirect flow
+      this.auth.getRedirectResult().catch(e => {
+        if (e.code !== 'auth/no-auth-event') {
+          console.error('Redirect sign-in error:', e);
+          Components.showToast(i18n.t('error') + ': ' + e.message, 'error');
+        }
+      });
+
       this.initialized = true;
     } catch (e) {
       console.error('Firebase init error:', e);
@@ -54,29 +63,29 @@ var FirebaseBackend = {
     }
   },
 
+  // ─── Local-only Sign In (when Firebase not configured) ───
+  localSignIn(email) {
+    store.update({
+      user: { uid: 'local-' + email, displayName: email.split('@')[0], email },
+      isAuthenticated: true,
+      currentPage: 'home'
+    });
+  },
+
   // ─── Google Sign In ───
   async signInWithGoogle() {
-    if (!this.auth) {
-      // Local-only mode fallback (Firebase not configured).
-      // Prompt for email so that admin (agewaller@gmail.com) can still log in.
-      const email = (prompt('メールアドレスを入力してください', '') || '').trim().toLowerCase();
-      if (!email) return;
-      store.update({
-        user: {
-          uid: 'local-' + email,
-          displayName: email.split('@')[0],
-          email
-        },
-        isAuthenticated: true,
-        currentPage: 'home'
-      });
-      return;
-    }
+    if (!this.auth) return; // Local-mode: app.loginWithGoogle() shows modal instead
 
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     try {
-      await this.auth.signInWithPopup(provider);
+      // Mobile browsers block popups — use redirect flow instead
+      const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isMobile) {
+        await this.auth.signInWithRedirect(provider);
+      } else {
+        await this.auth.signInWithPopup(provider);
+      }
     } catch (e) {
       console.error('Google sign-in error:', e);
       Components.showToast(i18n.t('error') + ': ' + e.message, 'error');

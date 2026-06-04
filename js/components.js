@@ -179,11 +179,11 @@ var Components = {
   // ─── Sub Navigation (Home, Record, Action, Settings) ───
   subNav(activePage, domain) {
     const pages = [
-      { id: 'home', icon: '🏠' },
-      { id: 'record', icon: '📝' },
-      { id: 'actions', icon: '⚡' },
-      { id: 'ask_ai', icon: '' },
-      { id: 'settings', icon: '⚙️' }
+      { id: 'home', icon: '◈' },
+      { id: 'record', icon: '◑' },
+      { id: 'actions', icon: '▲' },
+      { id: 'ask_ai', icon: '◐' },
+      { id: 'settings', icon: '◌' }
     ];
     const color = CONFIG.domains[domain]?.color || '#6C63FF';
     return `<div class="sub-nav">

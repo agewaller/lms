@@ -269,9 +269,9 @@ var TimeMarketplace = {
     let html = `<div class="marketplace-widget">
       <h3>⏰ 今週の空き時間</h3>
       <div class="mp-stats">
-        ${Components.statCard('空き時間', free.totalHours + '時間', null, '🕐')}
-        ${Components.statCard('空き枠', free.slots + '枠', null, '📅')}
-        ${Components.statCard('見込み収入', free.potentialRevenue.toLocaleString() + '円', null, '💰')}
+        ${Components.statCard('空き時間', free.totalHours + '時間', null, '◐')}
+        ${Components.statCard('空き枠', free.slots + '枠', null, '◑')}
+        ${Components.statCard('見込み収入', free.potentialRevenue.toLocaleString() + '円', null, '◎')}
       </div>`;
 
     if (slots.length > 0) {
@@ -310,8 +310,8 @@ var TimeMarketplace = {
           ${(settings.skills || []).map(s => `<span class="skill-tag">${s.name}</span>`).join('')}
         </div>
         <div class="booking-meta">
-          <span>📍 ${settings.location.type === 'remote' ? 'オンライン' : settings.location.type === 'both' ? 'オンライン/対面' : '対面'}</span>
-          <span>💰 ${settings.rate.amount.toLocaleString()}円/時間</span>
+          <span>${settings.location.type === 'remote' ? 'オンライン' : settings.location.type === 'both' ? 'オンライン/対面' : '対面'}</span>
+          <span>${settings.rate.amount.toLocaleString()}円/時間</span>
         </div>
       </div>
 

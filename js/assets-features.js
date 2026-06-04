@@ -10,7 +10,7 @@ var AssetsFeatures = {
 
   renderNISASimulator() {
     return `<div class="nisa-simulator">
-      <h3>💴 プラチナNISAシミュレーター</h3>
+      <h3>プラチナNISAシミュレーター</h3>
       <p>65歳以上の方が毎月分配型で受け取れる収入を試算します。</p>
 
       <div class="sim-inputs">
@@ -236,7 +236,7 @@ var AssetsFeatures = {
         ondragover="event.preventDefault();this.classList.add('dragover')"
         ondragleave="this.classList.remove('dragover')"
         ondrop="AssetsFeatures.handleScreenshotDrop(event)">
-        <div class="upload-icon">📷</div>
+        <div class="upload-icon">◐</div>
         <p>ここに画像をドラッグ＆ドロップ</p>
         <p>または</p>
         <input type="file" id="screenshotFile" accept="image/*" style="display:none"
@@ -431,10 +431,10 @@ var AssetsFeatures = {
       </div>
 
       <div class="at-stats">
-        ${Components.statCard('戦略', this.getStrategyLabel(settings.strategy), null, '📋')}
-        ${Components.statCard('今日の取引', today.length + '件', null, '📊')}
-        ${Components.statCard('月間投資額', (settings._monthlyUsed || 0).toLocaleString() + '円', null, '💰')}
-        ${Components.statCard('月間上限', settings.monthlyLimit?.toLocaleString() + '円', null, '🔒')}
+        ${Components.statCard('戦略', this.getStrategyLabel(settings.strategy), null, '◑')}
+        ${Components.statCard('今日の取引', today.length + '件', null, '◑')}
+        ${Components.statCard('月間投資額', (settings._monthlyUsed || 0).toLocaleString() + '円', null, '◎')}
+        ${Components.statCard('月間上限', settings.monthlyLimit?.toLocaleString() + '円', null, '◌')}
       </div>
 
       ${pending.length > 0 ? `

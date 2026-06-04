@@ -267,7 +267,7 @@ var Pages = {
   // ─── Transcript Input (Plaud / Voice) ───
   renderTranscriptInput() {
     return `<div class="transcript-section">
-      <h3>🎙️ 文字起こしの分析</h3>
+      <h3>◐ 文字起こしの分析</h3>
       <p>Plaudや音声メモの文字起こしを貼り付けると、七つのレイヤーで分析します。</p>
       <div class="form-group">
         <label>文字起こしの入力元</label>
@@ -287,11 +287,11 @@ var Pages = {
         <input type="file" id="transcriptFile" accept=".txt,.json,.csv" style="display:none"
           onchange="app.loadTranscriptFile(event)">
         <button class="btn btn-secondary" onclick="document.getElementById('transcriptFile').click()">
-          📄 ファイルから読み込む
+          ◐ ファイルから読み込む
         </button>
       </div>
       <button class="btn btn-primary btn-lg" onclick="app.analyzeTranscript()">
-        🧠 意識レイヤー分析を実行
+        ◈ 意識レイヤー分析を実行
       </button>
       <div id="transcriptResult"></div>
     </div>`;
@@ -303,7 +303,7 @@ var Pages = {
     if (contacts.length === 0) {
       return `<div class="social-graph-section">
         <h3>つながりの地図</h3>
-        ${Components.emptyState('🤝', 'まだ連絡先がありません', '「記録する」から連絡先を追加、または取り込んでください')}
+        ${Components.emptyState('◌', 'まだ連絡先がありません', '「記録する」から連絡先を追加、または取り込んでください')}
       </div>`;
     }
 
@@ -355,7 +355,7 @@ var Pages = {
     if (upcoming.length === 0) return '';
 
     let html = `<div class="birthdays-section">
-      <h3>🎂 ${i18n.t('upcoming_birthdays')}</h3>
+      <h3>${i18n.t('upcoming_birthdays')}</h3>
       <div class="birthday-list">`;
 
     upcoming.forEach(c => {
@@ -396,14 +396,14 @@ var Pages = {
 
     if (!hasResume) {
       return `<div class="resume-widget">
-        <h3>📄 レジュメ・職務経歴</h3>
+        <h3>◐ レジュメ・職務経歴</h3>
         <p>あなたの経験やスキルを登録しておくと、求人プラットフォームへワンクリックで送信できます。</p>
         <button class="btn btn-secondary" onclick="app.navigate('settings')">レジュメを登録する</button>
       </div>`;
     }
 
     return `<div class="resume-widget">
-      <h3>📄 レジュメ</h3>
+      <h3>◐ レジュメ</h3>
       <div class="resume-summary">
         <p><strong>${resume.name || ''}</strong></p>
         <p>${resume.summary || ''}</p>
@@ -433,10 +433,10 @@ var Pages = {
         const transcripts = store.getDomainData('consciousness', 'transcript', 7);
         const latestObs = obs.length > 0 ? obs[obs.length - 1] : null;
         const nv = latestObs?.net_value || '-';
-        stats.push(Components.statCard('純価値', nv + (nv !== '-' ? '/100' : ''), null, '✨'));
-        stats.push(Components.statCard('定点観測', obs.length + i18n.t('items'), null, '👁️'));
-        stats.push(Components.statCard('文字起こし', transcripts.length + i18n.t('items'), null, '🎙️'));
-        stats.push(Components.statCard(i18n.t('journal'), entries.length + i18n.t('items'), null, '📝'));
+        stats.push(Components.statCard('純価値', nv + (nv !== '-' ? '/100' : ''), null, '◈'));
+        stats.push(Components.statCard('定点観測', obs.length + i18n.t('items'), null, '◎'));
+        stats.push(Components.statCard('文字起こし', transcripts.length + i18n.t('items'), null, '◐'));
+        stats.push(Components.statCard(i18n.t('journal'), entries.length + i18n.t('items'), null, '◑'));
         break;
       }
       case 'health': {
@@ -447,9 +447,9 @@ var Pages = {
           (symptoms.reduce((s, e) => s + (e.condition_level || 0), 0) / symptoms.length).toFixed(1) : '-';
         const avgSleep = sleep.length > 0 ?
           (sleep.reduce((s, e) => s + (e.quality || 0), 0) / sleep.length).toFixed(1) : '-';
-        stats.push(Components.statCard(i18n.t('condition_level'), avgCondition + '/10', null, '🤒'));
-        stats.push(Components.statCard(i18n.t('sleep_quality'), avgSleep + '/10', null, '😴'));
-        stats.push(Components.statCard(i18n.t('activity'), activity.length + i18n.t('items'), null, '🏃'));
+        stats.push(Components.statCard(i18n.t('condition_level'), avgCondition + '/10', null, '◑'));
+        stats.push(Components.statCard(i18n.t('sleep_quality'), avgSleep + '/10', null, '◐'));
+        stats.push(Components.statCard(i18n.t('activity'), activity.length + i18n.t('items'), null, '◎'));
         break;
       }
       case 'time': {
@@ -458,9 +458,9 @@ var Pages = {
         const totalMin = logs.reduce((s, e) => s + (e.duration || 0), 0);
         const avgProd = logs.length > 0 ?
           (logs.reduce((s, e) => s + (e.productivity || 0), 0) / logs.length).toFixed(1) : '-';
-        stats.push(Components.statCard(i18n.t('time_log'), Math.round(totalMin / 60) + 'h', null, '⏱️'));
-        stats.push(Components.statCard(i18n.t('productivity'), avgProd + '/10', null, '📊'));
-        stats.push(Components.statCard(i18n.t('habits'), habits.length + i18n.t('items'), null, '🔄'));
+        stats.push(Components.statCard(i18n.t('time_log'), Math.round(totalMin / 60) + 'h', null, '◐'));
+        stats.push(Components.statCard(i18n.t('productivity'), avgProd + '/10', null, '◑'));
+        stats.push(Components.statCard(i18n.t('habits'), habits.length + i18n.t('items'), null, '◎'));
         break;
       }
       case 'work': {
@@ -468,9 +468,9 @@ var Pages = {
         const done = tasks.filter(t => t.status === 'done').length;
         const projects = store.get('work_projects') || [];
         const active = projects.filter(p => p.status === 'active').length;
-        stats.push(Components.statCard(i18n.t('tasks'), `${done}/${tasks.length}`, null, '✅'));
-        stats.push(Components.statCard(i18n.t('projects'), active + ' ' + i18n.t('active'), null, '📊'));
-        stats.push(Components.statCard(i18n.t('skills'), (store.get('work_skills') || []).length + i18n.t('items'), null, '📚'));
+        stats.push(Components.statCard(i18n.t('tasks'), `${done}/${tasks.length}`, null, '◎'));
+        stats.push(Components.statCard(i18n.t('projects'), active + ' ' + i18n.t('active'), null, '◑'));
+        stats.push(Components.statCard(i18n.t('skills'), (store.get('work_skills') || []).length + i18n.t('items'), null, '◐'));
         break;
       }
       case 'relationship': {
@@ -478,10 +478,10 @@ var Pages = {
         const contacts = store.get('relationship_contacts') || [];
         const gifts = store.getDomainData('relationship', 'gifts', 30);
         const close = contacts.filter(c => parseInt(c.distance) <= 2).length;
-        stats.push(Components.statCard(i18n.t('contacts'), contacts.length + '人', null, '👤'));
-        stats.push(Components.statCard('親しい方', close + '人', null, '💕'));
-        stats.push(Components.statCard(i18n.t('interactions'), interactions.length + i18n.t('items'), null, '💬'));
-        stats.push(Components.statCard(i18n.t('gifts'), gifts.length + i18n.t('items'), null, '🎁'));
+        stats.push(Components.statCard(i18n.t('contacts'), contacts.length + '人', null, '◌'));
+        stats.push(Components.statCard('親しい方', close + '人', null, '◎'));
+        stats.push(Components.statCard(i18n.t('interactions'), interactions.length + i18n.t('items'), null, '◐'));
+        stats.push(Components.statCard(i18n.t('gifts'), gifts.length + i18n.t('items'), null, '◇'));
         break;
       }
       case 'assets': {
@@ -491,10 +491,10 @@ var Pages = {
         const expenses = store.getDomainData('assets', 'expenses', 30);
         const totalIncome = income.reduce((s, e) => s + (e.amount || 0), 0);
         const totalExpenses = expenses.reduce((s, e) => s + (e.amount || 0), 0);
-        stats.push(Components.statCard(i18n.t('stock_investment'), stocks.length + '銘柄', null, '📈'));
-        stats.push(Components.statCard(i18n.t('portfolio'), portfolio.length + i18n.t('items'), null, '📊'));
-        stats.push(Components.statCard(i18n.t('income'), totalIncome.toLocaleString() + '円', null, '💵'));
-        stats.push(Components.statCard(i18n.t('expenses'), totalExpenses.toLocaleString() + '円', null, '🧾'));
+        stats.push(Components.statCard(i18n.t('stock_investment'), stocks.length + '銘柄', null, '▲'));
+        stats.push(Components.statCard(i18n.t('portfolio'), portfolio.length + i18n.t('items'), null, '◑'));
+        stats.push(Components.statCard(i18n.t('income'), totalIncome.toLocaleString() + '円', null, '◎'));
+        stats.push(Components.statCard(i18n.t('expenses'), totalExpenses.toLocaleString() + '円', null, '◐'));
         break;
       }
     }
@@ -525,7 +525,7 @@ var Pages = {
 
       <!-- Diary / free text input -->
       <div class="diary-section">
-        <h3>📝 ${i18n.t('content')}</h3>
+        <h3>${i18n.t('content')}</h3>
         <textarea id="diaryText" class="form-input diary-textarea" rows="4"
           placeholder="${i18n.t('quick_input_placeholder')}"></textarea>
         <div class="diary-actions">
@@ -547,22 +547,22 @@ var Pages = {
       <!-- Relationship domain: Contact import -->
       ${domain === 'relationship' ? `
       <div class="contact-import-section">
-        <h3>📥 ${i18n.t('import_contacts')}</h3>
+        <h3>${i18n.t('import_contacts')}</h3>
         <p>電話帳やCSVファイル、名刺データなどから連絡先をまとめて取り込めます。</p>
         <div class="import-buttons">
           <input type="file" id="contactImport" accept=".csv,.vcf,.json,.xlsx" style="display:none" onchange="app.importContacts(event)">
           <button class="btn btn-secondary" onclick="document.getElementById('contactImport').click()">
-            📄 CSV / vCard / Excelから取り込む
+            ◐ CSV / vCard / Excelから取り込む
           </button>
           <button class="btn btn-secondary" onclick="app.enrichContacts()">
-            🔍 ${i18n.t('enrich_contact')}
+            ${i18n.t('enrich_contact')}
           </button>
         </div>
       </div>` : ''}
 
       <!-- File upload (photos, documents, screenshots) -->
       <div class="file-upload-section">
-        <h3>📎 ${i18n.t('file_upload')}（写真・書類など）</h3>
+        <h3>${i18n.t('file_upload')}（写真・書類など）</h3>
         <p>写真や画面キャプチャ、PDFなどをアップロードできます。</p>
         <input type="file" id="fileUpload" accept="image/*,.csv,.json,.xml,.pdf" onchange="app.handleFileUpload(event, '${domain}')">
       </div>
@@ -623,14 +623,14 @@ var Pages = {
         ${recs.map(r => Components.recommendationCard(r)).join('')}
       </div>`;
     } else {
-      html += Components.emptyState('⚡', i18n.t('no_data'),
+      html += Components.emptyState('◎', i18n.t('no_data'),
         '上の「分析を実行」ボタンを押してみてください');
     }
 
     // Action items (todos)
     if (actions.length > 0) {
       html += `<div class="action-items">
-        <h3>📋 Action Items</h3>
+        <h3>◑ Action Items</h3>
         ${actions.map((a, i) => `
           <div class="action-item ${a.done ? 'done' : ''}">
             <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${a.text}</label>
@@ -815,7 +815,7 @@ var Pages = {
 
       <!-- Data Export/Import -->
       <div class="settings-section">
-        <h3>💾 ${i18n.t('data_export')} / ${i18n.t('data_import')}</h3>
+        <h3>${i18n.t('data_export')} / ${i18n.t('data_import')}</h3>
         <button class="btn btn-secondary" onclick="app.exportData()">${i18n.t('data_export')}</button>
         <input type="file" id="importFile" accept=".json" onchange="app.importData(event)" style="display:none">
         <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">${i18n.t('data_import')}</button>
@@ -830,7 +830,7 @@ var Pages = {
       <!-- Calendar Import (Time domain) -->
       ${domain === 'time' ? `
       <div class="settings-section">
-        <h3>📅 カレンダー連携</h3>
+        <h3>◐ カレンダー連携</h3>
         <p>ICSファイル（Googleカレンダー/Outlook等からエクスポート）を取り込めます。</p>
         <input type="file" id="calImport" accept=".ics" style="display:none" onchange="app.importCalendarFile(event)">
         <button class="btn btn-secondary" onclick="document.getElementById('calImport').click()">カレンダーファイルを取り込む</button>
@@ -838,7 +838,7 @@ var Pages = {
 
       <!-- Logout -->
       <div class="settings-section">
-        <button class="btn btn-danger" onclick="app.logout()">🚪 ${i18n.t('logout')}</button>
+        <button class="btn btn-danger" onclick="app.logout()">${i18n.t('logout')}</button>
       </div>
     </div>`;
 
@@ -849,7 +849,7 @@ var Pages = {
   renderResumeSettings() {
     const r = store.get('userResume') || {};
     return `<div class="settings-section">
-      <h3>📄 レジュメ・職務経歴</h3>
+      <h3>◐ レジュメ・職務経歴</h3>
       <p>ここに登録した内容を求人プラットフォームにワンクリックで送信できます。</p>
       <div class="form-group">
         <label>お名前</label>
@@ -1468,7 +1468,7 @@ var Pages = {
             ondragover="event.preventDefault();this.classList.add('dragover')"
             ondragleave="this.classList.remove('dragover')"
             ondrop="app.handleFileDrop(event)">
-            <div class="upload-icon">📁</div>
+            <div class="upload-icon">◐</div>
             <p>ここにファイルをドラッグ＆ドロップ</p>
             <p>または</p>
             <input type="file" id="generalFile" accept=".csv,.json,.xml,.txt,.pdf" style="display:none" onchange="app.handleFileUpload(event, '${domain}')">

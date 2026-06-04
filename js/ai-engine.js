@@ -4,6 +4,16 @@
    ============================================================ */
 var AIEngine = {
 
+  // ─── Model ID map (short CONFIG id → datestamped API id) ───
+  // Update only this table when Anthropic/OpenAI rotate model IDs.
+  MODEL_MAP: {
+    'claude-opus-4-6':   'claude-opus-4-6-20260201',
+    'claude-sonnet-4-6': 'claude-sonnet-4-6-20260101',
+    'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+    'gpt-4o':            'gpt-4o-2025-12-17',
+    'gemini-pro':        'gemini-2.0-flash'
+  },
+
   // ─── Main analysis entry point ───
   async analyze(domain, promptType, userData, options = {}) {
     const model = options.model || store.get('selectedModel') || 'claude-sonnet-4-6';
@@ -20,7 +30,7 @@ var AIEngine = {
       let result;
       switch (modelConfig.provider) {
         case 'anthropic':
-          result = await this.callAnthropic(model, systemPrompt, userMessage, modelConfig.maxTokens);
+          result = await this.callAnthropic(model, systemPrompt, userMessage, modelConfig.maxTokens, options);
           break;
         case 'openai':
           result = await this.callOpenAI(model, systemPrompt, userMessage, modelConfig.maxTokens);
@@ -130,10 +140,11 @@ var AIEngine = {
 
   // ─── API Calls ───
 
-  async callAnthropic(model, system, userMsg, maxTokens) {
+  async callAnthropic(model, system, userMsg, maxTokens, options = {}) {
     const apiKey = this.getApiKey('anthropic');
     if (!apiKey) throw new Error('Anthropic APIキーが設定されていません。管理者にご連絡ください。');
 
+    const apiModel = this.MODEL_MAP[model] || model;
     const endpoint = CONFIG.endpoints.anthropic;
 
     // ─── Direct browser mode (no proxy) ───
@@ -161,7 +172,15 @@ var AIEngine = {
     }
 
     console.log('[LMS] Calling Anthropic', isDirect ? '(direct)' : 'via proxy:', url);
-    console.log('[LMS] Model:', model, 'Max tokens:', maxTokens);
+    console.log('[LMS] Model:', apiModel, 'Max tokens:', maxTokens);
+
+    // Build message content — text only, or text + image if imageBase64 is provided
+    const messageContent = options.imageBase64
+      ? [
+          { type: 'image', source: { type: 'base64', media_type: options.imageMediaType || 'image/jpeg', data: options.imageBase64 } },
+          { type: 'text', text: userMsg }
+        ]
+      : userMsg;
 
     let res;
     try {
@@ -169,10 +188,10 @@ var AIEngine = {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model,
+          model: apiModel,
           max_tokens: maxTokens,
           system: system,
-          messages: [{ role: 'user', content: userMsg }]
+          messages: [{ role: 'user', content: messageContent }]
         })
       });
     } catch (e) {
@@ -200,6 +219,7 @@ var AIEngine = {
     const apiKey = this.getApiKey('openai');
     if (!apiKey) throw new Error('OpenAI API key not set');
 
+    const apiModel = this.MODEL_MAP[model] || model;
     const res = await fetch(CONFIG.endpoints.openai, {
       method: 'POST',
       headers: {
@@ -207,7 +227,7 @@ var AIEngine = {
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: model,
+        model: apiModel,
         max_tokens: maxTokens,
         messages: [
           { role: 'system', content: system },
@@ -228,7 +248,8 @@ var AIEngine = {
     const apiKey = this.getApiKey('google');
     if (!apiKey) throw new Error('Google API key not set');
 
-    const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
+    const apiModel = this.MODEL_MAP[model] || model;
+    const url = `${CONFIG.endpoints.google}/${apiModel}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

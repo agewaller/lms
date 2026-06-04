@@ -78,7 +78,28 @@ var App = class App {
 
   // ─── Login Methods ───
   async loginWithGoogle() {
+    if (!FirebaseBackend.auth) {
+      // Firebase not configured — local-mode modal login
+      const body = `<div class="form-group">
+          <label>メールアドレス</label>
+          <input type="email" id="localLoginEmail" class="form-input" placeholder="example@email.com">
+        </div>
+        <div class="form-actions" style="justify-content:flex-end;">
+          <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+          <button class="btn btn-primary" onclick="app._confirmLocalLogin()">ログイン</button>
+        </div>`;
+      this.openModal('ログイン', body);
+      setTimeout(() => document.getElementById('localLoginEmail')?.focus(), 50);
+      return;
+    }
     await FirebaseBackend.signInWithGoogle();
+  }
+
+  _confirmLocalLogin() {
+    const email = (document.getElementById('localLoginEmail')?.value || '').trim().toLowerCase();
+    if (!email) { Components.showToast('メールアドレスを入力してください', 'error'); return; }
+    this.closeModal();
+    FirebaseBackend.localSignIn(email);
   }
 
   async loginWithEmail() {
@@ -418,7 +439,7 @@ var App = class App {
     } catch (e) {
       if (container) {
         container.innerHTML += Components.chatMessage({
-          role: 'assistant', content: '⚠️ ' + e.message, timestamp: new Date().toISOString()
+          role: 'assistant', content: '▲ ' + e.message, timestamp: new Date().toISOString()
         });
       }
     }
@@ -1514,20 +1535,24 @@ var App = class App {
   }
 
   addNewPrompt() {
-    const key = prompt('プロンプトのキー名を入力（例: work_custom）');
-    if (!key) return;
-    if (CONFIG.prompts[key]) {
-      Components.showToast('そのキーは既に存在します', 'error');
-      return;
-    }
-    CONFIG.prompts[key] = {
-      name: '新しいプロンプト',
-      domain: 'universal',
-      description: '',
-      schedule: 'manual',
-      active: true,
-      prompt: ''
-    };
+    const body = `<div class="form-group">
+        <label>キー名（例: work_custom）</label>
+        <input type="text" id="newPromptKey" class="form-input" placeholder="domain_type">
+      </div>
+      <div class="form-actions" style="justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn btn-primary" onclick="app._confirmAddPrompt()">作成</button>
+      </div>`;
+    this.openModal('プロンプトを追加', body);
+    setTimeout(() => document.getElementById('newPromptKey')?.focus(), 50);
+  }
+
+  _confirmAddPrompt() {
+    const key = (document.getElementById('newPromptKey')?.value || '').trim();
+    if (!key) { Components.showToast('キー名を入力してください', 'error'); return; }
+    if (CONFIG.prompts[key]) { Components.showToast('そのキーは既に存在します', 'error'); return; }
+    this.closeModal();
+    CONFIG.prompts[key] = { name: '新しいプロンプト', domain: 'universal', description: '', schedule: 'manual', active: true, prompt: '' };
     this.renderApp();
   }
 
@@ -1675,36 +1700,36 @@ var App = class App {
   }
 
   // ─── Admin User Management ───
-  async addAdminEmail() {
-    const email = prompt('管理者として追加するメールアドレスを入力してください');
-    if (!email || !email.trim()) return;
+  addAdminEmail() {
+    const body = `<div class="form-group">
+        <label>管理者のメールアドレス</label>
+        <input type="email" id="newAdminEmailInput" class="form-input" placeholder="admin@example.com">
+      </div>
+      <div class="form-actions" style="justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn btn-primary" onclick="app._confirmAddAdmin()">追加</button>
+      </div>`;
+    this.openModal('管理者を追加', body);
+    setTimeout(() => document.getElementById('newAdminEmailInput')?.focus(), 50);
+  }
 
-    const trimmed = email.trim().toLowerCase();
+  async _confirmAddAdmin() {
+    const trimmed = (document.getElementById('newAdminEmailInput')?.value || '').trim().toLowerCase();
+    if (!trimmed) { Components.showToast('メールアドレスを入力してください', 'error'); return; }
     if (!/^[^@]+@[^@]+\.[^@]+$/.test(trimmed)) {
-      Components.showToast('有効なメールアドレスを入力してください', 'error');
-      return;
+      Components.showToast('有効なメールアドレスを入力してください', 'error'); return;
     }
-
+    this.closeModal();
     const list = store.get('adminEmails') || ['agewaller@gmail.com'];
-    if (list.includes(trimmed)) {
-      Components.showToast('すでに管理者です', 'info');
-      return;
-    }
-
+    if (list.includes(trimmed)) { Components.showToast('すでに管理者です', 'info'); return; }
     list.push(trimmed);
     store.set('adminEmails', list);
-
-    // Sync to Firestore admin/config
     if (FirebaseBackend.db) {
       await FirebaseBackend.db.collection('admin').doc('config').set(
-        {
-          adminEmails: list,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        },
+        { adminEmails: list, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
         { merge: true }
       ).catch(e => console.warn(e));
     }
-
     Components.showToast(`${trimmed} を管理者に追加しました`, 'success');
     this.renderApp();
   }
