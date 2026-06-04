@@ -36,6 +36,45 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>`;
 
+    // First-time user onboarding guide
+    const profile = store.get('userProfile') || {};
+    const hasAnyData = Object.keys(CONFIG.domains).some(d =>
+      Object.keys(CONFIG.domains[d].categories || {}).some(cat =>
+        store.getDomainData(d, cat, 0).length > 0
+      )
+    );
+    if (!profile.name && !hasAnyData) {
+      html += `<div class="onboarding-banner">
+        <div class="onboarding-title">LMSへようこそ！まず3つのステップから始めましょう</div>
+        <div class="onboarding-steps">
+          <div class="onboarding-step">
+            <div class="ob-num" style="background:rgba(108,99,255,0.1);color:#6C63FF">1</div>
+            <div class="ob-body">
+              <strong>プロフィールを入力</strong>
+              <p>お名前・年齢・持病などを入力すると、あなたに合ったアドバイスが届きます</p>
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="app.navigate('settings')">設定へ</button>
+          </div>
+          <div class="onboarding-step">
+            <div class="ob-num" style="background:rgba(16,185,129,0.1);color:#10b981">2</div>
+            <div class="ob-body">
+              <strong>今日の記録を始める</strong>
+              <p>体調・気持ち・食事など、一言から記録できます。毎日続けると傾向が見えてきます</p>
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="app.navigate('record')">記録する</button>
+          </div>
+          <div class="onboarding-step">
+            <div class="ob-num" style="background:rgba(245,158,11,0.1);color:#f59e0b">3</div>
+            <div class="ob-body">
+              <strong>何でも相談してみる</strong>
+              <p>困ったことや気になることを自由に話しかけてください</p>
+            </div>
+            <button class="btn btn-sm btn-secondary" onclick="app.navigate('ask_ai')">相談する</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
       html += this.renderStockAnalysisWidget();
@@ -79,8 +118,8 @@ var Pages = {
     allRecent.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     if (allRecent.length === 0) {
-      html += Components.emptyState(domainConfig?.icon || '📭', i18n.t('no_data'),
-        `${i18n.t('record')} → ${i18n.t('save')}`);
+      html += Components.emptyState(domainConfig?.icon || '◌', i18n.t('no_data'),
+        '「記録する」から最初の記録を始めましょう');
     } else {
       allRecent.slice(0, 10).forEach(entry => {
         html += Components.recordItem(entry, domain);

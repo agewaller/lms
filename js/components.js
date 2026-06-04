@@ -161,15 +161,6 @@ var Components = {
     </div>`;
   },
 
-  // ─── Empty State ───
-  emptyState(icon, title, description) {
-    return `<div class="empty-state">
-      <div class="empty-icon">${icon || '📭'}</div>
-      <h3>${title || i18n.t('no_data')}</h3>
-      <p>${description || ''}</p>
-    </div>`;
-  },
-
   // ─── Domain Tab Bar ───
   domainTabs(activeDomain) {
     const domains = Object.values(CONFIG.domains);
@@ -267,14 +258,23 @@ var Components = {
     const summary = Object.entries(entry)
       .filter(([k]) => !['id','timestamp','domain','category','_synced'].includes(k))
       .slice(0, 3)
-      .map(([k, v]) => `${i18n.t(k)}: ${v}`)
+      .map(([k, v]) => `${this.escapeHtml(i18n.t(k) || k)}: ${this.escapeHtml(String(v))}`)
       .join(' | ');
     return `<div class="record-item" style="border-left-color:${color}">
       <div class="record-header">
-        <span class="record-cat">${cat}</span>
+        <span class="record-cat">${this.escapeHtml(cat)}</span>
         <span class="record-time">${time}</span>
       </div>
       <div class="record-summary">${summary}</div>
+    </div>`;
+  },
+
+  // ─── Empty State ───
+  emptyState(icon, title, description) {
+    return `<div class="empty-state">
+      <div class="empty-icon">${icon || '◌'}</div>
+      <h3>${this.escapeHtml(title || '')}</h3>
+      <p>${this.escapeHtml(description || '')}</p>
     </div>`;
   }
 };
