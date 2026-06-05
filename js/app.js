@@ -20,6 +20,7 @@ var App = class App {
       store.set('currentPage', 'home');
       this.renderApp();
       this.startInboxPolling();
+      setTimeout(() => this.maybeShowOnboarding(), 800);
     }
 
     // Listen for auth changes
@@ -29,6 +30,7 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        setTimeout(() => this.maybeShowOnboarding(), 800);
       } else {
         this.stopInboxPolling();
       }
@@ -179,7 +181,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', data: 'データを見る', actions: 'アクション', ask_ai: '相談する', integrations: '連携', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -458,9 +460,51 @@ var App = class App {
   }
 
   executeAction(type, data) {
-    // Placeholder for action execution (e.g., open affiliate link, book appointment)
-    console.log('Execute action:', type, data);
-    Components.showToast('Action: ' + type, 'info');
+    const actions = {
+      navigate_domain: () => {
+        if (data?.domain) this.switchDomain(data.domain);
+      },
+      navigate_page: () => {
+        if (data?.page) this.navigate(data.page);
+      },
+      open_record: () => {
+        this.navigate('record');
+      },
+      open_chat: () => {
+        this.navigate('ask_ai');
+      },
+      open_integrations: () => {
+        this.navigate('integrations');
+      },
+      open_url: () => {
+        if (data?.url) window.open(data.url, '_blank', 'noopener,noreferrer');
+      },
+      complete_profile: () => {
+        this.navigate('settings');
+        Components.showToast('プロフィールを入力すると、より正確なアドバイスが届きます', 'info');
+      },
+      record_health: () => {
+        this.switchDomain('health');
+        this.navigate('record');
+      },
+      record_assets: () => {
+        this.switchDomain('assets');
+        this.navigate('record');
+      },
+      analyze_domain: () => {
+        if (data?.domain) {
+          this.switchDomain(data.domain);
+          this.navigate('actions');
+        }
+      }
+    };
+
+    const fn = actions[type];
+    if (fn) {
+      fn();
+    } else {
+      Components.showToast(data?.message || 'アクションを実行しました', 'success');
+    }
   }
 
   // ─── Stock Analysis (Assets domain) ───
@@ -1953,6 +1997,68 @@ var App = class App {
   closeModal() {
     const overlay = document.getElementById('modal-overlay');
     if (overlay) overlay.classList.remove('active');
+  }
+
+  // ─── First-run onboarding ───
+  maybeShowOnboarding() {
+    if (store.get('onboardingDone')) return;
+
+    // Check if user has any data recorded across any domain
+    const hasDomainData = Object.keys(CONFIG.domains).some(domain => {
+      const domainConfig = CONFIG.domains[domain];
+      return Object.keys(domainConfig.categories || {}).some(cat => {
+        return (store.getDomainData(domain, cat, 1) || []).length > 0;
+      });
+    });
+    const hasProfile = Object.keys(store.get('userProfile') || {}).length > 2;
+
+    if (hasDomainData && hasProfile) {
+      store.set('onboardingDone', true);
+      return;
+    }
+
+    const user = store.get('user');
+    const name = user?.displayName?.split(' ')[0] || '';
+    const greeting = name ? `${name}さん、` : '';
+
+    const body = `
+      <div style="text-align:center;padding:8px 0">
+        <p style="font-size:22px;margin-bottom:8px">ようこそ LMS へ</p>
+        <p style="color:var(--text-secondary);margin-bottom:24px">${greeting}まず最初にやることをご案内します</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="onboarding-step" onclick="app.closeModal();app.navigate('settings')" style="display:flex;align-items:center;gap:16px;padding:16px;border:2px solid var(--accent-border);border-radius:var(--radius);cursor:pointer;background:var(--accent-bg)">
+          <div style="font-size:28px;flex-shrink:0">①</div>
+          <div>
+            <strong style="display:block;margin-bottom:2px">プロフィールを入力する</strong>
+            <span style="font-size:13px;color:var(--text-secondary)">年齢・お体の状態・資産状況などを教えていただくと、あなただけのアドバイスが届きます</span>
+          </div>
+        </div>
+
+        <div class="onboarding-step" onclick="app.closeModal();app.navigate('record')" style="display:flex;align-items:center;gap:16px;padding:16px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer">
+          <div style="font-size:28px;flex-shrink:0">②</div>
+          <div>
+            <strong style="display:block;margin-bottom:2px">今日の記録をつけてみる</strong>
+            <span style="font-size:13px;color:var(--text-secondary)">体調・気持ち・今日の出来事など、何でも構いません。毎日少しずつ続けることが大切です</span>
+          </div>
+        </div>
+
+        <div class="onboarding-step" onclick="app.closeModal();app.navigate('ask_ai')" style="display:flex;align-items:center;gap:16px;padding:16px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer">
+          <div style="font-size:28px;flex-shrink:0">③</div>
+          <div>
+            <strong style="display:block;margin-bottom:2px">気になることを相談してみる</strong>
+            <span style="font-size:13px;color:var(--text-secondary)">「最近眠れない」「老後のお金が心配」など、どんな悩みでも話しかけてください</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:20px">
+        <button class="btn btn-primary" onclick="app.closeModal();store.set('onboardingDone',true)">はじめる</button>
+      </div>
+    `;
+
+    this.openModal('はじめてガイド', body);
   }
 };
 

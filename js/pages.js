@@ -79,8 +79,12 @@ var Pages = {
     allRecent.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     if (allRecent.length === 0) {
-      html += Components.emptyState(domainConfig?.icon || '📭', i18n.t('no_data'),
-        `${i18n.t('record')} → ${i18n.t('save')}`);
+      html += `<div class="empty-state-onboarding" style="background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:var(--radius);padding:24px;text-align:center;margin:8px 0">
+        <div style="font-size:32px;margin-bottom:8px">📝</div>
+        <p style="font-weight:600;margin-bottom:4px">まだ記録がありません</p>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">「記録する」から今日の${i18n.t(domain)}を記録してみてください。<br>記録が増えると、あなただけの分析が始まります。</p>
+        <button class="btn btn-primary btn-sm" onclick="app.navigate('record')">今日の記録をつける</button>
+      </div>`;
     } else {
       allRecent.slice(0, 10).forEach(entry => {
         html += Components.recordItem(entry, domain);
