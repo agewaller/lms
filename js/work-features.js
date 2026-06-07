@@ -71,13 +71,11 @@ var WorkFeatures = {
     } else {
       html += `<p>「${location}」の近くで見つかるお仕事やボランティアです。</p>`;
 
-      // 検索ボタン
       html += `<button class="btn btn-primary btn-lg" onclick="WorkFeatures.searchOpportunities()" style="margin-bottom:20px;">
         近くのお仕事を探す
       </button>
       <div id="jobSearchResult"></div>`;
 
-      // 外部サイトへのリンク
       html += `<div class="jd-platforms">
         <h4>お仕事さがしサイト</h4>`;
 
@@ -192,7 +190,7 @@ var WorkFeatures = {
         </div>`;
       }
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (resultEl) resultEl.textContent = 'エラー: ' + (e?.message || '通信エラー');
     }
   },
 
@@ -220,7 +218,7 @@ var WorkFeatures = {
   },
 
   // ═══════════════════════════════════════════════════════════
-  //  あなたの経験診断（シンプル化）
+  //  あなたにできること診断
   // ═══════════════════════════════════════════════════════════
 
   renderSideBizDiagnosis() {
@@ -230,124 +228,9 @@ var WorkFeatures = {
 
       <div class="diagnosis-form">
         <div class="form-group">
-          <label>これまでやってきたこと</label>
+          <label>これまでやってきたこと・職歴</label>
           <textarea id="diagExperience" class="form-input" rows="3"
             placeholder="例：病院で30年働いた、パン作りが好き、英語を少し話せる"></textarea>
-        </div>
-
-        <div class="form-group">
-          <label>好きなこと・得意なこと</label>
-          <textarea id="diagSkills" class="form-input" rows="3"
-            placeholder="例：料理、手芸、話を聞くこと、片付け、庭いじり"></textarea>
-        </div>
-
-        <div class="form-group">
-          <label>使える時間</label>
-          <select id="diagTime" class="form-input">
-            <option value="2-3h">すきま時間だけ（週2〜3時間）</option>
-            <option value="5-10h" selected>午前中だけなど（週5〜10時間）</option>
-            <option value="10-20h">半日を何日か（週10〜20時間）</option>
-            <option value="20h+">しっかり取り組みたい（週20時間以上）</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>やり方</label>
-          <select id="diagMode" class="form-input">
-            <option value="online">家からオンラインで</option>
-            <option value="both" selected>どちらでも</option>
-            <option value="offline">直接会って</option>
-          </select>
-        </div>
-      </div>
-
-      <button class="btn btn-primary btn-lg" onclick="WorkFeatures.diagnose()">
-        見つけてもらう
-      </button>
-
-      <div id="diagnosisResult"></div>
-    </div>`;
-  },
-
-  async diagnose() {
-    const experience = document.getElementById('diagExperience')?.value || '';
-    const skills = document.getElementById('diagSkills')?.value || '';
-    const time = document.getElementById('diagTime')?.value || '';
-    const mode = document.getElementById('diagMode')?.value || '';
-    const prefs = store.get('workProvisionPrefs') || { paid: true, volunteer: true };
-    const resultEl = document.getElementById('diagnosisResult');
-
-    if (!experience && !skills) {
-      Components.showToast('経験や好きなことを教えてください', 'info');
-      return;
-    }
-
-    if (resultEl) resultEl.innerHTML = Components.loading('あなたに合った活動を探しています...');
-
-    const types = [];
-    if (prefs.paid) types.push('お金がもらえるお仕事');
-    if (prefs.volunteer) types.push('ボランティア');
-    if (prefs.bookkeeping) types.push('記録として残す活動');
-
-    const prompt = `この方に合う活動を3つ見つけてください。
-
-やってきたこと：${experience}
-好きなこと：${skills}
-使える時間：${time}
-やり方：${mode === 'online' ? '家からオンライン' : mode === 'offline' ? '直接会って' : 'どちらでも'}
-希望する形：${types.join('、')}
-
-それぞれについて：
-1. 何をするか（ひと言で）
-2. 始め方（今日15分でできること）
-3. どこで始めるか（サイト名や場所）
-4. どんないいことがあるか
-
-むずかしい言葉は使わないでください。
-おばあちゃんに話すように、やさしく伝えてください。`;
-
-    try {
-      const result = await AIEngine.analyze('work', 'daily', { text: prompt });
-      if (resultEl) {
-        resultEl.innerHTML = `<div class="diagnosis-result">
-          <h3>🎯 あなたにおすすめ</h3>
-          <div class="analysis-content">${Components.formatMarkdown(result)}</div>
-        </div>`;
-      }
-    } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
-    }
-  },
-
-  // ═══════════════════════════════════════════════════════════
-  //  空き時間販売の案内
-  // ═══════════════════════════════════════════════════════════
-
-  renderTimeSellingBanner() {
-    const mpSettings = typeof TimeMarketplace !== 'undefined' ? TimeMarketplace.getSettings() : {};
-
-    if (mpSettings.enabled) {
-      const free = typeof TimeMarketplace !== 'undefined' ? TimeMarketplace.getTotalFreeHours(7) : { totalHours: 0, potentialRevenue: 0 };
-      return `<div class="time-selling-banner active">
-        <div class="tsb-icon">⏰</div>
-        <div class="tsb-content">
-          <h4>空き時間の提供 稼働中</h4>
-          <p>今週の空き：${free.totalHours}時間</p>
-        </div>
-        <button class="btn btn-sm btn-secondary" onclick="app.switchDomain('time')">見る</button>
-      </div>`;
-    }
-
-    return `<div class="time-selling-banner">
-      <div class="tsb-icon">💡</div>
-      <div class="tsb-content">
-        <h4>空き時間を誰かのために使いませんか？</h4>
-        <p>カレンダーの空き時間で、あなたのできることを提供できます。有償でも無償でもOKです。</p>
-      </div>
-      <button class="btn btn-sm btn-primary" onclick="app.switchDomain('time');app.navigate('settings')">やってみる</button>
-    </div>`;
-  }
-};
         </div>
 
         <div class="form-group">
@@ -387,7 +270,7 @@ var WorkFeatures = {
 
         <div class="form-group">
           <label>パソコン・スマホアプリの使用について</label>
-          <select id="diagAI" class="form-input">
+          <select id="diagDigital" class="form-input">
             <option value="never">まったく使ったことがない</option>
             <option value="beginner" selected>少し興味がある / 使ってみたい</option>
             <option value="some">ChatGPTなどを使ったことがある</option>
@@ -410,7 +293,7 @@ var WorkFeatures = {
     const time = document.getElementById('diagTime')?.value || '';
     const mode = document.getElementById('diagMode')?.value || '';
     const income = document.getElementById('diagIncome')?.value || '';
-    const ai = document.getElementById('diagAI')?.value || '';
+    const digital = document.getElementById('diagDigital')?.value || '';
     const resultEl = document.getElementById('diagnosisResult');
 
     if (!experience && !skills) {
@@ -418,33 +301,31 @@ var WorkFeatures = {
       return;
     }
 
-    if (resultEl) resultEl.innerHTML = Components.loading('あなたにぴったりの副業を診断中...');
+    if (resultEl) resultEl.innerHTML = Components.loading('あなたにぴったりの活動を診断中...');
 
-    const prompt = `65歳の女性から副業の相談です。以下の情報をもとに、AIを活用した副業プランを3つ提案してください。
+    const prompt = `65歳前後の方から活動・副業の相談です。以下の情報をもとに、現実的なプランを3つ提案してください。
 
 【ご経験・職歴】${experience}
 【お得意なこと・好きなこと】${skills}
 【使える時間】${time}
 【提供方法】${mode}
 【目標収入】${income}
-【AIツール経験】${ai}
+【デジタル経験】${digital}
 
 各プランについて以下を含めてください：
-1. 副業の名称とわかりやすい説明
+1. 活動の名称とわかりやすい説明
 2. 必要な準備（具体的なステップ）
-3. 使うAIツール（ChatGPT/Claude/Canvaなど）とその使い方
-4. 想定月収（現実的な金額）
-5. 始めるまでの期間
-6. 最初の一歩（今日から15分でできること）
+3. どこで始めるか（サイト名や場所）
+4. 想定月収または得られるもの
+5. 最初の一歩（今日から15分でできること）
 
-AIが怖くない方にも、まったくの初心者にも伝わるよう、やさしい言葉で。
-難しい用語には必ず（　）で説明を添えてください。日本語で回答。`;
+まったくの初心者にも伝わるよう、やさしい言葉で。難しい用語には必ず説明を添えてください。日本語で回答。`;
 
     try {
       const result = await AIEngine.analyze('work', 'daily', { text: prompt });
       if (resultEl) {
         resultEl.innerHTML = `<div class="diagnosis-result">
-          <h3>🎯 あなたにおすすめの副業プラン</h3>
+          <h3>🎯 あなたにおすすめのプラン</h3>
           <div class="analysis-content">${Components.formatMarkdown(result)}</div>
           <div class="diagnosis-actions" style="margin-top:20px;">
             <button class="btn btn-secondary" onclick="app.switchDomain('time');app.navigate('settings')">
@@ -457,7 +338,7 @@ AIが怖くない方にも、まったくの初心者にも伝わるよう、や
         </div>`;
       }
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (resultEl) resultEl.textContent = 'エラー: ' + (e?.message || '通信エラー');
     }
   },
 
@@ -471,7 +352,6 @@ AIが怖くない方にも、まったくの初心者にも伝わるよう、や
     const hasSkills = (resume.skills || []).length > 0 || (mpSettings.skills || []).length > 0;
 
     if (mpSettings.enabled) {
-      // Already set up - show status
       const free = typeof TimeMarketplace !== 'undefined' ? TimeMarketplace.getTotalFreeHours(7) : { totalHours: 0, potentialRevenue: 0 };
       return `<div class="time-selling-banner active">
         <div class="tsb-icon">⏰</div>
@@ -483,7 +363,6 @@ AIが怖くない方にも、まったくの初心者にも伝わるよう、や
       </div>`;
     }
 
-    // Not set up - show CTA
     return `<div class="time-selling-banner">
       <div class="tsb-icon">💡</div>
       <div class="tsb-content">

@@ -219,7 +219,7 @@ var AssetsFeatures = {
         </div>`;
       }
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (resultEl) resultEl.textContent = 'エラー: ' + (e?.message || '通信エラー');
     }
   },
 
@@ -311,7 +311,7 @@ var AssetsFeatures = {
           </div>`;
         }
       } catch (e) {
-        if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+        if (resultEl) resultEl.textContent = 'エラー: ' + (e?.message || '通信エラー');
       }
     };
     reader.readAsDataURL(file);

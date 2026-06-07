@@ -3,6 +3,40 @@
    ============================================================ */
 var Components = {
 
+  escapeHtml(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+  },
+
+  // Custom confirm dialog — replaces native confirm() which blocks on iOS/Android.
+  // onConfirm is called only if the user clicks the confirm button.
+  confirmDialog(message, onConfirm, opts) {
+    opts = opts || {};
+    const title = opts.title || '確認';
+    const confirmText = opts.confirmText || 'はい';
+    const cancelText = opts.cancelText || 'キャンセル';
+    const btnClass = opts.danger !== false ? 'btn-danger' : 'btn-primary';
+
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    if (!overlay || !titleEl || !bodyEl) { if (onConfirm) onConfirm(); return; }
+
+    titleEl.textContent = title;
+    bodyEl.innerHTML = `
+      <p style="margin:0 0 24px;line-height:1.7;font-size:16px">${this.escapeHtml(message)}</p>
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <button class="btn btn-secondary" id="_cd_cancel">${this.escapeHtml(cancelText)}</button>
+        <button class="btn ${btnClass}" id="_cd_ok">${this.escapeHtml(confirmText)}</button>
+      </div>`;
+    overlay.classList.add('active');
+
+    const close = () => overlay.classList.remove('active');
+    document.getElementById('_cd_cancel').onclick = close;
+    document.getElementById('_cd_ok').onclick = () => { close(); onConfirm(); };
+  },
+
   // ─── Score Gauge (circular) ───
   scoreGauge(score, size = 120, label = '') {
     const pct = Math.max(0, Math.min(100, score));
@@ -108,9 +142,13 @@ var Components = {
   chatMessage(msg) {
     const cls = msg.role === 'user' ? 'chat-user' : 'chat-ai';
     const icon = msg.role === 'user' ? 'あ' : 'S';
+    // User content is escaped first to prevent XSS; AI content goes through markdown formatter.
+    const content = msg.role === 'user'
+      ? this.escapeHtml(msg.content || '').replace(/\n/g, '<br>')
+      : this.formatMarkdown(msg.content || '');
     return `<div class="chat-msg ${cls}">
       <div class="chat-icon">${icon}</div>
-      <div class="chat-content">${this.formatMarkdown(msg.content || '')}</div>
+      <div class="chat-content">${content}</div>
       <div class="chat-time">${msg.timestamp ? new Date(msg.timestamp).toLocaleString() : ''}</div>
     </div>`;
   },
