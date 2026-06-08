@@ -61,7 +61,7 @@
 
 /* ─── Reset (未病ダイアリー準拠) ─── */
 * { box-sizing: border-box; margin: 0; padding: 0; max-width: 100%; }
-html { scroll-behavior: smooth; font-size: 15px; overflow-x: hidden; }
+html { scroll-behavior: smooth; font-size: 16px; overflow-x: hidden; }
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
@@ -71,7 +71,7 @@ body {
   overflow-x: hidden;
   width: 100%;
   max-width: 100vw;
-  font-size: 15px;
+  font-size: 16px;
 }
 img, video, iframe, table, pre, code, svg { max-width: 100%; }
 a { color: var(--accent); text-decoration: none; }
@@ -89,9 +89,9 @@ p { margin-bottom: 12px; }
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 11px 20px;
   border-radius: var(--radius-sm);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   border: none;
@@ -99,6 +99,7 @@ p { margin-bottom: 12px; }
   font-family: var(--font-main);
   text-decoration: none;
   white-space: nowrap;
+  min-height: 44px;
 }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -130,9 +131,9 @@ p { margin-bottom: 12px; }
 .btn-danger { background: var(--danger); color: #fff; }
 .btn-warning { background: var(--warning); color: #fff; }
 
-.btn-sm { padding: 6px 14px; font-size: 12px; }
-.btn-lg { padding: 14px 28px; font-size: 16px; }
-.btn-icon { padding: 8px; min-width: 36px; }
+.btn-sm { padding: 7px 14px; font-size: 13px; min-height: 36px; }
+.btn-lg { padding: 16px 32px; font-size: 18px; min-height: 52px; }
+.btn-icon { padding: 8px; min-width: 44px; min-height: 44px; }
 .btn-block { width: 100%; }
 
 .btn-google {
@@ -141,36 +142,37 @@ p { margin-bottom: 12px; }
   justify-content: center;
   gap: 10px;
   width: 100%;
-  padding: 12px 18px;
+  padding: 14px 18px;
   border-radius: var(--radius-sm);
   background: #fff;
   color: var(--text-primary);
-  border: 1px solid var(--border);
-  font-size: 14px;
+  border: 1.5px solid var(--border);
+  font-size: 16px;
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition);
+  min-height: 52px;
 }
-.btn-google:hover { background: var(--bg-tertiary); box-shadow: var(--shadow); }
+.btn-google:hover { background: var(--bg-tertiary); box-shadow: var(--shadow); border-color: #4285F4; }
 
 /* ─── Form Elements ─── */
 .form-group { margin-bottom: 16px; }
 .form-group label,
 .form-label {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
   color: var(--text-secondary);
   margin-bottom: 6px;
 }
 .form-input, .form-select, .form-textarea {
   width: 100%;
-  padding: 10px 14px;
+  padding: 11px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  font-size: 14px;
+  font-size: 16px;
   font-family: var(--font-main);
   transition: all var(--transition);
   background: var(--bg-tertiary);
@@ -479,11 +481,36 @@ select.form-input { appearance: auto; }
 }
 .domain-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 .dc-icon { font-size: 40px; margin-bottom: 12px; }
+/* Styled number badge (replaces emoji) */
+.dc-num {
+  width: 56px; height: 56px;
+  background: var(--domain-color, var(--primary));
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 300;
+  border-radius: 14px;
+  margin: 0 auto 16px;
+  font-family: 'Noto Sans JP', sans-serif;
+  letter-spacing: 0.02em;
+}
+/* Hero badge for domain LP pages */
+.dc-hero-badge {
+  width: 80px; height: 80px;
+  background: var(--domain-color, var(--primary));
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; font-weight: 300;
+  border-radius: 20px;
+  margin: 0 auto 20px;
+  font-family: 'Noto Sans JP', sans-serif;
+  opacity: 0.92;
+}
 .domain-card h3 { font-size: 20px; margin-bottom: 8px; }
 .domain-card p { font-size: 16px; color: var(--text-light); line-height: 1.8; }
 .domain-cards-sm { gap: 16px; }
 .domain-cards-sm .domain-card { padding: 20px 16px; }
 .domain-cards-sm .dc-icon { font-size: 28px; }
+.domain-cards-sm .dc-num { width: 40px; height: 40px; font-size: 16px; border-radius: 10px; margin-bottom: 12px; }
 .domain-cards-sm .domain-card h3 { font-size: 16px; }
 
 /* Features */
@@ -498,6 +525,28 @@ select.form-input { appearance: auto; }
 .fi-icon { font-size: 32px; margin-bottom: 12px; }
 .feature-item h3 { font-size: 20px; margin-bottom: 10px; }
 .feature-item p { font-size: 16px; color: var(--text-light); line-height: 1.9; }
+
+/* How it works — 3 steps */
+.steps-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 32px; margin-top: 40px; text-align: center;
+  max-width: 900px; margin-left: auto; margin-right: auto;
+}
+.step-item {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 36px 28px; box-shadow: var(--shadow);
+  position: relative;
+}
+.step-num {
+  width: 52px; height: 52px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; border-radius: 50%;
+  margin: 0 auto 20px;
+  box-shadow: 0 4px 12px rgba(108,99,255,0.3);
+}
+.step-item h3 { font-size: 20px; margin-bottom: 12px; }
+.step-item p { font-size: 16px; color: var(--text-light); line-height: 1.9; margin: 0; }
 
 /* Login Section */
 .lp-login-section { display: flex; justify-content: center; padding: 60px 20px; }
@@ -605,15 +654,16 @@ select.form-input { appearance: auto; }
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 11px 12px;
   margin-bottom: 2px;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   border-radius: var(--radius-sm);
   transition: all var(--transition);
   text-decoration: none;
+  min-height: 44px;
 }
 .nav-item:hover { background: var(--bg-hover); }
 .nav-item.active {
@@ -1654,16 +1704,17 @@ body.is-admin .admin-only { display: flex; }
   pointer-events: none;
 }
 .toast {
-  padding: 12px 20px;
+  padding: 14px 20px;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   box-shadow: var(--shadow-lg);
   animation: slideIn 0.3s ease;
   pointer-events: auto;
-  min-width: 200px;
-  max-width: 320px;
+  min-width: 220px;
+  max-width: 360px;
   color: #fff;
+  line-height: 1.5;
 }
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }
