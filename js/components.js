@@ -76,11 +76,13 @@ var Components = {
   renderField(f) {
     const name = f.key;
     switch (f.type) {
-      case 'slider':
+      case 'slider': {
+        const mid = Math.floor(((f.min||0) + (f.max||10))/2);
         return `<div class="slider-field">
-          <input type="range" name="${name}" min="${f.min||0}" max="${f.max||10}" value="${Math.floor((f.min||0 + f.max||10)/2)}" oninput="this.nextElementSibling.textContent=this.value">
-          <span class="slider-val">${Math.floor(((f.min||0) + (f.max||10))/2)}</span>
+          <input type="range" name="${name}" min="${f.min||0}" max="${f.max||10}" value="${mid}" oninput="this.nextElementSibling.textContent=this.value">
+          <span class="slider-val">${mid}</span>
         </div>`;
+      }
       case 'number':
         return `<input type="number" name="${name}" step="${f.step||1}" class="form-input" placeholder="${i18n.t(f.label)}${f.unit ? ' ('+f.unit+')' : ''}">`;
       case 'text':
@@ -246,6 +248,34 @@ var Components = {
         <button class="btn btn-primary btn-block" onclick="app.resetPassword()">再設定メールを送信</button>
         <div class="auth-help"><a href="javascript:void(0)" onclick="app.toggleAuthMode('login')">ログインに戻る</a></div>
       </div>
+    </div>`;
+  },
+
+  // ─── Streak Badge (sidebar) ───
+  streakBadge(days) {
+    if (!days || days < 1) return '';
+    const color = days >= 30 ? '#f59e0b' : days >= 7 ? '#10b981' : '#6C63FF';
+    return `<div class="streak-badge" style="border-color:${color};color:${color}" title="${days}日連続記録中">
+      <span class="streak-flame">◆</span>
+      <span class="streak-num">${days}</span>
+      <span class="streak-label">日連続</span>
+    </div>`;
+  },
+
+  // ─── Daily Check-in Banner ───
+  checkinBanner(hasCheckedIn, streakDays) {
+    if (hasCheckedIn) {
+      const days = streakDays || 1;
+      const msg = days >= 30 ? `${days}日連続！素晴らしい継続力です` :
+                  days >= 7  ? `${days}日連続！習慣になっています` :
+                  days >= 2  ? `${days}日連続で記録中` : '今日も記録しました';
+      return `<div class="checkin-banner checkin-done">
+        <span class="checkin-icon">◆</span>
+        <span class="checkin-msg">${msg}</span>
+      </div>`;
+    }
+    return `<div class="checkin-banner checkin-pending">
+      <span class="checkin-msg">今日の記録はまだです — 上の入力欄から今日の状態を教えてください</span>
     </div>`;
   },
 

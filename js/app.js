@@ -29,6 +29,7 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        setTimeout(() => this.checkFirstRun(), 600);
       } else {
         this.stopInboxPolling();
       }
@@ -179,7 +180,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -246,6 +247,12 @@ var App = class App {
     if (domainLabel) {
       const d = store.get('currentDomain');
       domainLabel.textContent = i18n.t(d);
+    }
+
+    // Streak badge
+    const streakEl = document.getElementById('sidebarStreak');
+    if (streakEl) {
+      streakEl.innerHTML = Components.streakBadge(store.get('streakDays') || 0);
     }
 
     // Admin mode: show admin nav items via body class only.
@@ -342,6 +349,7 @@ var App = class App {
     });
 
     store.addDomainEntry(domain, category, data);
+    this.updateStreak();
     Components.showToast(i18n.t('saved'), 'success');
     form.reset();
   }
@@ -368,6 +376,7 @@ var App = class App {
       text: textarea.value.trim()
     });
 
+    this.updateStreak();
     Components.showToast(i18n.t('saved'), 'success');
     textarea.value = '';
   }
@@ -1908,8 +1917,15 @@ var App = class App {
   }
 
   generateDemoData() {
-    if (!confirm('デモデータを生成しますか？既存データに追加されます。')) return;
-    // Generate sample entries for each domain
+    this.openModal('デモデータの生成', `
+      <p>過去7日分のサンプルデータを追加します。既存のデータには影響しません。</p>
+      <div style="display:flex;gap:12px;margin-top:16px">
+        <button class="btn btn-primary" onclick="app._doGenerateDemoData();app.closeModal()">生成する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>`);
+  }
+
+  _doGenerateDemoData() {
     const today = new Date();
     for (let i = 0; i < 7; i++) {
       const d = new Date(today);
@@ -1922,11 +1938,90 @@ var App = class App {
   }
 
   deleteAllData() {
-    if (!confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
-    if (!confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
+    this.openModal('データの全削除', `
+      <p style="color:var(--danger);font-weight:600">この操作は元に戻せません。</p>
+      <p>すべての記録・設定・分析結果が削除されます。本当によろしいですか？</p>
+      <div style="display:flex;gap:12px;margin-top:16px">
+        <button class="btn btn-danger" onclick="app._doDeleteAllData();app.closeModal()">すべて削除する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>`);
+  }
+
+  _doDeleteAllData() {
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();
+  }
+
+  // ─── Streak Tracking ───
+  updateStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    const last = store.get('lastCheckinDate');
+
+    if (last === today) return; // already counted today
+
+    let streak = store.get('streakDays') || 0;
+    if (last) {
+      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      streak = (last === yesterday) ? streak + 1 : 1;
+    } else {
+      streak = 1;
+    }
+
+    store.set('streakDays', streak);
+    store.set('lastCheckinDate', today);
+    this.updateSidebar();
+  }
+
+  // ─── First-run Onboarding ───
+  checkFirstRun() {
+    if (store.get('hasSeenOnboarding')) return;
+
+    const hasAnyData = ['health_symptoms','health_vitals','consciousness_entries',
+      'time_entries','work_tasks','relationship_contacts','assets_overview']
+      .some(k => (store.get(k) || []).length > 0);
+
+    if (!hasAnyData) this.showOnboarding();
+  }
+
+  showOnboarding() {
+    const body = `
+      <div class="onboarding-content">
+        <div class="onboarding-step">
+          <div class="ob-num">1</div>
+          <div class="ob-text">
+            <strong>今日の状態を入力してください</strong><br>
+            ホーム画面の入力欄に「今日は少し疲れ気味」など、気になることを自由に書くだけです
+          </div>
+        </div>
+        <div class="onboarding-step">
+          <div class="ob-num">2</div>
+          <div class="ob-text">
+            <strong>6つの領域で記録を続けます</strong><br>
+            意識・健康・時間・仕事・関係・資産。気になる領域から始めてください
+          </div>
+        </div>
+        <div class="onboarding-step">
+          <div class="ob-num">3</div>
+          <div class="ob-text">
+            <strong>毎日の記録が力になります</strong><br>
+            続けるほど、あなただけの深いアドバイスが届くようになります
+          </div>
+        </div>
+        <div class="ob-cta">
+          <p style="margin-bottom:16px;color:var(--text-muted);font-size:14px">まずどの領域から始めますか？</p>
+          <div class="ob-domains">
+            ${Object.values(CONFIG.domains).map(d =>
+              `<button class="btn btn-secondary ob-domain-btn" onclick="app.closeModal();app.switchDomain('${d.id}')" style="border-color:${d.color};color:${d.color}">
+                <span style="font-weight:700">${d.icon}</span> ${i18n.t(d.id)}
+              </button>`
+            ).join('')}
+          </div>
+        </div>
+      </div>`;
+
+    store.set('hasSeenOnboarding', true);
+    this.openModal('ようこそ、LMSへ', body);
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───

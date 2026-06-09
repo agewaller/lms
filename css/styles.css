@@ -479,6 +479,10 @@ select.form-input { appearance: auto; }
 }
 .domain-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 .dc-icon { font-size: 40px; margin-bottom: 12px; }
+.dc-kanji {
+  font-size: 44px; font-weight: 900; line-height: 1;
+  font-family: 'Noto Sans JP', sans-serif;
+}
 .domain-card h3 { font-size: 20px; margin-bottom: 8px; }
 .domain-card p { font-size: 16px; color: var(--text-light); line-height: 1.8; }
 .domain-cards-sm { gap: 16px; }
@@ -496,8 +500,36 @@ select.form-input { appearance: auto; }
   padding: 28px; box-shadow: var(--shadow);
 }
 .fi-icon { font-size: 32px; margin-bottom: 12px; }
+.fi-label {
+  display: inline-block; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  padding: 2px 8px; border-radius: 4px; margin-bottom: 10px;
+}
 .feature-item h3 { font-size: 20px; margin-bottom: 10px; }
 .feature-item p { font-size: 16px; color: var(--text-light); line-height: 1.9; }
+
+/* Hero extras */
+.hero-tagline {
+  font-size: 14px; font-weight: 600; letter-spacing: 0.1em;
+  color: var(--primary); text-transform: uppercase; margin-bottom: 16px;
+}
+.hero-actions { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+.hero-note { font-size: 13px; color: var(--text-muted); margin-top: 8px; }
+
+/* Personas */
+.personas-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px; margin-top: 40px; text-align: left;
+}
+.persona-card {
+  background: var(--bg-card); border-radius: var(--radius); padding: 24px;
+  box-shadow: var(--shadow); border-left: 4px solid var(--primary);
+}
+.persona-age {
+  font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 10px;
+}
+.persona-card p { font-size: 15px; color: var(--text-light); line-height: 1.9; font-style: italic; }
 
 /* Login Section */
 .lp-login-section { display: flex; justify-content: center; padding: 60px 20px; }
@@ -1106,6 +1138,56 @@ body.is-admin .admin-only { display: flex; }
 }
 .sub-nav-btn:hover { color: var(--text); }
 .sub-nav-btn.active { font-weight: 600; }
+
+/* ─── Streak Badge (sidebar) ─── */
+.streak-badge {
+  display: flex; align-items: center; gap: 6px;
+  margin: 0 16px 4px; padding: 8px 14px;
+  border: 1.5px solid; border-radius: 20px;
+  font-size: 13px; font-weight: 600;
+}
+.streak-flame { font-size: 15px; }
+.streak-num { font-size: 18px; font-weight: 900; }
+.streak-label { font-size: 12px; }
+
+/* ─── Check-in Banner ─── */
+.checkin-banner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border-radius: var(--radius-sm);
+  margin-bottom: 16px; font-size: 14px; font-weight: 500;
+}
+.checkin-done {
+  background: color-mix(in srgb, #10b981 12%, transparent);
+  border: 1px solid color-mix(in srgb, #10b981 30%, transparent);
+  color: #065f46;
+}
+.checkin-pending {
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--primary) 40%, transparent);
+  color: var(--text-muted);
+}
+.checkin-icon { font-size: 18px; }
+.checkin-msg { flex: 1; }
+
+/* ─── Onboarding Modal ─── */
+.onboarding-content { text-align: left; }
+.onboarding-step {
+  display: flex; gap: 16px; align-items: flex-start;
+  margin-bottom: 20px; padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.onboarding-step:last-of-type { border-bottom: none; }
+.ob-num {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 16px; flex-shrink: 0;
+}
+.ob-text { font-size: 15px; line-height: 1.8; color: var(--text-primary); }
+.ob-text strong { display: block; margin-bottom: 4px; font-size: 16px; }
+.ob-cta { margin-top: 24px; }
+.ob-domains { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.ob-domain-btn { font-size: 14px; padding: 8px 16px; }
 
 /* ─── Home Page ─── */
 .quick-input-bar { display: flex; gap: 10px; margin-bottom: 20px; }

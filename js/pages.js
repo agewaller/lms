@@ -27,8 +27,15 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // Daily check-in state
+    const today = new Date().toISOString().slice(0, 10);
+    const lastCheckin = store.get('lastCheckinDate');
+    const hasCheckedIn = (lastCheckin === today);
+    const streakDays = store.get('streakDays') || 0;
+
     // Quick input bar
     let html = `<div class="page-home">
+      ${Components.checkinBanner(hasCheckedIn, streakDays)}
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
