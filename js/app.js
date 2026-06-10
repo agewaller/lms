@@ -20,6 +20,7 @@ var App = class App {
       store.set('currentPage', 'home');
       this.renderApp();
       this.startInboxPolling();
+      this.checkOnboarding();
     }
 
     // Listen for auth changes
@@ -29,6 +30,7 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        this.checkOnboarding();
       } else {
         this.stopInboxPolling();
       }
@@ -179,7 +181,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -351,7 +353,7 @@ var App = class App {
     const data = store.getDomainData(domain, category, 1);
     try {
       await AIEngine.analyze(domain, 'daily', { raw: data[data.length - 1] });
-      Components.showToast(i18n.t('ai_analysis') + ' ✓', 'success');
+      Components.showToast('分析完了 ✓', 'success');
       this.renderApp();
     } catch (e) {
       Components.showToast(e.message, 'error');
@@ -381,7 +383,7 @@ var App = class App {
 
     try {
       await AIEngine.analyze(domain, 'daily', { text });
-      Components.showToast(i18n.t('ai_analysis') + ' ✓', 'success');
+      Components.showToast('分析完了 ✓', 'success');
       this.renderApp();
     } catch (e) {
       Components.showToast(e.message, 'error');
@@ -1927,6 +1929,76 @@ var App = class App {
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();
+  }
+
+  // ─── Daily Check-in ───
+  saveDailyCheckin(mood) {
+    const today = new Date().toISOString().slice(0, 10);
+    const checkIns = store.get('daily_checkins') || [];
+    const existingIdx = checkIns.findIndex(c => c.date === today);
+
+    const entry = { date: today, mood, timestamp: new Date().toISOString() };
+
+    if (existingIdx >= 0) {
+      checkIns[existingIdx] = entry;
+    } else {
+      checkIns.unshift(entry);
+    }
+
+    store.set('daily_checkins', checkIns.slice(0, 365));
+    Components.showToast('記録しました！', 'success');
+    this.renderApp();
+  }
+
+  // ─── Onboarding ───
+  checkOnboarding() {
+    if (store.get('hasOnboarded')) return;
+    const user = store.get('user');
+    if (!user) return;
+
+    // Show onboarding after a short delay so the main UI renders first
+    setTimeout(() => this.showOnboarding(), 600);
+  }
+
+  showOnboarding() {
+    const domainIcons = { consciousness: '🧘', health: '💚', time: '⏰', work: '💼', relationship: '🤝', assets: '💰' };
+    const domainColors = { consciousness: '#6C63FF', health: '#10b981', time: '#f59e0b', work: '#3b82f6', relationship: '#ef4444', assets: '#d97706' };
+
+    const html = `<div class="onboarding-modal">
+      <div class="onboarding-welcome">🎉</div>
+      <h2 class="onboarding-title">LMS へようこそ！</h2>
+      <p class="onboarding-desc">
+        意識・健康・時間・仕事・関係・資産の<br>
+        6つの領域を、一緒に整えていきましょう。<br>
+        <strong>まず、今一番気になる領域から始めませんか？</strong>
+      </p>
+      <div class="onboarding-domains">
+        ${Object.entries(CONFIG.domains).map(([id, d]) => `
+          <button class="onboarding-domain-btn" onclick="app.startFromDomain('${id}')"
+            style="--domain-color:${domainColors[id] || '#6C63FF'}">
+            <span class="onboarding-domain-icon">${domainIcons[id] || d.icon}</span>
+            <span class="onboarding-domain-name">${i18n.t(id)}</span>
+          </button>
+        `).join('')}
+      </div>
+      <button class="onboarding-skip" onclick="app.completeOnboarding()">あとで設定する</button>
+    </div>`;
+
+    this.openModal('はじめましょう', html);
+  }
+
+  startFromDomain(domain) {
+    this.completeOnboarding();
+    this.switchDomain(domain);
+    // Prompt for first record
+    setTimeout(() => {
+      Components.showToast(`${i18n.t(domain)}を選びました。「記録する」から最初のデータを入れてみましょう！`, 'info');
+    }, 300);
+  }
+
+  completeOnboarding() {
+    store.set('hasOnboarded', true);
+    this.closeModal();
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───

@@ -36,6 +36,9 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>`;
 
+    // Daily check-in widget (only on home, once per day feel)
+    html += this.renderDailyCheckIn();
+
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
       html += this.renderStockAnalysisWidget();
@@ -331,6 +334,56 @@ var Pages = {
 
     html += `</div></div>`;
     return html;
+  },
+
+  // ─── Daily Check-in Widget ───
+  renderDailyCheckIn() {
+    const today = new Date().toISOString().slice(0, 10);
+    const checkIns = store.get('daily_checkins') || [];
+    const todayEntry = checkIns.find(c => c.date === today);
+
+    const moods = [
+      { key: 'excellent', label: '絶好調', emoji: '😄', color: '#10b981' },
+      { key: 'good',      label: '良い',   emoji: '🙂', color: '#3b82f6' },
+      { key: 'normal',    label: '普通',   emoji: '😐', color: '#f59e0b' },
+      { key: 'tired',     label: 'しんどい', emoji: '😔', color: '#ef4444' },
+      { key: 'bad',       label: 'つらい', emoji: '😢', color: '#7c3aed' }
+    ];
+
+    // Streak calculation: consecutive days with check-ins
+    let streak = 0;
+    if (checkIns.length > 0) {
+      const d = new Date();
+      for (let i = 0; i < 365; i++) {
+        const ds = d.toISOString().slice(0, 10);
+        if (checkIns.find(c => c.date === ds)) {
+          streak++;
+          d.setDate(d.getDate() - 1);
+        } else {
+          // Allow missing today (before check-in)
+          if (i === 0) { d.setDate(d.getDate() - 1); continue; }
+          break;
+        }
+      }
+    }
+
+    return `<div class="daily-checkin">
+      <div class="checkin-header">
+        <h4>今日の調子は？</h4>
+        ${streak >= 2 ? `<span class="checkin-streak">${streak}日継続中</span>` : ''}
+      </div>
+      <div class="checkin-moods">
+        ${moods.map(m => `
+          <button class="mood-btn ${todayEntry?.mood === m.key ? 'selected' : ''}"
+            onclick="app.saveDailyCheckin('${m.key}')"
+            style="--mood-color:${m.color}" title="${m.label}">
+            <span class="mood-emoji">${m.emoji}</span>
+            <span class="mood-label">${m.label}</span>
+          </button>
+        `).join('')}
+      </div>
+      ${todayEntry ? `<div class="checkin-done">今日はすでに記録されています。また明日も続けましょう！</div>` : ''}
+    </div>`;
   },
 
   // ─── Stock Analysis Widget (Assets domain) ───
