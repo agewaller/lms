@@ -242,37 +242,96 @@ var Store = class Store {
 
   calculateDomainScore(domain) {
     const scores = { ...this.state.domainScores };
-    let score = 50; // default
+    let score = 50;
 
-    if (domain === 'health') {
-      const recent = this.getDomainData('health', 'symptoms', 7);
-      if (recent.length > 0) {
-        const levels = recent.map(s => s.condition_level).filter(v => v != null);
-        if (levels.length > 0) {
-          score = Math.round((levels.reduce((a, b) => a + b, 0) / levels.length) * 10);
+    switch (domain) {
+      case 'consciousness': {
+        const obs = this.getDomainData('consciousness', 'observation', 7);
+        if (obs.length > 0) {
+          const latest = obs[obs.length - 1];
+          const nv = latest.net_value;
+          // Net value (0-100) drives 60% of score; activity drives 40%
+          const nvScore = nv != null ? Math.min(100, Math.max(0, nv)) : 50;
+          const actScore = Math.min(100, obs.length * 15);
+          score = Math.round(nvScore * 0.6 + actScore * 0.4);
         }
+        break;
       }
-    } else {
-      // Generic: based on recent entry count (activity level)
-      const allKeys = Object.keys(this.state).filter(k => k.startsWith(domain + '_'));
-      let totalRecent = 0;
-      allKeys.forEach(k => {
-        if (Array.isArray(this.state[k])) {
-          totalRecent += this.getDomainData(domain, k.replace(domain + '_', ''), 7).length;
+      case 'health': {
+        const symptoms = this.getDomainData('health', 'symptoms', 7);
+        const sleep = this.getDomainData('health', 'sleepData', 7);
+        const activity = this.getDomainData('health', 'activityData', 7);
+        let components = [];
+        if (symptoms.length > 0) {
+          const levels = symptoms.map(s => s.condition_level).filter(v => v != null);
+          if (levels.length > 0) components.push(Math.round(levels.reduce((a, b) => a + b, 0) / levels.length * 10));
         }
-      });
-      score = Math.min(100, 30 + totalRecent * 5);
+        if (sleep.length > 0) {
+          const q = sleep.map(s => s.quality).filter(v => v != null);
+          if (q.length > 0) components.push(Math.round(q.reduce((a, b) => a + b, 0) / q.length * 10));
+        }
+        if (activity.length > 0) components.push(Math.min(100, activity.length * 15));
+        score = components.length > 0 ? Math.round(components.reduce((a, b) => a + b, 0) / components.length) : 50;
+        break;
+      }
+      case 'time': {
+        const logs = this.getDomainData('time', 'entries', 7);
+        const habits = this.getDomainData('time', 'habits', 7);
+        if (logs.length > 0) {
+          const prodScores = logs.map(e => e.productivity).filter(v => v != null);
+          const prodAvg = prodScores.length > 0 ? prodScores.reduce((a, b) => a + b, 0) / prodScores.length * 10 : 50;
+          const habitScore = Math.min(100, habits.length * 20);
+          score = Math.round(prodAvg * 0.7 + habitScore * 0.3);
+        }
+        break;
+      }
+      case 'work': {
+        const tasks = this.getDomainData('work', 'tasks', 14);
+        const projects = this.state.work_projects || [];
+        if (tasks.length > 0) {
+          const doneRate = tasks.filter(t => t.status === 'done').length / tasks.length;
+          const activeProjects = projects.filter(p => p.status === 'active').length;
+          score = Math.round(doneRate * 70 + Math.min(30, activeProjects * 10));
+        }
+        break;
+      }
+      case 'relationship': {
+        const contacts = this.state.relationship_contacts || [];
+        const interactions = this.getDomainData('relationship', 'interactions', 14);
+        const closeCount = contacts.filter(c => parseInt(c.distance) <= 2).length;
+        // Isolation risk: fewer close contacts and interactions = lower score
+        const closeScore = Math.min(50, closeCount * 10);
+        const interScore = Math.min(50, interactions.length * 5);
+        score = Math.round(closeScore + interScore);
+        break;
+      }
+      case 'assets': {
+        const income = this.getDomainData('assets', 'income', 30);
+        const expenses = this.getDomainData('assets', 'expenses', 30);
+        const goals = this.state.assets_goals || [];
+        const totalIncome = income.reduce((s, e) => s + (e.amount || 0), 0);
+        const totalExpenses = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+        if (totalIncome > 0 || totalExpenses > 0) {
+          const savingsRate = totalIncome > 0 ? Math.max(0, (totalIncome - totalExpenses) / totalIncome) : 0;
+          const goalScore = goals.length > 0 ? Math.min(30, goals.length * 10) : 15;
+          score = Math.round(savingsRate * 70 + goalScore);
+        }
+        break;
+      }
     }
 
-    scores[domain] = score;
+    scores[domain] = Math.min(100, Math.max(0, score));
     this.set('domainScores', scores);
-    return score;
+    return scores[domain];
   }
 
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // Only remove LMS-managed keys, not Firebase config / OAuth tokens
+    this.persistKeys.forEach(key => {
+      try { localStorage.removeItem(`lms_${key}`); } catch (e) {}
+    });
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};

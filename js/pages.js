@@ -27,9 +27,22 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // Check if user has entered any data today for this domain
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const categories = Object.keys(domainConfig?.categories || {});
+    const hasDataToday = categories.some(cat =>
+      store.getDomainData(domain, cat, 1).some(e => (e.timestamp || '').startsWith(todayStr))
+    );
+
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    let html = `<div class="page-home">`;
+
+    // Today's check-in prompt (show when no data entered today)
+    if (!hasDataToday) {
+      html += this.renderDailyCheckIn(domain, color);
+    }
+
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
@@ -70,7 +83,6 @@ var Pages = {
       <h3>${i18n.t('recent_records')}</h3>
       <div class="records-list">`;
 
-    const categories = Object.keys(domainConfig?.categories || {});
     let allRecent = [];
     categories.forEach(cat => {
       const data = store.getDomainData(domain, cat, 7);
@@ -158,6 +170,87 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Daily Check-In Widget ───
+  renderDailyCheckIn(domain, color) {
+    const questions = {
+      consciousness: [
+        { label: '今日の心の静けさ', key: 'net_value', min: 0, max: 100, step: 10, unit: '' },
+        { label: '気づきの深さ', key: 'insight_level', min: 1, max: 5, step: 1, unit: '段階' }
+      ],
+      health: [
+        { label: '今日の体調', key: 'condition_level', min: 1, max: 10, step: 1, unit: '/10' },
+        { label: '睡眠の質（昨夜）', key: 'sleep_quality', min: 1, max: 10, step: 1, unit: '/10' },
+        { label: '疲れ度', key: 'fatigue', min: 1, max: 10, step: 1, unit: '/10' }
+      ],
+      time: [
+        { label: '今日の充実度', key: 'productivity', min: 1, max: 10, step: 1, unit: '/10' },
+        { label: '自分の時間（分）', key: 'personal_time_min', min: 0, max: 480, step: 15, unit: '分' }
+      ],
+      work: [
+        { label: '今日の達成感', key: 'satisfaction', min: 1, max: 10, step: 1, unit: '/10' },
+        { label: '意欲・やる気', key: 'motivation', min: 1, max: 10, step: 1, unit: '/10' }
+      ],
+      relationship: [
+        { label: '今日の繋がり感', key: 'connection_level', min: 1, max: 10, step: 1, unit: '/10' },
+        { label: '誰かと話しましたか', key: 'talked_today', type: 'toggle' }
+      ],
+      assets: [
+        { label: '今月の貯蓄感', key: 'savings_feeling', min: 1, max: 5, step: 1, unit: '段階' },
+        { label: '家計の心配度（低いほど良い）', key: 'money_worry', min: 1, max: 5, step: 1, unit: '段階' }
+      ]
+    };
+
+    const qs = questions[domain] || questions.health;
+    const categoryMap = {
+      consciousness: 'observation',
+      health: 'symptoms',
+      time: 'entries',
+      work: 'tasks',
+      relationship: 'interactions',
+      assets: 'overview'
+    };
+    const category = categoryMap[domain] || 'entries';
+
+    let fieldsHtml = qs.map(q => {
+      if (q.type === 'toggle') {
+        return `<div class="checkin-field">
+          <div class="checkin-field-label">${q.label}</div>
+          <div class="checkin-toggle-row">
+            <button class="btn btn-sm btn-secondary checkin-toggle-btn" data-key="${q.key}" data-val="false" onclick="app.toggleCheckinField(this,'${q.key}')">いいえ</button>
+            <button class="btn btn-sm btn-primary checkin-toggle-btn" data-key="${q.key}" data-val="true" onclick="app.toggleCheckinField(this,'${q.key}')">はい</button>
+          </div>
+        </div>`;
+      }
+      const mid = Math.round((q.min + q.max) / 2);
+      return `<div class="checkin-field">
+        <div class="checkin-field-label">${q.label}
+          <span class="checkin-val" id="cv_${q.key}">${mid}${q.unit}</span>
+        </div>
+        <input type="range" class="checkin-slider" name="${q.key}"
+          min="${q.min}" max="${q.max}" step="${q.step}" value="${mid}"
+          oninput="document.getElementById('cv_${q.key}').textContent=this.value+'${q.unit}'">
+        <div class="checkin-range-labels"><span>${q.min}</span><span>${q.max}</span></div>
+      </div>`;
+    }).join('');
+
+    return `<div class="daily-checkin-widget" style="--checkin-color:${color}">
+      <div class="checkin-header">
+        <div class="checkin-date">${new Date().toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'long' })}</div>
+        <h3>今日の記録</h3>
+        <p>一日に一度、今の状態を記録しましょう。30秒でできます。</p>
+      </div>
+      <div class="checkin-fields" id="checkinFields_${domain}">${fieldsHtml}</div>
+      <div class="checkin-note-group">
+        <textarea id="checkinNote_${domain}" class="form-input" rows="2"
+          placeholder="今日一言だけ書くとしたら？（省略OK）"></textarea>
+      </div>
+      <div class="checkin-actions">
+        <button class="btn btn-primary btn-lg" onclick="app.saveCheckin('${domain}','${category}')">記録する</button>
+        <button class="btn btn-secondary" onclick="app.saveDiaryAndAnalyze('${domain}')">記録して分析</button>
+      </div>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───

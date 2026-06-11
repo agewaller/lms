@@ -179,7 +179,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -356,6 +356,36 @@ var App = class App {
     } catch (e) {
       Components.showToast(e.message, 'error');
     }
+  }
+
+  // ─── Daily Check-in Save ───
+  saveCheckin(domain, category) {
+    const container = document.getElementById('checkinFields_' + domain);
+    const data = {};
+
+    if (container) {
+      container.querySelectorAll('.checkin-slider').forEach(el => {
+        data[el.name] = parseFloat(el.value);
+      });
+      // Toggled buttons
+      container.querySelectorAll('.checkin-toggle-btn.active').forEach(el => {
+        data[el.dataset.key] = el.dataset.val === 'true';
+      });
+    }
+
+    const note = document.getElementById('checkinNote_' + domain);
+    if (note?.value?.trim()) data.note = note.value.trim();
+
+    store.addDomainEntry(domain, category, { ...data, type: 'daily_checkin' });
+    Components.showToast('今日の記録を保存しました ✓', 'success');
+    this.renderApp();
+  }
+
+  toggleCheckinField(btn, key) {
+    const row = btn.closest('.checkin-toggle-row');
+    if (row) row.querySelectorAll('.checkin-toggle-btn').forEach(b => b.classList.remove('active', 'btn-primary', 'btn-secondary'));
+    btn.classList.add('active', 'btn-primary');
+    btn.classList.remove('btn-secondary');
   }
 
   // ─── Diary Save ───

@@ -4,6 +4,19 @@
    ============================================================ */
 var AIEngine = {
 
+  // CONFIG id → API id mapping. Update here when Anthropic/OpenAI rotate model ids.
+  MODEL_MAP: {
+    'claude-sonnet-4-6': 'claude-sonnet-4-6-20260101',
+    'claude-opus-4-6':   'claude-opus-4-6-20260201',
+    'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+    'gpt-4o':            'gpt-4o-2025-12-17',
+    'gemini-pro':        'gemini-2.0-flash'
+  },
+
+  resolveModelId(configId) {
+    return this.MODEL_MAP[configId] || configId;
+  },
+
   // ─── Main analysis entry point ───
   async analyze(domain, promptType, userData, options = {}) {
     const model = options.model || store.get('selectedModel') || 'claude-sonnet-4-6';
@@ -17,16 +30,17 @@ var AIEngine = {
       const systemPrompt = this.buildSystemPrompt(domain, promptType);
       const userMessage = this.buildUserMessage(domain, userData);
 
+      const apiModelId = this.resolveModelId(model);
       let result;
       switch (modelConfig.provider) {
         case 'anthropic':
-          result = await this.callAnthropic(model, systemPrompt, userMessage, modelConfig.maxTokens);
+          result = await this.callAnthropic(apiModelId, systemPrompt, userMessage, modelConfig.maxTokens);
           break;
         case 'openai':
-          result = await this.callOpenAI(model, systemPrompt, userMessage, modelConfig.maxTokens);
+          result = await this.callOpenAI(apiModelId, systemPrompt, userMessage, modelConfig.maxTokens);
           break;
         case 'google':
-          result = await this.callGemini(model, systemPrompt, userMessage, modelConfig.maxTokens);
+          result = await this.callGemini(apiModelId, systemPrompt, userMessage, modelConfig.maxTokens);
           break;
         default:
           throw new Error('Unknown provider: ' + modelConfig.provider);
@@ -266,22 +280,47 @@ var AIEngine = {
     return await this.analyze(null, 'quickInput', { text });
   },
 
-  // ─── Conversation (chat) ───
+  // ─── Conversation (chat) with multi-turn history ───
   async chat(domain, userMessage) {
     const history = store.get('conversationHistory') || [];
+    const model = store.get('selectedModel') || 'claude-sonnet-4-6';
+    const modelConfig = CONFIG.aiModels[model];
+    if (!modelConfig) throw new Error('Unknown model: ' + model);
 
-    // Add user message
+    const systemPrompt = this.buildSystemPrompt(domain, 'daily');
+
+    // Build API messages from stored history (last 20 turns for context)
+    const domainHistory = history
+      .filter(m => m.domain === domain || !m.domain)
+      .slice(-20)
+      .map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
+
+    // Add current user message
     history.push({
       role: 'user',
       content: userMessage,
       timestamp: new Date().toISOString(),
       domain
     });
+    domainHistory.push({ role: 'user', content: userMessage });
 
-    // Get AI response
-    const response = await this.analyze(domain, 'daily', { text: userMessage });
+    store.set('isAnalyzing', true);
+    let response = '';
+    try {
+      const apiModelId = this.resolveModelId(model);
+      if (modelConfig.provider === 'anthropic') {
+        response = await this.callAnthropicMultiTurn(apiModelId, systemPrompt, domainHistory, modelConfig.maxTokens);
+      } else if (modelConfig.provider === 'openai') {
+        response = await this.callOpenAIMultiTurn(apiModelId, systemPrompt, domainHistory, modelConfig.maxTokens);
+      } else {
+        // Gemini: fall back to single-turn with context summary
+        const contextText = domainHistory.map(m => `${m.role}: ${m.content}`).join('\n');
+        response = await this.callGemini(apiModelId, systemPrompt, contextText, modelConfig.maxTokens);
+      }
+    } finally {
+      store.set('isAnalyzing', false);
+    }
 
-    // Add AI response
     history.push({
       role: 'assistant',
       content: response,
@@ -291,5 +330,56 @@ var AIEngine = {
 
     store.set('conversationHistory', history);
     return response;
+  },
+
+  async callAnthropicMultiTurn(model, system, messages, maxTokens) {
+    const apiKey = this.getApiKey('anthropic');
+    if (!apiKey) throw new Error('Anthropic APIキーが設定されていません。管理者にご連絡ください。');
+
+    const endpoint = CONFIG.endpoints.anthropic;
+    const isDirect = !endpoint || endpoint === 'direct' || endpoint.includes('your-account');
+    const url = isDirect ? 'https://api.anthropic.com/v1/messages' : endpoint;
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    };
+    if (isDirect) headers['anthropic-dangerous-direct-browser-access'] = 'true';
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ model, max_tokens: maxTokens, system, messages })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('Claude APIエラー (HTTP ' + res.status + '): ' + err);
+    }
+    const data = await res.json();
+    return data.content?.[0]?.text || '';
+  },
+
+  async callOpenAIMultiTurn(model, system, messages, maxTokens) {
+    const apiKey = this.getApiKey('openai');
+    if (!apiKey) throw new Error('OpenAI API key not set');
+
+    const apiMessages = [{ role: 'system', content: system }, ...messages];
+    const res = await fetch(CONFIG.endpoints.openai, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + apiKey
+      },
+      body: JSON.stringify({ model, max_tokens: maxTokens, messages: apiMessages })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('OpenAI API error: ' + err);
+    }
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || '';
   }
 };
