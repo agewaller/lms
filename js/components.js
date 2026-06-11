@@ -106,12 +106,22 @@ var Components = {
 
   // ─── Chat Message ───
   chatMessage(msg) {
-    const cls = msg.role === 'user' ? 'chat-user' : 'chat-ai';
-    const icon = msg.role === 'user' ? 'あ' : 'S';
+    const isUser = msg.role === 'user';
+    const cls = isUser ? 'chat-user' : 'chat-ai';
+    const user = window.store?.get('user');
+    const initials = user?.displayName
+      ? user.displayName.charAt(0).toUpperCase()
+      : (user?.email ? user.email.charAt(0).toUpperCase() : 'あ');
+    const icon = isUser ? initials : '◈';
+    const timeStr = msg.timestamp
+      ? new Date(msg.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+      : '';
     return `<div class="chat-msg ${cls}">
-      <div class="chat-icon">${icon}</div>
-      <div class="chat-content">${this.formatMarkdown(msg.content || '')}</div>
-      <div class="chat-time">${msg.timestamp ? new Date(msg.timestamp).toLocaleString() : ''}</div>
+      <div class="chat-icon">${this.escapeHtml(icon)}</div>
+      <div class="chat-bubble">
+        <div class="chat-content">${this.formatMarkdown(msg.content || '')}</div>
+        ${timeStr ? `<div class="chat-time">${timeStr}</div>` : ''}
+      </div>
     </div>`;
   },
 
@@ -130,6 +140,16 @@ var Components = {
       .replace(/^- (.+)$/gm, '<li>$1</li>')
       .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
       .replace(/\n/g, '<br>');
+  },
+
+  // ─── HTML Escape ───
+  escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   },
 
   // ─── Confirm Dialog (モーダル経由。confirm()の代替: iOS/Android対応) ───
