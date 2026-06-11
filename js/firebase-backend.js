@@ -29,6 +29,19 @@ var FirebaseBackend = {
 
       // Listen for auth state changes
       this.auth.onAuthStateChanged(user => this.handleAuthChange(user));
+
+      // Handle redirect result (from signInWithRedirect on mobile)
+      try {
+        const result = await this.auth.getRedirectResult();
+        if (result?.user) {
+          console.log('[LMS] Google redirect sign-in successful:', result.user.email);
+        }
+      } catch (e) {
+        if (e.code !== 'auth/no-auth-event') {
+          console.error('[LMS] Redirect result error:', e);
+        }
+      }
+
       this.initialized = true;
     } catch (e) {
       console.error('Firebase init error:', e);
@@ -58,29 +71,57 @@ var FirebaseBackend = {
   async signInWithGoogle() {
     if (!this.auth) {
       // Local-only mode fallback (Firebase not configured).
-      // Prompt for email so that admin (agewaller@gmail.com) can still log in.
-      const email = (prompt('メールアドレスを入力してください', '') || '').trim().toLowerCase();
-      if (!email) return;
-      store.update({
-        user: {
-          uid: 'local-' + email,
-          displayName: email.split('@')[0],
-          email
-        },
-        isAuthenticated: true,
-        currentPage: 'home'
-      });
+      // Show an inline form instead of prompt() which is blocked on mobile.
+      this._showLocalLoginModal();
       return;
     }
 
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     try {
-      await this.auth.signInWithPopup(provider);
+      // signInWithPopup is blocked by mobile browsers; use signInWithRedirect instead.
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile) {
+        await this.auth.signInWithRedirect(provider);
+      } else {
+        await this.auth.signInWithPopup(provider);
+      }
     } catch (e) {
       console.error('Google sign-in error:', e);
       Components.showToast(i18n.t('error') + ': ' + e.message, 'error');
     }
+  },
+
+  _showLocalLoginModal() {
+    const modal = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    if (!modal || !titleEl || !bodyEl) return;
+
+    titleEl.textContent = 'ローカルモードでログイン';
+    bodyEl.innerHTML = `
+      <p style="margin-bottom:16px;">Firebase未設定のため、ローカルモードで続行します。</p>
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" id="localLoginEmail" class="form-input" placeholder="例: you@example.com">
+      </div>
+      <button class="btn btn-primary" onclick="FirebaseBackend._doLocalLogin()">ログイン</button>
+    `;
+    modal.classList.add('active');
+  },
+
+  _doLocalLogin() {
+    const email = (document.getElementById('localLoginEmail')?.value || '').trim().toLowerCase();
+    if (!email) { Components.showToast('メールアドレスを入力してください', 'error'); return; }
+
+    const modal = document.getElementById('modal-overlay');
+    if (modal) modal.classList.remove('active');
+
+    store.update({
+      user: { uid: 'local-' + email, displayName: email.split('@')[0], email },
+      isAuthenticated: true,
+      currentPage: 'home'
+    });
   },
 
   // ─── Email/Password Sign In ───
