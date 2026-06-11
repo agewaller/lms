@@ -325,6 +325,31 @@ var Store = class Store {
     return scores[domain];
   }
 
+  // ─── Streak Calculation ───
+  calculateStreak(domain) {
+    const categories = Object.keys(CONFIG.domains[domain]?.categories || {});
+    const allDates = new Set();
+    categories.forEach(cat => {
+      (this.state[`${domain}_${cat}`] || []).forEach(e => {
+        if (e.timestamp) allDates.add(e.timestamp.slice(0, 10));
+      });
+    });
+
+    let streak = 0;
+    const today = new Date();
+    for (let i = 0; i <= 365; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      if (allDates.has(key)) {
+        streak++;
+      } else if (i > 0) {
+        break;
+      }
+    }
+    return streak;
+  }
+
   // ─── Clear ───
 
   clearAll() {

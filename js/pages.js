@@ -54,16 +54,25 @@ var Pages = {
       html += this.renderStockAnalysisWidget();
     }
 
+    // Streak
+    const streak = store.calculateStreak(domain);
+
     // Domain score + overview
     html += `<div class="home-overview">
         <div class="overview-score">
           ${Components.scoreGauge(score, 140, i18n.t(domain))}
+          ${Components.streakBadge(streak)}
         </div>
         <div class="overview-stats">`;
 
     // Domain-specific stats
     html += this.getDomainStats(domain);
     html += `</div></div>`;
+
+    // Trend chart (health & consciousness have enough structured data)
+    if (domain === 'health' || domain === 'consciousness') {
+      html += this.renderTrendSection(domain);
+    }
 
     // All domain scores overview (mini)
     html += `<div class="all-domains-overview">
@@ -169,6 +178,59 @@ var Pages = {
     }
 
     html += `</div>`;
+    return html;
+  },
+
+  // ─── Trend Chart Section ───
+  renderTrendSection(domain) {
+    const chartId = `trendChart_${domain}`;
+    let datasets = [];
+    let yMax;
+
+    if (domain === 'health') {
+      const symptoms = store.getDomainData('health', 'symptoms', 30);
+      const sleep = store.getDomainData('health', 'sleepData', 30);
+
+      if (symptoms.length > 0) {
+        datasets.push({
+          label: '体調',
+          color: '#10b981',
+          data: symptoms.map(e => ({ x: new Date(e.timestamp), y: e.condition_level }))
+        });
+      }
+      if (sleep.length > 0) {
+        datasets.push({
+          label: '睡眠の質',
+          color: '#3b82f6',
+          data: sleep.map(e => ({ x: new Date(e.timestamp), y: e.quality }))
+        });
+      }
+      yMax = 10;
+    } else if (domain === 'consciousness') {
+      const obs = store.getDomainData('consciousness', 'observation', 30);
+      if (obs.length > 0) {
+        datasets.push({
+          label: '純価値',
+          color: '#6C63FF',
+          data: obs.map(e => ({ x: new Date(e.timestamp), y: e.net_value })).filter(p => p.y != null)
+        });
+      }
+      yMax = 100;
+    }
+
+    if (datasets.length === 0 || datasets.every(d => d.data.length === 0)) return '';
+
+    // Render HTML synchronously, then bootstrap the chart after paint
+    const html = `<div class="trend-section">
+      <h3>30日間のトレンド</h3>
+      ${Components.trendChart(chartId, datasets, { height: 180, yMax })}
+    </div>`;
+
+    // Schedule chart init after DOM is ready
+    setTimeout(() => {
+      Components.renderTrendChart(chartId, datasets, { height: 180, yMax });
+    }, 60);
+
     return html;
   },
 

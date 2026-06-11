@@ -278,6 +278,73 @@ var Components = {
     </div>`;
   },
 
+  // ─── Trend Chart (Chart.js ベース) ───
+  // datasets: [{ label, data: [{x, y}], color }]
+  // chartId は DOM の canvas id。呼び出し後 setTimeout でレンダリング。
+  trendChart(chartId, datasets, options = {}) {
+    const height = options.height || 180;
+    return `<div class="trend-chart-wrapper" style="height:${height}px;position:relative;">
+      <canvas id="${chartId}"></canvas>
+    </div>`;
+  },
+
+  renderTrendChart(chartId, datasets, options = {}) {
+    if (typeof Chart === 'undefined') return;
+    const el = document.getElementById(chartId);
+    if (!el) return;
+
+    // Destroy previous instance if any
+    if (el._chartInstance) { el._chartInstance.destroy(); }
+
+    const chartDatasets = datasets.map(ds => ({
+      label: ds.label || '',
+      data: ds.data || [],
+      borderColor: ds.color || '#6C63FF',
+      backgroundColor: (ds.color || '#6C63FF') + '22',
+      fill: true,
+      tension: 0.35,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      borderWidth: 2
+    }));
+
+    el._chartInstance = new Chart(el, {
+      type: 'line',
+      data: { datasets: chartDatasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: { unit: options.timeUnit || 'day', displayFormats: { day: 'M/d' } },
+            grid: { display: false },
+            ticks: { font: { size: 11 }, maxTicksLimit: 7 }
+          },
+          y: {
+            min: options.yMin ?? 0,
+            max: options.yMax,
+            ticks: { font: { size: 11 } }
+          }
+        },
+        plugins: {
+          legend: { display: datasets.length > 1, labels: { font: { size: 12 } } },
+          tooltip: { titleFont: { size: 13 }, bodyFont: { size: 13 } }
+        }
+      }
+    });
+  },
+
+  // ─── Streak Counter ───
+  streakBadge(days) {
+    if (!days || days < 2) return '';
+    const flame = days >= 7 ? '🔥' : days >= 3 ? '✨' : '⭐';
+    return `<div class="streak-badge" title="${days}日連続記録中">
+      <span class="streak-icon">${flame}</span>
+      <span class="streak-days">${days}日連続</span>
+    </div>`;
+  },
+
   // ─── Record List Item ───
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';

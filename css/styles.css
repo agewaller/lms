@@ -1107,6 +1107,31 @@ body.is-admin .admin-only { display: flex; }
 .sub-nav-btn:hover { color: var(--text); }
 .sub-nav-btn.active { font-weight: 600; }
 
+/* ─── Streak Badge ─── */
+.streak-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: linear-gradient(135deg, #fff7ed, #fef3c7);
+  border: 1px solid #fcd34d;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #b45309;
+  margin-top: 8px;
+}
+.streak-icon { font-size: 16px; }
+
+/* ─── Trend Chart ─── */
+.trend-section {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow);
+}
+.trend-section h3 { margin-bottom: 16px; font-size: 17px; }
+.trend-chart-wrapper { position: relative; }
+
 /* ─── Daily Check-In Widget ─── */
 .daily-checkin-widget {
   background: linear-gradient(135deg,
