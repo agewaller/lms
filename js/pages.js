@@ -1799,10 +1799,13 @@ var Pages = {
     return `<div class="card" style="margin-bottom:16px;">
       <div class="card-header">
         <h3>管理者（${adminEmails.length}）</h3>
-        <button class="btn btn-sm btn-primary" onclick="app.addAdminEmail()">管理者を追加</button>
       </div>
       <div class="card-body">
         <p class="page-desc">管理者権限を持つユーザーのリストです。管理者はAIモデル・プロンプト・APIキーを変更できます。</p>
+        <div class="admin-add-row" style="display:flex;gap:8px;margin-bottom:16px;">
+          <input type="email" id="newAdminEmail" class="form-input" placeholder="追加する管理者のメールアドレス" style="flex:1;">
+          <button class="btn btn-primary" onclick="app.addAdminEmail()">追加</button>
+        </div>
         <div class="admin-users-list">
           ${adminEmails.map(email => {
             const isOwner = email === 'agewaller@gmail.com';

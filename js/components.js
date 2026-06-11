@@ -132,6 +132,35 @@ var Components = {
       .replace(/\n/g, '<br>');
   },
 
+  // ─── Confirm Dialog (モーダル経由。confirm()の代替: iOS/Android対応) ───
+  showConfirm(message, onOk, onCancel) {
+    const modal = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    if (!modal || !titleEl || !bodyEl) { if (onOk) onOk(); return; }
+
+    titleEl.textContent = '確認';
+    bodyEl.innerHTML = `<p style="font-size:17px;margin-bottom:20px;">${this.escapeHtml(message)}</p>
+      <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <button class="btn btn-secondary" id="confirmCancel">キャンセル</button>
+        <button class="btn btn-danger" id="confirmOk">削除する</button>
+      </div>`;
+    modal.classList.add('active');
+
+    document.getElementById('confirmOk').onclick = () => {
+      modal.classList.remove('active');
+      if (onOk) onOk();
+    };
+    document.getElementById('confirmCancel').onclick = () => {
+      modal.classList.remove('active');
+      if (onCancel) onCancel();
+    };
+    document.querySelector('.modal-close').onclick = () => {
+      modal.classList.remove('active');
+      if (onCancel) onCancel();
+    };
+  },
+
   // ─── Toast Notification (未病ダイアリー方式) ───
   showToast(message, type = 'info') {
     const container = document.getElementById('toast-container') || document.body;
