@@ -499,6 +499,56 @@ select.form-input { appearance: auto; }
 .feature-item h3 { font-size: 20px; margin-bottom: 10px; }
 .feature-item p { font-size: 16px; color: var(--text-light); line-height: 1.9; }
 
+/* ─── Landing Page Enhancements ─── */
+
+/* Domain card: numbered character icon */
+.dc-num {
+  font-size: 40px; font-weight: 700; margin-bottom: 12px;
+  line-height: 1; font-family: var(--font-main);
+}
+.domain-cards-sm .dc-num { font-size: 28px; }
+
+/* Hero: trust badge + dual CTA + trust text */
+.hero-badge {
+  display: inline-block; background: rgba(108,99,255,0.12);
+  color: var(--accent); border-radius: 20px; padding: 6px 18px;
+  font-size: 14px; font-weight: 600; margin-bottom: 20px;
+}
+.hero-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+.hero-trust { font-size: 14px; color: var(--text-muted); }
+
+/* Section header with title + subtitle */
+.section-header { margin-bottom: 8px; }
+.section-header h2 { margin-bottom: 12px; }
+
+/* Pain points section */
+.lp-pain-section { background: #fff8f0; }
+.pain-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px; margin: 32px 0; text-align: left;
+}
+.pain-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: var(--bg-card); border-radius: var(--radius-sm);
+  padding: 16px 20px; box-shadow: var(--shadow);
+}
+.pain-mark {
+  flex-shrink: 0; font-size: 20px; font-weight: 700;
+  color: var(--accent); line-height: 1.5;
+}
+.pain-item p { margin: 0; font-size: 16px; line-height: 1.7; }
+.pain-answer {
+  font-size: 22px; font-weight: 700; color: var(--text-primary);
+  margin-top: 24px; line-height: 1.6;
+}
+
+/* Feature numbered items */
+.feature-num {
+  font-size: 36px; font-weight: 700; color: var(--accent);
+  opacity: 0.25; line-height: 1; margin-bottom: 8px;
+  font-family: 'Inter', sans-serif;
+}
+
 /* Login Section */
 .lp-login-section { display: flex; justify-content: center; padding: 60px 20px; }
 .login-card {

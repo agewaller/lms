@@ -249,6 +249,86 @@ var Components = {
     </div>`;
   },
 
+  // ─── XSS Prevention ───
+  escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  // ─── Promise-based Confirmation Modal ───
+  // Replaces native confirm() which blocks or is silently ignored on iOS/Android
+  confirm(message, confirmLabel = 'はい', cancelLabel = 'キャンセル') {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById('modal-overlay');
+      const titleEl = document.getElementById('modal-title');
+      const bodyEl = document.getElementById('modal-body');
+      if (!overlay || !titleEl || !bodyEl) { resolve(false); return; }
+
+      titleEl.textContent = '確認';
+      bodyEl.innerHTML = `
+        <p style="margin-bottom:20px">${this.escapeHtml(message)}</p>
+        <div class="form-actions" style="justify-content:flex-end;gap:8px">
+          <button class="btn btn-secondary" id="_confirm-cancel">${this.escapeHtml(cancelLabel)}</button>
+          <button class="btn btn-danger" id="_confirm-ok">${this.escapeHtml(confirmLabel)}</button>
+        </div>`;
+      overlay.classList.add('active');
+
+      const cleanup = (result) => {
+        overlay.classList.remove('active');
+        resolve(result);
+      };
+      document.getElementById('_confirm-ok').onclick = () => cleanup(true);
+      document.getElementById('_confirm-cancel').onclick = () => cleanup(false);
+      const bgClose = (e) => {
+        if (e.target === overlay) { overlay.removeEventListener('click', bgClose); cleanup(false); }
+      };
+      overlay.addEventListener('click', bgClose);
+    });
+  },
+
+  // ─── Promise-based Text Input Modal ───
+  // Replaces native prompt() which blocks or is silently ignored on iOS/Android
+  promptText(message, defaultValue = '', placeholder = '') {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById('modal-overlay');
+      const titleEl = document.getElementById('modal-title');
+      const bodyEl = document.getElementById('modal-body');
+      if (!overlay || !titleEl || !bodyEl) { resolve(null); return; }
+
+      titleEl.textContent = '入力';
+      bodyEl.innerHTML = `
+        <p style="margin-bottom:12px">${this.escapeHtml(message)}</p>
+        <input type="text" id="_prompt-input" class="form-input"
+          value="${this.escapeHtml(defaultValue)}"
+          placeholder="${this.escapeHtml(placeholder)}"
+          style="margin-bottom:16px">
+        <div class="form-actions" style="justify-content:flex-end;gap:8px">
+          <button class="btn btn-secondary" id="_prompt-cancel">キャンセル</button>
+          <button class="btn btn-primary" id="_prompt-ok">OK</button>
+        </div>`;
+      overlay.classList.add('active');
+
+      const input = document.getElementById('_prompt-input');
+      setTimeout(() => input?.focus(), 50);
+
+      const cleanup = (result) => {
+        overlay.classList.remove('active');
+        resolve(result);
+      };
+      document.getElementById('_prompt-ok').onclick = () => cleanup(input?.value ?? '');
+      document.getElementById('_prompt-cancel').onclick = () => cleanup(null);
+      input?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') cleanup(input.value ?? '');
+        if (e.key === 'Escape') cleanup(null);
+      });
+    });
+  },
+
   // ─── Record List Item ───
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';
