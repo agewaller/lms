@@ -4,6 +4,8 @@
    ============================================================ */
 var Pages = {
 
+  _charts: {},
+
   // ─── Main render dispatcher ───
   render(page, domain) {
     switch (page) {
@@ -27,8 +29,18 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
-    // Quick input bar
+    // Greeting
+    const _now = new Date();
+    const _hour = _now.getHours();
+    const _greet = _hour < 11 ? 'おはようございます' : _hour < 17 ? 'こんにちは' : 'こんばんは';
+    const _dateStr = _now.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+    const _firstName = (store.get('user')?.displayName || '').split(/[\s　]/)[0];
+
     let html = `<div class="page-home">
+      <div class="home-greeting">
+        <span class="greeting-text">${_greet}${_firstName ? '、' + Components.escapeHtml(_firstName) + 'さん' : ''}</span>
+        <span class="greeting-date">${_dateStr}</span>
+      </div>
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
@@ -148,6 +160,9 @@ var Pages = {
         html += AssetsFeatures.renderAutoTrading();
       }
     }
+
+    // Trend chart
+    html += this.renderTrendChart(domain);
 
     // Domain disclaimers
     if (domain === 'health') {
@@ -1918,5 +1933,119 @@ var Pages = {
         </div>
       </div>
     </div>`;
+  },
+
+  // ─── Trend Chart Widget (canvas placeholder) ───
+  renderTrendChart(domain) {
+    return `<div class="trend-chart-section">
+      <h3>過去14日の推移</h3>
+      <div class="chart-container">
+        <canvas id="trendChart_${domain}"></canvas>
+      </div>
+    </div>`;
+  },
+
+  // ─── Initialize Chart.js charts after DOM render ───
+  initCharts(domain) {
+    if (typeof Chart === 'undefined') return;
+    const canvas = document.getElementById('trendChart_' + domain);
+    if (!canvas) return;
+
+    if (this._charts[domain]) {
+      this._charts[domain].destroy();
+      delete this._charts[domain];
+    }
+
+    const N = 14;
+    const now = new Date();
+    const labels = [], dateKeys = [];
+    for (let i = N - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      labels.push((d.getMonth() + 1) + '/' + d.getDate());
+      dateKeys.push(d.toISOString().slice(0, 10));
+    }
+
+    const byDate = (data, key, mode = 'avg') => dateKeys.map(dk => {
+      const rows = data.filter(e => (e.timestamp || '').slice(0, 10) === dk);
+      if (!rows.length) return null;
+      const sum = rows.reduce((s, r) => s + (parseFloat(r[key]) || 0), 0);
+      return mode === 'sum' ? sum : +(sum / rows.length).toFixed(1);
+    });
+
+    const base = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, maxTicksLimit: 7 } },
+        y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 } } }
+      }
+    };
+
+    let cfg = null;
+
+    if (domain === 'consciousness') {
+      const obs = store.getDomainData('consciousness', 'observation', N + 3);
+      const ent = store.getDomainData('consciousness', 'entries', N + 3);
+      cfg = { type: 'line', data: { labels, datasets: [
+        { label: '純価値 /100', data: byDate(obs, 'net_value'), borderColor: '#6C63FF', backgroundColor: 'rgba(108,99,255,0.08)', tension: 0.4, spanGaps: true, fill: true, pointRadius: 3 },
+        { label: '気分 /10', data: byDate(ent, 'mood_level'), borderColor: '#10b981', tension: 0.4, spanGaps: true, pointRadius: 3, yAxisID: 'y1' }
+      ]}, options: { ...base, scales: { ...base.scales,
+        y: { ...base.scales.y, min: 0, max: 100 },
+        y1: { position: 'right', min: 0, max: 10, grid: { display: false }, ticks: { font: { size: 10 } } }
+      }}};
+    } else if (domain === 'health') {
+      const sym = store.getDomainData('health', 'symptoms', N + 3);
+      const slp = store.getDomainData('health', 'sleepData', N + 3);
+      cfg = { type: 'line', data: { labels, datasets: [
+        { label: '体調 /10', data: byDate(sym, 'condition_level'), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)', tension: 0.4, spanGaps: true, fill: true, pointRadius: 3 },
+        { label: '睡眠 /10', data: byDate(slp, 'quality'), borderColor: '#6C63FF', tension: 0.4, spanGaps: true, pointRadius: 3 }
+      ]}, options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, min: 0, max: 10 } } }};
+    } else if (domain === 'time') {
+      const logs = store.getDomainData('time', 'entries', N + 3);
+      const hours = dateKeys.map(dk => {
+        const rows = logs.filter(e => (e.timestamp || '').slice(0, 10) === dk);
+        const m = rows.reduce((s, r) => s + (parseFloat(r.duration) || 0), 0);
+        return m > 0 ? +(m / 60).toFixed(1) : null;
+      });
+      cfg = { type: 'bar', data: { labels, datasets: [
+        { label: '時間 (h)', data: hours, backgroundColor: 'rgba(245,158,11,0.7)', borderRadius: 4 }
+      ]}, options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, beginAtZero: true } } }};
+    } else if (domain === 'work') {
+      const tasks = store.getDomainData('work', 'tasks', N + 3);
+      const done = dateKeys.map(dk => tasks.filter(e => (e.timestamp || '').slice(0, 10) === dk && e.status === 'done').length);
+      const total = dateKeys.map(dk => tasks.filter(e => (e.timestamp || '').slice(0, 10) === dk).length);
+      cfg = { type: 'bar', data: { labels, datasets: [
+        { label: '完了', data: done, backgroundColor: 'rgba(59,130,246,0.8)', borderRadius: 4 },
+        { label: '未完了', data: total.map((t, i) => Math.max(0, t - done[i])), backgroundColor: 'rgba(59,130,246,0.2)', borderRadius: 4 }
+      ]}, options: { ...base, scales: { ...base.scales,
+        x: { ...base.scales.x, stacked: true },
+        y: { ...base.scales.y, beginAtZero: true, stacked: true }
+      }}};
+    } else if (domain === 'relationship') {
+      const int = store.getDomainData('relationship', 'interactions', N + 3);
+      const counts = dateKeys.map(dk => int.filter(e => (e.timestamp || '').slice(0, 10) === dk).length);
+      cfg = { type: 'bar', data: { labels, datasets: [
+        { label: 'やり取り', data: counts, backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 4 }
+      ]}, options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, beginAtZero: true } } }};
+    } else if (domain === 'assets') {
+      const mLabels = [], mKeys = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        mLabels.push((d.getMonth() + 1) + '月');
+        mKeys.push(d.toISOString().slice(0, 7));
+      }
+      const inc = store.getDomainData('assets', 'income', 300);
+      const exp = store.getDomainData('assets', 'expenses', 300);
+      const incAmt = mKeys.map(mk => inc.filter(e => (e.timestamp || '').slice(0, 7) === mk).reduce((s, r) => s + (parseFloat(r.amount) || 0), 0));
+      const expAmt = mKeys.map(mk => exp.filter(e => (e.timestamp || '').slice(0, 7) === mk).reduce((s, r) => s + (parseFloat(r.amount) || 0), 0));
+      cfg = { type: 'bar', data: { labels: mLabels, datasets: [
+        { label: '収入', data: incAmt, backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 4 },
+        { label: '支出', data: expAmt, backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 4 }
+      ]}, options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, beginAtZero: true } } }};
+    }
+
+    if (cfg) this._charts[domain] = new Chart(canvas, cfg);
   }
 };

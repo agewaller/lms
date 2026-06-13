@@ -1729,6 +1729,47 @@ body.is-admin .admin-only { display: flex; }
   gap: 10px;
 }
 
+/* ─── Home Greeting Banner ─── */
+.home-greeting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 4px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.greeting-text {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.greeting-date {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ─── Trend Charts ─── */
+.trend-chart-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-top: 16px;
+}
+.trend-chart-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.chart-container {
+  position: relative;
+  height: 180px;
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
   /* Sidebar off-canvas */

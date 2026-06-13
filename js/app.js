@@ -196,6 +196,9 @@ var App = class App {
     // Render page content
     mainContent.innerHTML = Pages.render(page, domain);
 
+    // Initialize charts after DOM is ready
+    if (page === 'home') setTimeout(() => Pages.initCharts(domain), 80);
+
     // Auto-close sidebar on mobile after navigation
     if (window.innerWidth <= 768) {
       const sidebar = document.getElementById('sidebar');
@@ -1908,22 +1911,47 @@ var App = class App {
   }
 
   generateDemoData() {
-    if (!confirm('デモデータを生成しますか？既存データに追加されます。')) return;
-    // Generate sample entries for each domain
+    this.openModal('デモデータの生成', `
+      <p>過去7日分のサンプルデータを追加します。既存のデータには影響しません。</p>
+      <div class="modal-footer" style="margin-top:20px;padding:0;border:none;justify-content:flex-start;gap:8px;">
+        <button class="btn btn-primary" onclick="app._doGenerateDemoData();app.closeModal()">生成する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+  }
+
+  _doGenerateDemoData() {
     const today = new Date();
-    for (let i = 0; i < 7; i++) {
+    const domains = ['health', 'consciousness', 'time', 'relationship', 'work', 'assets'];
+    for (let i = 0; i < 14; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() - i);
-      store.addDomainEntry('health', 'symptoms', { condition_level: 5 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
-      store.addDomainEntry('health', 'sleepData', { quality: 6 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
+      const ts = d.toISOString();
+      store.addDomainEntry('health', 'symptoms', { condition_level: 5 + Math.floor(Math.random() * 4), fatigue_level: Math.floor(Math.random() * 5), timestamp: ts });
+      store.addDomainEntry('health', 'sleepData', { quality: 5 + Math.floor(Math.random() * 4), hours: 6 + Math.floor(Math.random() * 3), timestamp: ts });
+      store.addDomainEntry('consciousness', 'observation', { net_value: 40 + Math.floor(Math.random() * 40), mood_level: 5 + Math.floor(Math.random() * 5), timestamp: ts });
+      store.addDomainEntry('consciousness', 'entries', { mood_level: 5 + Math.floor(Math.random() * 5), timestamp: ts });
+      store.addDomainEntry('time', 'entries', { duration: 60 + Math.floor(Math.random() * 180), productivity: 5 + Math.floor(Math.random() * 5), timestamp: ts });
+      store.addDomainEntry('relationship', 'interactions', { type: 'call', timestamp: ts });
+      store.addDomainEntry('work', 'tasks', { status: Math.random() > 0.4 ? 'done' : 'in_progress', title: 'タスク', timestamp: ts });
     }
-    Components.showToast('デモデータを生成しました', 'success');
+    Components.showToast('14日分のデモデータを生成しました', 'success');
     this.renderApp();
   }
 
   deleteAllData() {
-    if (!confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
-    if (!confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
+    this.openModal('全データの削除', `
+      <p style="color:var(--danger);font-weight:600;">⚠️ この操作は元に戻せません</p>
+      <p>すべての記録・設定・分析結果が完全に削除されます。本当によろしいですか？</p>
+      <div class="modal-footer" style="margin-top:20px;padding:0;border:none;justify-content:flex-start;gap:8px;">
+        <button class="btn btn-danger" onclick="app._doDeleteAllData()">すべて削除する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+  }
+
+  _doDeleteAllData() {
+    this.closeModal();
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();

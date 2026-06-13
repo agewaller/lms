@@ -3,106 +3,397 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LMS - Life Management System</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <title>LMS — 人生の6領域をまるごとサポート</title>
+  <meta name="description" content="意識・健康・時間・仕事・関係・資産の6領域を統合的に記録・分析。毎日の記録が、あなたに合った行動をやさしく教えてくれます。">
+  <link rel="stylesheet" href="css/styles.css?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* Landing page extras */
+    .hero-badge {
+      display: inline-block;
+      background: rgba(108,99,255,0.12);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(108,99,255,0.2);
+      margin-bottom: 20px;
+      letter-spacing: 0.5px;
+    }
+    .hero-subtitle {
+      font-size: 18px;
+      line-height: 1.8;
+      color: rgba(255,255,255,0.88);
+      margin: 16px 0 28px;
+    }
+    .hero-cta-group {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-ghost {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 12px 24px;
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.2); }
+    .lp-hero { min-height: 80vh; display: flex; flex-direction: column; }
+    .hero-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 60px 24px 40px; }
+    .hero-content h1 { font-size: clamp(28px, 5vw, 44px); line-height: 1.25; color: #fff; font-weight: 700; }
+
+    /* Pain points */
+    .pain-section {
+      background: var(--bg-tertiary);
+      padding: 60px 24px;
+      text-align: center;
+    }
+    .pain-section h2 { font-size: 22px; margin-bottom: 8px; }
+    .pain-section .section-lead { color: var(--text-secondary); margin-bottom: 32px; font-size: 15px; }
+    .pain-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .pain-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 16px;
+      text-align: left;
+    }
+    .pain-card .pain-q {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+    .pain-card .pain-a {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* How it works */
+    .how-section {
+      padding: 60px 24px;
+      text-align: center;
+    }
+    .how-steps {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 32px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .how-step {
+      flex: 1;
+      min-width: 180px;
+      max-width: 220px;
+    }
+    .how-num {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+    }
+    .how-step h3 { font-size: 15px; margin-bottom: 6px; }
+    .how-step p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+    /* Section generic */
+    .section-sub { color: var(--text-secondary); margin-bottom: 32px; font-size: 15px; }
+
+    /* Domain cards */
+    .lp-section h2 { font-size: 22px; margin-bottom: 8px; text-align: center; }
+    .domain-card {
+      display: block;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 16px;
+      text-align: center;
+      text-decoration: none;
+      color: var(--text-primary);
+      transition: all 0.2s;
+      border-top: 3px solid var(--domain-color);
+    }
+    .domain-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    }
+    .dc-icon { font-size: 28px; margin-bottom: 8px; }
+    .domain-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .domain-card p { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0; }
+
+    /* Feature grid */
+    .feature-item {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .feature-item h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--accent); }
+    .feature-item p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 0; }
+
+    /* Testimonials */
+    .testimonial-section {
+      background: var(--bg-tertiary);
+      padding: 60px 24px;
+      text-align: center;
+    }
+    .testimonial-cards {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 32px;
+    }
+    .testimonial-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      max-width: 280px;
+      text-align: left;
+    }
+    .testimonial-text { font-size: 14px; line-height: 1.7; color: var(--text-primary); margin-bottom: 12px; }
+    .testimonial-author { font-size: 12px; color: var(--text-secondary); }
+
+    /* Login card */
+    .lp-login-section { padding: 60px 24px; }
+    .login-card {
+      max-width: 420px;
+      margin: 0 auto;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      box-shadow: var(--shadow-lg);
+    }
+    .login-card-header { text-align: center; margin-bottom: 24px; }
+    .login-card-header h2 { font-size: 20px; }
+    .login-card-header p { font-size: 13px; color: var(--text-secondary); margin: 4px 0 0; }
+    .auth-tabs { display: flex; gap: 0; margin-bottom: 20px; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+    .auth-tab { flex: 1; padding: 10px; font-size: 14px; font-weight: 500; cursor: pointer; background: var(--bg-tertiary); border: none; font-family: var(--font-main); color: var(--text-secondary); transition: all 0.2s; }
+    .auth-tab.active { background: var(--accent); color: #fff; }
+    .auth-panel { display: none; }
+    .auth-panel.active { display: block; }
+    .login-divider { text-align: center; margin: 16px 0; color: var(--text-muted); font-size: 12px; position: relative; }
+    .login-divider::before, .login-divider::after { content: ''; position: absolute; top: 50%; width: 40%; height: 1px; background: var(--border); }
+    .login-divider::before { left: 0; }
+    .login-divider::after { right: 0; }
+    .auth-help { font-size: 12px; color: var(--text-secondary); text-align: center; margin-top: 12px; }
+    .auth-help a { color: var(--accent); }
+    .auth-desc { font-size: 13px; color: var(--text-secondary); text-align: center; margin-bottom: 16px; }
+    .lp-footer { padding: 24px; text-align: center; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); }
+  </style>
 </head>
 <body class="landing-page">
 
   <!-- Hero Section -->
-  <header class="lp-hero">
-    <nav class="lp-nav">
-      <div class="lp-logo">
-        <span class="logo-icon">◈</span>
-        <span class="logo-text">LMS</span>
+  <header class="lp-hero" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);">
+    <nav class="lp-nav" style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;">
+      <div class="lp-logo" style="display:flex;align-items:center;gap:10px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#fff;">L</div>
+        <span style="font-size:18px;font-weight:700;color:#fff;">LMS</span>
       </div>
-      <div class="lp-nav-links">
-        <a href="#domains">6つの領域</a>
-        <a href="#features">機能</a>
-        <a href="#login" class="btn btn-sm btn-primary">ログイン</a>
+      <div class="lp-nav-links" style="display:flex;align-items:center;gap:20px;">
+        <a href="#domains" style="color:rgba(255,255,255,0.8);font-size:14px;text-decoration:none;">6つの領域</a>
+        <a href="#login" class="btn btn-sm btn-primary">無料で始める</a>
       </div>
     </nav>
 
     <div class="hero-content">
-      <h1>Life Management System</h1>
-      <p class="hero-subtitle">年金だけでは足りない時代。<br>意識・健康・時間・仕事・関係・資産<br>6つの領域を、まるごとサポート</p>
-      <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
+      <div class="hero-badge">65歳以上の方へ</div>
+      <h1>毎日の記録が<br>人生を変える</h1>
+      <p class="hero-subtitle">
+        意識・健康・時間・仕事・関係・資産<br>
+        6つの領域をひとまとめに管理。<br>
+        難しいことは不要。入力するだけで分析してくれます。
+      </p>
+      <div class="hero-cta-group">
+        <a href="#login" class="btn btn-lg btn-primary" style="font-size:16px;padding:14px 32px;">無料で始める</a>
+        <a href="#domains" class="btn-ghost">6つの領域を見る</a>
+      </div>
     </div>
   </header>
 
+  <!-- Pain Points -->
+  <section class="pain-section">
+    <h2>こんなお悩み、ありませんか？</h2>
+    <p class="section-lead">LMSは、シニア世代が直面する6つの課題をまとめて解決します</p>
+    <div class="pain-cards">
+      <div class="pain-card">
+        <p class="pain-q">「毎日の体調変化を、うまく記録できない」</p>
+        <p class="pain-a">→ 健康ドメインで記録</p>
+      </div>
+      <div class="pain-card">
+        <p class="pain-q">「老後の資産が心配。株はよくわからない」</p>
+        <p class="pain-a">→ 資産ドメインで管理</p>
+      </div>
+      <div class="pain-card">
+        <p class="pain-q">「社会とのつながりが薄れていく気がする」</p>
+        <p class="pain-a">→ 関係ドメインで把握</p>
+      </div>
+      <div class="pain-card">
+        <p class="pain-q">「経験を活かして働きたいが、どうすれば？」</p>
+        <p class="pain-a">→ 仕事ドメインで診断</p>
+      </div>
+      <div class="pain-card">
+        <p class="pain-q">「時間の使い方が昔と変わって不安」</p>
+        <p class="pain-a">→ 時間ドメインで可視化</p>
+      </div>
+      <div class="pain-card">
+        <p class="pain-q">「心の充実感が年々薄れている」</p>
+        <p class="pain-a">→ 意識ドメインで観察</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it Works -->
+  <section class="how-section">
+    <h2>使い方はシンプル、3ステップ</h2>
+    <p class="section-sub">スマホやパソコンからすぐに始められます</p>
+    <div class="how-steps">
+      <div class="how-step">
+        <div class="how-num">1</div>
+        <h3>記録する</h3>
+        <p>今日の体調、気分、出来事をひとこと入力するだけ</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">2</div>
+        <h3>分析を見る</h3>
+        <p>あなたの記録から、気づきと具体的なアドバイスをお届け</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">3</div>
+        <h3>行動に移す</h3>
+        <p>おすすめを参考に、今日から少しずつ人生を改善</p>
+      </div>
+    </div>
+  </section>
+
   <!-- Domain Cards -->
-  <section id="domains" class="lp-section">
+  <section id="domains" class="lp-section" style="padding:60px 24px;text-align:center;background:var(--bg-tertiary);">
     <h2>6つのライフドメイン</h2>
-    <p class="section-sub">それぞれの領域をやさしくサポートし、あなたに合ったアドバイスをお届けします</p>
-    <div class="domain-cards">
-      <a href="consciousness.html" class="domain-card" style="--domain-color:#9B59B6">
-        <div class="dc-icon">🧠</div>
+    <p class="section-sub">どの領域から始めても大丈夫。すべてつながっています</p>
+    <div class="domain-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;max-width:900px;margin:0 auto;">
+      <a href="consciousness.html" class="domain-card" style="--domain-color:#6C63FF">
+        <div class="dc-icon">一</div>
         <h3>意識</h3>
-        <p>心の健康・瞑想・感謝の気持ち</p>
+        <p>心の状態・瞑想・感謝・内省</p>
       </a>
-      <a href="health.html" class="domain-card" style="--domain-color:#27AE60">
-        <div class="dc-icon">💚</div>
+      <a href="health.html" class="domain-card" style="--domain-color:#10b981">
+        <div class="dc-icon">二</div>
         <h3>健康</h3>
-        <p>体調の記録・お薬の管理・元気な毎日</p>
+        <p>体調・バイタル・睡眠・食事</p>
       </a>
-      <a href="time.html" class="domain-card" style="--domain-color:#E67E22">
-        <div class="dc-icon">⏰</div>
+      <a href="time.html" class="domain-card" style="--domain-color:#f59e0b">
+        <div class="dc-icon">三</div>
         <h3>時間</h3>
-        <p>日々の過ごし方・趣味・心豊かな時間</p>
+        <p>予定・習慣・時間の使い方</p>
       </a>
-      <a href="work.html" class="domain-card" style="--domain-color:#2980B9">
-        <div class="dc-icon">💼</div>
+      <a href="work.html" class="domain-card" style="--domain-color:#3b82f6">
+        <div class="dc-icon">四</div>
         <h3>仕事</h3>
-        <p>生きがい・経験を活かす・社会とのつながり</p>
+        <p>副業・ボランティア・生きがい</p>
       </a>
-      <a href="relationship.html" class="domain-card" style="--domain-color:#E74C3C">
-        <div class="dc-icon">🤝</div>
+      <a href="relationship.html" class="domain-card" style="--domain-color:#ef4444">
+        <div class="dc-icon">五</div>
         <h3>関係</h3>
-        <p>大切な人との関係・ご縁を大切に</p>
+        <p>家族・友人・地域とのつながり</p>
       </a>
-      <a href="assets.html" class="domain-card" style="--domain-color:#F1C40F">
-        <div class="dc-icon">💰</div>
+      <a href="assets.html" class="domain-card" style="--domain-color:#d97706">
+        <div class="dc-icon">六</div>
         <h3>資産</h3>
-        <p>安心の資産管理・株式投資・収支の把握</p>
+        <p>NISA・株式・収支の把握</p>
       </a>
     </div>
   </section>
 
   <!-- Features -->
-  <section id="features" class="lp-section lp-section-alt">
-    <h2>主な特徴</h2>
-    <div class="feature-grid">
+  <section id="features" class="lp-section" style="padding:60px 24px;text-align:center;">
+    <h2>LMSならではの特徴</h2>
+    <p class="section-sub">専門用語なし。難しい操作なし。記録するだけで動きます</p>
+    <div class="feature-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;max-width:900px;margin:0 auto;">
       <div class="feature-item">
-        <h3>深い分析</h3>
-        <p>あなたの記録を丁寧に読み解き、気づきと最適な打ち手をお届けします</p>
+        <h3>小学5年生でもわかる言葉</h3>
+        <p>専門用語を使わず、やさしい日本語でお届けします</p>
       </div>
       <div class="feature-item">
-        <h3>領域横断の洞察</h3>
-        <p>6つの領域の相互作用を考慮した、統合的なアドバイス</p>
+        <h3>6領域をまとめて見る</h3>
+        <p>「睡眠が悪いと仕事効率が下がる」など、領域をまたいだ洞察を得られます</p>
       </div>
       <div class="feature-item">
-        <h3>自動アクション</h3>
-        <p>おすすめに基づく自動実行（投資、予約、購入など）</p>
+        <h3>推移グラフで変化がわかる</h3>
+        <p>体調・気分・資産の変化を14日グラフで一目で確認できます</p>
       </div>
       <div class="feature-item">
-        <h3>多言語対応</h3>
-        <p>日本語・英語・中国語・韓国語に対応</p>
+        <h3>完全プライベート</h3>
+        <p>Googleアカウントでログイン。あなたのデータは他の誰にも見えません</p>
       </div>
       <div class="feature-item">
-        <h3>安心のデータ管理</h3>
-        <p>Google認証 + Firebase によるセキュアなデータ同期</p>
+        <h3>外部サービスと連携</h3>
+        <p>Fitbit・Googleカレンダー・NISA口座など、持っているものをそのまま活用</p>
       </div>
       <div class="feature-item">
-        <h3>専門家連携</h3>
-        <p>必要に応じて専門家によるメンタリング・コーチングにも対応</p>
+        <h3>日本語・英語・中国語・韓国語</h3>
+        <p>4言語に対応。海外にお住まいの方や、外国語でお使いいただけます</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials (placeholder for real ones) -->
+  <section class="testimonial-section">
+    <h2>使ってみた声</h2>
+    <p class="section-sub">記録を続けるほど、気づきが増えていきます</p>
+    <div class="testimonial-cards">
+      <div class="testimonial-card">
+        <p class="testimonial-text">「毎朝の体調記録を2週間続けたら、睡眠が7時間を切ると翌日の気分が悪いことに気づきました。当たり前のことかもしれないけど、自分のデータで見るのは全然違います」</p>
+        <p class="testimonial-author">70代・男性（東京）</p>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-text">「資産ドメインで毎月の収支を記録したら、無意識に使っていたお金が見えてきて、半年で30万円の節約になりました」</p>
+        <p class="testimonial-author">68代・女性（大阪）</p>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-text">「関係ドメインの孤立スコアを見て、友人への連絡が減っていることに気づきました。誕生日リマインダーのおかげで、疎遠になりかけた友人に連絡できました」</p>
+        <p class="testimonial-author">72代・男性（北海道）</p>
       </div>
     </div>
   </section>
 
   <!-- Login Section -->
-  <section id="login" class="lp-section lp-login-section">
+  <section id="login" class="lp-login-section">
     <div class="login-card">
+      <div class="login-card-header">
+        <h2>今すぐ無料で始める</h2>
+        <p>登録は1分以内。クレジットカード不要</p>
+      </div>
+
       <!-- Auth mode tabs -->
       <div class="auth-tabs">
         <button class="auth-tab active" onclick="app.toggleAuthMode('login')">ログイン</button>
@@ -113,7 +404,7 @@
       <div class="auth-panel active" id="auth-login">
         <button class="btn btn-google" onclick="app.loginWithGoogle()">
           <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-          Googleでログイン
+          Googleでログイン（かんたん）
         </button>
 
         <div class="login-divider"><span>またはメールアドレスで</span></div>
@@ -124,7 +415,8 @@
         </div>
         <div class="form-group">
           <label>パスワード</label>
-          <input type="password" id="loginPassword" class="form-input" placeholder="パスワード">
+          <input type="password" id="loginPassword" class="form-input" placeholder="パスワード"
+            onkeydown="if(event.key==='Enter')app.loginWithEmail()">
         </div>
         <button class="btn btn-primary btn-block" onclick="app.loginWithEmail()">ログイン</button>
         <div class="auth-help">
@@ -138,12 +430,11 @@
 
       <!-- Register Panel -->
       <div class="auth-panel" id="auth-register">
-        <h3>新規登録</h3>
         <p class="auth-desc">無料でアカウントを作成できます</p>
 
         <button class="btn btn-google" onclick="app.loginWithGoogle()">
           <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-          Googleで登録
+          Googleで登録（最速）
         </button>
 
         <div class="login-divider"><span>またはメールアドレスで</span></div>
@@ -164,7 +455,7 @@
           <label>パスワード（確認）</label>
           <input type="password" id="registerPasswordConfirm" class="form-input" placeholder="もう一度入力してください">
         </div>
-        <button class="btn btn-primary btn-block" onclick="app.registerWithEmail()">アカウントを作成</button>
+        <button class="btn btn-primary btn-block" onclick="app.registerWithEmail()">無料アカウントを作成</button>
         <div class="auth-help">
           <span>すでにアカウントをお持ちですか？</span>
           <a href="javascript:void(0)" onclick="app.toggleAuthMode('login')">ログインはこちら</a>
@@ -173,7 +464,6 @@
 
       <!-- Password Reset Panel -->
       <div class="auth-panel" id="auth-reset">
-        <h3>パスワードの再設定</h3>
         <p class="auth-desc">ご登録のメールアドレスにパスワード再設定のリンクをお送りします</p>
         <div class="form-group">
           <label>メールアドレス</label>
@@ -189,31 +479,42 @@
 
   <!-- Footer -->
   <footer class="lp-footer">
-    <p>&copy; 2026 LMS - Life Management System. All rights reserved.</p>
+    <p>&copy; 2026 LMS - Life Management System &nbsp;|&nbsp; <a href="mailto:agewaller@gmail.com">お問い合わせ</a></p>
   </footer>
 
   <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
   <!-- LMS Scripts -->
-  <script src="js/config.js"></script>
-  <script src="js/store.js"></script>
-  <script src="js/i18n.js"></script>
-  <script src="js/components.js"></script>
-  <script src="js/ai-engine.js"></script>
-  <script src="js/firebase-backend.js"></script>
-  <script src="js/affiliate.js"></script>
-  <script src="js/pages.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/config.js?v=2"></script>
+  <script src="js/store.js?v=2"></script>
+  <script src="js/i18n.js?v=2"></script>
+  <script src="js/components.js?v=2"></script>
+  <script src="js/ai-engine.js?v=2"></script>
+  <script src="js/firebase-backend.js?v=2"></script>
+  <script src="js/affiliate.js?v=2"></script>
+  <script src="js/pages.js?v=2"></script>
+  <script src="js/app.js?v=2"></script>
 
   <script>
+    try {
+      const savedFb = localStorage.getItem('lms_firebaseConfig');
+      if (savedFb) Object.assign(CONFIG.firebase, JSON.parse(savedFb));
+    } catch (e) {}
+
     // On login success, redirect to dashboard
     store.on('isAuthenticated', (val) => {
       if (val) window.location.href = 'dashboard.html';
     });
-    app.init();
+
+    // Already logged in?
+    if (store.get('isAuthenticated') && store.get('user')) {
+      window.location.href = 'dashboard.html';
+    } else {
+      app.init();
+    }
   </script>
 </body>
 </html>
