@@ -45,7 +45,7 @@ var Components = {
         <span class="rec-domain-badge" style="background:${CONFIG.domains[rec.domain]?.color || '#666'}">${CONFIG.domains[rec.domain]?.icon || ''} ${i18n.t(rec.domain)}</span>
         <span class="rec-priority">${i18n.t(rec.priority || 'medium')}</span>
       </div>
-      <div class="rec-body">${rec.text || ''}</div>
+      <div class="rec-body">${this.formatMarkdown(rec.text || '')}</div>
       ${rec.action ? `<button class="btn btn-sm btn-primary" onclick="app.executeAction('${rec.actionType}','${rec.actionData || ''}')">${rec.action}</button>` : ''}
     </div>`;
   },
@@ -76,11 +76,15 @@ var Components = {
   renderField(f) {
     const name = f.key;
     switch (f.type) {
-      case 'slider':
+      case 'slider': {
+        const _min = f.min !== undefined ? f.min : 0;
+        const _max = f.max !== undefined ? f.max : 10;
+        const _mid = Math.floor((_min + _max) / 2);
         return `<div class="slider-field">
-          <input type="range" name="${name}" min="${f.min||0}" max="${f.max||10}" value="${Math.floor((f.min||0 + f.max||10)/2)}" oninput="this.nextElementSibling.textContent=this.value">
-          <span class="slider-val">${Math.floor(((f.min||0) + (f.max||10))/2)}</span>
+          <input type="range" name="${name}" min="${_min}" max="${_max}" value="${_mid}" oninput="this.nextElementSibling.textContent=this.value">
+          <span class="slider-val">${_mid}</span>
         </div>`;
+      }
       case 'number':
         return `<input type="number" name="${name}" step="${f.step||1}" class="form-input" placeholder="${i18n.t(f.label)}${f.unit ? ' ('+f.unit+')' : ''}">`;
       case 'text':

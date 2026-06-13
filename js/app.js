@@ -29,7 +29,9 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
-        // Request notification permission and check birthdays once per session
+        // First-time user: show onboarding wizard
+        setTimeout(() => this.checkFirstTimeUser(), 800);
+        // Notifications
         setTimeout(() => {
           this.requestNotificationPermission().then(() => this.checkBirthdayNotifications());
         }, 3000);
@@ -1990,6 +1992,77 @@ var App = class App {
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();
+  }
+
+  // ─── First-time User Onboarding ───
+  checkFirstTimeUser() {
+    const profile = store.get('userProfile') || {};
+    const onboardingDone = localStorage.getItem('lms_onboarding_done');
+    if (onboardingDone || profile.onboardingDone || profile.name) return;
+
+    const user = store.get('user') || {};
+    const guessedName = (user.displayName || '').split(/[\s　]/)[0];
+
+    this.openModal('LMSへようこそ', `
+      <p style="margin-bottom:16px;color:var(--text-secondary);">
+        まず、あなたのことを少し教えてください（いつでも設定から変更できます）
+      </p>
+      <div class="form-group">
+        <label>お名前（ニックネームでOK）</label>
+        <input type="text" id="onboardName" class="form-input"
+          value="${Components.escapeHtml(guessedName)}" placeholder="山田 花子">
+      </div>
+      <div class="form-group">
+        <label>お年齢</label>
+        <input type="number" id="onboardAge" class="form-input" placeholder="65" min="40" max="100">
+      </div>
+      <div class="form-group">
+        <label>いちばん気になっていること（ひとつ選んでください）</label>
+        <select id="onboardConcern" class="form-input">
+          <option value="">選択してください</option>
+          <option value="health">体調・健康が心配</option>
+          <option value="assets">お金・資産が心配</option>
+          <option value="relationship">人とのつながりが薄れている</option>
+          <option value="work">やりがいのある仕事・活動を見つけたい</option>
+          <option value="time">時間の使い方がわからない</option>
+          <option value="consciousness">気力・元気が出ない</option>
+        </select>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:8px;">
+        <button class="btn btn-primary" onclick="app.saveOnboarding()" style="flex:1;">はじめる</button>
+        <button class="btn btn-secondary" onclick="app.skipOnboarding()">あとで</button>
+      </div>
+    `);
+  }
+
+  saveOnboarding() {
+    const name = document.getElementById('onboardName')?.value?.trim();
+    const age = document.getElementById('onboardAge')?.value;
+    const concern = document.getElementById('onboardConcern')?.value;
+
+    const profile = store.get('userProfile') || {};
+    if (name) profile.name = name;
+    if (age) profile.age = parseInt(age);
+    if (concern) profile.mainConcern = concern;
+    profile.onboardingDone = true;
+    store.set('userProfile', profile);
+    localStorage.setItem('lms_onboarding_done', '1');
+
+    this.closeModal();
+    Components.showToast('ようこそ！さっそく記録してみましょう', 'success');
+
+    // Navigate to the domain matching their concern
+    if (concern && CONFIG.domains[concern]) {
+      setTimeout(() => {
+        store.set('currentDomain', concern);
+        store.set('currentPage', 'record');
+      }, 500);
+    }
+  }
+
+  skipOnboarding() {
+    localStorage.setItem('lms_onboarding_done', '1');
+    this.closeModal();
   }
 
   // ─── Clear Recommendations ───
