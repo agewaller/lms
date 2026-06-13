@@ -36,9 +36,14 @@ var Pages = {
     const _dateStr = _now.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
     const _firstName = (store.get('user')?.displayName || '').split(/[\s　]/)[0];
 
+    const _streak = app.computeStreak(domain);
+
     let html = `<div class="page-home">
       <div class="home-greeting">
-        <span class="greeting-text">${_greet}${_firstName ? '、' + Components.escapeHtml(_firstName) + 'さん' : ''}</span>
+        <div class="greeting-left">
+          <span class="greeting-text">${_greet}${_firstName ? '、' + Components.escapeHtml(_firstName) + 'さん' : ''}</span>
+          ${_streak >= 2 ? `<span class="streak-badge" title="${_streak}日連続で記録中">🔥 ${_streak}日連続</span>` : ''}
+        </div>
         <span class="greeting-date">${_dateStr}</span>
       </div>
       <div class="quick-input-bar">
@@ -164,11 +169,146 @@ var Pages = {
     // Trend chart
     html += this.renderTrendChart(domain);
 
+    // Weekly digest
+    html += this.renderWeeklyDigest(domain);
+
+    // Goals
+    html += this.renderGoals(domain);
+
     // Domain disclaimers
     if (domain === 'health') {
       html += `<div class="disclaimer">${i18n.t('disclaimer_health')}</div>`;
     } else if (domain === 'assets') {
       html += `<div class="disclaimer">${i18n.t('disclaimer_assets')}</div>`;
+    }
+
+    html += `</div>`;
+    return html;
+  },
+
+  // ─── Weekly Digest Card ───
+  renderWeeklyDigest(domain) {
+    const now = new Date();
+    const categories = Object.keys(CONFIG.domains[domain]?.categories || {});
+
+    let thisWeek = [], lastWeek = [];
+    categories.forEach(cat => {
+      store.getDomainData(domain, cat, 14).forEach(e => {
+        const days = Math.floor((now - new Date(e.timestamp)) / (1000 * 60 * 60 * 24));
+        if (days < 7) thisWeek.push({ ...e, _cat: cat });
+        else lastWeek.push({ ...e, _cat: cat });
+      });
+    });
+
+    if (thisWeek.length === 0 && lastWeek.length === 0) return '';
+
+    const thisCount = thisWeek.length;
+    const lastCount = lastWeek.length;
+    const diff = thisCount - lastCount;
+    const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+    const arrowClass = diff > 0 ? 'digest-up' : diff < 0 ? 'digest-down' : 'digest-same';
+
+    // Domain-specific key metric
+    let keyMetric = '';
+    const avg = (arr, key) => arr.length ? (arr.reduce((s, e) => s + (parseFloat(e[key]) || 0), 0) / arr.length) : null;
+
+    if (domain === 'health') {
+      const tc = avg(thisWeek.filter(e => e._cat === 'symptoms'), 'condition_level');
+      const lc = avg(lastWeek.filter(e => e._cat === 'symptoms'), 'condition_level');
+      if (tc !== null && lc !== null) {
+        const d = (tc - lc).toFixed(1);
+        keyMetric = `体調スコア: ${tc.toFixed(1)}/10 <span class="${tc >= lc ? 'digest-up' : 'digest-down'}">(${d >= 0 ? '+' : ''}${d} vs 先週)</span>`;
+      }
+    } else if (domain === 'consciousness') {
+      const tc = avg(thisWeek.filter(e => e._cat === 'observation'), 'net_value');
+      const lc = avg(lastWeek.filter(e => e._cat === 'observation'), 'net_value');
+      if (tc !== null && lc !== null) {
+        const d = (tc - lc).toFixed(1);
+        keyMetric = `純価値: ${tc.toFixed(0)}/100 <span class="${tc >= lc ? 'digest-up' : 'digest-down'}">(${d >= 0 ? '+' : ''}${d} vs 先週)</span>`;
+      }
+    } else if (domain === 'time') {
+      const sumMin = arr => arr.reduce((s, e) => s + (parseFloat(e.duration) || 0), 0);
+      const th = sumMin(thisWeek.filter(e => e._cat === 'entries'));
+      const lh = sumMin(lastWeek.filter(e => e._cat === 'entries'));
+      if (th > 0 || lh > 0) {
+        const d = ((th - lh) / 60).toFixed(1);
+        keyMetric = `記録時間: ${(th/60).toFixed(1)}h <span class="${th >= lh ? 'digest-up' : 'digest-down'}">(${d >= 0 ? '+' : ''}${d}h vs 先週)</span>`;
+      }
+    } else if (domain === 'relationship') {
+      keyMetric = `やり取り: ${thisCount}件 <span class="${arrowClass}">(${diff >= 0 ? '+' : ''}${diff} vs 先週)</span>`;
+    } else if (domain === 'work') {
+      const done = thisWeek.filter(e => e._cat === 'tasks' && e.status === 'done').length;
+      const ldone = lastWeek.filter(e => e._cat === 'tasks' && e.status === 'done').length;
+      if (done > 0 || ldone > 0) {
+        keyMetric = `完了タスク: ${done}件 <span class="${done >= ldone ? 'digest-up' : 'digest-down'}">(${done >= ldone ? '+' : ''}${done - ldone} vs 先週)</span>`;
+      }
+    } else if (domain === 'assets') {
+      const sumAmt = arr => arr.filter(e => e._cat === 'income').reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+      const ti = sumAmt(thisWeek), li = sumAmt(lastWeek);
+      if (ti > 0 || li > 0) {
+        const d = ti - li;
+        keyMetric = `収入記録: ${ti.toLocaleString()}円 <span class="${ti >= li ? 'digest-up' : 'digest-down'}">(${d >= 0 ? '+' : ''}${d.toLocaleString()}円 vs 先週)</span>`;
+      }
+    }
+
+    return `<div class="weekly-digest card">
+      <div class="weekly-digest-header">
+        <span class="weekly-title">今週の振り返り</span>
+        <span class="weekly-count">記録 ${thisCount}件 <span class="${arrowClass}">${arrow}</span></span>
+      </div>
+      ${keyMetric ? `<div class="weekly-metric">${keyMetric}</div>` : ''}
+      <div class="weekly-bars">
+        <div class="weekly-bar-row"><span class="weekly-bar-label">今週</span>
+          <div class="weekly-bar-track"><div class="weekly-bar-fill" style="width:${Math.min(100, thisCount * 10)}%;background:var(--accent)"></div></div>
+          <span class="weekly-bar-val">${thisCount}</span>
+        </div>
+        <div class="weekly-bar-row"><span class="weekly-bar-label">先週</span>
+          <div class="weekly-bar-track"><div class="weekly-bar-fill" style="width:${Math.min(100, lastCount * 10)}%;background:var(--text-muted)"></div></div>
+          <span class="weekly-bar-val">${lastCount}</span>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  // ─── Goals Section ───
+  renderGoals(domain) {
+    const allGoals = store.get('userGoals') || [];
+    const goals = allGoals.filter(g => g.domain === domain);
+    const color = CONFIG.domains[domain]?.color || 'var(--accent)';
+
+    let html = `<div class="goals-section">
+      <div class="goals-header">
+        <h3>目標</h3>
+        <button class="btn btn-sm btn-primary" onclick="app.openAddGoalModal('${domain}')">＋ 追加</button>
+      </div>`;
+
+    if (goals.length === 0) {
+      html += `<p class="goals-empty">目標をまだ設定していません。「＋ 追加」ボタンで設定しましょう。</p>`;
+    } else {
+      goals.forEach(g => {
+        const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
+        const done = pct >= 100;
+        const daysLeft = g.deadline ? Math.ceil((new Date(g.deadline) - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+        const deadlineLabel = daysLeft === null ? '' : daysLeft < 0 ? '<span class="goal-overdue">期限切れ</span>' : daysLeft === 0 ? '<span class="goal-due-today">今日が期限</span>' : `あと${daysLeft}日`;
+
+        html += `<div class="goal-card ${done ? 'goal-done' : ''}">
+          <div class="goal-card-header">
+            <span class="goal-title">${done ? '✓ ' : ''}${Components.escapeHtml(g.title)}</span>
+            <div class="goal-actions">
+              <button class="btn-icon-sm" onclick="app.updateGoalProgress('${g.id}')">更新</button>
+              <button class="btn-icon-sm" onclick="app.deleteGoal('${g.id}')">削除</button>
+            </div>
+          </div>
+          <div class="goal-progress-bar">
+            <div class="goal-progress-fill" style="width:${pct}%;background:${done ? '#10b981' : color}"></div>
+          </div>
+          <div class="goal-meta">
+            <span>${g.current}${g.unit ? ' ' + Components.escapeHtml(g.unit) : ''} / ${g.target}${g.unit ? ' ' + Components.escapeHtml(g.unit) : ''}</span>
+            <span>${pct}%</span>
+            ${deadlineLabel ? `<span>${deadlineLabel}</span>` : ''}
+          </div>
+        </div>`;
+      });
     }
 
     html += `</div>`;

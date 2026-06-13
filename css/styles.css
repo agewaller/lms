@@ -1809,6 +1809,98 @@ body.is-admin .admin-only { display: flex; }
   height: 180px;
 }
 
+/* ─── Streak Badge ─── */
+.greeting-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 6px rgba(245,158,11,0.3);
+}
+
+/* ─── Weekly Digest Card ─── */
+.weekly-digest {
+  margin-top: 16px;
+  padding: 16px 20px;
+}
+.weekly-digest-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.weekly-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.weekly-count { font-size: 13px; color: var(--text-secondary); }
+.weekly-metric { font-size: 14px; color: var(--text-primary); margin-bottom: 12px; }
+.digest-up { color: var(--success); font-weight: 600; }
+.digest-down { color: var(--danger); font-weight: 600; }
+.digest-same { color: var(--text-muted); }
+.weekly-bars { display: flex; flex-direction: column; gap: 6px; }
+.weekly-bar-row { display: flex; align-items: center; gap: 8px; }
+.weekly-bar-label { font-size: 12px; color: var(--text-secondary); width: 32px; flex-shrink: 0; }
+.weekly-bar-track { flex: 1; height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden; }
+.weekly-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; min-width: 4px; }
+.weekly-bar-val { font-size: 12px; color: var(--text-secondary); width: 24px; text-align: right; }
+
+/* ─── Goals Section ─── */
+.goals-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-top: 16px;
+}
+.goals-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.goals-header h3 { font-size: 15px; font-weight: 600; margin: 0; }
+.goals-empty { color: var(--text-muted); font-size: 14px; }
+.goal-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+.goal-card.goal-done { border-color: var(--success); background: var(--success-bg); }
+.goal-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.goal-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.goal-done .goal-title { color: var(--success); }
+.goal-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.goal-progress-bar {
+  height: 8px;
+  background: var(--bg-primary);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.goal-progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; min-width: 4px; }
+.goal-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.goal-overdue { color: var(--danger); font-weight: 600; }
+.goal-due-today { color: var(--warning); font-weight: 600; }
+
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
   /* Sidebar off-canvas */

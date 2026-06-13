@@ -781,21 +781,19 @@ var App = class App {
   }
 
   deleteDataEntry(domain, category, id) {
-    if (!confirm('この記録を削除しますか？')) return;
-    const key = `${domain}_${category}`;
-    const entries = (store.get(key) || []).filter(e => e.id !== id);
-    store.set(key, entries);
-
-    // Also delete from Firestore if connected
-    if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.db) {
-      const uid = store.get('user')?.uid;
-      if (uid) {
-        FirebaseBackend.db.collection('users').doc(uid).collection(key).doc(id).delete().catch(e => console.warn(e));
+    this.confirmAction('この記録を削除しますか？', () => {
+      const key = `${domain}_${category}`;
+      const entries = (store.get(key) || []).filter(e => e.id !== id);
+      store.set(key, entries);
+      if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.db) {
+        const uid = store.get('user')?.uid;
+        if (uid) {
+          FirebaseBackend.db.collection('users').doc(uid).collection(key).doc(id).delete().catch(e => console.warn(e));
+        }
       }
-    }
-
-    Components.showToast('削除しました', 'info');
-    this.renderApp();
+      Components.showToast('削除しました', 'info');
+      this.renderApp();
+    });
   }
 
   exportDomainData(domain) {
@@ -864,10 +862,11 @@ var App = class App {
   }
 
   fitbitDisconnect() {
-    if (!confirm('Fitbit接続を解除しますか？')) return;
-    if (typeof fitbit !== 'undefined') fitbit.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.confirmAction('Fitbit接続を解除しますか？', () => {
+      if (typeof fitbit !== 'undefined') fitbit.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    });
   }
 
   async fitbitImportToday() {
@@ -914,12 +913,12 @@ var App = class App {
   }
 
   gcalDisconnect() {
-    if (!confirm('Googleカレンダー接続を解除しますか？')) return;
-    if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.confirmAction('Googleカレンダー接続を解除しますか？', () => {
+      if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    });
   }
-
   async gcalSync() {
     if (typeof googleCalendar === 'undefined' || !googleCalendar.isConnected()) {
       Components.showToast('Googleカレンダーに接続してください', 'info');
@@ -949,10 +948,11 @@ var App = class App {
   }
 
   outlookDisconnect() {
-    if (!confirm('Outlook接続を解除しますか？')) return;
-    if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.confirmAction('Outlook接続を解除しますか？', () => {
+      if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    });
   }
 
   async outlookSync() {
@@ -984,10 +984,11 @@ var App = class App {
   }
 
   gmailDisconnect() {
-    if (!confirm('Gmail接続を解除しますか？')) return;
-    if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.confirmAction('Gmail接続を解除しますか？', () => {
+      if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    });
   }
 
   async gmailImportContacts() {
@@ -1519,30 +1520,35 @@ var App = class App {
   }
 
   deletePrompt(key) {
-    if (!confirm('このプロンプトを削除しますか？')) return;
-    delete CONFIG.prompts[key];
-    const custom = store.get('customPrompts') || {};
-    delete custom[key];
-    store.set('customPrompts', custom);
-    Components.showToast('削除しました', 'info');
-    this.renderApp();
+    this.confirmAction('このプロンプトを削除しますか？', () => {
+      delete CONFIG.prompts[key];
+      const custom = store.get('customPrompts') || {};
+      delete custom[key];
+      store.set('customPrompts', custom);
+      Components.showToast('削除しました', 'info');
+      this.renderApp();
+    });
   }
 
   addNewPrompt() {
-    const key = prompt('プロンプトのキー名を入力（例: work_custom）');
-    if (!key) return;
-    if (CONFIG.prompts[key]) {
-      Components.showToast('そのキーは既に存在します', 'error');
-      return;
-    }
-    CONFIG.prompts[key] = {
-      name: '新しいプロンプト',
-      domain: 'universal',
-      description: '',
-      schedule: 'manual',
-      active: true,
-      prompt: ''
-    };
+    this.openModal('新しいプロンプトを追加', `
+      <div class="form-group">
+        <label>プロンプトのキー名（例: work_custom）</label>
+        <input type="text" id="newPromptKey" class="form-input" placeholder="domain_type">
+      </div>
+      <div class="modal-footer" style="margin-top:20px;padding:0;border:none;justify-content:flex-start;gap:8px;">
+        <button class="btn btn-primary" onclick="app._doAddNewPrompt()">追加</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+  }
+
+  _doAddNewPrompt() {
+    const key = document.getElementById('newPromptKey')?.value?.trim();
+    if (!key) { Components.showToast('キー名を入力してください', 'error'); return; }
+    if (CONFIG.prompts[key]) { Components.showToast('そのキーは既に存在します', 'error'); return; }
+    CONFIG.prompts[key] = { name: '新しいプロンプト', domain: 'universal', description: '', schedule: 'manual', active: true, prompt: '' };
+    this.closeModal();
     this.renderApp();
   }
 
@@ -1564,13 +1570,14 @@ var App = class App {
   }
 
   clearApiKeys() {
-    if (!confirm('すべてのAPIキーを削除しますか？')) return;
-    ['anthropic', 'openai', 'google'].forEach(p => {
-      localStorage.removeItem('lms_apikey_' + p);
+    this.confirmAction('すべてのAPIキーを削除しますか？', () => {
+      ['anthropic', 'openai', 'google'].forEach(p => {
+        localStorage.removeItem('lms_apikey_' + p);
+      });
+      store.state._apiKeys = {};
+      Components.showToast('削除しました', 'info');
+      this.renderApp();
     });
-    store.state._apiKeys = {};
-    Components.showToast('削除しました', 'info');
-    this.renderApp();
   }
 
   saveAffiliateConfig() {
@@ -1599,9 +1606,10 @@ var App = class App {
   }
 
   clearFirebaseConfig() {
-    if (!confirm('Firebase設定を削除しますか？')) return;
-    localStorage.removeItem('lms_firebaseConfig');
-    Components.showToast('削除しました（再読み込みが必要です）', 'info');
+    this.confirmAction('Firebase設定を削除しますか？', () => {
+      localStorage.removeItem('lms_firebaseConfig');
+      Components.showToast('削除しました（再読み込みが必要です）', 'info');
+    });
   }
 
   saveWorkerUrl() {
@@ -1727,23 +1735,18 @@ var App = class App {
       Components.showToast('オーナーアカウントは削除できません', 'error');
       return;
     }
-    if (!confirm(`${email} を管理者から外しますか？`)) return;
-
-    const list = (store.get('adminEmails') || ['agewaller@gmail.com']).filter(e => e !== email);
-    store.set('adminEmails', list);
-
-    if (FirebaseBackend.db) {
-      await FirebaseBackend.db.collection('admin').doc('config').set(
-        {
-          adminEmails: list,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        },
-        { merge: true }
-      ).catch(e => console.warn(e));
-    }
-
-    Components.showToast('管理者から削除しました', 'info');
-    this.renderApp();
+    this.confirmAction(`${email} を管理者から外しますか？`, async () => {
+      const list = (store.get('adminEmails') || ['agewaller@gmail.com']).filter(e => e !== email);
+      store.set('adminEmails', list);
+      if (FirebaseBackend.db) {
+        await FirebaseBackend.db.collection('admin').doc('config').set(
+          { adminEmails: list, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
+          { merge: true }
+        ).catch(e => console.warn(e));
+      }
+      Components.showToast('管理者から削除しました', 'info');
+      this.renderApp();
+    });
   }
 
   async loadAllUsers() {
@@ -2065,6 +2068,19 @@ var App = class App {
     this.closeModal();
   }
 
+  // ─── Confirm dialog (replaces native confirm() which blocks on iOS) ───
+  confirmAction(message, onConfirm) {
+    this.openModal('確認', `
+      <p>${Components.escapeHtml(message)}</p>
+      <div class="modal-footer" style="margin-top:20px;padding:0;border:none;justify-content:flex-start;gap:8px;">
+        <button class="btn btn-primary" id="confirmActionBtn">はい</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+    const btn = document.getElementById('confirmActionBtn');
+    if (btn) btn.onclick = () => { this.closeModal(); onConfirm(); };
+  }
+
   // ─── Clear Recommendations ───
   clearRecommendations() {
     store.set('recommendations', []);
@@ -2103,6 +2119,125 @@ var App = class App {
         new Notification('LMS', { body: title, tag: notifKey });
       } catch (e) { /* Notification blocked */ }
       localStorage.setItem(notifKey, '1');
+    });
+  }
+
+  // ─── Streak Counter ───
+  computeStreak(domain) {
+    const categories = Object.keys(CONFIG.domains[domain]?.categories || {});
+    const dateDays = new Set();
+    categories.forEach(cat => {
+      store.getDomainData(domain, cat, 365).forEach(e => {
+        if (e.timestamp) dateDays.add(e.timestamp.slice(0, 10));
+      });
+    });
+
+    let streak = 0;
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    const check = new Date(now);
+    if (!dateDays.has(todayStr)) check.setDate(check.getDate() - 1);
+
+    while (true) {
+      const dk = check.toISOString().slice(0, 10);
+      if (!dateDays.has(dk)) break;
+      streak++;
+      check.setDate(check.getDate() - 1);
+    }
+    return streak;
+  }
+
+  // ─── Goal Setting ───
+  openAddGoalModal(domain) {
+    const defaultDeadline = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    this.openModal(`${i18n.t(domain)} の目標を設定`, `
+      <div class="form-group">
+        <label>目標のタイトル</label>
+        <input type="text" id="goalTitle" class="form-input" placeholder="例: 毎日30分ウォーキングする">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label>目標値（数値）</label>
+          <input type="number" id="goalTarget" class="form-input" placeholder="30">
+        </div>
+        <div class="form-group">
+          <label>単位</label>
+          <input type="text" id="goalUnit" class="form-input" placeholder="分">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label>現在値</label>
+          <input type="number" id="goalCurrent" class="form-input" value="0">
+        </div>
+        <div class="form-group">
+          <label>期限</label>
+          <input type="date" id="goalDeadline" class="form-input" value="${defaultDeadline}">
+        </div>
+      </div>
+      <div class="modal-footer" style="margin-top:20px;padding:0;border:none;justify-content:flex-start;gap:8px;">
+        <button class="btn btn-primary" onclick="app.saveGoal('${domain}')">保存</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+  }
+
+  saveGoal(domain) {
+    const title = document.getElementById('goalTitle')?.value?.trim();
+    if (!title) { Components.showToast('タイトルを入力してください', 'error'); return; }
+    const target = parseFloat(document.getElementById('goalTarget')?.value) || 0;
+    const unit = document.getElementById('goalUnit')?.value?.trim() || '';
+    const current = parseFloat(document.getElementById('goalCurrent')?.value) || 0;
+    const deadline = document.getElementById('goalDeadline')?.value || '';
+
+    const goals = store.get('userGoals') || [];
+    goals.push({ id: Date.now().toString(), domain, title, target, current, unit, deadline, createdAt: new Date().toISOString() });
+    store.set('userGoals', goals);
+    this.closeModal();
+    Components.showToast('目標を保存しました', 'success');
+    this.renderApp();
+  }
+
+  updateGoalProgress(goalId) {
+    const goals = store.get('userGoals') || [];
+    const goal = goals.find(g => g.id === goalId);
+    if (!goal) return;
+    this.openModal('進捗を更新', `
+      <p>${Components.escapeHtml(goal.title)}</p>
+      <div class="form-group">
+        <label>現在値（${Components.escapeHtml(goal.unit || '単位なし')}）</label>
+        <input type="number" id="goalProgressVal" class="form-input" value="${goal.current}" step="any">
+      </div>
+      <div class="modal-footer" style="margin-top:20px;padding:0;border:none;justify-content:flex-start;gap:8px;">
+        <button class="btn btn-primary" onclick="app._doUpdateGoalProgress('${goalId}')">更新</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+  }
+
+  _doUpdateGoalProgress(goalId) {
+    const val = parseFloat(document.getElementById('goalProgressVal')?.value) || 0;
+    const goals = store.get('userGoals') || [];
+    const idx = goals.findIndex(g => g.id === goalId);
+    if (idx >= 0) {
+      goals[idx].current = val;
+      store.set('userGoals', goals);
+      this.closeModal();
+      if (val >= goals[idx].target && goals[idx].target > 0) {
+        Components.showToast('目標達成！おめでとうございます！', 'success');
+      } else {
+        Components.showToast('進捗を更新しました', 'success');
+      }
+      this.renderApp();
+    }
+  }
+
+  deleteGoal(goalId) {
+    this.confirmAction('この目標を削除しますか？', () => {
+      const goals = (store.get('userGoals') || []).filter(g => g.id !== goalId);
+      store.set('userGoals', goals);
+      Components.showToast('削除しました', 'info');
+      this.renderApp();
     });
   }
 
