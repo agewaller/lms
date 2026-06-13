@@ -574,16 +574,49 @@ var Pages = {
     const recs = (store.get('recommendations') || []).filter(r => r.domain === domain || !r.domain);
     const actions = (store.get('actionItems') || []).filter(a => a.domain === domain || !a.domain);
 
+    // All-domain score overview
+    const allScores = Object.keys(CONFIG.domains).map(d => {
+      const s = store.get('domainScores')?.[d] || 0;
+      const cfg = CONFIG.domains[d];
+      const alert = s < 40 ? '⚠️' : s < 60 ? '' : '';
+      return { d, s, cfg, alert };
+    });
+
+    const alerts = allScores.filter(({ s }) => s > 0 && s < 40);
+
     let html = `<div class="page-actions">
-      <h2>${i18n.t(domain)} - ${i18n.t('actions')}</h2>
+      <h2>アクション</h2>
+
+      <!-- 6 Domain Score Summary -->
+      <div class="holistic-score-grid">
+        ${allScores.map(({ d, s, cfg }) => `
+          <div class="holistic-score-cell ${d === domain ? 'current' : ''}"
+               onclick="app.switchDomain('${d}')"
+               style="--cell-color:${cfg.color}">
+            <div class="hsc-icon">${cfg.icon}</div>
+            <div class="hsc-name">${i18n.t(d)}</div>
+            <div class="hsc-score" style="color:${s < 40 ? '#ef4444' : s < 60 ? '#f59e0b' : cfg.color}">${s > 0 ? s : '—'}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      ${alerts.length > 0 ? `
+      <div class="domain-alerts">
+        ${alerts.map(({ d, s, cfg }) => `
+          <div class="domain-alert" onclick="app.switchDomain('${d}')">
+            <span style="color:${cfg.color};font-weight:700;">${cfg.icon} ${i18n.t(d)}</span>
+            <span>スコア ${s} — 記録して改善しましょう</span>
+          </div>
+        `).join('')}
+      </div>` : ''}
 
       <!-- Generate recommendations -->
       <div class="action-generate">
         <button class="btn btn-primary btn-lg" onclick="app.generateRecommendations('${domain}')">
-          ${i18n.t(domain)}の分析を実行
+          ${i18n.t(domain)}を分析
         </button>
         <button class="btn btn-secondary btn-lg" onclick="app.generateRecommendations('holistic')">
-          6領域の総合分析
+          6領域を総合分析
         </button>
       </div>`;
 
@@ -595,18 +628,19 @@ var Pages = {
     // Active recommendations
     if (recs.length > 0) {
       html += `<div class="recommendations-list">
-        <h3>${i18n.t('your_recommendations')}</h3>
+        <h3>分析結果とアドバイス</h3>
+        <button class="btn btn-sm btn-secondary" onclick="app.clearRecommendations()" style="margin-bottom:12px;">クリア</button>
         ${recs.map(r => Components.recommendationCard(r)).join('')}
       </div>`;
-    } else {
-      html += Components.emptyState('⚡', i18n.t('no_data'),
-        '上の「分析を実行」ボタンを押してみてください');
+    } else if (!store.get('isAnalyzing')) {
+      html += Components.emptyState('⚡', 'まだ分析がありません',
+        '上の「分析」ボタンを押すと、あなただけのアドバイスをお届けします');
     }
 
     // Action items (todos)
     if (actions.length > 0) {
       html += `<div class="action-items">
-        <h3>📋 Action Items</h3>
+        <h3>やることリスト</h3>
         ${actions.map((a, i) => `
           <div class="action-item ${a.done ? 'done' : ''}">
             <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${a.text}</label>

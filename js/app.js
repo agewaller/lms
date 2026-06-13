@@ -29,6 +29,10 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        // Request notification permission and check birthdays once per session
+        setTimeout(() => {
+          this.requestNotificationPermission().then(() => this.checkBirthdayNotifications());
+        }, 3000);
       } else {
         this.stopInboxPolling();
       }
@@ -425,15 +429,46 @@ var App = class App {
 
   // ─── Generate AI Recommendations ───
   async generateRecommendations(domain) {
+    const isHolistic = domain === 'holistic';
+
+    // Build userData: include recent data from relevant domain(s)
+    let userData = {};
+    if (isHolistic) {
+      // Gather key metrics from all 6 domains
+      const scores = store.get('domainScores') || {};
+      const health = store.getDomainData('health', 'symptoms', 7);
+      const sleep = store.getDomainData('health', 'sleepData', 7);
+      const interactions = store.getDomainData('relationship', 'interactions', 7);
+      const tasks = store.getDomainData('work', 'tasks', 7);
+      const obs = store.getDomainData('consciousness', 'observation', 7);
+
+      const avgCondition = health.length > 0 ? (health.reduce((s, e) => s + (e.condition_level || 0), 0) / health.length).toFixed(1) : null;
+      const avgSleep = sleep.length > 0 ? (sleep.reduce((s, e) => s + (e.quality || 0), 0) / sleep.length).toFixed(1) : null;
+      const doneTasks = tasks.filter(t => t.status === 'done').length;
+      const latestNV = obs.length > 0 ? obs[obs.length - 1]?.net_value : null;
+
+      userData.text = `【6領域スコア（0-100）】\n` +
+        Object.entries(scores).map(([d, s]) => `${i18n.t(d)}: ${s}`).join(', ') + '\n\n' +
+        `【直近7日の状態】\n` +
+        (avgCondition ? `体調平均: ${avgCondition}/10\n` : '') +
+        (avgSleep ? `睡眠質平均: ${avgSleep}/10\n` : '') +
+        `やり取り数: ${interactions.length}回\n` +
+        `タスク完了: ${doneTasks}/${tasks.length}件\n` +
+        (latestNV !== null ? `純価値: ${latestNV}/100\n` : '') +
+        `\n分析日時: ${new Date().toLocaleDateString('ja-JP')}`;
+    } else {
+      const cats = Object.keys(CONFIG.domains[domain]?.categories || {});
+      const recentData = cats.flatMap(cat => store.getDomainData(domain, cat, 7));
+      userData.raw = recentData.slice(-10);
+    }
+
     try {
-      const isHolistic = domain === 'holistic';
       const result = await AIEngine.analyze(
         isHolistic ? null : domain,
         isHolistic ? 'holistic' : 'daily',
-        {}
+        userData
       );
 
-      // Parse recommendations from AI response
       const recs = [{
         domain: isHolistic ? 'all' : domain,
         text: result,
@@ -442,10 +477,10 @@ var App = class App {
       }];
 
       const existing = store.get('recommendations') || [];
-      store.set('recommendations', [...recs, ...existing].slice(0, 50));
+      store.set('recommendations', [...recs, ...existing].slice(0, 20));
 
       this.renderApp();
-      Components.showToast(i18n.t('saved'), 'success');
+      Components.showToast('分析が完了しました', 'success');
     } catch (e) {
       Components.showToast(e.message, 'error');
     }
@@ -1955,6 +1990,47 @@ var App = class App {
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();
+  }
+
+  // ─── Clear Recommendations ───
+  clearRecommendations() {
+    store.set('recommendations', []);
+    this.renderApp();
+  }
+
+  // ─── Browser Notifications ───
+  async requestNotificationPermission() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+      await Notification.requestPermission();
+    }
+  }
+
+  checkBirthdayNotifications() {
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    const contacts = store.get('relationship_contacts') || [];
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+
+    contacts.filter(c => c.birthday && c.name).forEach(c => {
+      const bd = new Date(c.birthday);
+      const next = new Date(today.getFullYear(), bd.getMonth(), bd.getDate());
+      if (next < today) next.setFullYear(next.getFullYear() + 1);
+      const daysUntil = Math.round((next - today) / (1000 * 60 * 60 * 24));
+
+      if (daysUntil > 3) return;
+
+      const notifKey = `lms_bday_${(c.id || c.name).replace(/\s/g, '_')}_${todayStr}`;
+      if (localStorage.getItem(notifKey)) return;
+
+      const title = daysUntil === 0
+        ? `🎂 今日は${c.name}さんのお誕生日です`
+        : `🎂 ${c.name}さんのお誕生日まであと${daysUntil}日`;
+      try {
+        new Notification('LMS', { body: title, tag: notifKey });
+      } catch (e) { /* Notification blocked */ }
+      localStorage.setItem(notifKey, '1');
+    });
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───
