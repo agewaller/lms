@@ -43,6 +43,7 @@ var Pages = {
       cats.forEach(cat => { totalRecords += store.getDomainData(d, cat, 365).length; });
     });
     const isNewUser = totalRecords === 0;
+    const streak = store.calculateStreak();
 
     let html = `<div class="page-home">
 
@@ -51,6 +52,7 @@ var Pages = {
         <div class="greeting-text">
           <div class="greeting-main">${greeting}${userName ? '、' + userName + 'さん' : ''}</div>
           <div class="greeting-date">${todayStr}</div>
+          ${streak > 1 ? `<div class="greeting-streak">${streak}日連続記録中</div>` : ''}
         </div>
         <div class="greeting-score-mini">${Components.scoreGauge(score, 64, '')}</div>
       </div>
@@ -977,7 +979,8 @@ var Pages = {
             </div>
           </div>
           <div class="data-actions">
-            <button class="btn btn-sm btn-secondary" onclick="app.exportDomainData('${domain}')">このデータを書き出す</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.exportDomainData('${domain}','json')">JSON書き出し</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.exportDomainData('${domain}','csv')">CSV書き出し</button>
             <button class="btn btn-sm btn-secondary" onclick="app.clearDataFilter()">フィルタをクリア</button>
           </div>
         </div>

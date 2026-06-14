@@ -269,10 +269,42 @@ var Store = class Store {
     return score;
   }
 
+  // ─── Streak (連続記録日数) ───
+
+  // Returns the number of consecutive days up to today that have at least one entry
+  // across any domain/category.
+  calculateStreak() {
+    const allKeys = this.persistKeys.filter(k => k.includes('_') && Array.isArray(this.state[k]));
+    const daysWithData = new Set();
+    allKeys.forEach(k => {
+      (this.state[k] || []).forEach(entry => {
+        if (entry.timestamp) daysWithData.add(entry.timestamp.slice(0, 10));
+      });
+    });
+
+    let streak = 0;
+    const today = new Date();
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      if (daysWithData.has(dateStr)) {
+        streak++;
+      } else if (i > 0) {
+        break;
+      }
+    }
+    return streak;
+  }
+
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // IMPORTANT: Do NOT use localStorage.clear() — it deletes Firebase config
+    // and OAuth tokens too. Only remove lms_ prefixed keys.
+    this.persistKeys.forEach(key => {
+      try { localStorage.removeItem(`lms_${key}`); } catch (e) { /* ignore */ }
+    });
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};

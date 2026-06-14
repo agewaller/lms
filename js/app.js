@@ -757,21 +757,52 @@ var App = class App {
     }, { danger: true, confirmLabel: '削除する' });
   }
 
-  exportDomainData(domain) {
+  exportDomainData(domain, format = 'json') {
     const domainConfig = CONFIG.domains[domain];
     const categories = Object.keys(domainConfig?.categories || {});
-    const data = {};
-    categories.forEach(cat => {
-      data[cat] = store.get(`${domain}_${cat}`) || [];
-    });
+    const dateStr = new Date().toISOString().slice(0, 10);
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `lms-${domain}-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    if (format === 'csv') {
+      // Flatten all entries to CSV
+      let allEntries = [];
+      categories.forEach(cat => {
+        const rows = store.get(`${domain}_${cat}`) || [];
+        rows.forEach(r => allEntries.push({ ...r, _category: cat }));
+      });
+      if (allEntries.length === 0) {
+        Components.showToast('エクスポートするデータがありません', 'info');
+        return;
+      }
+      // Collect all field names
+      const allKeys = new Set();
+      allEntries.forEach(e => Object.keys(e).forEach(k => allKeys.add(k)));
+      const headers = ['_category', 'timestamp', ...[...allKeys].filter(k => k !== '_category' && k !== 'timestamp')];
+      const csvRows = [headers.join(',')];
+      allEntries.forEach(e => {
+        csvRows.push(headers.map(h => {
+          const v = e[h] ?? '';
+          return typeof v === 'string' && (v.includes(',') || v.includes('"') || v.includes('\n'))
+            ? `"${v.replace(/"/g, '""')}"` : v;
+        }).join(','));
+      });
+      const blob = new Blob(['﻿' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lms-${domain}-${dateStr}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      const data = {};
+      categories.forEach(cat => { data[cat] = store.get(`${domain}_${cat}`) || []; });
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lms-${domain}-${dateStr}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   }
 
   // ─── Fitbit ───

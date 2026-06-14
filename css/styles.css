@@ -1819,6 +1819,15 @@ body.is-admin .admin-only { display: flex; }
   font-size: 13px;
   opacity: 0.85;
 }
+.greeting-streak {
+  display: inline-block;
+  margin-top: 6px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
 .greeting-score-mini .score-value { font-size: 18px; color: #fff; font-weight: 700; }
 .greeting-score-mini .score-label { display: none; }
 .greeting-score-mini svg circle:first-child { stroke: rgba(255,255,255,0.3); }
