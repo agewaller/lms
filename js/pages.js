@@ -129,15 +129,24 @@ var Pages = {
       </div>`;
     }
 
-    // Latest analysis
+    // Latest analysis + "generate advice" button
     const latest = store.get('latestAnalysis');
+    html += `<div class="analysis-section">`;
     if (latest && latest.domain === domain) {
-      html += `<div class="analysis-section">
-        <h3>分析結果</h3>
+      html += `<div class="analysis-result">
+        <div class="analysis-result-header">
+          <h3>最近の分析</h3>
+          <span class="analysis-meta">${new Date(latest.timestamp).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
         <div class="analysis-content">${Components.formatMarkdown(latest.response)}</div>
-        <div class="analysis-meta">${latest.model} | ${new Date(latest.timestamp).toLocaleString()}</div>
       </div>`;
     }
+    if (!isNewUser) {
+      html += `<button class="btn btn-secondary" onclick="app.generateRecommendations('${domain}')" style="margin-top:8px;">
+        今日のアドバイスを受け取る
+      </button>`;
+    }
+    html += `</div>`;
 
     // ─── Domain-specific widgets ───
 
