@@ -1797,3 +1797,73 @@ body.is-admin .admin-only { display: flex; }
   .sim-cards { grid-template-columns: 1fr; }
   .top-bar-title { font-size: 13px; }
 }
+
+/* ─── Greeting Header ─── */
+.greeting-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, var(--domain-color, var(--accent)) 0%, color-mix(in srgb, var(--domain-color, var(--accent)) 70%, #fff) 100%);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--domain-color, var(--accent)) 30%, transparent);
+}
+.greeting-main {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.greeting-date {
+  font-size: 13px;
+  opacity: 0.85;
+}
+.greeting-score-mini .score-value { font-size: 18px; color: #fff; font-weight: 700; }
+.greeting-score-mini .score-label { display: none; }
+.greeting-score-mini svg circle:first-child { stroke: rgba(255,255,255,0.3); }
+@media (max-width: 480px) {
+  .greeting-header { padding: 16px; }
+  .greeting-main { font-size: 17px; }
+}
+
+/* ─── Onboarding Card ─── */
+.onboarding-card {
+  background: var(--bg-secondary);
+  border: 2px solid var(--accent-border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 16px;
+}
+.onboarding-header { margin-bottom: 16px; }
+.onboarding-title { font-size: 16px; font-weight: 700; color: var(--accent); }
+.onboarding-sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.onboarding-steps { display: flex; flex-direction: column; gap: 12px; }
+.onboarding-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+.step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.step-body { flex: 1; min-width: 0; }
+.step-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.step-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+@media (max-width: 480px) {
+  .onboarding-step { flex-wrap: wrap; }
+  .onboarding-step .btn { width: 100%; justify-content: center; }
+}

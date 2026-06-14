@@ -143,6 +143,36 @@ var Components = {
     setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
   },
 
+  // ─── Confirm Modal (replaces native confirm() for iOS/Android compat) ───
+  showConfirm(message, onConfirm, { danger = false, confirmLabel = 'はい' } = {}) {
+    window.__lmsConfirmCb = onConfirm;
+    const btnClass = danger ? 'btn-danger' : 'btn-primary';
+    app.openModal('確認', `
+      <p style="margin-bottom:20px;font-size:15px;">${message}</p>
+      <div class="form-actions">
+        <button class="btn ${btnClass}" onclick="if(window.__lmsConfirmCb){window.__lmsConfirmCb();window.__lmsConfirmCb=null;}app.closeModal()">${confirmLabel}</button>
+        <button class="btn btn-secondary" onclick="window.__lmsConfirmCb=null;app.closeModal()">キャンセル</button>
+      </div>
+    `);
+  },
+
+  // ─── Prompt Modal (replaces native prompt() for iOS/Android compat) ───
+  showPrompt(message, placeholder, onConfirm) {
+    const inputId = 'modal_prompt_input_' + Date.now();
+    window.__lmsPromptCb = onConfirm;
+    app.openModal('入力', `
+      <p style="margin-bottom:12px;font-size:15px;">${message}</p>
+      <input type="text" id="${inputId}" class="form-input" placeholder="${placeholder || ''}"
+        style="margin-bottom:16px;"
+        onkeydown="if(event.key==='Enter'){const v=document.getElementById('${inputId}').value;if(window.__lmsPromptCb&&v){window.__lmsPromptCb(v);window.__lmsPromptCb=null;}app.closeModal();}">
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="const v=document.getElementById('${inputId}').value;if(window.__lmsPromptCb&&v){window.__lmsPromptCb(v);window.__lmsPromptCb=null;}app.closeModal()">決定</button>
+        <button class="btn btn-secondary" onclick="window.__lmsPromptCb=null;app.closeModal()">キャンセル</button>
+      </div>
+    `);
+    setTimeout(() => document.getElementById(inputId)?.focus(), 100);
+  },
+
   // ─── Loading Spinner ───
   loading(text) {
     return `<div class="loading-container">

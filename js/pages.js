@@ -27,8 +27,37 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
-    // Quick input bar
+    // Greeting header
+    const now = new Date();
+    const hour = now.getHours();
+    const greeting = hour < 11 ? 'おはようございます' : hour < 17 ? 'こんにちは' : 'こんばんは';
+    const user = store.get('user');
+    const userName = (user?.displayName || '').split(' ')[0] || '';
+    const todayStr = now.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+
+    // Check if user has any data (for onboarding)
+    const allDomainKeys = Object.keys(CONFIG.domains || {});
+    let totalRecords = 0;
+    allDomainKeys.forEach(d => {
+      const cats = Object.keys(CONFIG.domains[d]?.categories || {});
+      cats.forEach(cat => { totalRecords += store.getDomainData(d, cat, 365).length; });
+    });
+    const isNewUser = totalRecords === 0;
+
     let html = `<div class="page-home">
+
+      <!-- Greeting header -->
+      <div class="greeting-header" style="--domain-color:${color}">
+        <div class="greeting-text">
+          <div class="greeting-main">${greeting}${userName ? '、' + userName + 'さん' : ''}</div>
+          <div class="greeting-date">${todayStr}</div>
+        </div>
+        <div class="greeting-score-mini">${Components.scoreGauge(score, 64, '')}</div>
+      </div>
+
+      ${isNewUser ? this.renderOnboarding(domain) : ''}
+
+      <!-- Quick input bar -->
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
@@ -158,6 +187,33 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Onboarding Card (shown when no records exist) ───
+  renderOnboarding(domain) {
+    const steps = [
+      { num: '1', title: '今日の状態を記録する', desc: '「記録する」から体調・気分・活動を入力してください', page: 'record', btn: '記録する' },
+      { num: '2', title: 'アドバイザーに相談する', desc: 'なんでも気軽に話しかけてみてください', page: 'ask_ai', btn: '相談する' },
+      { num: '3', title: '外部サービスと連携する', desc: 'カレンダー・Fitbit・Plaudとつなぐと自動で記録されます', page: 'integrations', btn: '連携を設定' }
+    ];
+    return `<div class="onboarding-card">
+      <div class="onboarding-header">
+        <div class="onboarding-title">はじめまして！</div>
+        <div class="onboarding-sub">3ステップで始めましょう</div>
+      </div>
+      <div class="onboarding-steps">
+        ${steps.map(s => `
+          <div class="onboarding-step">
+            <div class="step-num">${s.num}</div>
+            <div class="step-body">
+              <div class="step-title">${s.title}</div>
+              <div class="step-desc">${s.desc}</div>
+            </div>
+            <button class="btn btn-sm btn-secondary" onclick="app.navigate('${s.page}')">${s.btn}</button>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
