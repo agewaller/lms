@@ -249,6 +249,91 @@ var Components = {
     </div>`;
   },
 
+  // ─── Escape HTML (XSS prevention — always use for user-supplied content) ───
+  escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  // ─── Confirm Dialog (mobile-safe, replaces window.confirm) ───
+  confirm(message, onYes, onNo) {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl  = document.getElementById('modal-body');
+    if (!overlay || !bodyEl) { if (onYes) onYes(); return; }
+    if (titleEl) titleEl.textContent = '確認';
+    bodyEl.innerHTML = `
+      <p style="margin-bottom:20px;font-size:15px;line-height:1.6;">${this.escapeHtml(message)}</p>
+      <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <button class="btn btn-secondary" id="_confirmNo">キャンセル</button>
+        <button class="btn btn-danger" id="_confirmYes">はい</button>
+      </div>`;
+    overlay.classList.add('active');
+    const cleanup = () => overlay.classList.remove('active');
+    document.getElementById('_confirmYes').onclick = () => { cleanup(); if (onYes) onYes(); };
+    document.getElementById('_confirmNo').onclick  = () => { cleanup(); if (onNo)  onNo();  };
+  },
+
+  // ─── Prompt Dialog (mobile-safe, replaces window.prompt) ───
+  promptInput(message, placeholder, onSubmit) {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl  = document.getElementById('modal-body');
+    if (!overlay || !bodyEl) {
+      const v = window.prompt(message, '');
+      if (v && onSubmit) onSubmit(v);
+      return;
+    }
+    if (titleEl) titleEl.textContent = message;
+    bodyEl.innerHTML = `
+      <input type="text" id="_promptInput" class="form-input"
+        placeholder="${this.escapeHtml(placeholder || '')}"
+        style="margin-bottom:16px;"
+        onkeydown="if(event.key==='Enter')document.getElementById('_promptOk').click()">
+      <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <button class="btn btn-secondary" id="_promptCancel">キャンセル</button>
+        <button class="btn btn-primary" id="_promptOk">OK</button>
+      </div>`;
+    overlay.classList.add('active');
+    const input = document.getElementById('_promptInput');
+    if (input) setTimeout(() => input.focus(), 50);
+    const cleanup = () => overlay.classList.remove('active');
+    document.getElementById('_promptOk').onclick = () => {
+      const val = document.getElementById('_promptInput')?.value?.trim();
+      cleanup();
+      if (val && onSubmit) onSubmit(val);
+    };
+    document.getElementById('_promptCancel').onclick = cleanup;
+  },
+
+  // ─── Sparkline (mini SVG trend line) ───
+  sparkline(values, color = '#6C63FF', width = 80, height = 28) {
+    if (!values || values.length < 2) return '';
+    const max = Math.max(...values, 1);
+    const min = Math.min(...values);
+    const range = max - min || 1;
+    const pts = values.map((v, i) => {
+      const x = (i / (values.length - 1)) * (width - 4) + 2;
+      const y = height - 4 - ((v - min) / range) * (height - 8);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+    const trend = values[values.length - 1] - values[values.length - 2];
+    const arrow = trend > 0 ? '↑' : trend < 0 ? '↓' : '→';
+    const arrowColor = trend > 0 ? '#10b981' : trend < 0 ? '#ef4444' : '#94a3b8';
+    return `<span style="display:inline-flex;align-items:center;gap:4px;vertical-align:middle;">
+      <svg width="${width}" height="${height}" style="overflow:visible;display:block">
+        <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+      </svg>
+      <span style="font-size:11px;color:${arrowColor};font-weight:700;">${arrow}</span>
+    </span>`;
+  },
+
   // ─── Record List Item ───
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';

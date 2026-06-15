@@ -41,6 +41,9 @@ var Pages = {
       html += this.renderStockAnalysisWidget();
     }
 
+    // Today's Focus widget
+    html += this.renderTodaysFocus(domain);
+
     // Domain score + overview
     html += `<div class="home-overview">
         <div class="overview-score">
@@ -333,6 +336,67 @@ var Pages = {
     return html;
   },
 
+  // ─── Today's Focus Widget ───
+  renderTodaysFocus(currentDomain) {
+    const allDomains = Object.keys(CONFIG.domains);
+    const scored = allDomains.map(id => ({
+      id,
+      cfg: CONFIG.domains[id],
+      score: store.calculateDomainScore(id)
+    })).sort((a, b) => a.score - b.score);
+
+    const focus = scored[0];
+    if (!focus) return '';
+
+    // Skip the widget if the current domain IS the focus (already showing it)
+    // and score is acceptable — only surface when genuinely needed
+    const lowestScore = focus.score;
+    if (lowestScore >= 60 && currentDomain !== focus.id) return '';
+
+    const d = focus.cfg;
+    const tip = this.getDomainFocusTip(focus.id, lowestScore);
+
+    return `<div class="today-focus-card" style="border-left:4px solid ${d.color};background:linear-gradient(135deg,${d.color}12 0%,var(--bg-secondary) 100%);">
+      <div class="focus-header">
+        <div class="focus-badge" style="background:${d.color}20;color:${d.color}">今日のフォーカス</div>
+        <div class="focus-domain-name" style="color:${d.color}">${d.icon} ${i18n.t(focus.id)}</div>
+        <div class="focus-score-chip" style="background:${d.color};color:#fff">${lowestScore}点</div>
+      </div>
+      <p class="focus-tip">${Components.escapeHtml(tip)}</p>
+      <div class="focus-cta">
+        <button class="btn btn-sm" style="background:${d.color};color:#fff;border:none"
+          onclick="app.switchDomain('${focus.id}');app.navigate('record')">記録する</button>
+        <button class="btn btn-sm btn-secondary"
+          onclick="app.switchDomain('${focus.id}');app.navigate('ask_ai')">相談する</button>
+      </div>
+    </div>`;
+  },
+
+  getDomainFocusTip(domain, score) {
+    const low = score < 40;
+    const tips = {
+      consciousness: low
+        ? '心が揺れている時ほど、内側に目を向ける5分が支えになります。'
+        : '今日も意識の状態を記録しておきましょう。',
+      health: low
+        ? '今日の体調を記録するだけで、パターンが見えてきます。まず一つ書いてみましょう。'
+        : '継続的な記録が健康の変化に気づく力を育てます。',
+      time: low
+        ? '時間は使い方より「何に使わないか」が大切です。今週の振り返りを。'
+        : '自分時間の確保を意識して、今日の予定を見直してみましょう。',
+      work: low
+        ? '小さな一歩で十分です。今日できることを一つだけ決めてみましょう。'
+        : '経験を活かす方向を探してみましょう。ヒントが見つかるかもしれません。',
+      relationship: low
+        ? '大切な人に連絡を取るのに、理由は要りません。今日が絶好のタイミングです。'
+        : 'つながりを深める小さな行動を一つ取りましょう。',
+      assets: low
+        ? '資産の現状を把握するだけでも、不安が安心に変わります。まず記録から。'
+        : '小さな改善の積み重ねが長期的な安心を作ります。',
+    };
+    return tips[domain] || '今日も一歩ずつ。あなたのペースで大丈夫です。';
+  },
+
   // ─── Stock Analysis Widget (Assets domain) ───
   renderStockAnalysisWidget() {
     return `<div class="stock-analysis-section">
@@ -408,8 +472,12 @@ var Pages = {
           (symptoms.reduce((s, e) => s + (e.condition_level || 0), 0) / symptoms.length).toFixed(1) : '-';
         const avgSleep = sleep.length > 0 ?
           (sleep.reduce((s, e) => s + (e.quality || 0), 0) / sleep.length).toFixed(1) : '-';
-        stats.push(Components.statCard(i18n.t('condition_level'), avgCondition + '/10', null, '🤒'));
-        stats.push(Components.statCard(i18n.t('sleep_quality'), avgSleep + '/10', null, '😴'));
+        const condVals = symptoms.map(e => e.condition_level || 0).filter(v => v > 0);
+        const sleepVals = sleep.map(e => e.quality || 0).filter(v => v > 0);
+        stats.push(Components.statCard(i18n.t('condition_level'),
+          avgCondition + '/10 ' + Components.sparkline(condVals, '#10b981'), null, '🤒'));
+        stats.push(Components.statCard(i18n.t('sleep_quality'),
+          avgSleep + '/10 ' + Components.sparkline(sleepVals, '#3b82f6'), null, '😴'));
         stats.push(Components.statCard(i18n.t('activity'), activity.length + i18n.t('items'), null, '🏃'));
         break;
       }
@@ -620,19 +688,37 @@ var Pages = {
       .filter(m => m.domain === domain || !m.domain)
       .slice(-50);
 
+    const suggestedQs = {
+      consciousness: ['今日の自分の状態を分析してください', '七つのレイヤーのバランスを改善するには？', '瞑想を続けるコツを教えてください', 'ストレスを手放す方法は？'],
+      health: ['最近の体調の変化から何が読み取れますか？', '睡眠を改善するためにできることは？', '今の症状に合わせた生活習慣のアドバイスを', '食事と体調の関係を教えてください'],
+      time: ['今の時間の使い方を改善するには？', '自由時間を増やすアドバイスをください', '充実した老後の過ごし方とは？', '習慣化のコツを教えてください'],
+      work: ['自分の経験を活かせる仕事は何ですか？', 'やりがいを見つけるヒントを教えてください', '今の年齢からできることは？', 'ボランティアと有償の違いは？'],
+      relationship: ['人間関係を改善するために何ができますか？', '孤独感を減らす方法は？', '大切な関係を深めるには？', '今日連絡すべき人はいますか？'],
+      assets: ['今の年齢から始められる資産形成は？', 'NISAについてわかりやすく教えてください', '老後の安心のために何をすればいいですか？', '今の貯蓄で生活できますか？']
+    };
+    const qs = suggestedQs[domain] || [];
+
     let html = `<div class="page-ask-ai">
       <h2>${i18n.t(domain)} - 相談する</h2>
 
+      ${qs.length > 0 && history.length === 0 ? `
+      <div class="suggested-questions">
+        <p class="sq-label">よく聞かれる質問</p>
+        <div class="sq-chips">
+          ${qs.map(q => `<button class="sq-chip" onclick="document.getElementById('chatInput').value=${JSON.stringify(q)};app.sendChat('${domain}')">${Components.escapeHtml(q)}</button>`).join('')}
+        </div>
+      </div>` : ''}
+
       <div class="chat-container" id="chatContainer">
         ${history.length === 0 ?
-          Components.emptyState('💬', '相談する', i18n.t('quick_input_placeholder')) :
+          Components.emptyState('💬', 'なんでも聞いてください', '上の質問例をタップするか、自由に入力してください') :
           history.map(m => Components.chatMessage(m)).join('')
         }
       </div>
 
       <div class="chat-input-bar">
         <textarea id="chatInput" class="form-input" rows="2"
-          placeholder="${i18n.t('quick_input_placeholder')}"
+          placeholder="気になることを自由に書いてください..."
           onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();app.sendChat('${domain}')}"></textarea>
         <button class="btn btn-primary" onclick="app.sendChat('${domain}')">${i18n.t('send')}</button>
       </div>

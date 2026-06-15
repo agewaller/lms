@@ -58,17 +58,19 @@ var FirebaseBackend = {
   async signInWithGoogle() {
     if (!this.auth) {
       // Local-only mode fallback (Firebase not configured).
-      // Prompt for email so that admin (agewaller@gmail.com) can still log in.
-      const email = (prompt('メールアドレスを入力してください', '') || '').trim().toLowerCase();
-      if (!email) return;
-      store.update({
-        user: {
-          uid: 'local-' + email,
-          displayName: email.split('@')[0],
-          email
-        },
-        isAuthenticated: true,
-        currentPage: 'home'
+      // Use modal prompt so mobile browsers don't block the native prompt().
+      Components.promptInput('メールアドレスを入力してください', 'example@gmail.com', (email) => {
+        const trimmed = email.trim().toLowerCase();
+        if (!trimmed) return;
+        store.update({
+          user: {
+            uid: 'local-' + trimmed,
+            displayName: trimmed.split('@')[0],
+            email: trimmed
+          },
+          isAuthenticated: true,
+          currentPage: 'home'
+        });
       });
       return;
     }
