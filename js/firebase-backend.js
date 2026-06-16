@@ -29,6 +29,15 @@ var FirebaseBackend = {
 
       // Listen for auth state changes
       this.auth.onAuthStateChanged(user => this.handleAuthChange(user));
+
+      // モバイルのリダイレクト認証後の結果を処理
+      this.auth.getRedirectResult().catch(e => {
+        if (e.code !== 'auth/no-current-user') {
+          console.error('Redirect result error:', e);
+          Components.showToast(i18n.t('error') + ': ' + e.message, 'error');
+        }
+      });
+
       this.initialized = true;
     } catch (e) {
       console.error('Firebase init error:', e);
@@ -75,8 +84,15 @@ var FirebaseBackend = {
 
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
+
+    // モバイルではポップアップがブロックされるためリダイレクト方式を使用
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     try {
-      await this.auth.signInWithPopup(provider);
+      if (isMobile) {
+        await this.auth.signInWithRedirect(provider);
+      } else {
+        await this.auth.signInWithPopup(provider);
+      }
     } catch (e) {
       console.error('Google sign-in error:', e);
       Components.showToast(i18n.t('error') + ': ' + e.message, 'error');
