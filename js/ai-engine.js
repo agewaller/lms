@@ -169,7 +169,7 @@ var AIEngine = {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model,
+          model: CONFIG.modelMap[model] || model,
           max_tokens: maxTokens,
           system: system,
           messages: [{ role: 'user', content: userMsg }]

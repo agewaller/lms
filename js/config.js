@@ -31,6 +31,16 @@ var CONFIG = {
     'gemini-pro':         { name: 'Gemini Pro',        provider: 'google',    maxTokens: 4096 }
   },
 
+  // ─── Model ID Map (config id → API datestamped id) ───
+  // Update here when Anthropic/OpenAI rotates IDs; ai-engine picks this up automatically
+  modelMap: {
+    'claude-sonnet-4-6': 'claude-sonnet-4-6-20260101',
+    'claude-opus-4-6':   'claude-opus-4-6-20260201',
+    'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+    'gpt-4o':            'gpt-4o-2024-11-20',
+    'gemini-pro':        'gemini-2.0-flash'
+  },
+
   // ─── API Endpoints ───
   endpoints: {
     anthropic: 'https://lms-api-proxy.your-account.workers.dev',

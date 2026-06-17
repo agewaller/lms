@@ -143,6 +143,32 @@ var Components = {
     setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
   },
 
+  // ─── Inline Confirm Dialog (replaces window.confirm for mobile safety) ───
+  showConfirm(message, onConfirm, options = {}) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.style.cssText = 'display:flex;align-items:center;justify-content:center;z-index:9999';
+    const confirmLabel = options.confirmLabel || '削除する';
+    const cancelLabel = options.cancelLabel || 'キャンセル';
+    const isDanger = options.danger !== false;
+    overlay.innerHTML = `<div class="modal" style="max-width:360px;padding:28px 24px;text-align:center">
+      <p style="font-size:1rem;line-height:1.6;margin-bottom:24px">${Components.escapeHtml(message)}</p>
+      <div style="display:flex;gap:12px;justify-content:center">
+        <button class="btn btn-secondary" id="confirmCancel">${cancelLabel}</button>
+        <button class="btn ${isDanger ? 'btn-danger' : 'btn-primary'}" id="confirmOk">${confirmLabel}</button>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#confirmCancel').onclick = () => overlay.remove();
+    overlay.querySelector('#confirmOk').onclick = () => { overlay.remove(); onConfirm(); };
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  },
+
+  // ─── Escape HTML to prevent XSS ───
+  escapeHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  },
+
   // ─── Loading Spinner ───
   loading(text) {
     return `<div class="loading-container">
