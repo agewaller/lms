@@ -479,6 +479,12 @@ select.form-input { appearance: auto; }
 }
 .domain-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 .dc-icon { font-size: 40px; margin-bottom: 12px; }
+.dc-num {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 24px; font-weight: 700; color: white;
+  margin-bottom: 16px; letter-spacing: 0;
+}
 .domain-card h3 { font-size: 20px; margin-bottom: 8px; }
 .domain-card p { font-size: 16px; color: var(--text-light); line-height: 1.8; }
 .domain-cards-sm { gap: 16px; }
@@ -1106,6 +1112,65 @@ body.is-admin .admin-only { display: flex; }
 }
 .sub-nav-btn:hover { color: var(--text); }
 .sub-nav-btn.active { font-weight: 600; }
+
+/* ─── Onboarding Banner ─── */
+.onboarding-banner {
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  border: 1.5px solid #c4b5fd; border-radius: var(--radius);
+  padding: 24px; margin-bottom: 20px;
+}
+.onboarding-banner-header {
+  display: flex; align-items: flex-start; gap: 16px; margin-bottom: 16px;
+}
+.onboarding-banner-icon {
+  font-size: 28px; color: var(--primary); flex-shrink: 0;
+  width: 48px; height: 48px; background: white;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(108,99,255,0.2);
+}
+.onboarding-banner h3 { font-size: 18px; margin-bottom: 4px; color: var(--text-primary); }
+.onboarding-banner p { font-size: 14px; color: var(--text-muted); margin: 0; }
+.onboarding-steps {
+  display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.onboarding-step {
+  flex: 1; min-width: 130px; background: white;
+  border-radius: var(--radius-sm); padding: 14px 12px;
+  text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.onboarding-step-num {
+  width: 32px; height: 32px; background: var(--primary);
+  color: white; border-radius: 50%; display: inline-flex;
+  align-items: center; justify-content: center;
+  font-weight: 700; font-size: 15px; margin-bottom: 6px;
+}
+.onboarding-step strong { display: block; font-size: 14px; margin-bottom: 3px; }
+.onboarding-step p { font-size: 12px; color: var(--text-muted); margin: 0; }
+.onboarding-actions { display: flex; align-items: center; gap: 12px; }
+
+/* ─── Streak Badge ─── */
+.streak-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: #fffbeb; border: 1.5px solid #fcd34d;
+  border-radius: 20px; padding: 6px 16px;
+  font-size: 14px; color: #78350f; font-weight: 500;
+  margin-bottom: 14px;
+}
+.streak-dot {
+  width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0;
+}
+
+/* ─── Daily Check-in Prompt ─── */
+.daily-checkin-card {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; background: var(--bg-card);
+  border: 1.5px solid #e0e7ff; border-radius: var(--radius);
+  padding: 16px 20px; margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.daily-checkin-left { flex: 1; }
+.daily-checkin-date { font-size: 12px; color: var(--text-muted); margin-bottom: 3px; }
+.daily-checkin-msg { font-size: 16px; font-weight: 600; color: var(--text-primary); }
 
 /* ─── Home Page ─── */
 .quick-input-bar { display: flex; gap: 10px; margin-bottom: 20px; }

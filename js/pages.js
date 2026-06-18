@@ -26,10 +26,72 @@ var Pages = {
     const domainConfig = CONFIG.domains[domain];
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
+    const profile = store.get('userProfile') || {};
 
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    let html = `<div class="page-home">`;
+
+    // ─── Onboarding banner for new users ───
+    if (!profile.name) {
+      html += `<div class="onboarding-banner">
+        <div class="onboarding-banner-header">
+          <div class="onboarding-banner-icon">◈</div>
+          <div>
+            <h3>ようこそ！まずは自己紹介を</h3>
+            <p>お名前と基本情報を入力すると、あなたに合ったアドバイスをお届けできます。</p>
+          </div>
+        </div>
+        <div class="onboarding-steps">
+          <div class="onboarding-step">
+            <div class="onboarding-step-num">1</div>
+            <strong>基本情報</strong>
+            <p>名前・年齢・お住まい</p>
+          </div>
+          <div class="onboarding-step">
+            <div class="onboarding-step-num">2</div>
+            <strong>健康状態</strong>
+            <p>持病・服薬・気になること</p>
+          </div>
+          <div class="onboarding-step">
+            <div class="onboarding-step-num">3</div>
+            <strong>目標・価値観</strong>
+            <p>これからどう生きたいか</p>
+          </div>
+        </div>
+        <div class="onboarding-actions">
+          <button class="btn btn-primary" onclick="app.navigate('settings')"
+            style="min-width:160px">設定を開く</button>
+          <button class="btn btn-secondary btn-sm" onclick="this.closest('.onboarding-banner').style.display='none'">
+            後で
+          </button>
+        </div>
+      </div>`;
+    }
+
+    // ─── Streak badge ───
+    const streak = store.getActivityStreak();
+    if (streak >= 2) {
+      html += `<div class="streak-badge">
+        <span class="streak-dot" style="background:${color}"></span>
+        <span><strong>${streak}日</strong>連続記録中</span>
+      </div>`;
+    }
+
+    // ─── Daily check-in prompt ───
+    const hasToday = store.hasEntriesToday(domain);
+    if (!hasToday) {
+      const nowStr = new Date().toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'long' });
+      html += `<div class="daily-checkin-card" style="border-color:${color}40">
+        <div class="daily-checkin-left">
+          <div class="daily-checkin-date">${nowStr}</div>
+          <div class="daily-checkin-msg">今日の${i18n.t(domain)}の様子を記録しましょう</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="app.navigate('record')"
+          style="background:${color};border-color:${color};white-space:nowrap">記録する</button>
+      </div>`;
+    }
+
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>

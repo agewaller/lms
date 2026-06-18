@@ -269,10 +269,43 @@ var Store = class Store {
     return score;
   }
 
+  // ─── Daily Activity Helpers ───
+
+  hasEntriesToday(domain) {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const keys = Object.keys(this.state).filter(k => k.startsWith(domain + '_') && Array.isArray(this.state[k]));
+    return keys.some(k =>
+      this.state[k].some(e => new Date(e.timestamp) >= todayStart)
+    );
+  }
+
+  getActivityStreak() {
+    const allDomainKeys = Object.keys(this.state).filter(k =>
+      Array.isArray(this.state[k]) && Object.keys(CONFIG.domains).some(d => k.startsWith(d + '_'))
+    );
+    let streak = 0;
+    const now = new Date();
+    for (let i = 0; i < 365; i++) {
+      const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const dayEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
+      const hasEntry = allDomainKeys.some(k =>
+        this.state[k].some(e => {
+          const ts = new Date(e.timestamp);
+          return ts >= day && ts < dayEnd;
+        })
+      );
+      if (!hasEntry) break;
+      streak++;
+    }
+    return streak;
+  }
+
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // Only remove LMS-specific keys to avoid wiping Firebase config and OAuth tokens
+    Object.keys(localStorage).filter(k => k.startsWith('lms_')).forEach(k => localStorage.removeItem(k));
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
