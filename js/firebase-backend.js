@@ -29,6 +29,15 @@ var FirebaseBackend = {
 
       // Listen for auth state changes
       this.auth.onAuthStateChanged(user => this.handleAuthChange(user));
+
+      // Handle redirect result from mobile Google sign-in
+      this.auth.getRedirectResult().catch(e => {
+        if (e.code && e.code !== 'auth/no-current-user') {
+          console.error('Redirect result error:', e);
+          Components.showToast('Googleログインに失敗しました: ' + e.message, 'error');
+        }
+      });
+
       this.initialized = true;
     } catch (e) {
       console.error('Firebase init error:', e);
@@ -76,7 +85,12 @@ var FirebaseBackend = {
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     try {
-      await this.auth.signInWithPopup(provider);
+      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+      if (isMobile) {
+        await this.auth.signInWithRedirect(provider);
+      } else {
+        await this.auth.signInWithPopup(provider);
+      }
     } catch (e) {
       console.error('Google sign-in error:', e);
       Components.showToast(i18n.t('error') + ': ' + e.message, 'error');

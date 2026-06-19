@@ -3,6 +3,38 @@
    ============================================================ */
 var Components = {
 
+  // ─── XSS Prevention ───
+  escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  // ─── Modal-based confirm (replaces browser confirm() which breaks on mobile) ───
+  confirm(message, okText = 'はい', cancelText = 'キャンセル') {
+    return new Promise(resolve => {
+      const safe = this.escapeHtml(message);
+      app.openModal('確認', `
+        <div style="padding:4px 0">
+          <p style="margin:0 0 20px;line-height:1.7;font-size:15px">${safe}</p>
+          <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="Components._confirmResolve(false)">${cancelText}</button>
+            <button class="btn btn-primary" onclick="Components._confirmResolve(true)">${okText}</button>
+          </div>
+        </div>
+      `);
+      Components._confirmResolve = (val) => {
+        app.closeModal();
+        delete Components._confirmResolve;
+        resolve(val);
+      };
+    });
+  },
+
   // ─── Score Gauge (circular) ───
   scoreGauge(score, size = 120, label = '') {
     const pct = Math.max(0, Math.min(100, score));
