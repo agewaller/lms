@@ -2,6 +2,17 @@
    LMS - AI Engine
    Multi-model AI integration (Claude, GPT-4o, Gemini)
    ============================================================ */
+
+// CONFIG id → actual API model id. Update values here when Anthropic/OpenAI rotate IDs.
+// Never hardcode datestamped IDs anywhere else in the codebase.
+var MODEL_MAP = {
+  'claude-sonnet-4-6': 'claude-sonnet-4-6-20260101',
+  'claude-opus-4-6':   'claude-opus-4-6-20260201',
+  'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+  'gpt-4o':            'gpt-4o-2025-12-17',
+  'gemini-pro':        'gemini-2.0-flash'
+};
+
 var AIEngine = {
 
   // ─── Main analysis entry point ───
@@ -160,16 +171,21 @@ var AIEngine = {
       headers['anthropic-dangerous-direct-browser-access'] = 'true';
     }
 
+    const apiModel = MODEL_MAP[model] || model;
     console.log('[LMS] Calling Anthropic', isDirect ? '(direct)' : 'via proxy:', url);
-    console.log('[LMS] Model:', model, 'Max tokens:', maxTokens);
+    console.log('[LMS] Model:', apiModel, 'Max tokens:', maxTokens);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     let res;
     try {
       res = await fetch(url, {
         method: 'POST',
         headers,
+        signal: controller.signal,
         body: JSON.stringify({
-          model: model,
+          model: apiModel,
           max_tokens: maxTokens,
           system: system,
           messages: [{ role: 'user', content: userMsg }]
@@ -177,12 +193,16 @@ var AIEngine = {
       });
     } catch (e) {
       console.error('[LMS] fetch failed:', e);
+      const isTimeout = e.name === 'AbortError';
       throw new Error(
+        isTimeout ? '接続がタイムアウトしました（15秒）。ネットワークをご確認ください。' :
         (isDirect ? 'Anthropicに直接接続できません。' : 'プロキシに接続できません。') + '\n' +
         '原因: ' + (e.message || e.name || 'unknown') + '\n' +
         'URL: ' + url + '\n' +
         '\nブラウザのコンソールで詳細を確認してください。'
       );
+    } finally {
+      clearTimeout(timeoutId);
     }
 
     console.log('[LMS] Anthropic responded with status:', res.status);
@@ -200,21 +220,33 @@ var AIEngine = {
     const apiKey = this.getApiKey('openai');
     if (!apiKey) throw new Error('OpenAI API key not set');
 
-    const res = await fetch(CONFIG.endpoints.openai, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + apiKey
-      },
-      body: JSON.stringify({
-        model: model,
-        max_tokens: maxTokens,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: userMsg }
-        ]
-      })
-    });
+    const apiModel = MODEL_MAP[model] || model;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    let res;
+    try {
+      res = await fetch(CONFIG.endpoints.openai, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + apiKey
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: apiModel,
+          max_tokens: maxTokens,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: userMsg }
+          ]
+        })
+      });
+    } catch (e) {
+      if (e.name === 'AbortError') throw new Error('接続がタイムアウトしました（15秒）。');
+      throw e;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!res.ok) {
       const err = await res.text();
@@ -228,16 +260,28 @@ var AIEngine = {
     const apiKey = this.getApiKey('google');
     if (!apiKey) throw new Error('Google API key not set');
 
-    const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: system }] },
-        contents: [{ parts: [{ text: userMsg }] }],
-        generationConfig: { maxOutputTokens: maxTokens }
-      })
-    });
+    const apiModel = MODEL_MAP[model] || model;
+    const url = `${CONFIG.endpoints.google}/${apiModel}:generateContent?key=${apiKey}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    let res;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: system }] },
+          contents: [{ parts: [{ text: userMsg }] }],
+          generationConfig: { maxOutputTokens: maxTokens }
+        })
+      });
+    } catch (e) {
+      if (e.name === 'AbortError') throw new Error('接続がタイムアウトしました（15秒）。');
+      throw e;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!res.ok) {
       const err = await res.text();

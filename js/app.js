@@ -422,6 +422,10 @@ var App = class App {
 
   // ─── Generate AI Recommendations ───
   async generateRecommendations(domain) {
+    if (store.get('isAnalyzing')) {
+      Components.showToast('分析中です。しばらくお待ちください。', 'info');
+      return;
+    }
     try {
       const isHolistic = domain === 'holistic';
       const result = await AIEngine.analyze(
@@ -472,6 +476,10 @@ var App = class App {
     const ticker = input?.value?.trim();
     if (!ticker) {
       Components.showToast('銘柄名またはティッカーを入力してください', 'info');
+      return;
+    }
+    if (!/^[\w.\-\s]{1,30}$/.test(ticker)) {
+      Components.showToast('銘柄名に使用できない文字が含まれています', 'error');
       return;
     }
 

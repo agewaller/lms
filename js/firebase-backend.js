@@ -168,6 +168,11 @@ var FirebaseBackend = {
       await this.auth.signOut();
     }
     store.clearAll();
+    // Clear OAuth tokens so they don't persist across user sessions on shared devices
+    ['lms_gcal_token', 'lms_gcal_token_expires', 'lms_outlook_token',
+     'lms_fitbit_token', 'lms_withings_token', 'lms_garmin_token',
+     'lms_plaud_token', 'lms_apikey_anthropic', 'lms_apikey_openai', 'lms_apikey_google'
+    ].forEach(k => localStorage.removeItem(k));
     store.set('currentPage', 'login');
   },
 
