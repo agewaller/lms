@@ -596,22 +596,22 @@ var App = class App {
 
   // ─── Delete a single domain entry (localStorage + Firestore) ───
   deleteEntry(domain, category, id) {
-    const key = `${domain}_${category}`;
-    const entries = store.get(key) || [];
-    const remaining = entries.filter(e => e.id !== id);
-    if (remaining.length === entries.length) return;
-    store.set(key, remaining);
+    Components.confirmModal('この記録を削除しますか？', () => {
+      const key = `${domain}_${category}`;
+      const entries = (store.get(key) || []).filter(e => e.id !== id);
+      store.set(key, entries);
 
-    const uid = store.get('user')?.uid;
-    if (uid && FirebaseBackend.db) {
-      FirebaseBackend.db.collection('users').doc(uid)
-        .collection(key).doc(id)
-        .delete()
-        .catch(e => console.warn('Delete sync error:', e));
-    }
+      const uid = store.get('user')?.uid;
+      if (uid && FirebaseBackend.db) {
+        FirebaseBackend.db.collection('users').doc(uid)
+          .collection(key).doc(id)
+          .delete()
+          .catch(e => console.warn('Delete sync error:', e));
+      }
 
-    Components.showToast('記録を削除しました', 'info');
-    setTimeout(() => this.renderApp(), 50);
+      Components.showToast('削除しました', 'info');
+      this.renderApp();
+    }, '削除する', true);
   }
 
   // ─── Stock Analysis (Assets domain) ───

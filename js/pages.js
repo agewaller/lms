@@ -25,7 +25,9 @@ var Pages = {
   // ═══════════════════════════════════════════════════════════
   renderHome(domain) {
     const domainConfig = CONFIG.domains[domain];
-    const score = store.calculateDomainScore(domain);
+    // Pre-calculate all domain scores so mini gauges don't show stale 0s
+    Object.keys(CONFIG.domains).forEach(d => store.calculateDomainScore(d));
+    const score = store.get('domainScores')?.[domain] || 50;
     const color = domainConfig?.color || '#6C63FF';
 
     // Quick input bar
