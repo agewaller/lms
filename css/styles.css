@@ -3060,6 +3060,51 @@ html[data-theme="dark"] .ht-cell.level-3     { background: #10b981; }
 .budget-trend-header { margin-bottom: 10px; }
 .budget-trend-header h3 { margin: 0; font-size: 15px; }
 
+/* ─── Evening Review Card ─── */
+.evening-review-card {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  border: 1px solid #4338ca;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  color: #e0e7ff;
+}
+.er-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+.er-icon { font-size: 1.6rem; flex-shrink: 0; }
+.er-title-block { flex: 1; }
+.er-title-block strong { display: block; font-size: 15px; color: #e0e7ff; }
+.er-title-block span { font-size: 12px; color: #a5b4fc; }
+.er-close { color: #a5b4fc; background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 2px 6px; }
+.er-cats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.er-cat {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  color: #c7d2fe;
+  font-size: 13px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.er-cat.selected { background: #4f46e5; border-color: #818cf8; color: #fff; }
+.er-satisfaction { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.er-sat-label { font-size: 13px; color: #a5b4fc; white-space: nowrap; }
+.er-stars { display: flex; gap: 4px; }
+.er-star { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #6366f1; transition: color 0.1s; }
+.er-star.active { color: #fbbf24; }
+.er-highlight { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.15); color: #e0e7ff; margin-bottom: 12px; }
+.er-highlight::placeholder { color: #6366f1; }
+.er-save { width: 100%; }
+html[data-theme="light"] .evening-review-card { background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); border-color: #a78bfa; color: #1e1b4b; }
+html[data-theme="light"] .er-title-block strong { color: #1e1b4b; }
+html[data-theme="light"] .er-title-block span { color: #5b21b6; }
+html[data-theme="light"] .er-close { color: #7c3aed; }
+html[data-theme="light"] .er-cat { background: rgba(99,60,180,0.08); border-color: rgba(99,60,180,0.2); color: #4c1d95; }
+html[data-theme="light"] .er-cat.selected { background: #7c3aed; color: #fff; }
+html[data-theme="light"] .er-sat-label { color: #5b21b6; }
+html[data-theme="light"] .er-star { color: #a78bfa; }
+html[data-theme="light"] .er-highlight { background: rgba(0,0,0,0.04); border-color: #a78bfa; color: #1e1b4b; }
+
 /* ─── Breathing Exercise Card ─── */
 .breath-card {
   background: var(--bg-secondary);

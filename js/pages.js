@@ -160,6 +160,7 @@ var Pages = {
     // Time domain: Habit tracker + Calendar widget + Marketplace widget
     if (domain === 'time') {
       html += this.renderHabitTracker();
+      html += this.renderEveningReviewCard();
       html += this.renderTimeAllocationChart();
       if (typeof CalendarIntegration !== 'undefined') html += CalendarIntegration.renderWidget();
       if (typeof TimeMarketplace !== 'undefined') html += TimeMarketplace.renderWidget();
@@ -741,6 +742,68 @@ var Pages = {
   },
 
   // ─── Weekly Time Allocation Chart (Time domain) ───
+  // ─── Evening time review card (time domain, 4pm–11pm only) ───
+  renderEveningReviewCard() {
+    const hour = new Date().getHours();
+    if (hour < 16 || hour >= 23) return '';
+    const today = new Date().toISOString().split('T')[0];
+    const lsKey = 'lms_eveningReview_' + today;
+    if (localStorage.getItem(lsKey)) return '';
+    const categories = [
+      { key: 'rest',          icon: '😴', label: '休養' },
+      { key: 'leisure',       icon: '🎨', label: '趣味' },
+      { key: 'health',        icon: '🏃', label: '運動・健康' },
+      { key: 'relationships', icon: '🤝', label: '人との交流' },
+      { key: 'learning',      icon: '📚', label: '学習・読書' },
+      { key: 'housework',     icon: '🏠', label: '家事' },
+      { key: 'work',          icon: '💼', label: '仕事・活動' }
+    ];
+    return `<div class="evening-review-card" id="eveningReviewCard">
+      <div class="er-header">
+        <span class="er-icon">🌙</span>
+        <div class="er-title-block">
+          <strong>今日の振り返り</strong>
+          <span>今日、時間を使ったことは？（複数選べます）</span>
+        </div>
+        <button class="er-close btn-ghost" onclick="Pages.dismissEveningReview('${today}')">&times;</button>
+      </div>
+      <div class="er-cats">
+        ${categories.map(c =>
+          `<button class="er-cat" data-key="${c.key}" onclick="Pages.toggleEveningCat(this)">${c.icon} ${c.label}</button>`
+        ).join('')}
+      </div>
+      <div class="er-satisfaction">
+        <span class="er-sat-label">今日の充実度</span>
+        <div class="er-stars">
+          ${[1,2,3,4,5].map(n =>
+            `<button class="er-star" data-val="${n}" onclick="Pages.selectEveningStar(this)">☆</button>`
+          ).join('')}
+        </div>
+      </div>
+      <input type="text" id="erHighlight" class="form-input er-highlight" placeholder="今日のハイライト（任意）" maxlength="80">
+      <button class="btn btn-primary er-save" onclick="app.saveEveningReview('${today}')">記録する</button>
+    </div>`;
+  },
+
+  toggleEveningCat(btn) {
+    btn.classList.toggle('selected');
+  },
+
+  selectEveningStar(btn) {
+    const val = parseInt(btn.dataset.val);
+    btn.closest('.er-stars').querySelectorAll('.er-star').forEach((s, i) => {
+      s.textContent = i < val ? '★' : '☆';
+      s.classList.toggle('active', i < val);
+    });
+    btn.closest('.er-stars').dataset.val = val;
+  },
+
+  dismissEveningReview(today) {
+    localStorage.setItem('lms_eveningReview_' + today, 'skipped');
+    const card = document.getElementById('eveningReviewCard');
+    if (card) card.remove();
+  },
+
   renderTimeAllocationChart() {
     const logs = store.getDomainData('time', 'entries', 7);
     if (logs.length === 0) return '';

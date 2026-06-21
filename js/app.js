@@ -718,6 +718,35 @@ var App = class App {
     this.renderApp();
   }
 
+  saveEveningReview(today) {
+    const selected = [...document.querySelectorAll('.er-cat.selected')].map(b => b.dataset.key);
+    const starsEl = document.querySelector('.er-stars');
+    const satisfaction = starsEl ? (parseInt(starsEl.dataset.val) || 0) : 0;
+    const highlight = (document.getElementById('erHighlight')?.value || '').trim();
+    if (selected.length === 0 && !satisfaction) {
+      Components.showToast('何か一つ選んでください', 'error');
+      return;
+    }
+    selected.forEach(category => {
+      store.addDomainEntry('time', 'entries', {
+        category,
+        productivity: satisfaction * 2 || null,
+        notes: highlight || null,
+        source: 'evening_review'
+      });
+    });
+    if (selected.length === 0 && satisfaction) {
+      store.addDomainEntry('time', 'entries', {
+        productivity: satisfaction * 2,
+        notes: highlight || null,
+        source: 'evening_review'
+      });
+    }
+    try { localStorage.setItem('lms_eveningReview_' + today, '1'); } catch(e) {}
+    Components.showToast('今日の振り返りを記録しました', 'success');
+    this.renderApp();
+  }
+
   logBreathing() {
     store.addDomainEntry('consciousness', 'practices', {
       practice_type: 'breathwork',
