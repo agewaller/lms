@@ -142,9 +142,10 @@ var Pages = {
       if (typeof TimeMarketplace !== 'undefined') html += TimeMarketplace.renderWidget();
     }
 
-    // Work domain: Resume + side biz diagnosis + time marketplace link
+    // Work domain: Ikigai + Resume + side biz diagnosis + time marketplace link
     if (domain === 'work') {
       if (typeof WorkFeatures !== 'undefined') {
+        html += WorkFeatures.renderIkigaiDiscover();
         html += WorkFeatures.renderSideBizDiagnosis();
         html += WorkFeatures.renderTimeSellingBanner();
       }
@@ -775,39 +776,78 @@ var Pages = {
   // ═══════════════════════════════════════════════════════════
   renderActions(domain) {
     const domainConfig = CONFIG.domains[domain];
+    const color = domainConfig?.color || '#6C63FF';
     const recs = (store.get('recommendations') || []).filter(r => r.domain === domain || !r.domain);
     const actions = (store.get('actionItems') || []).filter(a => a.domain === domain || !a.domain);
+    const latest = store.get('latestAnalysis');
+    const lastAnalysisTime = latest ? new Date(latest.timestamp).toLocaleDateString('ja-JP') : null;
+
+    const categories = Object.keys(domainConfig?.categories || {});
+    let totalRecords = 0;
+    categories.forEach(cat => { totalRecords += store.getDomainData(domain, cat, 7).length; });
+
+    const domainDescriptions = {
+      consciousness: ['気持ちのパターンと変化', '七つのレイヤーの状態', '心が安らぐ習慣のヒント'],
+      health:        ['体調の変化の傾向', '疲れやすい時間帯や原因', '医師に伝えるべき変化'],
+      time:          ['時間の使い方の傾向', '生産性が上がる時間帯', '空き時間の活用アイデア'],
+      work:          ['あなたの強みと可能性', '始めやすい活動・副業', '収入を増やすヒント'],
+      relationship:  ['大切な人との繋がり状況', '連絡が足りていない人', '孤立リスクの早期発見'],
+      assets:        ['家計の健全度', '無駄な出費のパターン', '将来の生活費の見通し']
+    };
+    const desc = domainDescriptions[domain] || ['記録のパターン', '変化の傾向', '具体的な改善案'];
 
     let html = `<div class="page-actions">
-      <h2>${i18n.t(domain)} - ${i18n.t('actions')}</h2>
 
-      <!-- Generate recommendations -->
+      <div class="actions-status-card" style="border-left-color:${color}">
+        <div class="asc-left">
+          <div class="asc-domain">${domainConfig?.icon || ''} ${i18n.t(domain)}</div>
+          <div class="asc-records">${totalRecords > 0
+            ? `直近7日間の記録: <strong>${totalRecords}件</strong> ✅`
+            : '記録がまだありません。記録を増やすほど精度が上がります。'
+          }</div>
+          ${lastAnalysisTime ? `<div class="asc-last">最後の分析: ${lastAnalysisTime}</div>` : ''}
+        </div>
+        ${totalRecords === 0
+          ? `<button class="btn btn-sm btn-secondary" onclick="app.navigate('record')">記録する →</button>`
+          : ''}
+      </div>
+
+      <div class="analysis-preview-card">
+        <div class="apc-title">分析でわかること</div>
+        <ul class="apc-list">
+          ${desc.map(d => `<li>✦ ${d}</li>`).join('')}
+        </ul>
+      </div>
+
       <div class="action-generate">
-        <button class="btn btn-primary btn-lg" onclick="app.generateRecommendations('${domain}')">
-          ${i18n.t(domain)}の分析を実行
+        <button class="btn btn-primary btn-lg btn-analyze" onclick="app.generateRecommendations('${domain}')">
+          <span class="btn-analyze-icon">🔍</span>
+          <span class="btn-analyze-text">
+            <span class="btn-analyze-main">${i18n.t(domain)}の分析を実行</span>
+            <span class="btn-analyze-sub">記録から傾向を見つけます</span>
+          </span>
         </button>
-        <button class="btn btn-secondary btn-lg" onclick="app.generateRecommendations('holistic')">
-          6領域の総合分析
+        <button class="btn btn-secondary btn-holistic" onclick="app.generateRecommendations('holistic')">
+          🌐 6領域まとめて分析
         </button>
       </div>`;
 
-    // Loading state
     if (store.get('isAnalyzing')) {
       html += Components.loading(i18n.t('analyzing'));
     }
 
-    // Active recommendations
     if (recs.length > 0) {
       html += `<div class="recommendations-list">
         <h3>${i18n.t('your_recommendations')}</h3>
         ${recs.map(r => Components.recommendationCard(r)).join('')}
       </div>`;
-    } else {
-      html += Components.emptyState('⚡', i18n.t('no_data'),
-        '上の「分析を実行」ボタンを押してみてください');
+    } else if (!store.get('isAnalyzing')) {
+      html += `<div class="analysis-empty-hint">
+        <div class="aeh-icon">💡</div>
+        <div class="aeh-text">分析を実行すると、あなたの記録から傾向を見つけて、具体的な提案が届きます</div>
+      </div>`;
     }
 
-    // Action items (todos)
     if (actions.length > 0) {
       html += `<div class="action-items">
         <h3>📋 アクション項目</h3>
@@ -820,7 +860,6 @@ var Pages = {
       </div>`;
     }
 
-    // Disclaimers
     if (domain === 'health') {
       html += `<div class="disclaimer">${i18n.t('disclaimer_health')}</div>`;
     } else if (domain === 'assets') {

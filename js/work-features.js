@@ -218,6 +218,109 @@ var WorkFeatures = {
   },
 
   // ═══════════════════════════════════════════════════════════
+  //  生きがい発見ウィジェット
+  // ═══════════════════════════════════════════════════════════
+
+  renderIkigaiDiscover() {
+    const saved = store.get('ikigai_answers') || {};
+    const result = store.get('ikigai_result');
+
+    return `<div class="ikigai-widget">
+      <h3>あなたの「生きがい」を見つける</h3>
+      <p>3つの質問に答えるだけで、あなたの生きがいと活躍できる場所が見えてきます。</p>
+
+      <div class="ikigai-questions">
+        <div class="iq-item">
+          <div class="iq-num" style="background:#9B59B6">1</div>
+          <div class="iq-content">
+            <label class="iq-label">好きなこと・楽しいと感じること</label>
+            <textarea id="ikigai_love" class="form-input iq-input" rows="2"
+              placeholder="例：料理、読書、旅行、人と話すこと、子どもと接すること...">${Components.escapeHtml(saved.love || '')}</textarea>
+          </div>
+        </div>
+        <div class="iq-item">
+          <div class="iq-num" style="background:#3b82f6">2</div>
+          <div class="iq-content">
+            <label class="iq-label">得意なこと・人に褒められること</label>
+            <textarea id="ikigai_good" class="form-input iq-input" rows="2"
+              placeholder="例：細かい作業、人の気持ちがわかる、計算、掃除・整理、ガーデニング...">${Components.escapeHtml(saved.good || '')}</textarea>
+          </div>
+        </div>
+        <div class="iq-item">
+          <div class="iq-num" style="background:#10b981">3</div>
+          <div class="iq-content">
+            <label class="iq-label">誰かのためにしてあげたいこと</label>
+            <textarea id="ikigai_give" class="form-input iq-input" rows="2"
+              placeholder="例：困っている人を助けたい、子どもに教えたい、地域を盛り上げたい...">${Components.escapeHtml(saved.give || '')}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-lg" onclick="WorkFeatures.findIkigai()" style="margin-top:16px;width:100%">
+        生きがいを見つける
+      </button>
+
+      <div id="ikigaiResult">${result ? `<div class="ikigai-result-card">
+        <h4>✦ あなたの生きがい</h4>
+        <div class="analysis-content">${Components.formatMarkdown(result)}</div>
+        <button class="btn btn-sm btn-secondary" style="margin-top:12px"
+          onclick="store.set('ikigai_result',null);app.renderApp()">もう一度考える</button>
+      </div>` : ''}</div>
+    </div>`;
+  },
+
+  async findIkigai() {
+    const love = document.getElementById('ikigai_love')?.value?.trim() || '';
+    const good = document.getElementById('ikigai_good')?.value?.trim() || '';
+    const give = document.getElementById('ikigai_give')?.value?.trim() || '';
+    const resultEl = document.getElementById('ikigaiResult');
+
+    if (!love && !good && !give) {
+      Components.showToast('ひとつ以上入力してください', 'info');
+      return;
+    }
+
+    store.set('ikigai_answers', { love, good, give });
+    if (resultEl) resultEl.innerHTML = Components.loading('あなたの生きがいを探しています...');
+
+    const prompt = `65歳以上の方の「生きがい」を一緒に探します。
+
+以下の回答をもとに、この方の「生きがい」と、それを活かせる具体的な活動を提案してください。
+
+【好きなこと・楽しいこと】
+${love || '（未記入）'}
+
+【得意なこと・人に褒められること】
+${good || '（未記入）'}
+
+【誰かのためにしてあげたいこと】
+${give || '（未記入）'}
+
+以下の構成で回答してください：
+1. あなたの生きがいの言葉（ひと言で。詩的に、心に響くように）
+2. なぜそれがあなたの生きがいといえるのか（3文以内）
+3. 今日から始められる活動（3つ。具体的に）
+4. 1年後の理想の姿（短く、温かく）
+
+難しい言葉は使わず、65歳以上の方に伝わるやさしい日本語で。`;
+
+    try {
+      const result = await AIEngine.analyze('work', 'daily', { text: prompt });
+      store.set('ikigai_result', result);
+      if (resultEl) {
+        resultEl.innerHTML = `<div class="ikigai-result-card">
+          <h4>✦ あなたの生きがい</h4>
+          <div class="analysis-content">${Components.formatMarkdown(result)}</div>
+          <button class="btn btn-sm btn-secondary" style="margin-top:12px"
+            onclick="store.set('ikigai_result',null);app.renderApp()">もう一度考える</button>
+        </div>`;
+      }
+    } catch (e) {
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message)}</div>`;
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════
   //  あなたの経験診断
   // ═══════════════════════════════════════════════════════════
 
