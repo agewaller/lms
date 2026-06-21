@@ -151,6 +151,7 @@ var Pages = {
       html += this.renderQuickLayerPick();
       html += this.renderGratitudeWidget();
       html += this.renderConsciousnessLayers();
+      html += this.renderMoodTrendCard();
       html += this.renderTranscriptInput();
     }
 
@@ -2806,6 +2807,65 @@ var Pages = {
           tension: 0.35,
           pointRadius: 4,
           pointBackgroundColor: qualities.map(q => q >= 7 ? '#10b981' : q >= 5 ? '#f59e0b' : '#ef4444'),
+          fill: true,
+          spanGaps: true
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, color: tickColor, boxWidth: 12, padding: 8 } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 }, color: tickColor } },
+          y: { min: 0, max: 10, ticks: { font: { size: 10 }, stepSize: 2, color: tickColor }, grid: { color: gridColor } }
+        }
+      }
+    });
+  },
+
+  // ─── Mood trend chart (consciousness domain home, ≥3 entries with mood_level) ───
+  renderMoodTrendCard() {
+    const entries = store.getDomainData('consciousness', 'entries', 30).filter(e => e.mood_level);
+    if (entries.length < 3) return '';
+    return `<div class="mood-trend-card">
+      <div class="mood-trend-header">
+        <h3>気分の推移（直近30日）</h3>
+        <span class="mood-trend-ref">目安：7点以上で好調</span>
+      </div>
+      <canvas id="moodTrendChart" height="110"></canvas>
+    </div>`;
+  },
+
+  initMoodTrendChart() {
+    const canvas = document.getElementById('moodTrendChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    const entries = store.getDomainData('consciousness', 'entries', 30)
+      .filter(e => e.mood_level && e.timestamp)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      .slice(-14);
+    if (entries.length < 3) { canvas.closest('.mood-trend-card')?.remove(); return; }
+
+    const labels = entries.map(e => {
+      const d = new Date(e.timestamp);
+      return `${d.getMonth()+1}/${d.getDate()}`;
+    });
+    if (canvas._chart) canvas._chart.destroy();
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
+    const tickColor = isDark ? '#94a3b8' : '#64748b';
+    const moods = entries.map(e => e.mood_level);
+    const avg = (moods.reduce((s, v) => s + v, 0) / moods.length).toFixed(1);
+    canvas._chart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: `気分（平均 ${avg}点）`,
+          data: moods,
+          borderColor: '#6C63FF',
+          backgroundColor: 'rgba(108,99,255,0.09)',
+          tension: 0.35,
+          pointRadius: 4,
+          pointBackgroundColor: moods.map(m => m >= 7 ? '#10b981' : m >= 5 ? '#f59e0b' : '#ef4444'),
           fill: true,
           spanGaps: true
         }]
