@@ -128,6 +128,15 @@ var AIEngine = {
     return parts.length > 0 ? parts.join('\n') : null;
   },
 
+  // ─── Model ID translation (update here when Anthropic/OpenAI rotate IDs) ───
+  MODEL_MAP: {
+    'claude-sonnet-4-6': 'claude-sonnet-4-6-20260101',
+    'claude-opus-4-6':   'claude-opus-4-6-20260201',
+    'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+    'gpt-4o':            'gpt-4o-2025-12-17',
+    'gemini-pro':        'gemini-2.0-flash'
+  },
+
   // ─── API Calls ───
 
   async callAnthropic(model, system, userMsg, maxTokens) {
@@ -169,7 +178,7 @@ var AIEngine = {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model,
+          model: this.MODEL_MAP[model] || model,
           max_tokens: maxTokens,
           system: system,
           messages: [{ role: 'user', content: userMsg }]
@@ -207,7 +216,7 @@ var AIEngine = {
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: model,
+        model: this.MODEL_MAP[model] || model,
         max_tokens: maxTokens,
         messages: [
           { role: 'system', content: system },
@@ -228,7 +237,8 @@ var AIEngine = {
     const apiKey = this.getApiKey('google');
     if (!apiKey) throw new Error('Google API key not set');
 
-    const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
+    const apiModel = this.MODEL_MAP[model] || model;
+    const url = `${CONFIG.endpoints.google}/${apiModel}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
