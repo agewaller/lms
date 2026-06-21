@@ -261,6 +261,11 @@ var App = class App {
       }, 50);
     }
 
+    // Check for streak milestones on home page
+    if (page === 'home') {
+      setTimeout(() => this._checkMilestoneModal(), 300);
+    }
+
     // Initialize PayPal
     if (page === 'settings') {
       setTimeout(() => {
@@ -2631,6 +2636,69 @@ var App = class App {
   closeModal() {
     const overlay = document.getElementById('modal-overlay');
     if (overlay) overlay.classList.remove('active');
+  }
+
+  // ─── Streak milestone celebration modal ───
+  _checkMilestoneModal() {
+    // Only show when a modal isn't already open
+    const overlay = document.getElementById('modal-overlay');
+    if (overlay && overlay.classList.contains('active')) return;
+
+    // Compute overall streak across all domains
+    const allDates = new Set();
+    Object.keys(CONFIG.domains).forEach(d => {
+      Object.keys(CONFIG.domains[d]?.categories || {}).forEach(cat => {
+        store.getDomainData(d, cat, 120).forEach(e => {
+          if (e.timestamp) allDates.add(e.timestamp.split('T')[0]);
+        });
+      });
+    });
+
+    const today = new Date();
+    const todayKey = today.toISOString().split('T')[0];
+    if (!allDates.has(todayKey)) return; // no record today → skip
+
+    let streak = 0;
+    const cur = new Date(today);
+    while (streak <= 120) {
+      if (!allDates.has(cur.toISOString().split('T')[0])) break;
+      streak++;
+      cur.setDate(cur.getDate() - 1);
+    }
+
+    const milestones = [3, 7, 14, 30, 50, 100];
+    const lastCelebrated = parseInt(localStorage.getItem('lms_lastMilestoneCelebrated') || '0');
+
+    // Find highest milestone just crossed
+    let newMilestone = 0;
+    for (const m of milestones) {
+      if (streak >= m && lastCelebrated < m) newMilestone = m;
+    }
+    if (!newMilestone) return;
+
+    localStorage.setItem('lms_lastMilestoneCelebrated', newMilestone.toString());
+    const lineText = encodeURIComponent(`LMSで${streak}日連続記録達成！一緒に使いませんか？`);
+    const lineUrl = `https://social-plugins.line.me/lineit/share?url=https%3A%2F%2Fagewaller.github.io%2Flms%2F&text=${lineText}`;
+
+    const msgs = {
+      3:   '3日間、よく続きました。記録の習慣が始まっています！',
+      7:   '1週間連続達成！データが蓄積されてきました。',
+      14:  '2週間連続！健康や生活のパターンが見えてきます。',
+      30:  '1ヶ月連続達成！素晴らしい習慣が身につきましたね。',
+      50:  '50日連続！あなたの継続力は本当に素晴らしいです。',
+      100: '100日連続達成！人生管理の達人です。'
+    };
+    const badge = newMilestone >= 30 ? '🏆' : newMilestone >= 7 ? '⭐' : '🔥';
+
+    this.openModal(`${badge} ${streak}日連続記録達成！`, `
+      <div style="text-align:center;padding:16px 0">
+        <div style="font-size:2.8rem;margin-bottom:8px">${badge}</div>
+        <div style="font-size:2rem;font-weight:700;margin-bottom:8px">${streak}日連続</div>
+        <p style="color:var(--text-secondary);margin-bottom:20px;line-height:1.6">${Components.escapeHtml(msgs[newMilestone] || '記録を続けています！')}</p>
+        <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="app.closeModal()">ありがとう！続けます</button>
+        <a href="${lineUrl}" class="btn btn-secondary" style="display:block;width:100%;text-align:center;box-sizing:border-box" target="_blank" rel="noopener">LINEで友達に教える</a>
+      </div>
+    `);
   }
 };
 
