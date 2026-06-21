@@ -272,7 +272,15 @@ var Store = class Store {
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // Only remove lms_* keys — never touch Firebase config, OAuth tokens,
+    // or any other non-LMS data (CLAUDE.md: never call localStorage.clear())
+    const toRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('lms_')) toRemove.push(k);
+    }
+    toRemove.forEach(k => localStorage.removeItem(k));
+
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
