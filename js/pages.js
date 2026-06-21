@@ -794,6 +794,32 @@ var Pages = {
         <button class="btn btn-secondary" onclick="document.getElementById('calImport').click()">カレンダーファイルを取り込む</button>
       </div>` : ''}
 
+      <!-- Notification Settings -->
+      <div class="settings-section">
+        <h3>🔔 毎日のリマインダー</h3>
+        ${'Notification' in window ? (() => {
+          const enabled = !!localStorage.getItem('lms_notificationEnabled');
+          const time = localStorage.getItem('lms_notificationTime') || '08:00';
+          const permitted = Notification.permission === 'granted';
+          if (enabled && permitted) {
+            return `<p style="color:var(--success,#10b981)">リマインダーが設定されています（毎日 ${Components.escapeHtml(time)}）</p>
+              <div class="form-group">
+                <label>通知時刻</label>
+                <input type="time" id="reminderTime" class="form-input" value="${Components.escapeHtml(time)}"
+                  onchange="localStorage.setItem('lms_notificationTime',this.value);Components.showToast('時刻を更新しました','success')">
+              </div>
+              <button class="btn btn-secondary" onclick="app.disableDailyReminder()">リマインダーをオフにする</button>`;
+          } else {
+            return `<p>毎日決まった時間にアプリを開くよう通知します。<br>まず、通知の許可が必要です。</p>
+              <div class="form-group">
+                <label>通知時刻</label>
+                <input type="time" id="reminderTime" class="form-input" value="08:00">
+              </div>
+              <button class="btn btn-primary" onclick="app.enableDailyReminder(document.getElementById('reminderTime')?.value)">リマインダーをオンにする</button>`;
+          }
+        })() : '<p style="color:#94a3b8">このブラウザは通知に対応していません。</p>'}
+      </div>
+
       <!-- Logout -->
       <div class="settings-section">
         <button class="btn btn-danger" onclick="app.logout()">🚪 ${i18n.t('logout')}</button>

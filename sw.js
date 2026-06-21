@@ -1,5 +1,5 @@
 /* LMS Service Worker — cache-first for static assets, network-first for API */
-const CACHE = 'lms-v1';
+const CACHE = 'lms-v2';
 const STATIC = [
   '/lms/',
   '/lms/dashboard.html',
@@ -34,6 +34,18 @@ self.addEventListener('activate', e => {
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
+  );
+});
+
+// Open the dashboard when user taps a notification
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(wins => {
+      const lmsWin = wins.find(w => w.url.includes('dashboard.html'));
+      if (lmsWin) return lmsWin.focus();
+      return clients.openWindow('/lms/dashboard.html');
+    })
   );
 });
 

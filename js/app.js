@@ -29,6 +29,7 @@ var App = class App {
       setTimeout(() => this.checkFirstRun(), 1200);
       setTimeout(() => this.runScheduledPrompts(), 5000);
       setTimeout(() => this._checkPwaInstallOffer(), 10000);
+      setTimeout(() => this._checkDailyReminder(), 3000);
     }
 
     // Listen for auth changes
@@ -2068,6 +2069,72 @@ var App = class App {
   }
 
   // ─── PWA Install Prompt ───
+  // ─── Daily reminder notification ───
+  async _checkDailyReminder() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+    if (!localStorage.getItem('lms_notificationEnabled')) return;
+
+    const reminderTime = localStorage.getItem('lms_notificationTime') || '08:00';
+    const [rHour, rMin] = reminderTime.split(':').map(Number);
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+
+    // Only fire once per day and only if it's past the reminder time
+    if (localStorage.getItem('lms_lastReminderDate') === today) return;
+    if (now.getHours() < rHour || (now.getHours() === rHour && now.getMinutes() < rMin)) return;
+
+    // Check if any data was logged today across all domains
+    let loggedToday = false;
+    Object.keys(CONFIG.domains).forEach(d => {
+      Object.keys(CONFIG.domains[d]?.categories || {}).forEach(cat => {
+        const entries = store.getDomainData(d, cat, 1);
+        if (entries.some(e => (e.date || e.timestamp || '').startsWith(today))) loggedToday = true;
+      });
+    });
+    if (loggedToday) return;
+
+    localStorage.setItem('lms_lastReminderDate', today);
+
+    const reg = await navigator.serviceWorker?.ready;
+    if (reg?.showNotification) {
+      reg.showNotification('LMS 記録リマインダー', {
+        body: '今日の記録をつけましょう。少しの入力が、より良い明日に繋がります。',
+        icon: '/lms/icon.svg',
+        badge: '/lms/icon.svg',
+        tag: 'lms-daily-reminder',
+        renotify: false
+      });
+    } else {
+      new Notification('LMS 記録リマインダー', {
+        body: '今日の記録をつけましょう。少しの入力が、より良い明日に繋がります。',
+        icon: '/lms/icon.svg'
+      });
+    }
+  }
+
+  async enableDailyReminder(time) {
+    if (!('Notification' in window)) {
+      Components.showToast('このブラウザは通知に対応していません', 'error');
+      return false;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      Components.showToast('通知が許可されませんでした。ブラウザの設定をご確認ください', 'error');
+      return false;
+    }
+    localStorage.setItem('lms_notificationEnabled', '1');
+    localStorage.setItem('lms_notificationTime', time || '08:00');
+    Components.showToast('毎日のリマインダーを設定しました', 'success');
+    return true;
+  }
+
+  disableDailyReminder() {
+    localStorage.removeItem('lms_notificationEnabled');
+    Components.showToast('リマインダーをオフにしました', 'info');
+    this.renderApp();
+  }
+
   _checkPwaInstallOffer() {
     if (window.matchMedia('(display-mode: standalone)').matches) return; // already installed
     if (localStorage.getItem('lms_pwaInstallDeclined')) return;
