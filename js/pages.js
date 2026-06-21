@@ -939,6 +939,11 @@ var Pages = {
       { key: 'rest', label: 'ゆっくり休む' }
     ];
 
+    let customHabits = [];
+    try { customHabits = JSON.parse(localStorage.getItem('lms_customHabits') || '[]'); } catch(e) {}
+    const allHabits = [...defaultHabits, ...customHabits.slice(0, 5)];
+    const isCustom = (key) => key.startsWith('custom_');
+
     // 28-day habit heatmap: check both localStorage (today) and Firestore habit entries
     const firestoreHabitDates = new Set(
       (store.getDomainData('time', 'habits', 28) || [])
@@ -964,22 +969,36 @@ var Pages = {
       heatmapDays.push({ key, label, level });
     }
 
+    const showAddForm = sessionStorage.getItem('lms_habitAddForm') === '1';
     return `<div class="habit-tracker-card">
       <div class="ht-header">
         <span class="ht-title">今日の習慣チェック</span>
-        <span class="ht-count">${completedSet.size}/${defaultHabits.length}</span>
+        <span class="ht-count">${completedSet.size}/${allHabits.length}</span>
       </div>
       <div class="ht-habits">
-        ${defaultHabits.map(h => {
+        ${allHabits.map(h => {
           const done = completedSet.has(h.key);
+          const custom = isCustom(h.key);
           return `<button class="ht-habit ${done ? 'done' : ''}"
             onclick="Pages.toggleHabit('${Components.escapeHtml(h.key)}')">
             <span class="ht-check">${done ? '✓' : ''}</span>
             <span class="ht-label">${Components.escapeHtml(h.label)}</span>
+            ${custom ? `<span class="ht-del" onclick="event.stopPropagation();Pages.deleteCustomHabit('${Components.escapeHtml(h.key)}')" title="削除">×</span>` : ''}
           </button>`;
         }).join('')}
+        ${customHabits.length < 5 ? (showAddForm
+          ? `<div class="ht-add-form">
+              <input type="text" id="htNewHabit" class="form-input" placeholder="習慣の名前（例：ラジオ体操）" maxlength="16"
+                onkeydown="if(event.key==='Enter')Pages.addCustomHabit()">
+              <div style="display:flex;gap:6px;margin-top:6px">
+                <button class="btn btn-sm btn-primary" onclick="Pages.addCustomHabit()">追加</button>
+                <button class="btn btn-sm btn-ghost" onclick="sessionStorage.removeItem('lms_habitAddForm');if(typeof app!=='undefined')app.renderApp()">閉じる</button>
+              </div>
+            </div>`
+          : `<button class="ht-add-btn" onclick="sessionStorage.setItem('lms_habitAddForm','1');if(typeof app!=='undefined')app.renderApp()">＋ 習慣を追加</button>`)
+        : ''}
       </div>
-      ${completedSet.size === defaultHabits.length ? '<div class="ht-complete">今日の習慣をすべて達成しました！素晴らしい！</div>' : ''}
+      ${completedSet.size === allHabits.length ? '<div class="ht-complete">今日の習慣をすべて達成しました！素晴らしい！</div>' : ''}
       <div class="ht-heatmap" title="過去28日間の習慣達成記録">
         <div class="ht-heatmap-label">過去28日</div>
         <div class="ht-heatmap-grid">
@@ -1005,11 +1024,44 @@ var Pages = {
       completed = completed.filter(k => k !== key);
     } else {
       completed.push(key);
-      if (completed.length === 5) {
+      let customs = [];
+      try { customs = JSON.parse(localStorage.getItem('lms_customHabits') || '[]'); } catch(e) {}
+      const totalHabits = 5 + Math.min(customs.length, 5);
+      if (completed.length === totalHabits) {
         store.addDomainEntry('time', 'habits', { completed_habits: completed, streak: 0 });
-        Components.showToast('今日の習慣を全部達成！素晴らしいです！', 'success');
+        Components.showToast('今日の習慣をすべて達成！素晴らしいです！', 'success');
       }
     }
+    localStorage.setItem(storageKey, JSON.stringify(completed));
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  addCustomHabit() {
+    const input = document.getElementById('htNewHabit');
+    const label = input?.value?.trim();
+    if (!label) { Components.showToast('習慣の名前を入力してください', 'warning'); return; }
+    let customs = [];
+    try { customs = JSON.parse(localStorage.getItem('lms_customHabits') || '[]'); } catch(e) {}
+    if (customs.length >= 5) { Components.showToast('追加できる習慣は5つまでです', 'warning'); return; }
+    const key = 'custom_' + Date.now();
+    customs.push({ key, label });
+    localStorage.setItem('lms_customHabits', JSON.stringify(customs));
+    sessionStorage.removeItem('lms_habitAddForm');
+    Components.showToast(`「${label}」を習慣に追加しました`, 'success');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  deleteCustomHabit(key) {
+    let customs = [];
+    try { customs = JSON.parse(localStorage.getItem('lms_customHabits') || '[]'); } catch(e) {}
+    customs = customs.filter(h => h.key !== key);
+    localStorage.setItem('lms_customHabits', JSON.stringify(customs));
+    // Also remove from today's completed
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = 'lms_habits_' + today;
+    let completed = [];
+    try { completed = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+    completed = completed.filter(k => k !== key);
     localStorage.setItem(storageKey, JSON.stringify(completed));
     if (typeof app !== 'undefined') app.renderApp();
   },
