@@ -231,6 +231,7 @@ var Pages = {
       html += this.renderBudgetTrendChart();
       html += this.renderBillReminders();
       html += this.renderSavingsGoals();
+      html += this.renderEndOfLifeChecklist();
       html += this.renderMedicalExpenseTracker();
       if (typeof AssetsFeatures !== 'undefined') {
         html += AssetsFeatures.renderNISASimulator();
@@ -3102,6 +3103,7 @@ var Pages = {
     { id: 'longevity_perfect', icon: '🌈', title: '完璧な一日',     desc: '長寿7習慣をすべて達成しました' },
     { id: 'dream_fulfilled',   icon: '🌠', title: '夢が叶った',     desc: '夢リストの夢を一つ叶えました' },
     { id: 'first_letter',      icon: '✉', title: '感謝の一通',     desc: '初めての感謝の手紙を書きました' },
+    { id: 'katadzuke_50',      icon: '🏡', title: '大切なことの整理', desc: '終活チェックリストを50%以上完了しました' },
   ],
 
   checkAchievements() {
@@ -3269,6 +3271,15 @@ var Pages = {
       })(),
       first_letter: (() => {
         try { return JSON.parse(localStorage.getItem('lms_letters') || '[]').length >= 1; } catch(e) { return false; }
+      })(),
+      katadzuke_50: (() => {
+        try {
+          const s = JSON.parse(localStorage.getItem('lms_endOfLife') || '{}');
+          const cats = Pages._eolCategories || [];
+          const total = cats.reduce((a, c) => a + c.items.length, 0);
+          const done  = cats.reduce((a, c) => a + c.items.filter(i => s[c.key]?.[i.key]).length, 0);
+          return total > 0 && done / total >= 0.5;
+        } catch(e) { return false; }
       })()
     };
 
@@ -8924,6 +8935,174 @@ var Pages = {
       const b = document.getElementById('outStar' + n);
       if (b) b.textContent = n <= val ? '★' : '☆';
     });
+  },
+
+  // ─── End-of-Life Planning Checklist (終活チェックリスト, assets domain) ───
+  _eolCategories: [
+    {
+      key: 'legal',
+      label: '法的・公的な手続き',
+      icon: '📋',
+      items: [
+        { key: 'will',        label: '遺言書を作成・確認した' },
+        { key: 'pow_fin',     label: '財産管理委任（任意後見）の検討をした' },
+        { key: 'pow_med',     label: '医療・介護の代理人（医療委任）を決めた' },
+        { key: 'living_will', label: '延命治療に関する意思表示をまとめた' }
+      ]
+    },
+    {
+      key: 'financial',
+      label: '金融・保険・資産',
+      icon: '💰',
+      items: [
+        { key: 'bank_list',   label: '銀行口座の一覧を家族に知らせる形で整理した' },
+        { key: 'insurance',   label: '生命保険・医療保険の証書と連絡先を整理した' },
+        { key: 'pension',     label: '年金・退職金の情報をまとめた' },
+        { key: 'invest',      label: '株式・NISA等の投資口座情報を整理した' },
+        { key: 'debt',        label: '負債・ローンの有無を確認・記録した' }
+      ]
+    },
+    {
+      key: 'possessions',
+      label: '持ち物・デジタル遺産',
+      icon: '🏠',
+      items: [
+        { key: 'important',   label: '大切にしている物のリストを作った' },
+        { key: 'digital',     label: 'PCやスマホのパスワードを信頼できる人に伝えた' },
+        { key: 'donate',      label: '不要な物の整理・寄付の意向をまとめた' },
+        { key: 'photo',       label: '大切な写真・アルバムの保管場所を整理した' }
+      ]
+    },
+    {
+      key: 'wishes',
+      label: '葬儀・お墓・家族への気持ち',
+      icon: '🌸',
+      items: [
+        { key: 'funeral',     label: '葬儀の形式・規模の希望を伝えた' },
+        { key: 'grave',       label: 'お墓・供養の希望をまとめた' },
+        { key: 'message',     label: '家族・大切な人へのメッセージを書いた' },
+        { key: 'organ',       label: '臓器提供・献体についての意思を確認・記録した' }
+      ]
+    }
+  ],
+
+  renderEndOfLifeChecklist() {
+    const storageKey = 'lms_endOfLife';
+    let state = {};
+    try { state = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch(e) {}
+
+    const cats = this._eolCategories;
+    const totalItems = cats.reduce((s, c) => s + c.items.length, 0);
+    const checkedItems = cats.reduce((s, c) => s + c.items.filter(i => state[c.key]?.[i.key]).length, 0);
+    const pct = Math.round(checkedItems / totalItems * 100);
+
+    const openCats = new Set();
+    try {
+      JSON.parse(sessionStorage.getItem('lms_eolOpen') || '[]').forEach(k => openCats.add(k));
+    } catch(e) {}
+
+    const esc = Components.escapeHtml;
+
+    const msg = pct === 0 ? '大切な方への贈り物として、少しずつ整理を始めましょう。' :
+                pct < 30  ? `少しずつ進んでいます（${pct}%）。焦らず一つずつ。` :
+                pct < 60  ? `${pct}%完了。着実に進んでいます。素晴らしいです。` :
+                pct < 100 ? `${pct}%完了。ゴールまでもう少しです。` :
+                            '終活チェックリスト完了です。大切な準備ができました。';
+
+    return `<div class="eol-card">
+      <div class="eol-header">
+        <div class="eol-title-wrap">
+          <div class="eol-title">大切なことの整理</div>
+          ${pct > 0 ? `<span class="eol-pct-badge">${pct}%</span>` : ''}
+        </div>
+        <div class="eol-sub">${msg}</div>
+      </div>
+
+      ${pct > 0 ? `<div class="eol-progress-bar">
+        <div class="eol-progress-fill" style="width:${pct}%"></div>
+      </div>` : ''}
+
+      <div class="eol-categories">
+        ${cats.map(cat => {
+          const catChecked = cat.items.filter(i => state[cat.key]?.[i.key]).length;
+          const isOpen = openCats.has(cat.key);
+          return `<div class="eol-cat">
+            <button class="eol-cat-header" onclick="Pages.toggleEolCat('${cat.key}')">
+              <span class="eol-cat-icon">${cat.icon}</span>
+              <span class="eol-cat-label">${esc(cat.label)}</span>
+              <span class="eol-cat-count">${catChecked}/${cat.items.length}</span>
+              <span class="eol-cat-chevron">${isOpen ? '▲' : '▼'}</span>
+            </button>
+            <div class="eol-items" style="display:${isOpen ? 'block' : 'none'}">
+              ${cat.items.map(item => {
+                const checked = !!(state[cat.key]?.[item.key]);
+                return `<label class="eol-item ${checked ? 'checked' : ''}">
+                  <input type="checkbox" class="eol-check" ${checked ? 'checked' : ''}
+                    onchange="Pages.toggleEolItem('${cat.key}','${item.key}',this.checked)">
+                  <span class="eol-item-label">${esc(item.label)}</span>
+                </label>`;
+              }).join('')}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <div class="eol-note">※ここに入力した情報はあなたのデバイスにのみ保存されます。</div>
+    </div>`;
+  },
+
+  toggleEolCat(catKey) {
+    let open = [];
+    try { open = JSON.parse(sessionStorage.getItem('lms_eolOpen') || '[]'); } catch(e) {}
+    const idx = open.indexOf(catKey);
+    if (idx >= 0) open.splice(idx, 1); else open.push(catKey);
+    sessionStorage.setItem('lms_eolOpen', JSON.stringify(open));
+
+    const items = document.querySelector('.eol-cat-header[onclick*="' + catKey + '"]')?.nextElementSibling;
+    const chevron = document.querySelector('.eol-cat-header[onclick*="' + catKey + '"] .eol-cat-chevron');
+    if (items) items.style.display = items.style.display === 'none' ? 'block' : 'none';
+    if (chevron) chevron.textContent = items?.style.display === 'none' ? '▼' : '▲';
+  },
+
+  toggleEolItem(catKey, itemKey, checked) {
+    const storageKey = 'lms_endOfLife';
+    let state = {};
+    try { state = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch(e) {}
+    if (!state[catKey]) state[catKey] = {};
+    state[catKey][itemKey] = checked;
+    try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch(e) {}
+
+    // Update progress bar without full re-render
+    const cats = this._eolCategories;
+    const totalItems = cats.reduce((s, c) => s + c.items.length, 0);
+    const checkedItems = cats.reduce((s, c) => s + c.items.filter(i => state[c.key]?.[i.key]).length, 0);
+    const pct = Math.round(checkedItems / totalItems * 100);
+
+    const fill = document.querySelector('.eol-progress-fill');
+    if (fill) fill.style.width = pct + '%';
+    const badge = document.querySelector('.eol-pct-badge');
+    if (badge) badge.textContent = pct + '%';
+
+    // Update category count
+    const catDef = cats.find(c => c.key === catKey);
+    if (catDef) {
+      const catChecked = catDef.items.filter(i => state[catKey]?.[i.key]).length;
+      const header = document.querySelector('.eol-cat-header[onclick*="' + catKey + '"]');
+      const countEl = header?.querySelector('.eol-cat-count');
+      if (countEl) countEl.textContent = catChecked + '/' + catDef.items.length;
+    }
+
+    // Update item style
+    const label = document.querySelector(`.eol-check[onchange*="${itemKey}"]`)?.closest('.eol-item');
+    if (label) label.classList.toggle('checked', checked);
+
+    // Check achievements
+    if (pct >= 50) {
+      const { newlyUnlocked } = this.checkAchievements();
+      newlyUnlocked.forEach(b => Components.showToast('🏅 実績解除：' + b.title, 'success'));
+    }
+
+    store.addDomainEntry('assets', 'overview', { type: 'endoflife_check', catKey, itemKey, checked, progress: pct });
   },
 
   // ─── Gratitude Letter (感謝の手紙, relationship domain) ───
