@@ -1217,10 +1217,16 @@ body.is-admin .admin-only { display: flex; }
   padding: 14px 16px; margin-bottom: 8px; border-left: 4px solid var(--primary);
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
-.record-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-.record-cat { font-size: 14px; font-weight: 600; color: var(--primary); }
+.record-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 8px; }
+.record-cat { font-size: 14px; font-weight: 600; color: var(--primary); flex: 1; }
 .record-time { font-size: 0.87rem; color: var(--text-muted); }
 .record-summary { font-size: 15px; color: var(--text-light); line-height: 1.8; }
+.record-delete-btn {
+  flex-shrink: 0; background: none; border: none; color: var(--text-muted);
+  font-size: 18px; line-height: 1; padding: 2px 4px; cursor: pointer;
+  border-radius: 4px; opacity: 0.4; transition: opacity 0.15s, color 0.15s;
+}
+.record-delete-btn:hover { opacity: 1; color: var(--danger, #ef4444); }
 
 /* ─── Record Page ─── */
 .category-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
@@ -1299,6 +1305,42 @@ body.is-admin .admin-only { display: flex; }
 .chat-input-bar .form-input { flex: 1; }
 .stream-cursor { animation: blink 0.8s step-end infinite; opacity: 1; }
 @keyframes blink { 50% { opacity: 0; } }
+.chat-suggestions { margin-bottom: 16px; }
+.chat-suggestions-label { font-size: 0.87rem; color: var(--text-muted); margin-bottom: 10px; }
+.chat-suggestions-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.chat-suggestion-chip {
+  background: var(--bg-card); border: 1.5px solid var(--border);
+  border-radius: 20px; padding: 8px 16px; font-size: 0.93rem;
+  color: var(--text); cursor: pointer; transition: all 0.15s;
+}
+.chat-suggestion-chip:hover { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, white); }
+
+/* ─── Getting Started Checklist ─── */
+.getting-started-card {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, white), var(--bg-card));
+  border: 1.5px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 20px;
+}
+.gs-title { font-size: 1.07rem; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+.gs-sub { font-size: 0.87rem; color: var(--text-secondary); margin-bottom: 16px; }
+.gs-steps { display: flex; flex-direction: column; gap: 10px; }
+.gs-step {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; background: var(--bg-card);
+  border-radius: var(--radius-sm); cursor: pointer;
+  border: 1px solid var(--border); transition: all 0.15s;
+}
+.gs-step:hover { border-color: var(--accent); }
+.gs-step.done { opacity: 0.5; text-decoration: line-through; cursor: default; }
+.gs-step-num {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700; flex-shrink: 0;
+}
+.gs-step.done .gs-step-num { background: var(--success, #10b981); }
+.gs-step-text { flex: 1; font-size: 0.93rem; }
+.gs-dismiss { margin-top: 12px; font-size: 0.8rem; color: var(--text-muted); cursor: pointer; text-align: right; }
+.gs-dismiss:hover { color: var(--text); }
 
 /* ─── Settings Page ─── */
 .settings-section {

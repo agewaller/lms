@@ -270,14 +270,21 @@ var Components = {
     const time = new Date(entry.timestamp).toLocaleString();
     const cat = entry.category ? i18n.t(entry.category) : '';
     const summary = Object.entries(entry)
-      .filter(([k]) => !['id','timestamp','domain','category','_synced'].includes(k))
-      .slice(0, 3)
+      .filter(([k]) => !['id','timestamp','domain','category','_synced','_docId'].includes(k))
+      .slice(0, 4)
       .map(([k, v]) => `${this.escapeHtml(i18n.t(k) || k)}: ${this.escapeHtml(String(v))}`)
       .join(' | ');
+    const d = this.escapeHtml(entry.domain || domain);
+    const c = this.escapeHtml(entry.category || '');
+    const i = this.escapeHtml(entry.id || '');
+    const deleteBtn = i && d && c
+      ? `<button class="record-delete-btn" onclick="app.deleteEntry('${d}','${c}','${i}')" title="削除">×</button>`
+      : '';
     return `<div class="record-item" style="border-left-color:${color}">
       <div class="record-header">
         <span class="record-cat">${this.escapeHtml(cat)}</span>
         <span class="record-time">${time}</span>
+        ${deleteBtn}
       </div>
       <div class="record-summary">${summary}</div>
     </div>`;

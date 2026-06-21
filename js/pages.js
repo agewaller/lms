@@ -36,6 +36,7 @@ var Pages = {
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
       <div id="quickResponse"></div>
+      ${this.renderGettingStarted(domain)}
       ${this.renderCheckinNudge(domain)}
       ${this.renderDailyPrompt(domain)}
       ${this.renderWeeklySummary()}`;
@@ -644,6 +645,16 @@ var Pages = {
       .filter(m => m.domain === domain || !m.domain)
       .slice(-50);
 
+    const suggestionsByDomain = {
+      health:        ['今日の体調について相談したい', '最近眠れていない', '薬の飲み合わせが気になる', '体重が気になる'],
+      consciousness: ['最近気持ちが落ち着かない', '瞑想を始めたい', '自分の生きがいを見つけたい', '不安を減らしたい'],
+      time:          ['時間の使い方を見直したい', '毎日がルーティンで退屈', '趣味の時間を作りたい', '朝型生活にしたい'],
+      work:          ['定年後の仕事を探している', '副業・ボランティアに興味がある', 'スキルを活かしたい', '履歴書の書き方が知りたい'],
+      relationship:  ['家族との関係で悩んでいる', '友人と疎遠になってきた', '新しい出会いを作りたい', '孤独感が強い'],
+      assets:        ['老後の生活費が心配', 'NISAについて知りたい', '家計を見直したい', '年金だけで暮らせるか不安']
+    };
+    const suggestions = suggestionsByDomain[domain] || [];
+
     let html = `<div class="page-ask-ai">
       <h2>${i18n.t(domain)} - 相談する</h2>
 
@@ -653,6 +664,16 @@ var Pages = {
           history.map(m => Components.chatMessage(m)).join('')
         }
       </div>
+
+      ${history.length === 0 && suggestions.length > 0 ? `
+      <div class="chat-suggestions">
+        <div class="chat-suggestions-label">よく聞かれる質問（タップで入力）</div>
+        <div class="chat-suggestions-grid">
+          ${suggestions.map(s => `<button class="chat-suggestion-chip"
+            onclick="document.getElementById('chatInput').value=${JSON.stringify(s)};app.sendChat('${domain}')"
+          >${Components.escapeHtml(s)}</button>`).join('')}
+        </div>
+      </div>` : ''}
 
       <div class="chat-input-bar">
         <textarea id="chatInput" class="form-input" rows="2"
@@ -889,6 +910,52 @@ var Pages = {
         </select>
       </div>
       <button class="btn btn-primary" onclick="app.saveResume()">${i18n.t('save')}</button>
+    </div>`;
+  },
+
+  // ─── Getting Started (shown to new users until 3 steps complete) ───
+  renderGettingStarted(domain) {
+    if (localStorage.getItem('lms_gettingStartedDone')) return '';
+
+    const profile = store.get('userProfile') || {};
+    const hasProfile = !!(profile.displayName || profile.name);
+
+    let anyEntry = false;
+    Object.keys(CONFIG.domains).forEach(d => {
+      Object.keys(CONFIG.domains[d]?.categories || {}).forEach(cat => {
+        if (store.getDomainData(d, cat, 365).length > 0) anyEntry = true;
+      });
+    });
+
+    const hasAnalysis = !!(store.get('latestAnalysis') || (store.get('recommendations') || []).length > 0);
+
+    const steps = [
+      { label: 'プロフィールを設定する', done: hasProfile, action: `app.navigate('settings')` },
+      { label: '今日の記録を入力する', done: anyEntry, action: `app.navigate('record')` },
+      { label: '分析を実行してみる', done: hasAnalysis, action: `app.navigate('actions')` }
+    ];
+
+    const allDone = steps.every(s => s.done);
+    if (allDone) {
+      localStorage.setItem('lms_gettingStartedDone', '1');
+      return '';
+    }
+
+    const completedCount = steps.filter(s => s.done).length;
+
+    return `<div class="getting-started-card">
+      <div class="gs-title">はじめの3ステップ（${completedCount}/3 完了）</div>
+      <div class="gs-sub">完了すると、あなたに合ったアドバイスが届くようになります。</div>
+      <div class="gs-steps">
+        ${steps.map((s, i) => `
+          <div class="gs-step ${s.done ? 'done' : ''}" onclick="${s.done ? '' : s.action}">
+            <div class="gs-step-num">${s.done ? '✓' : i + 1}</div>
+            <div class="gs-step-text">${Components.escapeHtml(s.label)}</div>
+            ${s.done ? '' : '<span style="color:var(--accent)">→</span>'}
+          </div>
+        `).join('')}
+      </div>
+      <div class="gs-dismiss" onclick="localStorage.setItem('lms_gettingStartedDone','1');this.closest('.getting-started-card').remove()">表示しない</div>
     </div>`;
   },
 
