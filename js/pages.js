@@ -192,6 +192,7 @@ var Pages = {
 
     // Relationship domain: Isolation score + today contacts + social graph + birthdays
     if (domain === 'relationship') {
+      html += this.renderMonthlyConnectionReport();
       html += this.renderQuickContactAdd();
       html += this.renderIsolationScore();
       html += this.renderConnectionActivity();
@@ -4520,6 +4521,84 @@ var Pages = {
       </div>
       <div class="ca-grid">${cells.join('')}</div>
       <div class="ca-footer">今週 <strong>${weekPeople.size}人</strong> と交流しました</div>
+    </div>`;
+  },
+
+  // ─── Monthly Connection Report (shown 1st–7th of month, dismissable) ───
+  renderMonthlyConnectionReport() {
+    const today = new Date();
+    if (today.getDate() > 7) return '';
+    const monthKey = `${today.getFullYear()}-${today.getMonth() + 1}`;
+    if (localStorage.getItem('lms_connReport_dismissed') === monthKey) return '';
+
+    // Previous month boundaries
+    const prevMonthEnd = new Date(today.getFullYear(), today.getMonth(), 1);
+    const prevMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const prevStart = prevMonthStart.toISOString().split('T')[0];
+    const prevEnd = prevMonthEnd.toISOString().split('T')[0];
+    const prevMonthLabel = `${prevMonthStart.getFullYear()}年${prevMonthStart.getMonth() + 1}月`;
+
+    const interactions = store.getDomainData('relationship', 'interactions', 62);
+    const prevMonthInter = interactions.filter(e => {
+      const d = (e.timestamp || '').split('T')[0];
+      return d >= prevStart && d < prevEnd;
+    });
+    if (prevMonthInter.length === 0) return '';
+
+    const uniquePeople = new Set(prevMonthInter.map(e => e.person).filter(Boolean));
+    const totalContacts = prevMonthInter.length;
+
+    // Most connected person
+    const personCounts = {};
+    prevMonthInter.forEach(e => { if (e.person) personCounts[e.person] = (personCounts[e.person] || 0) + 1; });
+    const topPerson = Object.entries(personCounts).sort((a, b) => b[1] - a[1])[0];
+
+    // Average quality
+    const qualEntries = prevMonthInter.filter(e => e.quality);
+    const avgQuality = qualEntries.length > 0
+      ? (qualEntries.reduce((s, e) => s + Number(e.quality), 0) / qualEntries.length).toFixed(1)
+      : null;
+
+    // Contacts not reached (registered but no interaction last month)
+    const contacts = store.get('relationship_contacts') || [];
+    const missed = contacts.filter(c => !uniquePeople.has(c.name)).slice(0, 3);
+
+    const esc = Components.escapeHtml;
+    const missedHtml = missed.length > 0
+      ? `<div class="mcr-missed">
+          <div class="mcr-missed-label">先月お声がけできなかった方</div>
+          ${missed.map(c => `<div class="mcr-missed-person">
+            <div class="mcr-missed-avatar">${esc((c.name||'？').substring(0,2))}</div>
+            <span>${esc(c.name)}</span>
+            <button class="btn btn-xs btn-primary" onclick="app.quickContactLog('${esc(c.name)}')">今月連絡する</button>
+          </div>`).join('')}
+        </div>`
+      : '';
+
+    return `<div class="monthly-connection-report">
+      <div class="mcr-header">
+        <span class="mcr-title">${prevMonthLabel}のつながりレポート</span>
+        <button class="mcr-close" onclick="localStorage.setItem('lms_connReport_dismissed','${monthKey}');this.closest('.monthly-connection-report').remove()">×</button>
+      </div>
+      <div class="mcr-stats">
+        <div class="mcr-stat">
+          <div class="mcr-num">${uniquePeople.size}</div>
+          <div class="mcr-label">交流した人数</div>
+        </div>
+        <div class="mcr-stat">
+          <div class="mcr-num">${totalContacts}</div>
+          <div class="mcr-label">交流の回数</div>
+        </div>
+        ${avgQuality ? `<div class="mcr-stat">
+          <div class="mcr-num">${avgQuality}</div>
+          <div class="mcr-label">平均満足度</div>
+        </div>` : ''}
+        ${topPerson ? `<div class="mcr-stat">
+          <div class="mcr-num mcr-person">${esc(topPerson[0].substring(0,4))}</div>
+          <div class="mcr-label">最多交流</div>
+        </div>` : ''}
+      </div>
+      ${missedHtml}
     </div>`;
   },
 

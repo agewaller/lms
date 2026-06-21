@@ -5077,3 +5077,92 @@ html[data-theme="dark"] .twc-badge { color: #fbbf24; }
   padding: 4px 0;
   text-decoration: underline;
 }
+
+/* ─── Monthly Connection Report Card ─── */
+.monthly-connection-report {
+  background: linear-gradient(135deg, rgba(239,68,68,0.07) 0%, var(--bg-secondary) 100%);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.mcr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.mcr-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.mcr-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.mcr-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.mcr-stat {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 10px 8px;
+  text-align: center;
+}
+.mcr-num {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #ef4444;
+  line-height: 1.2;
+}
+.mcr-person {
+  font-size: 0.9rem;
+  letter-spacing: -0.02em;
+}
+.mcr-label {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+.mcr-missed { border-top: 1px solid var(--border-color); padding-top: 12px; }
+.mcr-missed-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+.mcr-missed-person {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.mcr-missed-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(239,68,68,0.12);
+  color: #ef4444;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.mcr-missed-person span {
+  flex: 1;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+}
+@media (max-width: 400px) {
+  .mcr-stats { grid-template-columns: repeat(2, 1fr); }
+}
