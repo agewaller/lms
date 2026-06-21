@@ -1178,6 +1178,7 @@ body.is-admin .admin-only { display: flex; }
   color: var(--text-primary);
   border-left: 3px solid var(--accent);
 }
+.qr-footer { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); text-align: right; }
 
 .home-overview { display: flex; gap: 24px; margin-bottom: 32px; align-items: flex-start; flex-wrap: wrap; }
 .overview-score { flex-shrink: 0; }

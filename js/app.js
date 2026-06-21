@@ -336,6 +336,16 @@ var App = class App {
         try { parsed = JSON.parse(cleaned); } catch (e) { parsed = null; }
       }
 
+      // Save to conversation history so user can review in 相談する page
+      const ts = new Date().toISOString();
+      const history = store.get('conversationHistory') || [];
+      const responseText = parsed?.response || result;
+      if (responseText) {
+        history.push({ role: 'user', content: text, timestamp: ts, domain, source: 'quickInput' });
+        history.push({ role: 'assistant', content: responseText, timestamp: ts, domain, source: 'quickInput' });
+        store.set('conversationHistory', history.slice(-200));
+      }
+
       if (parsed && (parsed.response || parsed.actions)) {
         let html = '<div class="quick-response">';
         if (parsed.response) {
@@ -349,12 +359,13 @@ var App = class App {
           });
           html += '</ul></div>';
         }
+        html += `<div class="qr-footer"><button class="btn btn-sm btn-secondary" onclick="app.navigate('ask_ai')">続きを相談する →</button></div>`;
         html += '</div>';
         if (responseEl) responseEl.innerHTML = html;
       } else {
         // Fallback: strip code fences and display as markdown
         const stripped = (result || '').replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
-        if (responseEl) responseEl.innerHTML = `<div class="quick-response">${Components.formatMarkdown(stripped)}</div>`;
+        if (responseEl) responseEl.innerHTML = `<div class="quick-response">${Components.formatMarkdown(stripped)}<div class="qr-footer"><button class="btn btn-sm btn-secondary" onclick="app.navigate('ask_ai')">続きを相談する →</button></div></div>`;
       }
 
       input.value = '';
