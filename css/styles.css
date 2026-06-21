@@ -3131,6 +3131,30 @@ html[data-theme="dark"] .ht-cell.level-3     { background: #10b981; }
 .cdc-icon { font-size: 1.1rem; flex-shrink: 0; line-height: 1.4; }
 .cdc-text { font-size: 0.88rem; color: var(--text-primary); line-height: 1.5; }
 
+/* ─── Weekly Reflection Card ─── */
+.weekly-reflect-card {
+  background: linear-gradient(135deg, #fef3f2 0%, #fff7f5 100%);
+  border: 1px solid #fca5a5;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.wrc-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+.wrc-icon { font-size: 1.4rem; flex-shrink: 0; }
+.wrc-titles { flex: 1; }
+.wrc-title { font-size: 0.95rem; font-weight: 700; color: #9f1239; }
+.wrc-sub { font-size: 0.8rem; color: #be185d; opacity: 0.8; margin-top: 2px; }
+.wrc-close { background: none; border: none; color: #be185d; opacity: 0.6; cursor: pointer; font-size: 1rem; line-height: 1; padding: 2px 6px; flex-shrink: 0; }
+.wrc-close:hover { opacity: 1; }
+.wrc-q { font-size: 0.82rem; font-weight: 600; color: #9f1239; margin: 10px 0 4px; }
+.wrc-input { font-size: 0.9rem !important; padding: 9px 12px !important; margin-bottom: 0 !important; }
+.wrc-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+html[data-theme="dark"] .weekly-reflect-card { background: linear-gradient(135deg, #1f0a0a 0%, #2a0f0f 100%); border-color: #7f1d1d; }
+html[data-theme="dark"] .wrc-title { color: #fca5a5; }
+html[data-theme="dark"] .wrc-sub { color: #fca5a5; }
+html[data-theme="dark"] .wrc-close { color: #fca5a5; }
+html[data-theme="dark"] .wrc-q { color: #fca5a5; }
+
 /* ─── Medication Adherence Heatmap ─── */
 .med-done-row { display: flex; align-items: center; gap: 8px; }
 .med-adherence { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }

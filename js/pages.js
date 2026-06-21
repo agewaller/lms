@@ -47,6 +47,7 @@ var Pages = {
       ${this.renderGettingStarted(domain)}
       ${this.renderTodayPriorities(domain)}
       ${this.renderCheckinNudge(domain)}
+      ${this.renderWeeklyReflectionCard()}
       ${this.renderTodaySummary(domain)}
       ${this.renderDailyPrompt(domain)}
       ${this.renderDomainInsight(domain)}
@@ -4001,6 +4002,46 @@ var Pages = {
         </div>
       </div>
     </div>`;
+  },
+
+  // ─── Weekly Reflection Card (Sunday & Monday only, once per week) ───
+  renderWeeklyReflectionCard() {
+    const today = new Date();
+    const day = today.getDay(); // 0=Sun, 1=Mon
+    if (day !== 0 && day !== 1) return '';
+
+    const weekKey = `${today.getFullYear()}-W${this._weekNumber(today)}`;
+    try { if (localStorage.getItem('lms_weeklyReflection_' + weekKey)) return ''; } catch(e) {}
+
+    const esc = Components.escapeHtml;
+    return `<div class="weekly-reflect-card" id="weeklyReflectCard">
+      <div class="wrc-header">
+        <span class="wrc-icon">📔</span>
+        <div class="wrc-titles">
+          <div class="wrc-title">今週の振り返り</div>
+          <div class="wrc-sub">3つの質問で1週間を整えましょう</div>
+        </div>
+        <button class="wrc-close" onclick="Pages.dismissWeeklyReflection('${esc(weekKey)}')">×</button>
+      </div>
+      <div class="wrc-form">
+        <div class="wrc-q">今週、一番良かったことは？</div>
+        <input type="text" id="wrBest" class="form-input wrc-input" placeholder="例：散歩を毎日続けた" maxlength="60">
+        <div class="wrc-q">今週の課題・気になったことは？</div>
+        <input type="text" id="wrChallenge" class="form-input wrc-input" placeholder="例：睡眠が浅かった" maxlength="60">
+        <div class="wrc-q">来週、一つだけやりたいことは？</div>
+        <input type="text" id="wrNext" class="form-input wrc-input" placeholder="例：友人に連絡する" maxlength="60">
+      </div>
+      <div class="wrc-footer">
+        <button class="btn btn-ghost btn-sm" onclick="Pages.dismissWeeklyReflection('${esc(weekKey)}')">スキップ</button>
+        <button class="btn btn-primary btn-sm" onclick="app.saveWeeklyReflection('${esc(weekKey)}')">記録する →</button>
+      </div>
+    </div>`;
+  },
+
+  dismissWeeklyReflection(weekKey) {
+    try { localStorage.setItem('lms_weeklyReflection_' + weekKey, 'skipped'); } catch(e) {}
+    const card = document.getElementById('weeklyReflectCard');
+    if (card) card.remove();
   },
 
   // ─── Check-in Summary Card (shown after morning check-in completed) ───

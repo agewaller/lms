@@ -2362,20 +2362,29 @@ var App = class App {
 
     localStorage.setItem('lms_lastReminderDate', today);
 
+    // Domain-specific notification body based on last recorded data patterns
+    const domainBodies = {
+      health:       '今日の体調をひと言記録しましょう。積み重ねが健康管理の力になります。',
+      consciousness:'今日の心の状態を振り返ってみましょう。小さな気づきが大切です。',
+      time:         '今日の時間の使い方はいかがでしたか？記録で充実度が見えてきます。',
+      work:         '今日の活動や取り組みを記録しておきましょう。',
+      relationship: '大切な人に今日連絡しましたか？つながりが豊かさを育みます。',
+      assets:       '今日の収支を記録しておきましょう。把握することが安心につながります。'
+    };
+    const currentDomain = store.get('currentDomain') || 'health';
+    const notifBody = domainBodies[currentDomain] || '今日の記録をつけましょう。少しの入力が、より良い明日に繋がります。';
+
     const reg = await navigator.serviceWorker?.ready;
     if (reg?.showNotification) {
       reg.showNotification('LMS 記録リマインダー', {
-        body: '今日の記録をつけましょう。少しの入力が、より良い明日に繋がります。',
+        body: notifBody,
         icon: '/lms/icon.svg',
         badge: '/lms/icon.svg',
         tag: 'lms-daily-reminder',
         renotify: false
       });
     } else {
-      new Notification('LMS 記録リマインダー', {
-        body: '今日の記録をつけましょう。少しの入力が、より良い明日に繋がります。',
-        icon: '/lms/icon.svg'
-      });
+      new Notification('LMS 記録リマインダー', { body: notifBody, icon: '/lms/icon.svg' });
     }
   }
 
@@ -2420,6 +2429,28 @@ var App = class App {
     try { localStorage.setItem('lms_checkin_answers_' + today, JSON.stringify(answers)); } catch(e) {}
 
     Components.showToast(`チェックイン完了！${entries.length}領域を記録しました`, 'success');
+  }
+
+  saveWeeklyReflection(weekKey) {
+    const best      = document.getElementById('wrBest')?.value?.trim() || '';
+    const challenge = document.getElementById('wrChallenge')?.value?.trim() || '';
+    const next      = document.getElementById('wrNext')?.value?.trim() || '';
+
+    if (!best && !challenge && !next) {
+      Components.showToast('何か一つでも入力してください', 'error');
+      return;
+    }
+
+    store.addDomainEntry('consciousness', 'entries', {
+      type: 'weekly_reflection',
+      best_of_week: best,
+      challenge,
+      next_week_goal: next
+    });
+
+    try { localStorage.setItem('lms_weeklyReflection_' + weekKey, '1'); } catch(e) {}
+    Components.showToast('今週の振り返りを記録しました', 'success');
+    this.renderApp();
   }
 
   async enableDailyReminder(time) {
