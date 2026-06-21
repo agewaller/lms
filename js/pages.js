@@ -957,17 +957,27 @@ var Pages = {
       }
     };
 
-    const renderSchemaSection = (sectionKey, sectionTitle) => {
+    const renderSchemaSection = (sectionKey, sectionTitle, startOpen = false) => {
       const fields = schema[sectionKey] || [];
       if (fields.length === 0) return '';
-      return `<div class="settings-section">
-        <h3>${sectionTitle}</h3>
-        ${fields.map(f => `
-          <div class="form-group">
-            <label>${f.label}</label>
-            ${renderField(f, profile[f.key])}
-          </div>
-        `).join('')}
+      const filled = fields.filter(f => {
+        const v = profile[f.key];
+        return v !== undefined && v !== null && v !== '';
+      }).length;
+      const badge = filled > 0 ? `<span class="ss-count">${filled}/${fields.length}</span>` : '';
+      return `<div class="settings-section ss-collapsible ${startOpen ? 'ss-open' : ''}">
+        <h3 class="ss-head" onclick="this.parentNode.classList.toggle('ss-open')">
+          ${sectionTitle}${badge}
+          <span class="ss-arrow">▾</span>
+        </h3>
+        <div class="ss-body">
+          ${fields.map(f => `
+            <div class="form-group">
+              <label>${f.label}</label>
+              ${renderField(f, profile[f.key])}
+            </div>
+          `).join('')}
+        </div>
       </div>`;
     };
 
@@ -975,32 +985,65 @@ var Pages = {
     const selectedDiseases = Array.isArray(profile.diseases) ? profile.diseases : [];
     const renderDiseases = () => {
       const cats = CONFIG.diseaseCategories || {};
-      return `<div class="settings-section">
-        <h3>持病・症状（WHO ICD-11準拠）</h3>
-        <p class="page-desc">該当する項目すべてにチェックしてください。後から変更できます。</p>
-        ${Object.entries(cats).map(([catKey, cat]) => `
-          <div class="disease-category">
-            <h4>${cat.label}</h4>
-            <div class="disease-grid">
-              ${cat.diseases.map(d => `
-                <label class="disease-item">
-                  <input type="checkbox" name="disease" value="${d}"
-                    ${selectedDiseases.includes(d) ? 'checked' : ''}>
-                  <span>${d}</span>
-                </label>
-              `).join('')}
+      const badge = selectedDiseases.length > 0 ? `<span class="ss-count">${selectedDiseases.length}件選択中</span>` : '';
+      const isOpen = selectedDiseases.length > 0;
+      return `<div class="settings-section ss-collapsible ${isOpen ? 'ss-open' : ''}">
+        <h3 class="ss-head" onclick="this.parentNode.classList.toggle('ss-open')">
+          持病・症状${badge}
+          <span class="ss-arrow">▾</span>
+        </h3>
+        <div class="ss-body">
+          <p class="page-desc">該当する項目すべてにチェックしてください。後から変更できます。</p>
+          ${Object.entries(cats).map(([catKey, cat]) => `
+            <div class="disease-category">
+              <h4>${cat.label}</h4>
+              <div class="disease-grid">
+                ${cat.diseases.map(d => `
+                  <label class="disease-item">
+                    <input type="checkbox" name="disease" value="${d}"
+                      ${selectedDiseases.includes(d) ? 'checked' : ''}>
+                    <span>${d}</span>
+                  </label>
+                `).join('')}
+              </div>
             </div>
-          </div>
-        `).join('')}
+          `).join('')}
+        </div>
       </div>`;
     };
 
+    const curTheme = localStorage.getItem('lms_theme') || 'light';
+    const curSize = localStorage.getItem('lms_textSize') || 'normal';
+
     let html = `<div class="page-settings">
       <h2>${i18n.t('settings')}</h2>
+
+      <!-- 文字・テーマ（アクセシビリティ） -->
+      <div class="settings-access-bar">
+        <div class="sab-group">
+          <div class="sab-label">文字の大きさ</div>
+          <div class="sab-btns">
+            ${['normal','lg','xl'].map(sz => {
+              const labels = { normal: '標準', lg: '大きめ', xl: '特大' };
+              return `<button class="sab-btn ${curSize === sz ? 'active' : ''}" onclick="app.setTextSize('${sz}')">${labels[sz]}</button>`;
+            }).join('')}
+          </div>
+        </div>
+        <div class="sab-group">
+          <div class="sab-label">画面の明るさ</div>
+          <div class="sab-btns">
+            ${['light','dark'].map(t => {
+              const labels = { light: '☀️ 標準', dark: '🌙 ダーク' };
+              return `<button class="sab-btn ${curTheme === t ? 'active' : ''}" onclick="app.setTheme('${t}')">${labels[t]}</button>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+
       ${this.renderProfileCompletion(profile)}
 
       <!-- 基本情報 -->
-      ${renderSchemaSection('basic', '基本情報')}
+      ${renderSchemaSection('basic', '基本情報', true)}
 
       <!-- 生活・家族 -->
       ${renderSchemaSection('lifestyle', '生活・家族構成')}
@@ -1018,16 +1061,21 @@ var Pages = {
       ${renderSchemaSection('goals', '目標・価値観')}
 
       <!-- 言語 -->
-      <div class="settings-section">
-        <h3>言語</h3>
-        <div class="form-group">
-          <label>${i18n.t('language')}</label>
-          <select id="profileLang" class="form-input" onchange="app.changeLanguage(this.value)">
-            <option value="ja" ${i18n.currentLang === 'ja' ? 'selected' : ''}>日本語</option>
-            <option value="en" ${i18n.currentLang === 'en' ? 'selected' : ''}>English</option>
-            <option value="zh" ${i18n.currentLang === 'zh' ? 'selected' : ''}>中文</option>
-            <option value="ko" ${i18n.currentLang === 'ko' ? 'selected' : ''}>한국어</option>
-          </select>
+      <div class="settings-section ss-collapsible">
+        <h3 class="ss-head" onclick="this.parentNode.classList.toggle('ss-open')">
+          言語
+          <span class="ss-arrow">▾</span>
+        </h3>
+        <div class="ss-body">
+          <div class="form-group">
+            <label>${i18n.t('language')}</label>
+            <select id="profileLang" class="form-input" onchange="app.changeLanguage(this.value)">
+              <option value="ja" ${i18n.currentLang === 'ja' ? 'selected' : ''}>日本語</option>
+              <option value="en" ${i18n.currentLang === 'en' ? 'selected' : ''}>English</option>
+              <option value="zh" ${i18n.currentLang === 'zh' ? 'selected' : ''}>中文</option>
+              <option value="ko" ${i18n.currentLang === 'ko' ? 'selected' : ''}>한국어</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -1074,34 +1122,6 @@ var Pages = {
         <input type="file" id="calImport" accept=".ics" style="display:none" onchange="app.importCalendarFile(event)">
         <button class="btn btn-secondary" onclick="document.getElementById('calImport').click()">カレンダーファイルを取り込む</button>
       </div>` : ''}
-
-      <!-- Display Theme -->
-      <div class="settings-section">
-        <h3>🌙 画面の明るさ</h3>
-        <p>夜間や暗い場所では「ダーク」モードが目に優しいです。</p>
-        <div class="theme-toggle-row">
-          ${['light','dark'].map(t => {
-            const cur = localStorage.getItem('lms_theme') || 'light';
-            const labels = { light: '☀️ ライト', dark: '🌙 ダーク' };
-            return `<button class="theme-toggle-btn ${cur === t ? 'active' : ''}"
-              onclick="app.setTheme('${t}')">${labels[t]}</button>`;
-          }).join('')}
-        </div>
-      </div>
-
-      <!-- Text Size Accessibility -->
-      <div class="settings-section">
-        <h3>🔠 文字の大きさ</h3>
-        <p>目に合わせて文字の大きさを変えられます。</p>
-        <div class="form-group" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
-          ${['normal','lg','xl'].map(size => {
-            const current = localStorage.getItem('lms_textSize') || 'normal';
-            const labels = { normal: '標準', lg: '大きめ', xl: '特大' };
-            return `<button class="btn ${current === size ? 'btn-primary' : 'btn-secondary'}"
-              onclick="app.setTextSize('${size}')">${labels[size]}</button>`;
-          }).join('')}
-        </div>
-      </div>
 
       <!-- Notification Settings -->
       <div class="settings-section">

@@ -1520,9 +1520,48 @@ body.is-admin .admin-only { display: flex; }
 /* ─── Settings Page ─── */
 .settings-section {
   background: var(--bg-card); border-radius: var(--radius);
-  padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow);
+  padding: 24px; margin-bottom: 16px; box-shadow: var(--shadow);
 }
 .settings-section h3 { margin-bottom: 16px; font-size: 20px; }
+
+/* ─── Accessibility bar (text size + theme at the top of settings) ─── */
+.settings-access-bar {
+  background: var(--bg-secondary); border-radius: var(--radius);
+  padding: 16px 20px; margin-bottom: 16px;
+  display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start;
+}
+.sab-group { display: flex; flex-direction: column; gap: 8px; }
+.sab-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+.sab-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.sab-btn {
+  padding: 8px 16px; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border); background: var(--bg-card);
+  color: var(--text-primary); font-family: inherit; font-size: 0.9rem;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s;
+}
+.sab-btn:hover { border-color: var(--accent); }
+.sab-btn.active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 700; }
+
+/* ─── Collapsible settings sections ─── */
+.ss-collapsible .ss-body { display: none; }
+.ss-collapsible.ss-open .ss-body { display: block; }
+.ss-head {
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; user-select: none; margin-bottom: 0 !important;
+  padding-bottom: 0;
+}
+.ss-head:hover { color: var(--accent); }
+.ss-count {
+  font-size: 0.78rem; color: var(--accent); font-weight: 500;
+  background: var(--accent-bg); padding: 2px 8px; border-radius: 10px;
+  margin-left: 8px;
+}
+.ss-arrow {
+  font-size: 0.85rem; color: var(--text-secondary); margin-left: auto;
+  transition: transform 0.2s; flex-shrink: 0;
+}
+.ss-collapsible.ss-open .ss-arrow { transform: rotate(180deg); }
+.ss-collapsible.ss-open .ss-head { margin-bottom: 16px !important; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
 
 /* ─── Subscription ─── */
 .plan-cards { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 16px; }
