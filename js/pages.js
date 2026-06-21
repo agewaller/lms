@@ -161,6 +161,7 @@ var Pages = {
     // Consciousness domain: daily intention + gratitude journal + 7-layer visualization + transcript input
     if (domain === 'consciousness') {
       html += this.renderDailyWisdom();
+      html += this.renderLongevityHabits();
       html += this.renderDailyZenQuestion();
       html += this.renderDailyIntention();
       html += this.renderMicroJournal();
@@ -3096,6 +3097,7 @@ var Pages = {
     { id: 'cog_check_7',      icon: '🧩', title: '脳活習慣',       desc: '7日連続で脳の健康チェックをしました' },
     { id: 'purpose_check_14', icon: '💡', title: '充実の記録',     desc: '14日間、充実感チェックを続けました' },
     { id: 'outing_7',         icon: '🚶', title: '外出習慣',       desc: '7日連続で外出を記録しました' },
+    { id: 'longevity_perfect', icon: '🌈', title: '完璧な一日',     desc: '長寿7習慣をすべて達成しました' },
   ],
 
   checkAchievements() {
@@ -3248,7 +3250,13 @@ var Pages = {
       wisdom_fav:       wisdomFav,
       cog_check_7:      cogStreak7,
       purpose_check_14: purposeStreak14,
-      outing_7:         outingStreak7
+      outing_7:         outingStreak7,
+      longevity_perfect: (() => {
+        try {
+          const lh = JSON.parse(localStorage.getItem('lms_longevityHabits') || '[]');
+          return lh.some(e => Object.values(e.checks || {}).filter(Boolean).length === 7);
+        } catch(e) { return false; }
+      })()
     };
 
     this._achievementDefs.forEach(def => {
@@ -8903,6 +8911,129 @@ var Pages = {
       const b = document.getElementById('outStar' + n);
       if (b) b.textContent = n <= val ? '★' : '☆';
     });
+  },
+
+  // ─── Longevity Habits Check (長寿7習慣, consciousness domain) ───
+  // Inspired by research on healthy longevity in centenarian populations
+  renderLongevityHabits() {
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = 'lms_longevityHabits';
+    let log = [];
+    try { log = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+    log = log.filter(e => e.date && e.timestamp)
+             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const todayEntry = log.find(e => e.date === today);
+
+    const habits = [
+      { key: 'food',     icon: '🥗', label: '食事に感謝した',       tip: '食事の前に感謝の気持ちを持ちました' },
+      { key: 'move',     icon: '🚶', label: '体を自然に動かした',    tip: '掃除・散歩・庭仕事など日常の動き' },
+      { key: 'connect',  icon: '💬', label: '大切な人と話した',      tip: '電話・LINE・会話など' },
+      { key: 'purpose',  icon: '🌟', label: '楽しみなことがあった',  tip: '小さなことでも前向きな気持ち' },
+      { key: 'nature',   icon: '🌿', label: '自然や植物に触れた',    tip: '花・木・空・土など自然のもの' },
+      { key: 'laugh',    icon: '😄', label: '笑ったことがあった',    tip: 'テレビでも会話でも、笑いは長寿のもと' },
+      { key: 'sleep',    icon: '😴', label: '昨夜よく眠れた',        tip: '7〜8時間の質のよい睡眠' }
+    ];
+
+    const checks = todayEntry?.checks || {};
+    const checkedCount = habits.filter(h => checks[h.key]).length;
+    const score = Math.round(checkedCount / habits.length * 100);
+    const alreadyDone = !!todayEntry;
+
+    // 14-day trend
+    const trend14 = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const dk = d.toISOString().split('T')[0];
+      const entry = log.find(e => e.date === dk);
+      trend14.push({ date: dk, score: entry ? Math.round((Object.values(entry.checks || {}).filter(Boolean).length) / 7 * 100) : -1 });
+    }
+    const hasTrend = trend14.filter(t => t.score >= 0).length >= 3;
+
+    const msg = score === 100 ? '今日は7つすべて達成！すばらしい一日です。' :
+                score >= 71  ? `${checkedCount}つ達成。よい一日を過ごしています。` :
+                score >= 43  ? `${checkedCount}つ達成。残りの習慣も意識してみましょう。` :
+                alreadyDone  ? `${checkedCount}つ達成。一つずつ、無理なく続けましょう。` :
+                               '今日の長寿習慣を確認しましょう。';
+
+    return `<div class="lh-card">
+      <div class="lh-header">
+        <div class="lh-title-wrap">
+          <div class="lh-title">今日の長寿習慣</div>
+          ${alreadyDone ? `<span class="lh-score-badge">${score}%</span>` : ''}
+        </div>
+        <div class="lh-sub">${msg}</div>
+      </div>
+
+      <div class="lh-list">
+        ${habits.map(h => {
+          const checked = !!checks[h.key];
+          return `<label class="lh-item ${checked ? 'checked' : ''}">
+            <input type="checkbox" class="lh-check" ${checked ? 'checked' : ''}
+              onchange="Pages.toggleLongevityHabit('${h.key}', this.checked)"
+              title="${Components.escapeHtml(h.tip)}">
+            <span class="lh-icon">${h.icon}</span>
+            <span class="lh-label">${Components.escapeHtml(h.label)}</span>
+          </label>`;
+        }).join('')}
+      </div>
+
+      ${hasTrend ? `<div class="lh-trend">
+        ${trend14.map(t => {
+          const pct = t.score < 0 ? 0 : t.score;
+          const isToday = t.date === today;
+          const col = t.score < 0 ? 'var(--bg-tertiary)' : t.score >= 70 ? '#10b981' : t.score >= 40 ? '#f59e0b' : '#ef4444';
+          return `<div class="lh-bar-wrap" title="${t.date}">
+            <div class="lh-bar" style="height:${Math.max(3, pct * 0.36)}px;background:${col};${isToday ? 'border:2px solid var(--accent);' : ''}"></div>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+    </div>`;
+  },
+
+  toggleLongevityHabit(key, checked) {
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = 'lms_longevityHabits';
+    let log = [];
+    try { log = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+    // Keep only 90 days
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 90);
+    const cutStr = cutoff.toISOString().split('T')[0];
+    log = log.filter(e => e.date >= cutStr);
+
+    let entry = log.find(e => e.date === today);
+    if (!entry) {
+      entry = { date: today, checks: {}, timestamp: new Date().toISOString() };
+      log.push(entry);
+    }
+    entry.checks[key] = checked;
+    entry.timestamp = new Date().toISOString();
+
+    try { localStorage.setItem(storageKey, JSON.stringify(log)); } catch(e) {}
+    store.addDomainEntry('consciousness', 'entries', { longevity_habit: key, checked, date: today });
+
+    // Update UI without full re-render
+    const label = document.querySelector(`.lh-item input[onchange*="${key}"]`)?.closest('.lh-item');
+    if (label) label.classList.toggle('checked', checked);
+
+    // Re-render just the score badge and message
+    const checkedCount = document.querySelectorAll('.lh-check:checked').length;
+    const score = Math.round(checkedCount / 7 * 100);
+    const badge = document.querySelector('.lh-score-badge');
+    if (badge) badge.textContent = score + '%';
+    else if (checkedCount > 0) {
+      const wrap = document.querySelector('.lh-title-wrap');
+      if (wrap && !wrap.querySelector('.lh-score-badge')) {
+        const b = document.createElement('span');
+        b.className = 'lh-score-badge'; b.textContent = score + '%';
+        wrap.appendChild(b);
+      }
+    }
+
+    // Check achievements on perfect day
+    if (checkedCount === 7) {
+      const { newlyUnlocked } = this.checkAchievements();
+      newlyUnlocked.forEach(b => Components.showToast(`🏅 実績解除：${b.title}`, 'success'));
+    }
   },
 
   saveOutingLog() {
