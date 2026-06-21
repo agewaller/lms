@@ -1939,6 +1939,36 @@ body.is-admin .admin-only { display: flex; }
   color: var(--text-primary);
 }
 
+/* ─── Daily Prompt Card ─── */
+.daily-prompt-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.dp-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.dp-question {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  min-width: 180px;
+}
+.dp-btn { white-space: nowrap; }
+
 /* ─── Weekly Summary Card ─── */
 .weekly-summary-card {
   background: linear-gradient(135deg, #6C63FF18 0%, #6C63FF08 100%);

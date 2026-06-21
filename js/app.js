@@ -444,6 +444,19 @@ var App = class App {
     }
   }
 
+  // ─── Daily Prompt Reply: navigate to chat with question pre-filled ───
+  replyToPrompt(question) {
+    const domain = store.get('currentDomain') || 'health';
+    store.set('currentPage', 'ask_ai');
+    setTimeout(() => {
+      const input = document.getElementById('chatInput');
+      if (input) {
+        input.value = question;
+        input.focus();
+      }
+    }, 100);
+  }
+
   // ─── AI Chat ───
   async sendChat(domain) {
     const input = document.getElementById('chatInput');

@@ -36,6 +36,7 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>
       ${this.renderCheckinNudge(domain)}
+      ${this.renderDailyPrompt(domain)}
       ${this.renderWeeklySummary()}`;
 
     // Assets domain: Show stock analysis at the very top
@@ -886,6 +887,22 @@ var Pages = {
         ${streakBadge}
         <button class="btn btn-sm btn-primary" onclick="app.navigate('record')">記録する</button>
       </span>
+    </div>`;
+  },
+
+  // ─── Daily Prompt (rotating question to encourage reflection) ───
+  renderDailyPrompt(domain) {
+    const prompts = (CONFIG.dailyPrompts || {})[domain];
+    if (!prompts || prompts.length === 0) return '';
+
+    // Pick question based on day-of-year so it rotates but is stable within a day
+    const doy = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+    const q = prompts[doy % prompts.length];
+
+    return `<div class="daily-prompt-card">
+      <div class="dp-label">今日の問いかけ</div>
+      <div class="dp-question">${Components.escapeHtml(q)}</div>
+      <button class="btn btn-sm btn-primary dp-btn" onclick="app.replyToPrompt('${Components.escapeHtml(q).replace(/'/g, '&#39;')}')">答える</button>
     </div>`;
   },
 
