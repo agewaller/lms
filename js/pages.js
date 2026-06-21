@@ -194,6 +194,7 @@ var Pages = {
     // Assets domain: monthly budget summary + NISA simulator + advisor + screenshot + auto trading
     // (Stock analysis widget is rendered at the top of the page.)
     if (domain === 'assets') {
+      html += this.renderQuickExpenseEntry();
       html += this.renderMonthlyBudgetSummary();
       html += this.renderBudgetTrendChart();
       html += this.renderSavingsGoals();
@@ -880,6 +881,84 @@ var Pages = {
         cutout: '65%'
       }
     });
+  },
+
+  // ─── Quick Expense Entry (Assets domain home) ───
+  renderQuickExpenseEntry() {
+    const esc = Components.escapeHtml;
+    const today = new Date().toISOString().split('T')[0];
+    const todayExpenses = store.getDomainData('assets', 'expenses', 1)
+      .filter(e => e.timestamp?.startsWith(today));
+    const todayTotal = todayExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+    const cats = [
+      { key: 'food',          label: '食費',   icon: '🍽' },
+      { key: 'transport',     label: '交通費', icon: '🚌' },
+      { key: 'health',        label: '医療費', icon: '💊' },
+      { key: 'entertainment', label: '交際',   icon: '🎭' },
+      { key: 'other',         label: 'その他', icon: '🛍' }
+    ];
+
+    const recentHtml = todayExpenses.slice(-3).reverse().map(e => {
+      const catLabel = cats.find(c => c.key === e.category)?.label || esc(e.category || 'その他');
+      const notes = e.notes ? ` (${esc(e.notes.substring(0, 12))})` : '';
+      return `<div class="qe-recent-item">
+        <span class="qe-recent-cat">${catLabel}${notes}</span>
+        <span class="qe-recent-amt">¥${Math.round(Number(e.amount)).toLocaleString()}</span>
+      </div>`;
+    }).join('');
+
+    const catBtns = cats.map(c =>
+      `<button class="qe-cat-btn" data-cat="${c.key}" onclick="Pages.selectExpenseCat('${c.key}', this)">${c.icon} ${c.label}</button>`
+    ).join('');
+
+    return `<div class="quick-expense-card">
+      <div class="qe-header">
+        <span class="qe-title">今日の出費を記録</span>
+        <span class="qe-today-total">${todayTotal > 0 ? '今日合計 ¥' + Math.round(todayTotal).toLocaleString() : ''}</span>
+      </div>
+      ${recentHtml ? `<div class="qe-recent">${recentHtml}</div>` : ''}
+      <div class="qe-cats">${catBtns}</div>
+      <div class="qe-entry" id="qeEntry" style="display:none">
+        <span class="qe-entry-label" id="qeEntryLabel">金額を入力</span>
+        <div class="qe-entry-row">
+          <input type="number" id="qeAmount" class="form-input" placeholder="例: 500" min="0" step="100"
+            onkeydown="if(event.key==='Enter')Pages.saveQuickExpense()">
+          <span class="qe-unit">円</span>
+          <button class="btn btn-primary qe-save-btn" onclick="Pages.saveQuickExpense()">記録</button>
+          <button class="btn btn-ghost qe-cancel-btn" onclick="Pages.cancelExpenseCat()">×</button>
+        </div>
+        <input type="hidden" id="qeCategory" value="">
+      </div>
+    </div>`;
+  },
+
+  selectExpenseCat(cat, btn) {
+    document.querySelectorAll('.qe-cat-btn').forEach(b => b.classList.remove('selected'));
+    if (btn) btn.classList.add('selected');
+    document.getElementById('qeCategory').value = cat;
+    const entry = document.getElementById('qeEntry');
+    if (entry) { entry.style.display = ''; document.getElementById('qeAmount')?.focus(); }
+    const catLabels = { food:'食費', transport:'交通費', health:'医療費', entertainment:'交際・娯楽費', other:'その他の出費' };
+    const label = document.getElementById('qeEntryLabel');
+    if (label) label.textContent = (catLabels[cat] || cat) + 'の金額';
+  },
+
+  cancelExpenseCat() {
+    document.querySelectorAll('.qe-cat-btn').forEach(b => b.classList.remove('selected'));
+    const entry = document.getElementById('qeEntry');
+    if (entry) entry.style.display = 'none';
+  },
+
+  saveQuickExpense() {
+    const cat = document.getElementById('qeCategory')?.value;
+    const amtStr = document.getElementById('qeAmount')?.value;
+    const amount = parseFloat(amtStr);
+    if (!cat || !amount || amount <= 0) { Components.showToast('金額を入力してください', 'error'); return; }
+    store.addDomainEntry('assets', 'expenses', { category: cat, amount, notes: '' });
+    Components.showToast(`¥${amount.toLocaleString()}を記録しました`, 'success');
+    this.cancelExpenseCat();
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Monthly Budget Summary (Assets domain) ───
