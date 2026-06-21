@@ -35,7 +35,8 @@ var Pages = {
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
       <div id="quickResponse"></div>
-      ${this.renderCheckinNudge(domain)}`;
+      ${this.renderCheckinNudge(domain)}
+      ${this.renderWeeklySummary()}`;
 
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
@@ -886,6 +887,68 @@ var Pages = {
         <button class="btn btn-sm btn-primary" onclick="app.navigate('record')">記録する</button>
       </span>
     </div>`;
+  },
+
+  // ─── Weekly Summary (shown on Mondays or first login of the week) ───
+  renderWeeklySummary() {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon
+    const weekKey = `${today.getFullYear()}-W${this._weekNumber(today)}`;
+    const dismissed = localStorage.getItem('lms_weeklySummaryDismissed');
+    if (dismissed === weekKey) return '';
+    if (dayOfWeek !== 1) return ''; // Only on Mondays
+
+    // Gather last 7 days counts per domain
+    const domainKeys = Object.keys(CONFIG.domains);
+    const rows = domainKeys.map(d => {
+      const cats = Object.keys(CONFIG.domains[d]?.categories || {});
+      let count = 0;
+      cats.forEach(cat => { count += store.getDomainData(d, cat, 7).length; });
+      const color = CONFIG.domains[d]?.color || '#6C63FF';
+      const icon = CONFIG.domains[d]?.icon || '';
+      return { d, icon, count, color };
+    });
+
+    const totalRecords = rows.reduce((s, r) => s + r.count, 0);
+    if (totalRecords === 0) return '';
+
+    const topDomain = rows.reduce((a, b) => b.count > a.count ? b : a);
+
+    return `<div class="weekly-summary-card" id="weeklySummaryCard">
+      <div class="ws-header">
+        <span class="ws-title">先週の記録まとめ</span>
+        <button class="ws-close" onclick="Pages.dismissWeeklySummary('${weekKey}')">&times;</button>
+      </div>
+      <div class="ws-total">合計 <strong>${totalRecords}</strong> 件の記録</div>
+      <div class="ws-domains">
+        ${rows.map(r => r.count > 0 ? `
+          <div class="ws-domain-bar">
+            <span class="ws-domain-label">${r.icon} ${i18n.t(r.d)}</span>
+            <div class="ws-bar-track">
+              <div class="ws-bar-fill" style="width:${Math.min(100, r.count * 10)}%;background:${r.color}"></div>
+            </div>
+            <span class="ws-domain-count">${r.count}</span>
+          </div>
+        ` : '').join('')}
+      </div>
+      <div class="ws-highlight">
+        一番記録が多かった領域: <strong>${topDomain.icon} ${i18n.t(topDomain.d)}</strong>（${topDomain.count}件）
+      </div>
+    </div>`;
+  },
+
+  dismissWeeklySummary(weekKey) {
+    localStorage.setItem('lms_weeklySummaryDismissed', weekKey);
+    const card = document.getElementById('weeklySummaryCard');
+    if (card) card.remove();
+  },
+
+  _weekNumber(d) {
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
   },
 
   // ─── Profile completion progress bar ───
