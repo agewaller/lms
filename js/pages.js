@@ -4018,19 +4018,19 @@ var Pages = {
     // Save condition to health
     store.addDomainEntry('health', 'symptoms', { condition_level: mood, date: today, source: 'daily_checkin' });
 
-    // Save activities to respective domains
-    if (activities.includes('exercise'))   store.addDomainEntry('health', 'activity', { activity_type: 'walk', source: 'checkin', date: today });
+    // Save activities to respective domains (category names must match store keys)
+    if (activities.includes('exercise'))   store.addDomainEntry('health', 'activityData', { activity_type: 'walk', source: 'checkin', date: today });
     if (activities.includes('medicine'))   store.addDomainEntry('health', 'symptoms', { medications_taken: true, date: today, source: 'checkin' });
     if (activities.includes('contact'))    store.addDomainEntry('relationship', 'interactions', { type: 'call', date: today, source: 'checkin' });
-    if (activities.includes('learning'))   store.addDomainEntry('time', 'learning', { minutes: 30, date: today, source: 'checkin' });
-    if (activities.includes('meditation')) store.addDomainEntry('consciousness', 'entries', { type: 'meditation', date: today, source: 'checkin' });
-    if (activities.includes('outing'))     store.addDomainEntry('health', 'activity', { activity_type: 'outing', date: today, source: 'checkin' });
+    if (activities.includes('learning'))   store.addDomainEntry('time', 'entries', { activity: '学習・読書', duration: 30, date: today, source: 'checkin' });
+    if (activities.includes('meditation')) store.addDomainEntry('consciousness', 'practices', { practice_type: 'meditation', date: today, source: 'checkin' });
+    if (activities.includes('outing'))     store.addDomainEntry('health', 'activityData', { activity_type: 'outing', date: today, source: 'checkin' });
     if (activities.includes('work'))       store.addDomainEntry('work', 'tasks', { status: 'done', date: today, source: 'checkin' });
-    if (activities.includes('saving'))     store.addDomainEntry('assets', 'budget', { type: 'check', date: today, source: 'checkin' });
+    if (activities.includes('saving'))     store.addDomainEntry('assets', 'expenses', { item: '家計確認', category: 'other', date: today, source: 'checkin' });
 
     // Save gratitude if provided
     if (gratitude) {
-      store.addDomainEntry('consciousness', 'gratitude', { text: gratitude, date: today, source: 'checkin' });
+      store.addDomainEntry('consciousness', 'entries', { gratitude, date: today, source: 'checkin' });
       let gList = [];
       try { gList = JSON.parse(localStorage.getItem('lms_gratitude') || '[]'); } catch(e) {}
       gList.unshift({ date: today, text: gratitude, timestamp: new Date().toISOString() });
