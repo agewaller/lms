@@ -228,6 +228,7 @@ var Pages = {
       html += this.renderAfternoonSleepLog();
       html += this.renderWaterTracker();
       html += this.renderStepCounter();
+      html += this.renderWeeklyStepGoal();
       html += this.renderSOSWidget();
       html += this.renderMedicationReminder();
       html += this.renderBPTrendCard();
@@ -6667,6 +6668,66 @@ var Pages = {
           </div>
         </div>
       </div>
+    </div>`;
+  },
+
+  // ─── Weekly Step Goal Card (health domain, gate: ≥2 days with data) ───
+  renderWeeklyStepGoal() {
+    const now = new Date();
+    const weeklyGoal = 50000;
+    const days = [];
+    let totalSteps = 0;
+    let activeDays = 0;
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      let s = 0;
+      try { s = parseInt(localStorage.getItem('lms_steps_' + key) || '0', 10); } catch(e) {}
+      days.push({ key, label: ['日','月','火','水','木','金','土'][d.getDay()], steps: s, isToday: i === 0 });
+      totalSteps += s;
+      if (s > 0) activeDays++;
+    }
+
+    if (activeDays < 2) return '';
+
+    const pct = Math.min(100, Math.round(totalSteps / weeklyGoal * 100));
+    const remaining = Math.max(0, weeklyGoal - totalSteps);
+    const daysLeft = 7 - days.filter(d => d.steps > 0 || d.isToday).length;
+    const maxSteps = Math.max(...days.map(d => d.steps), 1);
+    const dailyNeeded = daysLeft > 0 ? Math.ceil(remaining / Math.max(1, daysLeft)) : 0;
+
+    const barColor = pct >= 100 ? '#10b981' : pct >= 60 ? '#f59e0b' : '#3b82f6';
+    const msg = pct >= 100
+      ? '今週の歩数目標を達成しました！'
+      : daysLeft > 0 && dailyNeeded < 10000
+        ? `あと${daysLeft}日・1日あたり${dailyNeeded.toLocaleString()}歩で達成できます`
+        : `今週の累計 ${totalSteps.toLocaleString()} 歩`;
+
+    const bars = days.map(d => {
+      const h = Math.round((d.steps / maxSteps) * 48);
+      const color = d.isToday ? barColor : d.steps > 0 ? `${barColor}88` : 'var(--bg-tertiary)';
+      const label = d.steps > 0 ? (d.steps >= 10000 ? `${(d.steps/10000).toFixed(1)}万` : `${Math.round(d.steps/1000)}k`) : '';
+      return `<div class="wsb-col">
+        <div class="wsb-label-top">${label}</div>
+        <div class="wsb-bar-wrap"><div class="wsb-bar" style="height:${h}px;background:${color}"></div></div>
+        <div class="wsb-day${d.isToday ? ' wsb-today' : ''}">${d.label}</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="weekly-step-goal-card">
+      <div class="wsg-header">
+        <span class="wsg-title">今週の歩数</span>
+        <span class="wsg-goal">${weeklyGoal.toLocaleString()}歩/週 目標</span>
+      </div>
+      <div class="wsg-progress-row">
+        <span class="wsg-total">${totalSteps >= 10000 ? `${(totalSteps/10000).toFixed(1)}万` : totalSteps.toLocaleString()}</span>
+        <div class="wsg-bar-bg"><div class="wsg-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+        <span class="wsg-pct">${pct}%</span>
+      </div>
+      <div class="wsg-bars">${bars}</div>
+      <div class="wsg-msg">${msg}</div>
     </div>`;
   },
 
