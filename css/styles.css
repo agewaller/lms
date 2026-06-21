@@ -1797,3 +1797,99 @@ body.is-admin .admin-only { display: flex; }
   .sim-cards { grid-template-columns: 1fr; }
   .top-bar-title { font-size: 13px; }
 }
+
+/* ─── Onboarding ─── */
+.onboarding-domains {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 4px;
+}
+.onboarding-domain-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 8px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s, background 0.15s;
+  font-family: inherit;
+  width: 100%;
+}
+.onboarding-domain-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  transform: translateY(-2px);
+}
+.onb-icon { font-size: 26px; line-height: 1; }
+.onb-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+
+/* ─── Daily check-in nudge ─── */
+.checkin-nudge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 14px;
+}
+.checkin-nudge-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+}
+.checkin-done {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(16,185,129,0.07);
+  border: 1px solid rgba(16,185,129,0.2);
+  border-radius: var(--radius-sm);
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #059669;
+}
+.checkin-check { font-size: 15px; }
+
+/* ─── Profile completion bar ─── */
+.profile-completion {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+.pc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.pc-pct { color: var(--accent); font-weight: 700; }
+.pc-bar {
+  height: 5px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.pc-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+.pc-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}

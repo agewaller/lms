@@ -34,7 +34,8 @@ var Pages = {
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
-      <div id="quickResponse"></div>`;
+      <div id="quickResponse"></div>
+      ${this.renderCheckinNudge(domain)}`;
 
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
@@ -714,6 +715,7 @@ var Pages = {
 
     let html = `<div class="page-settings">
       <h2>${i18n.t('settings')}</h2>
+      ${this.renderProfileCompletion(profile)}
 
       <!-- 基本情報 -->
       ${renderSchemaSection('basic', '基本情報')}
@@ -823,6 +825,49 @@ var Pages = {
         </select>
       </div>
       <button class="btn btn-primary" onclick="app.saveResume()">${i18n.t('save')}</button>
+    </div>`;
+  },
+
+  // ─── Daily check-in nudge ───
+  renderCheckinNudge(domain) {
+    const today = new Date().toISOString().split('T')[0];
+    const domainConfig = CONFIG.domains[domain];
+    const categories = Object.keys(domainConfig?.categories || {});
+    let todayCount = 0;
+    categories.forEach(cat => {
+      store.getDomainData(domain, cat, 3).forEach(entry => {
+        if (entry.timestamp && entry.timestamp.startsWith(today)) todayCount++;
+      });
+    });
+    if (todayCount > 0) {
+      return `<div class="checkin-done">
+        <span class="checkin-check">✓</span>
+        <span>今日の記録 ${todayCount}件完了</span>
+      </div>`;
+    }
+    return `<div class="checkin-nudge">
+      <span class="checkin-nudge-text">今日はまだ記録していません</span>
+      <button class="btn btn-sm btn-primary" onclick="app.navigate('record')">記録する</button>
+    </div>`;
+  },
+
+  // ─── Profile completion progress bar ───
+  renderProfileCompletion(profile) {
+    const p = profile || {};
+    const keyFields = ['displayName', 'age', 'gender', 'location', 'diseases', 'lifeGoals', 'concerns'];
+    const filled = keyFields.filter(k => {
+      const v = p[k];
+      return v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && v.length === 0);
+    }).length;
+    const pct = Math.round((filled / keyFields.length) * 100);
+    if (pct >= 100) return '';
+    return `<div class="profile-completion">
+      <div class="pc-header">
+        <span>プロフィール完成度</span>
+        <span class="pc-pct">${pct}%</span>
+      </div>
+      <div class="pc-bar"><div class="pc-fill" style="width:${pct}%"></div></div>
+      ${pct < 60 ? '<p class="pc-hint">プロフィールを充実させると、より的確なアドバイスが届きます</p>' : ''}
     </div>`;
   },
 

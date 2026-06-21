@@ -20,6 +20,7 @@ var App = class App {
       store.set('currentPage', 'home');
       this.renderApp();
       this.startInboxPolling();
+      setTimeout(() => this.checkFirstRun(), 1200);
     }
 
     // Listen for auth changes
@@ -29,6 +30,7 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        setTimeout(() => this.checkFirstRun(), 1200);
       } else {
         this.stopInboxPolling();
       }
@@ -1896,6 +1898,76 @@ var App = class App {
     `;
 
     this.openModal(user.displayName || user.email || 'ユーザー詳細', body);
+  }
+
+  // ─── First-run Onboarding ───
+  checkFirstRun() {
+    if (store.get('hasOnboarded') || localStorage.getItem('lms_hasOnboarded')) return;
+    this.startOnboarding();
+  }
+
+  startOnboarding() {
+    const icons = { consciousness: '🧘', health: '💚', time: '⏰', work: '💼', relationship: '🤝', assets: '💰' };
+    const rows = Object.keys(CONFIG.domains).map(d =>
+      `<button class="onboarding-domain-btn" onclick="app.selectOnboardingDomain('${d}')">
+        <span class="onb-icon">${icons[d] || '●'}</span>
+        <span class="onb-name">${i18n.t(d)}</span>
+      </button>`
+    ).join('');
+    this.openModal('ようこそ！どこから始めますか？', `
+      <p style="color:#64748b;margin-bottom:20px;line-height:1.7;">
+        今、一番気になっていることはどれですか？<br>そこから一緒に始めましょう。
+      </p>
+      <div class="onboarding-domains">${rows}</div>
+    `);
+  }
+
+  selectOnboardingDomain(domain) {
+    store.set('currentDomain', domain);
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    if (titleEl) titleEl.textContent = 'あなたのことを少し教えてください';
+    if (bodyEl) bodyEl.innerHTML = `
+      <p style="color:#64748b;margin-bottom:20px;line-height:1.7;">
+        入力は後からいつでも変えられます。今わかる範囲で大丈夫です。
+      </p>
+      <div class="form-group">
+        <label>お名前（呼び名で大丈夫です）</label>
+        <input type="text" id="onb_name" class="form-input" placeholder="例：花子さん">
+      </div>
+      <div class="form-group">
+        <label>年齢</label>
+        <input type="number" id="onb_age" class="form-input" placeholder="65" min="1" max="120">
+      </div>
+      <div class="form-group">
+        <label>今、一番気になっていること（自由に書いてください）</label>
+        <textarea id="onb_concern" class="form-input" rows="3"
+          placeholder="体の疲れ、孤独感、老後のお金、やることがない…など"></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary btn-lg" onclick="app.completeOnboarding()">始める →</button>
+      </div>
+    `;
+    setTimeout(() => document.getElementById('onb_name')?.focus(), 50);
+  }
+
+  completeOnboarding() {
+    const name = document.getElementById('onb_name')?.value?.trim();
+    const age = parseInt(document.getElementById('onb_age')?.value) || null;
+    const concern = document.getElementById('onb_concern')?.value?.trim();
+
+    const profile = store.get('userProfile') || {};
+    if (name) profile.displayName = name;
+    if (age) profile.age = age;
+    if (concern) profile.concerns = concern;
+    store.set('userProfile', profile);
+
+    store.set('hasOnboarded', true);
+    localStorage.setItem('lms_hasOnboarded', '1');
+
+    this.closeModal();
+    Components.showToast('ようこそ！まず今日の状態を記録してみましょう', 'success');
+    this.navigate('record');
   }
 
   generateDemoData() {
