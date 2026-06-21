@@ -6574,3 +6574,84 @@ html[data-theme="dark"] .wsg-bar-bg { background: rgba(255,255,255,0.1); }
   border-left: 3px solid rgba(108,99,255,0.3);
   padding-left: 10px;
 }
+
+/* ── Exercise Log ── */
+.ex-log-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+}
+.ex-log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.ex-log-title-wrap { display: flex; align-items: center; gap: 8px; }
+.ex-log-title { font-size: 0.92rem; font-weight: 700; color: var(--text-primary); }
+.ex-log-streak {
+  font-size: 0.72rem;
+  background: rgba(16,185,129,0.12);
+  color: #10b981;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+.ex-log-meta { font-size: 0.8rem; color: var(--text-secondary); }
+.ex-log-meta strong { color: var(--text-primary); }
+.ex-log-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  margin-bottom: 10px;
+  height: 56px;
+}
+.ex-log-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.ex-log-bar-fill {
+  width: 100%;
+  background: rgba(16,185,129,0.35);
+  border-radius: 3px 3px 0 0;
+  min-height: 4px;
+  transition: height 0.3s;
+}
+.ex-log-bar-fill.today { background: #10b981; }
+.ex-log-bar-label { font-size: 0.62rem; color: var(--text-secondary); }
+.ex-log-today { margin-bottom: 10px; }
+.ex-log-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--bg-tertiary);
+}
+.ex-log-item:last-child { border-bottom: none; }
+.ex-log-type { font-size: 0.83rem; color: var(--text-primary); }
+.ex-log-min { font-size: 0.78rem; color: var(--text-secondary); font-weight: 600; }
+.ex-log-add-btn { font-size: 0.82rem; }
+.ex-log-form { display: flex; flex-direction: column; gap: 10px; }
+.ex-log-types { display: flex; flex-wrap: wrap; gap: 6px; }
+.ex-type-btn {
+  font-size: 0.8rem;
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ex-type-btn.selected {
+  background: rgba(16,185,129,0.15);
+  border-color: #10b981;
+  color: #10b981;
+  font-weight: 600;
+}
+.ex-log-min-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

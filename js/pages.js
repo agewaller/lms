@@ -245,6 +245,7 @@ var Pages = {
       html += this.renderMorningVitalsCard();
       html += this.renderAfternoonSleepLog();
       html += this.renderWaterTracker();
+      html += this.renderExerciseLog();
       html += this.renderStepCounter();
       html += this.renderWeeklyStepGoal();
       html += this.renderSOSWidget();
@@ -7356,6 +7357,122 @@ var Pages = {
       timestamp: new Date().toISOString()
     });
     Components.showToast('学びを記録しました！', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Exercise Log (health domain) ───
+  renderExerciseLog() {
+    const today = new Date().toISOString().split('T')[0];
+    const lsKey = 'lms_exerciseLog';
+    let log = [];
+    try { log = JSON.parse(localStorage.getItem(lsKey) || '[]'); } catch(e) {}
+    // Keep last 90 days
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 90);
+    log = log.filter(e => e.date >= cutoff.toISOString().split('T')[0]);
+
+    const todayEntries = log.filter(e => e.date === today);
+    const todayMin = todayEntries.reduce((s, e) => s + (Number(e.minutes) || 0), 0);
+
+    // 7-day bar
+    const bars = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const dk = d.toISOString().split('T')[0];
+      const mins = log.filter(e => e.date === dk).reduce((s, e) => s + (Number(e.minutes) || 0), 0);
+      bars.push({ dk, mins, isToday: i === 0 });
+    }
+    const maxBar = Math.max(...bars.map(b => b.mins), 1);
+
+    // Streak
+    let streak = 0;
+    const cur2 = new Date();
+    if (!log.find(e => e.date === today)) cur2.setDate(cur2.getDate() - 1);
+    for (let i = 0; i < 60; i++) {
+      const dk = cur2.toISOString().split('T')[0];
+      if (!log.find(e => e.date === dk)) break;
+      streak++;
+      cur2.setDate(cur2.getDate() - 1);
+    }
+
+    // Month total
+    const monthStart = today.substring(0, 7);
+    const monthMin = log.filter(e => e.date.startsWith(monthStart)).reduce((s, e) => s + (Number(e.minutes) || 0), 0);
+
+    const types = [
+      { key: 'walk',    label: '散歩', icon: '🚶' },
+      { key: 'stretch', label: 'ストレッチ', icon: '🤸' },
+      { key: 'taiso',   label: '体操', icon: '💪' },
+      { key: 'swim',    label: '水泳', icon: '🏊' },
+      { key: 'yoga',    label: 'ヨガ', icon: '🧘' },
+      { key: 'cycle',   label: '自転車', icon: '🚴' },
+      { key: 'other',   label: 'その他', icon: '⚡' },
+    ];
+    const typeLabel = (key) => types.find(t => t.key === key)?.label || key;
+
+    const showForm = sessionStorage.getItem('lms_exLogForm') === '1';
+
+    return `<div class="ex-log-card">
+      <div class="ex-log-header">
+        <div class="ex-log-title-wrap">
+          <span class="ex-log-title">🏃 今日の運動</span>
+          ${streak >= 3 ? `<span class="ex-log-streak">${streak}日連続</span>` : ''}
+        </div>
+        <div class="ex-log-meta">
+          ${todayMin > 0 ? `今日 <strong>${todayMin}</strong>分` : ''}
+          ${monthMin > 0 ? `　今月 <strong>${Math.round(monthMin / 60 * 10) / 10}</strong>時間` : ''}
+        </div>
+      </div>
+      ${bars.some(b => b.mins > 0) ? `<div class="ex-log-bars">
+        ${bars.map(b => `<div class="ex-log-bar-col">
+          <div class="ex-log-bar-fill ${b.isToday ? 'today' : ''}" style="height:${Math.round(b.mins / maxBar * 40) + 4}px" title="${b.mins}分"></div>
+          <div class="ex-log-bar-label">${b.isToday ? '今日' : new Date(b.dk + 'T12:00:00').getDate() + '日'}</div>
+        </div>`).join('')}
+      </div>` : ''}
+      ${todayEntries.length > 0 ? `<div class="ex-log-today">
+        ${todayEntries.map(e => `<div class="ex-log-item">
+          <span class="ex-log-type">${types.find(t => t.key === e.type)?.icon || '⚡'} ${typeLabel(e.type)}</span>
+          <span class="ex-log-min">${e.minutes}分</span>
+        </div>`).join('')}
+      </div>` : ''}
+      ${showForm ? `<div class="ex-log-form" id="exLogForm">
+        <div class="ex-log-types">
+          ${types.map(t => `<button class="ex-type-btn" data-key="${t.key}" onclick="Pages.selectExType('${t.key}', this)">${t.icon} ${t.label}</button>`).join('')}
+        </div>
+        <div class="ex-log-min-row">
+          <input type="number" id="exLogMin" class="form-input" placeholder="分" min="1" max="300" style="width:90px;font-size:0.9rem"
+            onkeydown="if(event.key==='Enter')Pages.saveExercise()">
+          <span style="font-size:0.85rem;color:var(--text-secondary)">分間</span>
+          <button class="btn btn-primary btn-sm" onclick="Pages.saveExercise()">記録</button>
+          <button class="btn btn-ghost btn-sm" onclick="sessionStorage.removeItem('lms_exLogForm');if(typeof app!=='undefined')app.renderApp()">閉じる</button>
+        </div>
+      </div>` : `<button class="btn btn-secondary btn-sm ex-log-add-btn" onclick="sessionStorage.setItem('lms_exLogForm','1');if(typeof app!=='undefined')app.renderApp()">+ 運動を記録</button>`}
+    </div>`;
+  },
+
+  _exLogType: null,
+
+  selectExType(key, btn) {
+    this._exLogType = key;
+    document.querySelectorAll('.ex-type-btn').forEach(b => b.classList.remove('selected'));
+    if (btn) btn.classList.add('selected');
+    document.getElementById('exLogMin')?.focus();
+  },
+
+  saveExercise() {
+    const type = this._exLogType;
+    const min = parseInt(document.getElementById('exLogMin')?.value || '0', 10);
+    if (!type) { Components.showToast('運動の種類を選んでください', 'warning'); return; }
+    if (!min || min <= 0) { Components.showToast('時間（分）を入力してください', 'warning'); return; }
+    const lsKey = 'lms_exerciseLog';
+    let log = [];
+    try { log = JSON.parse(localStorage.getItem(lsKey) || '[]'); } catch(e) {}
+    const today = new Date().toISOString().split('T')[0];
+    log.push({ date: today, type, minutes: min, timestamp: new Date().toISOString() });
+    log = log.slice(-270); // keep 90 days worth
+    localStorage.setItem(lsKey, JSON.stringify(log));
+    sessionStorage.removeItem('lms_exLogForm');
+    this._exLogType = null;
+    Components.showToast(`${min}分の運動を記録しました！`, 'success');
     if (typeof app !== 'undefined') app.renderApp();
   },
 
