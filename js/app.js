@@ -3,7 +3,13 @@
    ============================================================ */
 var App = class App {
   constructor() {
-    this.entryDomain = null; // Which sub-site the user entered from
+    this.entryDomain = null;
+    this._pwaPrompt = null;
+    // Capture beforeinstallprompt early so we can trigger it later
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this._pwaPrompt = e;
+    });
   }
 
   // ─── Initialize ───
@@ -22,6 +28,7 @@ var App = class App {
       this.startInboxPolling();
       setTimeout(() => this.checkFirstRun(), 1200);
       setTimeout(() => this.runScheduledPrompts(), 5000);
+      setTimeout(() => this._checkPwaInstallOffer(), 10000);
     }
 
     // Listen for auth changes
@@ -33,6 +40,7 @@ var App = class App {
         this.startInboxPolling();
         setTimeout(() => this.checkFirstRun(), 1200);
         setTimeout(() => this.runScheduledPrompts(), 5000);
+        setTimeout(() => this._checkPwaInstallOffer(), 10000);
       } else {
         this.stopInboxPolling();
       }
@@ -2038,6 +2046,28 @@ var App = class App {
         window.location.reload();
       }, '完全に削除する', true);
     }, 'はい、削除します', true);
+  }
+
+  // ─── PWA Install Prompt ───
+  _checkPwaInstallOffer() {
+    if (window.matchMedia('(display-mode: standalone)').matches) return; // already installed
+    if (localStorage.getItem('lms_pwaInstallDeclined')) return;
+    const visits = parseInt(localStorage.getItem('lms_visitCount') || '0') + 1;
+    localStorage.setItem('lms_visitCount', visits);
+    if (visits >= 2 && this._pwaPrompt) this.offerPwaInstall();
+  }
+
+  async offerPwaInstall() {
+    if (localStorage.getItem('lms_pwaInstallDeclined')) return;
+    if (!this._pwaPrompt) return;
+    this._pwaPrompt.prompt();
+    const { outcome } = await this._pwaPrompt.userChoice;
+    this._pwaPrompt = null;
+    if (outcome === 'accepted') {
+      Components.showToast('ホーム画面に追加しました！', 'success');
+    } else {
+      localStorage.setItem('lms_pwaInstallDeclined', '1');
+    }
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───
