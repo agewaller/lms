@@ -2615,6 +2615,49 @@ var App = class App {
     setTimeout(() => this.renderApp(), 100);
   }
 
+  quickIncomeEntry() {
+    this.openModal('今日の収入を記録', `
+      <div class="form-group">
+        <label>金額（円）<span style="color:var(--danger)"> *</span></label>
+        <input type="number" id="qi_amount" class="form-input" placeholder="例：100000" min="0" step="1000" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label>種類</label>
+        <select id="qi_category" class="form-input">
+          <option value="pension">年金</option>
+          <option value="salary">給与・報酬</option>
+          <option value="investment">運用収益・配当</option>
+          <option value="rental">家賃収入</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>メモ（省略可）</label>
+        <input type="text" id="qi_note" class="form-input" placeholder="収入源などを入力してください">
+      </div>
+      <div class="form-actions" style="margin-top:20px">
+        <button class="btn btn-primary btn-lg" style="width:100%" onclick="app.saveQuickIncome()">記録する</button>
+      </div>
+    `);
+  }
+
+  saveQuickIncome() {
+    const amount = parseFloat(document.getElementById('qi_amount')?.value || '0');
+    const category = document.getElementById('qi_category')?.value || 'other';
+    const note = document.getElementById('qi_note')?.value?.trim() || '';
+    if (!amount || amount <= 0) { Components.showToast('金額を入力してください', 'info'); return; }
+    const catLabels = { pension: '年金', salary: '給与・報酬', investment: '運用収益・配当', rental: '家賃収入', other: 'その他' };
+    store.addDomainEntry('assets', 'income', {
+      amount,
+      category,
+      description: note || catLabels[category] || 'その他',
+      notes: 'ワンタッチ記録'
+    });
+    this.closeModal();
+    Components.showToast(`${amount.toLocaleString()}円の収入を記録しました`, 'success');
+    setTimeout(() => this.renderApp(), 100);
+  }
+
   shareApp() {
     if (navigator.share) {
       navigator.share({

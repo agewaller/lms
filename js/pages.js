@@ -46,6 +46,7 @@ var Pages = {
       ${this.renderTodaySummary(domain)}
       ${this.renderDailyPrompt(domain)}
       ${this.renderDomainInsight(domain)}
+      ${this.renderCrossDomainInsights(domain)}
       ${this.renderReengagementNudge()}
       ${this.renderFamilyShareCard(domain)}
       ${this.renderWeeklySummary()}
@@ -573,6 +574,7 @@ var Pages = {
       completed.push(key);
       if (completed.length === 5) {
         store.addDomainEntry('time', 'habits', { completed_habits: completed, streak: 0 });
+        Components.showToast('今日の習慣を全部達成！素晴らしいです！', 'success');
       }
     }
     localStorage.setItem(storageKey, JSON.stringify(completed));
@@ -1693,8 +1695,11 @@ var Pages = {
     if (domain === 'assets') {
       return `<div class="checkin-nudge">
         <div style="display:flex;align-items:center;justify-content:space-between;width:100%;flex-wrap:wrap;gap:8px;">
-          <span class="checkin-nudge-text">今日の出費を記録しませんか？${streak >= 2 ? '　' : ''}${streakBadge}</span>
-          <button class="btn btn-sm btn-primary" onclick="app.quickExpenseEntry()">💰 出費を記録</button>
+          <span class="checkin-nudge-text">今日の収支を記録しませんか？${streak >= 2 ? '　' : ''}${streakBadge}</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-sm btn-primary" onclick="app.quickExpenseEntry()">💰 出費を記録</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.quickIncomeEntry()">📥 収入を記録</button>
+          </div>
         </div>
       </div>`;
     }
@@ -2035,6 +2040,94 @@ var Pages = {
           <button class="btn btn-sm btn-text" onclick="this.closest('.reengagement-card').remove()">後で</button>
         </div>
       </div>
+    </div>`;
+  },
+
+  // ─── Cross-domain holistic insight (rule-based correlation across domains) ───
+  renderCrossDomainInsights(domain) {
+    const days = 14;
+
+    // Build daily average maps for key signals
+    const buildAvgMap = (domainKey, category, valueField) => {
+      const map = {};
+      store.getDomainData(domainKey, category, days).forEach(e => {
+        if (!e.timestamp) return;
+        const d = e.timestamp.split('T')[0];
+        const v = Number(e[valueField]);
+        if (isNaN(v)) return;
+        if (!map[d]) map[d] = [];
+        map[d].push(v);
+      });
+      return map;
+    };
+
+    const buildCountMap = (domainKey, categories) => {
+      const map = {};
+      categories.forEach(cat => {
+        store.getDomainData(domainKey, cat, days).forEach(e => {
+          if (!e.timestamp) return;
+          const d = e.timestamp.split('T')[0];
+          map[d] = (map[d] || 0) + 1;
+        });
+      });
+      return map;
+    };
+
+    // Compute correlation score between two daily maps (0–1, higher = more aligned)
+    const correlate = (mapA, mapB, minDays) => {
+      const shared = Object.keys(mapA).filter(d => mapB[d] !== undefined);
+      if (shared.length < minDays) return null;
+      const avg = (val) => Array.isArray(val) ? val.reduce((s, v) => s + v, 0) / val.length : val;
+      const vA = shared.map(d => avg(mapA[d]));
+      const vB = shared.map(d => avg(mapB[d]));
+      const medA = [...vA].sort((a, b) => a - b)[Math.floor(vA.length / 2)] || 0;
+      const medB = [...vB].sort((a, b) => a - b)[Math.floor(vB.length / 2)] || 0;
+      const highA = new Set(shared.filter((d, i) => vA[i] >= medA));
+      const highB = new Set(shared.filter((d, i) => vB[i] >= medB));
+      const both = [...highA].filter(d => highB.has(d)).length;
+      return { n: shared.length, score: both / Math.max(highA.size, highB.size, 1) };
+    };
+
+    const healthMap  = buildAvgMap('health', 'symptoms', 'condition_level');
+    const moodMap    = buildAvgMap('consciousness', 'observation', 'net_value');
+    const relMap     = buildCountMap('relationship', ['interactions']);
+    const habitsMap  = buildCountMap('time', ['habits']);
+    const workMap    = buildCountMap('work', Object.keys(CONFIG.domains.work?.categories || {}));
+
+    const MIN = 5;
+    const THRESHOLD = 0.65;
+    const insights = [];
+
+    const hc = correlate(healthMap, moodMap, MIN);
+    if (hc && hc.score >= THRESHOLD) {
+      insights.push({ icon: '💚', text: `体調がよい日は心も充実している傾向があります（${hc.n}日分のデータより）` });
+    }
+
+    const rc = correlate(relMap, moodMap, MIN);
+    if (rc && rc.score >= THRESHOLD) {
+      insights.push({ icon: '💞', text: `人と交流した日は心が充実している傾向があります（${rc.n}日分のデータより）` });
+    }
+
+    const th = correlate(habitsMap, healthMap, MIN);
+    if (th && th.score >= THRESHOLD) {
+      insights.push({ icon: '🌿', text: `習慣を続けた日は体調がよい傾向があります（${th.n}日分のデータより）` });
+    }
+
+    const wh = correlate(workMap, healthMap, MIN);
+    if (wh && wh.score >= THRESHOLD) {
+      insights.push({ icon: '🔗', text: `よく動いた日は健康状態もよい傾向があります（${wh.n}日分のデータより）` });
+    }
+
+    if (insights.length === 0) return '';
+
+    return `<div class="cross-domain-card">
+      <div class="cdc-title">6領域のつながり</div>
+      ${insights.slice(0, 2).map(ins => `
+        <div class="cdc-insight">
+          <span class="cdc-icon">${ins.icon}</span>
+          <span class="cdc-text">${Components.escapeHtml(ins.text)}</span>
+        </div>
+      `).join('')}
     </div>`;
   },
 
