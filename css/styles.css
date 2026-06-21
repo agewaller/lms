@@ -6925,3 +6925,110 @@ html[data-theme="dark"] .wsg-bar-bg { background: rgba(255,255,255,0.1); }
   min-height: 3px;
   transition: height 0.3s;
 }
+
+/* ─── Dream List (夢リスト, time domain) ─── */
+.dream-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.dream-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.dream-title-wrap { display: flex; align-items: center; gap: 8px; }
+.dream-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+.dream-done-badge {
+  background: rgba(16,185,129,0.12);
+  color: #10b981;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.dream-add-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 4px 10px;
+  transition: border-color 0.2s;
+}
+.dream-add-toggle:hover { border-color: var(--accent); }
+.dream-add-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  align-items: center;
+}
+.dream-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-align: center;
+}
+.dream-empty-icon { font-size: 2rem; }
+.dream-list { display: flex; flex-direction: column; gap: 6px; }
+.dream-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+.dream-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dream-text {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  min-width: 0;
+  word-break: break-all;
+}
+.dream-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.dream-cycle-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.dream-done-mark {
+  font-size: 0.72rem;
+  color: #10b981;
+  font-weight: 600;
+}
+.dream-del-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 4px;
+  line-height: 1;
+  opacity: 0.6;
+}
+.dream-del-btn:hover { opacity: 1; color: #ef4444; }

@@ -180,6 +180,7 @@ var Pages = {
 
     // Time domain: Habit tracker + Calendar widget + Marketplace widget
     if (domain === 'time') {
+      html += this.renderDreamList();
       html += this.renderHabitTracker();
       html += this.renderLearningLog();
       html += this.renderQuickTimeLog();
@@ -3098,6 +3099,7 @@ var Pages = {
     { id: 'purpose_check_14', icon: '💡', title: '充実の記録',     desc: '14日間、充実感チェックを続けました' },
     { id: 'outing_7',         icon: '🚶', title: '外出習慣',       desc: '7日連続で外出を記録しました' },
     { id: 'longevity_perfect', icon: '🌈', title: '完璧な一日',     desc: '長寿7習慣をすべて達成しました' },
+    { id: 'dream_fulfilled',   icon: '🌠', title: '夢が叶った',     desc: '夢リストの夢を一つ叶えました' },
   ],
 
   checkAchievements() {
@@ -3255,6 +3257,12 @@ var Pages = {
         try {
           const lh = JSON.parse(localStorage.getItem('lms_longevityHabits') || '[]');
           return lh.some(e => Object.values(e.checks || {}).filter(Boolean).length === 7);
+        } catch(e) { return false; }
+      })(),
+      dream_fulfilled: (() => {
+        try {
+          const dl = JSON.parse(localStorage.getItem('lms_dreamList') || '[]');
+          return dl.some(d => d.status === 'done');
         } catch(e) { return false; }
       })()
     };
@@ -8911,6 +8919,109 @@ var Pages = {
       const b = document.getElementById('outStar' + n);
       if (b) b.textContent = n <= val ? '★' : '☆';
     });
+  },
+
+  // ─── Dream List (夢リスト, time domain) ───
+  renderDreamList() {
+    const storageKey = 'lms_dreamList';
+    let dreams = [];
+    try { dreams = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+
+    const statusLabels = { dream: '夢', doing: '挑戦中', done: '叶えた' };
+    const statusColors = { dream: '#8b5cf6', doing: '#f59e0b', done: '#10b981' };
+
+    const done   = dreams.filter(d => d.status === 'done').length;
+    const total  = dreams.length;
+    const addOpen = sessionStorage.getItem('lms_dreamAddForm') === '1';
+
+    const examples = ['孫と旅行に行く', '海外に行く', '本を書く', '習い事を始める', '富士山を見る', '家族に感謝を伝える'];
+    const placeholder = examples[new Date().getDate() % examples.length];
+
+    return `<div class="dream-card">
+      <div class="dream-header">
+        <div class="dream-title-wrap">
+          <div class="dream-title">夢リスト</div>
+          ${done > 0 ? `<span class="dream-done-badge">${done}/${total} 叶えた</span>` : ''}
+        </div>
+        <button class="dream-add-toggle" onclick="
+          const o = sessionStorage.getItem('lms_dreamAddForm') === '1';
+          sessionStorage.setItem('lms_dreamAddForm', o ? '0' : '1');
+          document.getElementById('dreamAddForm').style.display = o ? 'none' : 'flex';
+        ">＋ 夢を追加</button>
+      </div>
+
+      <div class="dream-add-form" id="dreamAddForm" style="display:${addOpen ? 'flex' : 'none'}">
+        <input type="text" id="dreamText" class="form-input" placeholder="例：${Components.escapeHtml(placeholder)}" maxlength="50">
+        <select id="dreamStatus" class="form-input form-input-sm">
+          <option value="dream">夢</option>
+          <option value="doing">挑戦中</option>
+          <option value="done">叶えた</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="Pages.addDream()">追加</button>
+      </div>
+
+      ${total === 0 ? `<div class="dream-empty">
+        <div class="dream-empty-icon">🌠</div>
+        <div class="dream-empty-text">これから叶えたいことを書いてみましょう。<br>小さなことでも大丈夫です。</div>
+      </div>` : `<div class="dream-list">
+        ${dreams.map((d, i) => `
+          <div class="dream-item">
+            <span class="dream-status-dot" style="background:${statusColors[d.status] || '#8b5cf6'}"></span>
+            <span class="dream-text">${Components.escapeHtml(d.text)}</span>
+            <div class="dream-actions">
+              ${d.status !== 'done' ? `<button class="dream-cycle-btn" onclick="Pages.cycleDreamStatus(${i})" title="ステータスを変更">
+                <span style="color:${statusColors[d.status]}">${statusLabels[d.status]}</span>
+              </button>` : `<span class="dream-done-mark">✓ 叶えた</span>`}
+              <button class="dream-del-btn" onclick="Pages.deleteDream(${i})" title="削除">×</button>
+            </div>
+          </div>`).join('')}
+      </div>`}
+    </div>`;
+  },
+
+  addDream() {
+    const text = document.getElementById('dreamText')?.value.trim();
+    const status = document.getElementById('dreamStatus')?.value || 'dream';
+    if (!text) { Components.showToast('夢を入力してください', 'error'); return; }
+
+    const storageKey = 'lms_dreamList';
+    let dreams = [];
+    try { dreams = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+    if (dreams.length >= 30) { Components.showToast('夢リストは最大30件です', 'error'); return; }
+
+    dreams.unshift({ text, status, createdAt: new Date().toISOString() });
+    try { localStorage.setItem(storageKey, JSON.stringify(dreams)); } catch(e) {}
+    store.addDomainEntry('time', 'goals', { text, status, type: 'dream' });
+    sessionStorage.setItem('lms_dreamAddForm', '0');
+
+    const msg = status === 'done' ? 'すばらしい！叶えた夢を記録しました' : '夢を追加しました';
+    Components.showToast(msg, 'success');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  cycleDreamStatus(idx) {
+    const storageKey = 'lms_dreamList';
+    let dreams = [];
+    try { dreams = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+    if (!dreams[idx]) return;
+    const cycle = { dream: 'doing', doing: 'done', done: 'dream' };
+    dreams[idx].status = cycle[dreams[idx].status] || 'dream';
+    try { localStorage.setItem(storageKey, JSON.stringify(dreams)); } catch(e) {}
+    if (dreams[idx].status === 'done') {
+      Components.showToast('🎉 夢が叶いました！おめでとうございます', 'success');
+      const { newlyUnlocked } = this.checkAchievements();
+      newlyUnlocked.forEach(b => Components.showToast(`🏅 実績解除：${b.title}`, 'success'));
+    }
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  deleteDream(idx) {
+    const storageKey = 'lms_dreamList';
+    let dreams = [];
+    try { dreams = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+    dreams.splice(idx, 1);
+    try { localStorage.setItem(storageKey, JSON.stringify(dreams)); } catch(e) {}
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Longevity Habits Check (長寿7習慣, consciousness domain) ───
