@@ -4518,3 +4518,88 @@ html[data-theme="dark"] .rr-bar-bg { background: rgba(255,255,255,0.1); }
   gap: 10px;
   margin-bottom: 14px;
 }
+
+/* ─── Birthday Cards (improved) ─── */
+.bd-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.bd-count {
+  font-size: 0.75rem;
+  background: rgba(239,68,68,0.12);
+  color: #ef4444;
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-weight: 600;
+}
+.birthday-urgent-card {
+  background: linear-gradient(135deg, rgba(239,68,68,0.08) 0%, var(--bg-secondary) 100%);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 10px;
+  transition: opacity 0.2s;
+}
+.birthday-urgent-card.bd-done {
+  opacity: 0.65;
+  border-color: rgba(16,185,129,0.3);
+  background: rgba(16,185,129,0.04);
+}
+.buc-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.buc-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.buc-info { flex: 1; min-width: 0; }
+.buc-name { font-weight: 700; font-size: 1rem; color: var(--text-primary); }
+.buc-day  { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+.buc-age  { font-size: 0.78rem; color: #ef4444; font-weight: 600; margin-top: 2px; }
+.buc-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.bd-btn-call {
+  background: #10b981;
+  color: white;
+  border: none;
+  text-decoration: none;
+}
+.bd-btn-call:hover { background: #059669; color: white; }
+.bd-btn-sms {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  text-decoration: none;
+}
+.bd-btn-sms:hover { background: #2563eb; color: white; }
+.bd-btn-log {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+.bd-btn-log:hover { background: var(--bg-tertiary); }
+.bd-contacted {
+  font-size: 0.8rem;
+  color: #10b981;
+  font-weight: 600;
+  padding: 6px 0;
+  display: inline-flex;
+  align-items: center;
+}

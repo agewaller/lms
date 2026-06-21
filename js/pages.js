@@ -622,6 +622,9 @@ var Pages = {
   renderUpcomingBirthdays() {
     const contacts = store.get('relationship_contacts') || [];
     const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const esc = Components.escapeHtml;
+
     const upcoming = contacts
       .filter(c => c.birthday)
       .map(c => {
@@ -629,29 +632,85 @@ var Pages = {
         const next = new Date(today.getFullYear(), bd.getMonth(), bd.getDate());
         if (next < today) next.setFullYear(next.getFullYear() + 1);
         const daysUntil = Math.ceil((next - today) / (1000 * 60 * 60 * 24));
-        return { ...c, daysUntil, nextBirthday: next };
+        // Age they are turning (only if birth year is meaningful, i.e. > 1900)
+        const birthYear = bd.getFullYear();
+        const turningAge = (birthYear > 1900) ? (next.getFullYear() - birthYear) : null;
+        return { ...c, daysUntil, nextBirthday: next, turningAge };
       })
       .filter(c => c.daysUntil <= 30)
       .sort((a, b) => a.daysUntil - b.daysUntil);
 
     if (upcoming.length === 0) return '';
 
-    let html = `<div class="birthdays-section">
-      <h3>🎂 ${i18n.t('upcoming_birthdays')}</h3>
-      <div class="birthday-list">`;
+    // Track who we've contacted today for this birthday
+    const contactedToday = new Set(
+      store.getDomainData('relationship', 'interactions', 1)
+        .filter(e => e.timestamp?.startsWith(todayStr))
+        .map(e => e.person)
+    );
 
-    upcoming.forEach(c => {
+    // Split into urgent (≤3 days) and upcoming (4-30 days)
+    const urgent = upcoming.filter(c => c.daysUntil <= 3);
+    const rest   = upcoming.filter(c => c.daysUntil > 3);
+
+    let html = `<div class="birthdays-section">
+      <div class="bd-header">
+        <h3 style="margin:0">誕生日のご連絡</h3>
+        <span class="bd-count">${upcoming.length}件</span>
+      </div>`;
+
+    // Urgent cards (large, action-focused)
+    urgent.forEach(c => {
       const dateStr = c.nextBirthday.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
-      const label = c.daysUntil === 0 ? '今日！' : `あと${c.daysUntil}日`;
-      html += `<div class="birthday-item ${c.daysUntil <= 3 ? 'birthday-soon' : ''}">
-        <span class="birthday-name">${Components.escapeHtml(c.name)}</span>
-        <span class="birthday-date">${dateStr}（${label}）</span>
-        <span class="birthday-distance">${CONFIG.domains.relationship.distanceLevels[c.distance]?.description || ''}</span>
+      const doneContact = contactedToday.has(c.name);
+      const dayLabel = c.daysUntil === 0 ? '今日が誕生日です！' : `あと${c.daysUntil}日で誕生日です`;
+      const ageLabel = c.turningAge ? `${c.turningAge}歳になります` : '';
+      const phoneLink = c.phone ? `<a href="tel:${esc(c.phone)}" class="btn btn-sm bd-btn-call">電話する</a>` : '';
+      const smsLink   = c.phone ? `<a href="sms:${esc(c.phone)}" class="btn btn-sm bd-btn-sms">メッセージ</a>` : '';
+      const loggedMark = doneContact ? `<span class="bd-contacted">✓ 連絡済み</span>` : `<button class="btn btn-sm bd-btn-log" onclick="Pages.logBirthdayContact('${esc(c.name)}')">連絡した ✓</button>`;
+
+      html += `<div class="birthday-urgent-card${doneContact ? ' bd-done' : ''}">
+        <div class="buc-top">
+          <div class="buc-avatar">${esc((c.name || '?').substring(0, 2))}</div>
+          <div class="buc-info">
+            <div class="buc-name">${esc(c.name)}</div>
+            <div class="buc-day">${dateStr} — ${dayLabel}</div>
+            ${ageLabel ? `<div class="buc-age">${esc(ageLabel)}</div>` : ''}
+          </div>
+        </div>
+        <div class="buc-actions">
+          ${phoneLink}${smsLink}${loggedMark}
+        </div>
       </div>`;
     });
 
-    html += `</div></div>`;
+    // Compact list for others
+    if (rest.length > 0) {
+      html += `<div class="birthday-list">`;
+      rest.forEach(c => {
+        const dateStr = c.nextBirthday.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
+        const ageLabel = c.turningAge ? `（${c.turningAge}歳）` : '';
+        html += `<div class="birthday-item">
+          <span class="birthday-name">${esc(c.name)}${esc(ageLabel)}</span>
+          <span class="birthday-date">${dateStr}（あと${c.daysUntil}日）</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    html += `</div>`;
     return html;
+  },
+
+  logBirthdayContact(name) {
+    store.addDomainEntry('relationship', 'interactions', {
+      person: name,
+      type: 'message',
+      quality: 5,
+      notes: '誕生日のご連絡'
+    });
+    Components.showToast(`${name}さんへの連絡を記録しました`, 'success');
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Stock Analysis Widget (Assets domain) ───
