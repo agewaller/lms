@@ -404,6 +404,64 @@ var AIEngine = {
     return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   },
 
+  // ─── Gemini streaming (SSE via streamGenerateContent) ───
+  async callGeminiStream(model, system, userMsg, maxTokens, options = {}, onChunk) {
+    const apiKey = this.getApiKey('google');
+    if (!apiKey) throw new Error('Google API key not set');
+
+    const apiModel = this.MODEL_MAP[model] || model;
+    const url = `${CONFIG.endpoints.google}/${apiModel}:streamGenerateContent?key=${apiKey}&alt=sse`;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: system }] },
+        contents: [{ parts: options.imageBase64
+          ? [
+              { inline_data: { mime_type: options.imageMimeType || 'image/jpeg', data: options.imageBase64 } },
+              { text: userMsg }
+            ]
+          : [{ text: userMsg }]
+        }],
+        generationConfig: { maxOutputTokens: maxTokens }
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('Gemini API error: ' + err);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (!data || data === '[DONE]') continue;
+        try {
+          const evt = JSON.parse(data);
+          const text = evt.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            fullText += text;
+            onChunk(text, fullText);
+          }
+        } catch (_) {}
+      }
+    }
+
+    return fullText;
+  },
+
   // ─── API Key Management ───
   getApiKey(provider) {
     // Try Firebase-stored keys first, then localStorage
