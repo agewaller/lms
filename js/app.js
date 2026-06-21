@@ -519,6 +519,10 @@ var App = class App {
         fullResponse = await AIEngine.callAnthropicStream(
           model, systemPrompt, userMessage, modelConfig.maxTokens, {}, onChunk
         );
+      } else if (modelConfig?.provider === 'openai') {
+        fullResponse = await AIEngine.callOpenAIStream(
+          model, systemPrompt, userMessage, modelConfig.maxTokens, {}, onChunk
+        );
       } else {
         fullResponse = await AIEngine.analyze(domain, 'daily', { text });
         onChunk(fullResponse, fullResponse);

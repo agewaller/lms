@@ -278,6 +278,68 @@ var AIEngine = {
     return fullText;
   },
 
+  // ─── OpenAI streaming (SSE) ───
+  async callOpenAIStream(model, system, userMsg, maxTokens, options = {}, onChunk) {
+    const apiKey = this.getApiKey('openai');
+    if (!apiKey) throw new Error('OpenAI API key not set');
+
+    const res = await fetch(CONFIG.endpoints.openai, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + apiKey
+      },
+      body: JSON.stringify({
+        model: this.MODEL_MAP[model] || model,
+        max_tokens: maxTokens,
+        stream: true,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: options.imageBase64
+            ? [
+                { type: 'text', text: userMsg },
+                { type: 'image_url', image_url: { url: `data:${options.imageMimeType || 'image/jpeg'};base64,${options.imageBase64}` } }
+              ]
+            : userMsg
+          }
+        ]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('OpenAI API error: ' + err);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const evt = JSON.parse(data);
+          const delta = evt.choices?.[0]?.delta?.content;
+          if (delta) {
+            fullText += delta;
+            onChunk(delta, fullText);
+          }
+        } catch (_) {}
+      }
+    }
+
+    return fullText;
+  },
+
   async callOpenAI(model, system, userMsg, maxTokens, options = {}) {
     const apiKey = this.getApiKey('openai');
     if (!apiKey) throw new Error('OpenAI API key not set');
