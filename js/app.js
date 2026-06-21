@@ -2237,6 +2237,57 @@ var App = class App {
   }
 
   // ─── Modal ───
+  openQuickCheckin() {
+    this.openModal('今日の体調を記録', `
+      <p style="color:var(--text-secondary);margin-bottom:20px;">2項目だけ教えてください。30秒で完了します。</p>
+      <div class="form-group">
+        <label>今日の体調 <span id="qc-cond-val" style="font-weight:700;color:var(--accent)">5</span>/10</label>
+        <input type="range" min="1" max="10" value="5" class="form-input" id="qcCondition"
+          oninput="document.getElementById('qc-cond-val').textContent=this.value"
+          style="padding:8px 0;cursor:pointer">
+        <div style="display:flex;justify-content:space-between;font-size:0.73rem;color:var(--text-muted)">
+          <span>とても辛い</span><span>最高</span>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:16px">
+        <label>昨夜の睡眠の質 <span id="qc-sleep-val" style="font-weight:700;color:var(--accent)">5</span>/10</label>
+        <input type="range" min="1" max="10" value="5" class="form-input" id="qcSleep"
+          oninput="document.getElementById('qc-sleep-val').textContent=this.value"
+          style="padding:8px 0;cursor:pointer">
+        <div style="display:flex;justify-content:space-between;font-size:0.73rem;color:var(--text-muted)">
+          <span>眠れなかった</span><span>ぐっすり</span>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:16px">
+        <label>ひと言メモ（任意）</label>
+        <input type="text" id="qcNote" class="form-input" placeholder="気になることがあれば">
+      </div>
+      <div class="form-actions" style="margin-top:20px">
+        <button class="btn btn-primary btn-lg" style="width:100%" onclick="app.saveQuickCheckin()">記録する</button>
+      </div>
+    `);
+  }
+
+  saveQuickCheckin() {
+    const condition = parseInt(document.getElementById('qcCondition')?.value || '5');
+    const sleep = parseInt(document.getElementById('qcSleep')?.value || '5');
+    const note = document.getElementById('qcNote')?.value?.trim() || '';
+
+    store.addDomainEntry('health', 'symptoms', {
+      condition_level: condition,
+      fatigue_level: Math.max(1, 11 - condition),
+      notes: note
+    });
+    store.addDomainEntry('health', 'sleepData', {
+      quality: sleep,
+      notes: ''
+    });
+
+    this.closeModal();
+    Components.showToast('今日の体調を記録しました', 'success');
+    setTimeout(() => this.renderApp(), 100);
+  }
+
   openModal(title, bodyHtml) {
     const overlay = document.getElementById('modal-overlay');
     const titleEl = document.getElementById('modal-title');

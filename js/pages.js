@@ -933,11 +933,14 @@ var Pages = {
         ${streakBadge}
       </div>`;
     }
+    const quickBtn = domain === 'health'
+      ? `<button class="btn btn-sm btn-primary" onclick="app.openQuickCheckin()">今日の体調を記録</button>`
+      : `<button class="btn btn-sm btn-primary" onclick="app.navigate('record')">記録する</button>`;
     return `<div class="checkin-nudge">
       <span class="checkin-nudge-text">今日はまだ記録していません${streak >= 2 ? '　' : ''}</span>
       <span style="display:flex;align-items:center;gap:8px;">
         ${streakBadge}
-        <button class="btn btn-sm btn-primary" onclick="app.navigate('record')">記録する</button>
+        ${quickBtn}
       </span>
     </div>`;
   },
