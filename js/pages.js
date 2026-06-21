@@ -162,6 +162,7 @@ var Pages = {
         html += WorkFeatures.renderSideBizDiagnosis();
         html += WorkFeatures.renderTimeSellingBanner();
       }
+      html += this.renderWorkGoalProgress();
       html += this.renderResumeWidget();
     }
 
@@ -797,6 +798,47 @@ var Pages = {
         <p>あなたのスキルを空き時間で提供できます。</p>
         <button class="btn btn-sm btn-secondary" onclick="app.switchDomain('time');app.navigate('settings')">時間販売の設定へ</button>
       </div>` : ''}
+    </div>`;
+  },
+
+  // ─── Work Goal Progress (Work domain) ───
+  renderWorkGoalProgress() {
+    const goals = store.getDomainData('work', 'goals', 365);
+    if (goals.length === 0) return '';
+    const today = new Date().toISOString().split('T')[0];
+    const active = goals
+      .filter(g => !g.deadline || g.deadline >= today)
+      .sort((a, b) => (a.deadline || '9999') < (b.deadline || '9999') ? -1 : 1)
+      .slice(0, 5);
+    if (active.length === 0) return '';
+
+    const esc = Components.escapeHtml;
+    const rows = active.map(g => {
+      const pct = Math.min(100, Math.max(0, Number(g.progress) || 0));
+      const barColor = pct >= 80 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#3b82f6';
+      let deadlineBadge = '';
+      if (g.deadline) {
+        const daysLeft = Math.ceil((new Date(g.deadline) - new Date()) / 86400000);
+        const cls = daysLeft <= 7 ? 'wg-deadline urgent' : 'wg-deadline';
+        deadlineBadge = `<span class="${cls}">${daysLeft <= 0 ? '期限切れ' : `あと${daysLeft}日`}</span>`;
+      }
+      return `<div class="wg-row">
+        <div class="wg-top">
+          <span class="wg-name">${esc(g.goal || '目標')}</span>
+          ${deadlineBadge}
+          <span class="wg-pct">${pct}%</span>
+        </div>
+        ${g.target ? `<div class="wg-target">${esc(g.target)}</div>` : ''}
+        <div class="wg-bar-bg"><div class="wg-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+      </div>`;
+    }).join('');
+
+    return `<div class="work-goal-card">
+      <div class="wg-header">
+        <span class="wg-title">目標の進捗</span>
+        <button class="btn btn-xs btn-secondary" onclick="app.navigate('record')">＋ 追加</button>
+      </div>
+      ${rows}
     </div>`;
   },
 
