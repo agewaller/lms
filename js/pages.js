@@ -167,8 +167,9 @@ var Pages = {
       }
     }
 
-    // Health: medication reminder + doctor report shortcut
+    // Health: SOS button + medication reminder + doctor report shortcut
     if (domain === 'health') {
+      html += this.renderSOSWidget();
       html += this.renderMedicationReminder();
       html += `<div class="doctor-report-banner">
         <div class="drb-text">
@@ -963,6 +964,37 @@ var Pages = {
     </div>`;
   },
 
+  // ─── SOS Emergency Widget (health domain only) ───
+  renderSOSWidget() {
+    const profile = store.get('userProfile') || {};
+    const name = profile.emergencyContact;
+    const phone = profile.emergencyPhone;
+
+    if (!name && !phone) {
+      return `<div class="sos-setup-prompt">
+        <span class="sos-setup-icon">🆘</span>
+        <div class="sos-setup-text">
+          緊急連絡先を登録しておくと、体調が急変したとき素早く連絡できます
+        </div>
+        <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')">登録する</button>
+      </div>`;
+    }
+
+    const smsText = encodeURIComponent(`【緊急】LMSから自動送信: ${name || ''}さん、体調が悪化しています。連絡をください。`);
+    return `<div class="sos-widget">
+      <div class="sos-info">
+        <span class="sos-label">緊急連絡先</span>
+        <span class="sos-name">${Components.escapeHtml(name || '')}
+          ${phone ? `<a href="tel:${Components.escapeHtml(phone)}" class="sos-phone">${Components.escapeHtml(phone)}</a>` : ''}
+        </span>
+      </div>
+      <div class="sos-actions">
+        ${phone ? `<a href="tel:${Components.escapeHtml(phone)}" class="btn sos-call-btn">📞 緊急電話</a>` : ''}
+        ${phone ? `<a href="sms:${Components.escapeHtml(phone)}?body=${smsText}" class="btn sos-sms-btn">💬 緊急SMS</a>` : ''}
+      </div>
+    </div>`;
+  },
+
   // ─── Medication reminder (health domain only) ───
   renderMedicationReminder() {
     const meds = store.get('health_medications') || [];
@@ -1460,16 +1492,24 @@ var Pages = {
         </table>
       </div>` : ''}
 
-      ${notedSymptoms.length > 0 ? `
-      <div class="dr-section">
-        <h2>5. 気になった症状・メモ</h2>
-        <div class="dr-notes">
-          ${notedSymptoms.map(s => `<div class="dr-note-item">
-            <div class="dr-note-date">${new Date(s.timestamp).toLocaleDateString('ja-JP')}</div>
-            <div class="dr-note-text">${Components.escapeHtml(s.notes || '')}</div>
-          </div>`).join('')}
-        </div>
-      </div>` : ''}
+      ${(() => {
+        const painEntries = symptoms.filter(s => s.pain_location).slice(-5).reverse();
+        const noted = symptoms.filter(s => s.notes && s.notes.trim()).slice(-5).reverse();
+        if (painEntries.length === 0 && noted.length === 0) return '';
+        return `<div class="dr-section">
+          <h2>5. 気になった症状・メモ</h2>
+          <div class="dr-notes">
+            ${painEntries.map(s => `<div class="dr-note-item">
+              <div class="dr-note-date">${new Date(s.timestamp).toLocaleDateString('ja-JP')}</div>
+              <div class="dr-note-text">🗺️ 痛む場所：${Components.escapeHtml(String(s.pain_location || ''))}</div>
+            </div>`).join('')}
+            ${noted.map(s => `<div class="dr-note-item">
+              <div class="dr-note-date">${new Date(s.timestamp).toLocaleDateString('ja-JP')}</div>
+              <div class="dr-note-text">${Components.escapeHtml(s.notes || '')}</div>
+            </div>`).join('')}
+          </div>
+        </div>`;
+      })()}
 
       <div class="dr-section">
         <h2>${uniqueMeds.length > 0 ? '6' : notedSymptoms.length > 0 ? '6' : '3'}. 生活習慣の概要（直近30日）</h2>

@@ -942,7 +942,9 @@ H) ニュース素材（直近5〜15件）：価値影響（FCF/ROIC）/株価�
       { key: 'allergies', type: 'textarea', label: 'アレルギー' },
       { key: 'primaryDoctor', type: 'text', label: 'かかりつけ医' },
       { key: 'insurance', type: 'text', label: '健康保険' },
-      { key: 'lastCheckup', type: 'date', label: '最終健診日' }
+      { key: 'lastCheckup', type: 'date', label: '最終健診日' },
+      { key: 'emergencyContact', type: 'text', label: '緊急連絡先（名前）' },
+      { key: 'emergencyPhone', type: 'text', label: '緊急連絡先（電話番号）' }
     ],
     // 資産・収入
     financial: [

@@ -2218,6 +2218,72 @@ html[data-theme="dark"] .form-textarea {
   color: var(--text-primary) !important;
 }
 
+/* ─── SOS Emergency Widget ─── */
+.sos-widget {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.06);
+  border: 1.5px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+}
+.sos-info { display: flex; flex-direction: column; gap: 2px; }
+.sos-label { font-size: 0.73rem; color: var(--text-muted); font-weight: 500; }
+.sos-name { font-size: 0.93rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+.sos-phone { color: var(--danger); font-size: 0.87rem; }
+.sos-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.sos-call-btn {
+  background: var(--danger);
+  color: #fff !important;
+  border: none;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.87rem;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.sos-call-btn:hover { background: #dc2626; }
+.sos-sms-btn {
+  background: var(--bg-secondary);
+  color: var(--danger) !important;
+  border: 1.5px solid var(--danger);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.87rem;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.sos-setup-prompt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+  font-size: 0.87rem;
+  color: var(--text-secondary);
+}
+.sos-setup-icon { font-size: 20px; flex-shrink: 0; }
+.sos-setup-text { flex: 1; }
+@media (max-width: 600px) {
+  .sos-widget { flex-direction: column; align-items: flex-start; }
+  .sos-actions { width: 100%; }
+  .sos-call-btn, .sos-sms-btn { flex: 1; justify-content: center; }
+}
+
 /* ─── Pain Location Selector ─── */
 .pain-location-selector {
   background: var(--bg-tertiary);
