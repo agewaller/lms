@@ -149,6 +149,7 @@ var Pages = {
     // Consciousness domain: daily intention + gratitude journal + 7-layer visualization + transcript input
     if (domain === 'consciousness') {
       html += this.renderDailyIntention();
+      html += this.renderMicroJournal();
       html += this.renderBreathingExercise();
       html += this.renderMeditationTimer();
       html += this.renderPracticeHistory();
@@ -189,6 +190,7 @@ var Pages = {
     // Relationship domain: Isolation score + today contacts + social graph + birthdays
     if (domain === 'relationship') {
       html += this.renderQuickContactAdd();
+      html += this.renderIsolationScore();
       html += this.renderConnectionActivity();
       if (typeof RelationshipFeatures !== 'undefined') html += RelationshipFeatures.renderDashboard();
       html += this.renderTodayContactSuggestion();
@@ -5663,6 +5665,118 @@ var Pages = {
     this._ciAnswers = {};
     const overlay = document.getElementById('ciOverlay');
     if (overlay) overlay.remove();
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Isolation Score Card (relationship domain) ───
+  renderIsolationScore() {
+    const contacts = store.get('relationship_contacts') || [];
+    if (contacts.length === 0) return '';
+    const interactions = store.getDomainData('relationship', 'interactions', 28);
+    if (interactions.length === 0) return '';
+
+    const now = Date.now();
+    const week7 = new Date(now - 7 * 86400000).toISOString().split('T')[0];
+    const days28 = new Date(now - 28 * 86400000).toISOString().split('T')[0];
+
+    const weekPeople = new Set(
+      interactions.filter(e => e.timestamp >= week7 && e.person).map(e => e.person)
+    ).size;
+    const monthPeople = new Set(
+      interactions.filter(e => e.timestamp >= days28 && e.person).map(e => e.person)
+    ).size;
+
+    // Risk 0–100: higher = more isolated
+    let risk;
+    if (weekPeople >= 5) risk = 10;
+    else if (weekPeople >= 3) risk = 25;
+    else if (weekPeople >= 1) risk = 50;
+    else if (monthPeople >= 3) risk = 65;
+    else if (monthPeople >= 1) risk = 80;
+    else risk = 95;
+
+    const level = risk <= 25 ? 'low' : risk <= 60 ? 'mid' : 'high';
+    const labels = { low: '良好', mid: 'やや注意', high: '要注意' };
+    const colors = { low: '#10b981', mid: '#f59e0b', high: '#ef4444' };
+    const msgs = {
+      low: '今週もしっかりつながれています。この調子を続けましょう。',
+      mid: '今週の交流がやや少なめです。久しぶりの人に一言連絡してみましょう。',
+      high: '最近、人との交流が少なくなっています。小さなつながりを意識してみましょう。'
+    };
+
+    const connScore = 100 - risk;
+    const deg = Math.round(connScore * 1.8); // 0–180deg (half-circle gauge)
+
+    return `<div class="isolation-score-card">
+      <div class="isc-header">
+        <span class="isc-title">つながり健康度</span>
+        <span class="isc-badge isc-${level}">${labels[level]}</span>
+      </div>
+      <div class="isc-body">
+        <div class="isc-gauge-wrap">
+          <div class="isc-arc" style="--arc-deg:${deg}deg;--arc-color:${colors[level]}">
+            <div class="isc-arc-inner">
+              <div class="isc-score" style="color:${colors[level]}">${connScore}</div>
+              <div class="isc-score-label">/ 100</div>
+            </div>
+          </div>
+        </div>
+        <div class="isc-stats">
+          <div class="isc-stat">
+            <div class="isc-stat-num" style="color:${colors[level]}">${weekPeople}</div>
+            <div class="isc-stat-label">今週の交流人数</div>
+          </div>
+          <div class="isc-stat">
+            <div class="isc-stat-num">${monthPeople}</div>
+            <div class="isc-stat-label">今月の交流人数</div>
+          </div>
+        </div>
+      </div>
+      <div class="isc-msg">${Components.escapeHtml(msgs[level])}</div>
+    </div>`;
+  },
+
+  // ─── Micro Journal (consciousness domain, 1–2 sentences daily reflection) ───
+  renderMicroJournal() {
+    const today = new Date().toISOString().split('T')[0];
+    const lsKey = 'lms_microjournal_' + today;
+    let saved = '';
+    try { saved = localStorage.getItem(lsKey) || ''; } catch(e) {}
+
+    if (saved) {
+      return `<div class="micro-journal-card mj-done">
+        <div class="mj-header">
+          <span class="mj-icon">📝</span>
+          <span class="mj-title">今日のひとこと <span class="mj-badge">✓ 記録済</span></span>
+        </div>
+        <div class="mj-text">${Components.escapeHtml(saved)}</div>
+      </div>`;
+    }
+
+    return `<div class="micro-journal-card">
+      <div class="mj-header">
+        <span class="mj-icon">📝</span>
+        <span class="mj-title">今日のひとこと</span>
+      </div>
+      <p class="mj-desc">今日感じたことを一言だけ。長くなくて大丈夫です。</p>
+      <div class="mj-input-row">
+        <textarea id="mjText" class="form-input mj-textarea" rows="2"
+          placeholder="例：今日は散歩が気持ちよかった。少し疲れ気味だけど穏やか。" maxlength="200"></textarea>
+      </div>
+      <div class="mj-actions">
+        <button class="btn btn-primary btn-sm" onclick="Pages.saveMicroJournal()">記録する</button>
+        <button class="btn btn-voice btn-sm" id="voiceBtn_mjText" onclick="app.startVoiceInput('mjText')" title="音声入力">🎤</button>
+      </div>
+    </div>`;
+  },
+
+  saveMicroJournal() {
+    const text = document.getElementById('mjText')?.value?.trim();
+    if (!text) { Components.showToast('ひとことを入力してください', 'error'); return; }
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem('lms_microjournal_' + today, text);
+    store.addDomainEntry('consciousness', 'journal', { content: text, notes: 'ひとこと日記' });
+    Components.showToast('記録しました', 'success');
     if (typeof app !== 'undefined') app.renderApp();
   },
 

@@ -4199,3 +4199,121 @@ html[data-theme="dark"] .gs-dot-label { color: #d97706; }
 }
 .wws-num { font-size: 1.5rem; font-weight: 700; color: #3b82f6; line-height: 1; }
 .wws-label { font-size: 0.72rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.3; }
+
+/* ─── Isolation Score Card (relationship domain) ─── */
+.isolation-score-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.isc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.isc-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+.isc-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.isc-badge.isc-low  { background: rgba(16,185,129,0.12); color: #10b981; }
+.isc-badge.isc-mid  { background: rgba(245,158,11,0.12); color: #d97706; }
+.isc-badge.isc-high { background: rgba(239,68,68,0.12);  color: #ef4444; }
+.isc-body { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+.isc-gauge-wrap { flex-shrink: 0; }
+/* Semicircular arc gauge using conic-gradient + clip */
+.isc-arc {
+  width: 90px;
+  height: 50px;
+  position: relative;
+  overflow: hidden;
+}
+.isc-arc::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--arc-color) 0deg var(--arc-deg),
+    var(--bg-tertiary) var(--arc-deg) 180deg,
+    transparent 180deg 360deg
+  );
+}
+.isc-arc::after {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+}
+.isc-arc-inner {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1;
+  padding-bottom: 2px;
+}
+.isc-score { font-size: 1.3rem; font-weight: 700; line-height: 1; }
+.isc-score-label { font-size: 0.65rem; color: var(--text-secondary); }
+.isc-stats { flex: 1; display: flex; gap: 12px; }
+.isc-stat { text-align: center; flex: 1; }
+.isc-stat-num { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); line-height: 1; }
+.isc-stat-label { font-size: 0.72rem; color: var(--text-secondary); margin-top: 3px; line-height: 1.3; }
+.isc-msg {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  line-height: 1.5;
+}
+
+/* ─── Micro Journal Card (consciousness domain) ─── */
+.micro-journal-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.micro-journal-card.mj-done { border-left: 3px solid #6C63FF; }
+.mj-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.mj-icon { font-size: 1.1rem; }
+.mj-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+.mj-badge {
+  font-size: 0.72rem;
+  color: #6C63FF;
+  background: rgba(108,99,255,0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 6px;
+}
+.mj-desc { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 10px; }
+.mj-text {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+  padding: 8px 10px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+}
+.mj-textarea { width: 100%; resize: vertical; min-height: 60px; }
+.mj-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+.mj-input-row { margin-bottom: 4px; }
