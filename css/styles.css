@@ -3860,3 +3860,75 @@ html[data-theme="dark"] .cscr-sug-item { border-top-color: rgba(255,255,255,0.07
 .mdt-done-text strong { font-size: 1rem; color: var(--text-primary); }
 .mdt-done-text span { font-size: 0.85rem; color: var(--text-secondary); }
 .mdt-done-btns { display: flex; gap: 10px; }
+
+/* ─── Water Intake Tracker (health) ─── */
+.water-tracker-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.wt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.wt-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+.wt-total { font-size: 1.1rem; font-weight: 700; color: #3b82f6; }
+.wt-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.wt-bar-bg {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.wt-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #60a5fa, #3b82f6);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+.wt-pct { font-size: 0.78rem; color: var(--text-secondary); flex-shrink: 0; min-width: 32px; text-align: right; }
+.wt-glasses {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.wt-glass {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  border: 1.5px solid var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  font-size: 1rem;
+  padding: 0;
+}
+.wt-glass.filled { background: rgba(59,130,246,0.12); border-color: #3b82f6; }
+.wt-glass:hover { border-color: #3b82f6; }
+.wt-drop { line-height: 1; }
+.wt-goal-met {
+  font-size: 0.85rem;
+  color: #3b82f6;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.wt-remaining {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.wt-remaining strong { color: var(--text-primary); }
+.wt-hint { font-size: 0.75rem; color: var(--text-secondary); opacity: 0.7; }

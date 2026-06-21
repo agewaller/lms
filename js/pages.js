@@ -210,6 +210,7 @@ var Pages = {
       html += this.renderProfileCompletionBanner();
       html += this.renderBPAlertCard();
       html += this.renderMorningVitalsCard();
+      html += this.renderWaterTracker();
       html += this.renderSOSWidget();
       html += this.renderMedicationReminder();
       html += this.renderBPTrendCard();
@@ -1826,6 +1827,74 @@ var Pages = {
       <button class="btn btn-primary mvc-save" onclick="app.saveMorningVitals()">記録する</button>
       <button class="btn-text mvc-skip" onclick="this.closest('.morning-vitals-card').remove()">スキップ</button>
     </div>`;
+  },
+
+  // ─── Water intake tracker (health domain) ───
+  renderWaterTracker() {
+    const today = new Date().toISOString().split('T')[0];
+    const lsKey = 'lms_water_' + today;
+    let ml = 0;
+    try { ml = parseInt(localStorage.getItem(lsKey) || '0', 10); } catch(e) {}
+
+    const goalMl = 1500;
+    const pct = Math.min(100, Math.round(ml / goalMl * 100));
+    const glasses = Math.round(ml / 200);
+    const remaining = Math.max(0, goalMl - ml);
+
+    const glassRow = [1,2,3,4,5,6,7,8].map(n => {
+      const filled = n * 200 <= ml;
+      return `<button class="wt-glass ${filled ? 'filled' : ''}"
+        onclick="Pages.toggleWaterGlass(${n})" title="${n * 200}ml">
+        <span class="wt-drop">${filled ? '💧' : '○'}</span>
+      </button>`;
+    }).join('');
+
+    const doneMsg = ml >= goalMl ?
+      '<div class="wt-goal-met">今日の水分目標を達成しました！</div>' : '';
+
+    return `<div class="water-tracker-card">
+      <div class="wt-header">
+        <span class="wt-title">💧 水分補給</span>
+        <span class="wt-total">${ml >= 1000 ? (ml/1000).toFixed(1)+'L' : ml+'ml'}</span>
+      </div>
+      <div class="wt-bar-wrap">
+        <div class="wt-bar-bg">
+          <div class="wt-bar-fill" style="width:${pct}%"></div>
+        </div>
+        <span class="wt-pct">${pct}%</span>
+      </div>
+      <div class="wt-glasses">${glassRow}</div>
+      ${doneMsg}
+      ${remaining > 0 ? `<div class="wt-remaining">あと <strong>${remaining >= 1000 ? (remaining/1000).toFixed(1)+'L' : remaining+'ml'}</strong>（コップ約${Math.ceil(remaining/200)}杯）</div>` : ''}
+      <div class="wt-hint">各コップ約200ml。コップをタップして記録できます。</div>
+    </div>`;
+  },
+
+  toggleWaterGlass(glassNum) {
+    const today = new Date().toISOString().split('T')[0];
+    const lsKey = 'lms_water_' + today;
+    let ml = 0;
+    try { ml = parseInt(localStorage.getItem(lsKey) || '0', 10); } catch(e) {}
+
+    const target = glassNum * 200;
+    // If clicking on a filled glass — fill up to that glass exactly
+    // If clicking beyond current — fill up to that glass
+    // If clicking on the last filled glass — remove that glass
+    if (ml === target) {
+      ml = target - 200; // undo last glass
+    } else {
+      ml = target;
+    }
+    ml = Math.max(0, ml);
+    localStorage.setItem(lsKey, String(ml));
+
+    // Sync daily totals to Firestore once (at 1000ml+ threshold)
+    if (ml >= 1000 && !localStorage.getItem('lms_waterSynced_' + today)) {
+      store.addDomainEntry('health', 'symptoms', { water_ml: ml, notes: '水分補給記録' });
+      localStorage.setItem('lms_waterSynced_' + today, '1');
+    }
+
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── SOS Emergency Widget (health domain only) ───
