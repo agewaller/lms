@@ -3648,3 +3648,84 @@ html[data-theme="dark"] .cscr-sug-item { border-top-color: rgba(255,255,255,0.07
 .ph-session-icon { font-size: 1rem; flex-shrink: 0; }
 .ph-session-label { flex: 1; color: var(--text-primary); }
 .ph-session-meta { color: var(--text-secondary); font-size: 0.75rem; white-space: nowrap; }
+
+/* ─── Contact Onboard Card ─── */
+.contact-onboard-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.cob-icon { font-size: 2rem; flex-shrink: 0; }
+.cob-body { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.cob-body strong { font-size: 0.95rem; color: var(--text-primary); }
+.cob-body span { font-size: 0.8rem; color: var(--text-secondary); }
+
+/* ─── Social Graph Card ─── */
+.social-graph-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.sgc-header { margin-bottom: 12px; }
+.sgc-header h4 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+.sg-distance-row { margin-bottom: 12px; }
+.sg-distance-row:last-child { margin-bottom: 0; }
+.sg-dist-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sg-dist-count { color: var(--text-secondary); font-weight: 400; font-size: 0.75rem; }
+.sg-avatar-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.sg-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.sg-more {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* ─── Upcoming Birthdays Card ─── */
+.upcoming-birthdays-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.ub-header { margin-bottom: 12px; }
+.ub-header h4 { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+.ub-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--bg-tertiary);
+}
+.ub-row:last-child { border-bottom: none; }
+.ub-icon { font-size: 1.2rem; flex-shrink: 0; }
+.ub-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.ub-name { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
+.ub-date { font-size: 0.75rem; color: var(--text-secondary); }
+.ub-badge { flex-shrink: 0; }
+.ub-today { background: #ef4444; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }
+.ub-soon { background: #f59e0b; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }
+.ub-days { color: var(--text-secondary); font-size: 0.78rem; }

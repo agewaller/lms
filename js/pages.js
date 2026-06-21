@@ -3585,6 +3585,103 @@ var Pages = {
     </div>`;
   },
 
+  // ─── Contact suggestion fallback (only if RelationshipFeatures unavailable) ───
+  renderTodayContactSuggestion() {
+    if (typeof RelationshipFeatures !== 'undefined') return '';
+    const contacts = store.get('relationship_contacts') || [];
+    if (contacts.length > 0) return '';
+    return `<div class="contact-onboard-card">
+      <div class="cob-icon">👥</div>
+      <div class="cob-body">
+        <strong>大切な人を登録してみましょう</strong>
+        <span>家族・友人を登録すると、連絡の頻度を自動でお知らせします</span>
+      </div>
+      <button class="btn btn-primary" onclick="app.navigate('record')">登録する</button>
+    </div>`;
+  },
+
+  // ─── Social network grid (relationship domain home) ───
+  renderSocialGraph() {
+    const contacts = store.get('relationship_contacts') || [];
+    if (contacts.length === 0) return '';
+    const esc = Components.escapeHtml;
+    const distLabels = { 1:'家族・パートナー', 2:'親友', 3:'友人', 4:'知人', 5:'つながり' };
+    const distColors = { 1:'#ef4444', 2:'#f59e0b', 3:'#3b82f6', 4:'#8b5cf6', 5:'#6b7280' };
+
+    const byDist = {};
+    contacts.forEach(c => {
+      const d = String(c.distance || 5);
+      if (!byDist[d]) byDist[d] = [];
+      byDist[d].push(c);
+    });
+
+    const rows = Object.keys(byDist).sort().map(d => {
+      const list = byDist[d];
+      const color = distColors[d] || '#6b7280';
+      const label = distLabels[d] || '関係者';
+      const avatars = list.slice(0, 8).map(c => {
+        const initial = (c.name || '?').charAt(0);
+        return `<div class="sg-avatar" style="background:${color}" title="${esc(c.name || '')}">
+          ${esc(initial)}
+        </div>`;
+      }).join('');
+      const more = list.length > 8 ? `<div class="sg-avatar sg-more">+${list.length - 8}</div>` : '';
+      return `<div class="sg-distance-row">
+        <div class="sg-dist-label" style="color:${color}">${esc(label)}<span class="sg-dist-count">${list.length}人</span></div>
+        <div class="sg-avatar-group">${avatars}${more}</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="social-graph-card">
+      <div class="sgc-header"><h4>あなたの人間関係</h4></div>
+      ${rows}
+    </div>`;
+  },
+
+  // ─── Upcoming birthdays (relationship domain home) ───
+  renderUpcomingBirthdays() {
+    const contacts = store.get('relationship_contacts') || [];
+    if (contacts.length === 0) return '';
+    const esc = Components.escapeHtml;
+    const today = new Date();
+
+    const upcoming = contacts
+      .filter(c => c.birthday && c.name)
+      .map(c => {
+        const bd = new Date(c.birthday);
+        const next = new Date(today.getFullYear(), bd.getMonth(), bd.getDate());
+        if (next < today) next.setFullYear(next.getFullYear() + 1);
+        const days = Math.ceil((next - today) / 86400000);
+        const age = today.getFullYear() - bd.getFullYear() + (days > 0 ? 0 : -1);
+        return { name: c.name, phone: c.phone || '', days, age, dateStr: `${bd.getMonth()+1}/${bd.getDate()}` };
+      })
+      .filter(c => c.days <= 30)
+      .sort((a, b) => a.days - b.days)
+      .slice(0, 5);
+
+    if (upcoming.length === 0) return '';
+
+    const rows = upcoming.map(c => {
+      const badge = c.days === 0 ? `<span class="ub-today">今日！</span>` :
+                    c.days === 1 ? `<span class="ub-soon">明日</span>` :
+                    `<span class="ub-days">あと${c.days}日</span>`;
+      return `<div class="ub-row">
+        <div class="ub-icon">🎂</div>
+        <div class="ub-info">
+          <span class="ub-name">${esc(c.name)}さん</span>
+          <span class="ub-date">${esc(c.dateStr)}（${c.age}歳）</span>
+        </div>
+        <div class="ub-badge">${badge}</div>
+        ${c.phone ? `<a href="tel:${esc(c.phone)}" class="btn btn-xs btn-primary">📞</a>` : ''}
+      </div>`;
+    }).join('');
+
+    return `<div class="upcoming-birthdays-card">
+      <div class="ub-header"><h4>近日中のお誕生日</h4></div>
+      ${rows}
+    </div>`;
+  },
+
   // ─── Savings goals tracker (assets domain home) ───
   renderSavingsGoals() {
     const goals = store.getDomainData('assets', 'goals', 365);
