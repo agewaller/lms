@@ -1610,6 +1610,60 @@ body.is-admin .admin-only { display: flex; }
 .stock-result { margin-top: 16px; }
 .stock-result h3 { margin-bottom: 12px; }
 
+/* ─── Daily Habit Tracker ─── */
+.habit-tracker-card {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 20px; margin-bottom: 24px; box-shadow: var(--shadow);
+}
+.ht-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.ht-title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.ht-count { font-size: 14px; font-weight: 700; color: var(--accent); background: var(--accent-bg); padding: 4px 10px; border-radius: 20px; }
+.ht-habits { display: flex; gap: 8px; flex-wrap: wrap; }
+.ht-habit {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg-secondary); border: 1.5px solid var(--border);
+  border-radius: 24px; padding: 8px 14px; cursor: pointer;
+  font-size: 14px; font-weight: 500; color: var(--text-secondary);
+  font-family: var(--font-main); transition: all var(--transition);
+}
+.ht-habit:hover { border-color: var(--accent); color: var(--accent); }
+.ht-habit.done {
+  background: var(--accent-bg); border-color: var(--accent);
+  color: var(--accent); font-weight: 600;
+}
+.ht-check { font-size: 14px; font-weight: 700; min-width: 14px; }
+.ht-complete {
+  margin-top: 12px; padding: 10px; text-align: center;
+  background: rgba(16,185,129,0.08); border-radius: var(--radius-sm);
+  color: var(--success, #059669); font-size: 14px; font-weight: 600;
+}
+
+/* ─── Monthly Budget Summary ─── */
+.budget-summary-card {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 24px; margin-bottom: 32px; box-shadow: var(--shadow);
+  border-left: 4px solid var(--warning, #f59e0b);
+}
+.bs-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.bs-title { font-size: 17px; font-weight: 700; color: var(--text-primary); }
+.bs-totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+.bs-total-item { background: var(--bg-secondary); border-radius: var(--radius-sm); padding: 14px 12px; text-align: center; }
+.bs-total-label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+.bs-total-value { font-size: 18px; font-weight: 700; }
+.bs-income .bs-total-value { color: var(--success, #10b981); }
+.bs-expense .bs-total-value { color: var(--danger, #ef4444); }
+.bs-balance .bs-total-value { font-size: 20px; }
+.bs-cat-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px; }
+.bs-cat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.bs-cat-label { width: 80px; font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
+.bs-cat-track { flex: 1; height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden; }
+.bs-cat-fill { height: 100%; background: var(--warning, #f59e0b); border-radius: 4px; transition: width 0.4s ease; }
+.bs-cat-amt { font-size: 13px; font-weight: 600; width: 80px; text-align: right; flex-shrink: 0; }
+@media (max-width: 400px) {
+  .bs-totals { grid-template-columns: 1fr; }
+  .bs-total-value { font-size: 20px; }
+}
+
 /* ─── Calendar Widget ─── */
 .calendar-widget {
   background: var(--bg-card); border-radius: var(--radius);

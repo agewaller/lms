@@ -134,8 +134,9 @@ var Pages = {
       html += this.renderTranscriptInput();
     }
 
-    // Time domain: Calendar widget + Marketplace widget
+    // Time domain: Habit tracker + Calendar widget + Marketplace widget
     if (domain === 'time') {
+      html += this.renderHabitTracker();
       if (typeof CalendarIntegration !== 'undefined') html += CalendarIntegration.renderWidget();
       if (typeof TimeMarketplace !== 'undefined') html += TimeMarketplace.renderWidget();
     }
@@ -156,9 +157,10 @@ var Pages = {
       html += this.renderUpcomingBirthdays();
     }
 
-    // Assets domain: NISA simulator + advisor + screenshot + auto trading
+    // Assets domain: monthly budget summary + NISA simulator + advisor + screenshot + auto trading
     // (Stock analysis widget is rendered at the top of the page.)
     if (domain === 'assets') {
+      html += this.renderMonthlyBudgetSummary();
       if (typeof AssetsFeatures !== 'undefined') {
         html += AssetsFeatures.renderNISASimulator();
         html += AssetsFeatures.renderAIAdvisor();
@@ -378,6 +380,128 @@ var Pages = {
         </button>
       </div>
       <div id="stockResult"></div>
+    </div>`;
+  },
+
+  // ─── Daily Habit Tracker (Time domain) ───
+  renderHabitTracker() {
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = 'lms_habits_' + today;
+    let completedArr = [];
+    try { completedArr = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch (e) {}
+    const completedSet = new Set(completedArr);
+
+    const defaultHabits = [
+      { key: 'walk', label: '散歩・運動' },
+      { key: 'medicine', label: 'お薬を飲む' },
+      { key: 'contact', label: '誰かに連絡' },
+      { key: 'meal', label: '食事を楽しむ' },
+      { key: 'rest', label: 'ゆっくり休む' }
+    ];
+
+    return `<div class="habit-tracker-card">
+      <div class="ht-header">
+        <span class="ht-title">今日の習慣チェック</span>
+        <span class="ht-count">${completedSet.size}/${defaultHabits.length}</span>
+      </div>
+      <div class="ht-habits">
+        ${defaultHabits.map(h => {
+          const done = completedSet.has(h.key);
+          return `<button class="ht-habit ${done ? 'done' : ''}"
+            onclick="Pages.toggleHabit('${Components.escapeHtml(h.key)}')">
+            <span class="ht-check">${done ? '✓' : ''}</span>
+            <span class="ht-label">${Components.escapeHtml(h.label)}</span>
+          </button>`;
+        }).join('')}
+      </div>
+      ${completedSet.size === defaultHabits.length ? '<div class="ht-complete">今日の習慣をすべて達成しました！素晴らしい！</div>' : ''}
+    </div>`;
+  },
+
+  toggleHabit(key) {
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = 'lms_habits_' + today;
+    let completed = [];
+    try { completed = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch (e) {}
+
+    if (completed.includes(key)) {
+      completed = completed.filter(k => k !== key);
+    } else {
+      completed.push(key);
+      if (completed.length === 5) {
+        store.addDomainEntry('time', 'habits', { completed_habits: completed, streak: 0 });
+      }
+    }
+    localStorage.setItem(storageKey, JSON.stringify(completed));
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Monthly Budget Summary (Assets domain) ───
+  renderMonthlyBudgetSummary() {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const monthLabel = `${now.getFullYear()}年${now.getMonth() + 1}月`;
+
+    const incomeData = store.getDomainData('assets', 'income', 90).filter(e => (e.timestamp || '') >= monthStart);
+    const expenseData = store.getDomainData('assets', 'expenses', 90).filter(e => (e.timestamp || '') >= monthStart);
+
+    const totalIncome = incomeData.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const totalExpense = expenseData.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const balance = totalIncome - totalExpense;
+    const balanceColor = balance >= 0 ? 'var(--success,#10b981)' : 'var(--danger,#ef4444)';
+
+    // Expense by category
+    const catMap = {};
+    const catLabels = { housing: '住居費', food: '食費', health: '医療費', transport: '交通費', insurance: '保険', tax: '税金', entertainment: '交際・娯楽', other: 'その他' };
+    expenseData.forEach(e => {
+      const cat = e.category || 'other';
+      catMap[cat] = (catMap[cat] || 0) + (Number(e.amount) || 0);
+    });
+    const topCats = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 4);
+
+    const fmt = (n) => n === 0 ? '¥0' : `¥${Math.round(n).toLocaleString('ja-JP')}`;
+
+    if (totalIncome === 0 && totalExpense === 0) {
+      return `<div class="budget-summary-card">
+        <div class="bs-header">
+          <span class="bs-title">${monthLabel}の家計</span>
+          <button class="btn btn-sm btn-primary" onclick="app.navigate('record')">収支を記録する</button>
+        </div>
+        <p style="color:var(--text-secondary);font-size:15px;margin-top:12px">今月の収入・支出の記録がまだありません。記録を始めると、お金の流れが見えてきます。</p>
+      </div>`;
+    }
+
+    return `<div class="budget-summary-card">
+      <div class="bs-header">
+        <span class="bs-title">${monthLabel}の家計</span>
+        <button class="btn btn-sm btn-secondary" onclick="app.navigate('record')">記録を追加</button>
+      </div>
+      <div class="bs-totals">
+        <div class="bs-total-item bs-income">
+          <div class="bs-total-label">収入</div>
+          <div class="bs-total-value">${fmt(totalIncome)}</div>
+        </div>
+        <div class="bs-total-item bs-expense">
+          <div class="bs-total-label">支出</div>
+          <div class="bs-total-value">${fmt(totalExpense)}</div>
+        </div>
+        <div class="bs-total-item bs-balance">
+          <div class="bs-total-label">収支</div>
+          <div class="bs-total-value" style="color:${balanceColor}">${balance >= 0 ? '+' : ''}${fmt(balance)}</div>
+        </div>
+      </div>
+      ${topCats.length > 0 ? `
+        <div class="bs-categories">
+          <div class="bs-cat-title">支出の内訳</div>
+          ${topCats.map(([cat, amt]) => {
+            const pct = totalExpense > 0 ? Math.round(amt / totalExpense * 100) : 0;
+            return `<div class="bs-cat-row">
+              <span class="bs-cat-label">${Components.escapeHtml(catLabels[cat] || cat)}</span>
+              <div class="bs-cat-track"><div class="bs-cat-fill" style="width:${pct}%"></div></div>
+              <span class="bs-cat-amt">${fmt(amt)}</span>
+            </div>`;
+          }).join('')}
+        </div>` : ''}
     </div>`;
   },
 
