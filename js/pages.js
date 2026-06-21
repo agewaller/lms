@@ -247,6 +247,7 @@ var Pages = {
       html += this.renderAfternoonSleepLog();
       html += this.renderWaterTracker();
       html += this.renderExerciseLog();
+      html += this.renderOutingLog();
       html += this.renderStepCounter();
       html += this.renderWeeklyStepGoal();
       html += this.renderSOSWidget();
@@ -3094,6 +3095,7 @@ var Pages = {
     { id: 'wisdom_fav',       icon: '⭐', title: 'ことばを大切に', desc: '今日のことばをお気に入りにしました' },
     { id: 'cog_check_7',      icon: '🧩', title: '脳活習慣',       desc: '7日連続で脳の健康チェックをしました' },
     { id: 'purpose_check_14', icon: '💡', title: '充実の記録',     desc: '14日間、充実感チェックを続けました' },
+    { id: 'outing_7',         icon: '🚶', title: '外出習慣',       desc: '7日連続で外出を記録しました' },
   ],
 
   checkAchievements() {
@@ -3216,6 +3218,20 @@ var Pages = {
       }
     } catch(e) {}
 
+    // outing_7: 7 consecutive days with at least one outing
+    let outingStreak7 = false;
+    try {
+      const oDates = [...new Set(JSON.parse(localStorage.getItem('lms_outingLog') || '[]').map(e => e.date))].sort().reverse();
+      if (oDates.length >= 7) {
+        let run = 1;
+        for (let i = 1; i < oDates.length && run < 7; i++) {
+          const diff = (new Date(oDates[i-1]) - new Date(oDates[i])) / 86400000;
+          if (diff === 1) run++; else break;
+        }
+        outingStreak7 = run >= 7;
+      }
+    } catch(e) {}
+
     const checks = {
       first_entry:      totalEntries >= 1,
       streak_3:         streak >= 3,
@@ -3231,7 +3247,8 @@ var Pages = {
       learning_100min:  learningMin >= 100,
       wisdom_fav:       wisdomFav,
       cog_check_7:      cogStreak7,
-      purpose_check_14: purposeStreak14
+      purpose_check_14: purposeStreak14,
+      outing_7:         outingStreak7
     };
 
     this._achievementDefs.forEach(def => {
@@ -8759,5 +8776,163 @@ var Pages = {
         </div>
       </div>
     </div>`;
+  },
+
+  // ─── Outing Log (外出記録, health domain) ───
+  renderOutingLog() {
+    const today = new Date().toISOString().split('T')[0];
+    let log = [];
+    try { log = JSON.parse(localStorage.getItem('lms_outingLog') || '[]'); } catch(e) {}
+    log = log.filter(e => e.date && e.timestamp)
+             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    const todayEntries = log.filter(e => e.date === today);
+
+    // 7-day streak
+    const datesSet = new Set(log.map(e => e.date));
+    let streak = 0;
+    const chk = new Date();
+    if (!datesSet.has(today)) chk.setDate(chk.getDate() - 1);
+    while (true) {
+      const k = chk.toISOString().split('T')[0];
+      if (!datesSet.has(k)) break;
+      streak++;
+      chk.setDate(chk.getDate() - 1);
+      if (streak > 90) break;
+    }
+
+    // This week outings (Mon–today)
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + (weekStart.getDay() === 0 ? -6 : 1));
+    const weekKey = weekStart.toISOString().split('T')[0];
+    const weekDays = new Set(log.filter(e => e.date >= weekKey).map(e => e.date));
+
+    const purposeLabels = {
+      walk:     '散歩',
+      shopping: '買い物',
+      hospital: '病院・クリニック',
+      social:   '友人・家族に会う',
+      hobby:    '趣味・習い事',
+      public:   '公共施設・図書館',
+      sightseeing: '観光・お出かけ',
+      other:    'その他'
+    };
+    const weatherLabels = { sunny: '☀ 晴れ', cloudy: '☁ 曇り', rainy: '🌧 雨', hot: '🥵 暑い', cold: '🥶 寒い' };
+    const companionLabels = { alone: '一人で', family: '家族と', friend: '友人と', neighbor: '近所の方と' };
+
+    const formOpen = sessionStorage.getItem('lms_outLogForm') === '1';
+
+    return `<div class="outing-card">
+      <div class="outing-header">
+        <div class="outing-title-wrap">
+          <div class="outing-title">外出記録</div>
+          ${streak >= 2 ? `<span class="outing-streak">${streak}日連続</span>` : ''}
+        </div>
+        <div class="outing-meta">
+          ${weekDays.size > 0 ? `今週 <strong>${weekDays.size}回</strong>` : ''}
+        </div>
+      </div>
+
+      ${todayEntries.length > 0 ? `<div class="outing-today">
+        ${todayEntries.slice(0, 3).map(e => `
+          <div class="outing-today-item">
+            <span class="outing-tag">${purposeLabels[e.purpose] || Components.escapeHtml(e.purpose || '')}</span>
+            ${e.minutes ? `<span class="outing-min">${e.minutes}分</span>` : ''}
+            ${e.companion ? `<span class="outing-comp">${companionLabels[e.companion] || ''}</span>` : ''}
+            ${e.mood ? `<span class="outing-mood">${'★'.repeat(e.mood)}${'☆'.repeat(5 - e.mood)}</span>` : ''}
+          </div>`).join('')}
+      </div>` : ''}
+
+      <button class="outing-add-btn" onclick="
+        const open = sessionStorage.getItem('lms_outLogForm') === '1';
+        sessionStorage.setItem('lms_outLogForm', open ? '0' : '1');
+        const f = document.getElementById('outingForm');
+        if (f) f.style.display = open ? 'none' : 'flex';
+      ">${todayEntries.length > 0 ? '＋ もう一件追加' : '＋ 今日の外出を記録'}</button>
+
+      <div class="outing-form" id="outingForm" style="display:${formOpen ? 'flex' : 'none'}">
+        <select id="outPurpose" class="form-input form-input-sm">
+          ${Object.entries(purposeLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+        </select>
+        <div class="outing-form-row">
+          <select id="outMinutes" class="form-input form-input-sm" style="width:100px">
+            <option value="15">15分</option>
+            <option value="30">30分</option>
+            <option value="60">1時間</option>
+            <option value="90">1時間半</option>
+            <option value="120">2時間以上</option>
+          </select>
+          <select id="outCompanion" class="form-input form-input-sm">
+            ${Object.entries(companionLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+          </select>
+        </div>
+        <div class="outing-form-row">
+          <select id="outWeather" class="form-input form-input-sm">
+            ${Object.entries(weatherLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+          </select>
+          <div class="outing-mood-sel" id="outMoodSel">
+            気分：
+            ${[1,2,3,4,5].map(n => `<button class="outing-star" id="outStar${n}" onclick="Pages.setOutingStar(${n})" title="${n}">☆</button>`).join('')}
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="Pages.saveOutingLog()">記録する</button>
+      </div>
+
+      ${log.length >= 7 ? (() => {
+        // Last 14 days bar (presence chart)
+        const days14 = [];
+        for (let i = 13; i >= 0; i--) {
+          const d = new Date(); d.setDate(d.getDate() - i);
+          days14.push(d.toISOString().split('T')[0]);
+        }
+        return `<div class="outing-history">
+          ${days14.map(d => {
+            const had = datesSet.has(d);
+            const label = d.slice(8);
+            return `<div class="outing-day ${had ? 'outing-day-on' : ''}" title="${d}">${label}</div>`;
+          }).join('')}
+        </div>`;
+      })() : ''}
+    </div>`;
+  },
+
+  _outingMood: 0,
+  setOutingStar(val) {
+    this._outingMood = val;
+    [1,2,3,4,5].forEach(n => {
+      const b = document.getElementById('outStar' + n);
+      if (b) b.textContent = n <= val ? '★' : '☆';
+    });
+  },
+
+  saveOutingLog() {
+    const purpose  = document.getElementById('outPurpose')?.value;
+    const minutes  = parseInt(document.getElementById('outMinutes')?.value) || 30;
+    const companion = document.getElementById('outCompanion')?.value;
+    const weather  = document.getElementById('outWeather')?.value;
+    const mood     = this._outingMood || 0;
+    const today    = new Date().toISOString().split('T')[0];
+
+    if (!purpose) { Components.showToast('目的を選んでください', 'error'); return; }
+
+    let log = [];
+    try { log = JSON.parse(localStorage.getItem('lms_outingLog') || '[]'); } catch(e) {}
+    // Keep 90 days
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 90);
+    const cutStr = cutoff.toISOString().split('T')[0];
+    log = log.filter(e => e.date >= cutStr);
+    log.push({ date: today, purpose, minutes, companion, weather, mood, timestamp: new Date().toISOString() });
+    try { localStorage.setItem('lms_outingLog', JSON.stringify(log)); } catch(e) {}
+
+    store.addDomainEntry('health', 'activity', {
+      activity_type: 'outing', purpose, minutes, companion, weather, mood
+    });
+
+    sessionStorage.setItem('lms_outLogForm', '0');
+    this._outingMood = 0;
+    Components.showToast('外出を記録しました', 'success');
+    const { newlyUnlocked } = this.checkAchievements();
+    newlyUnlocked.forEach(b => Components.showToast(`🏅 実績解除：${b.title}`, 'success'));
+    if (typeof app !== 'undefined') app.renderApp();
   }
 };
