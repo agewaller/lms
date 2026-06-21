@@ -36,6 +36,7 @@ var Pages = {
     // Quick input bar
     let html = `<div class="page-home">
       ${this.renderDailyGreeting(domain)}
+      ${this.renderCheckinSummaryCard()}
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
@@ -3981,6 +3982,78 @@ var Pages = {
         </div>
       </div>
     </div>`;
+  },
+
+  // ─── Check-in Summary Card (shown after morning check-in completed) ───
+  renderCheckinSummaryCard() {
+    const today = new Date().toISOString().split('T')[0];
+    if (!localStorage.getItem('lms_checkin_' + today)) return '';
+    try { if (localStorage.getItem('lms_checkin_summary_dismissed_' + today)) return ''; } catch(e) {}
+
+    let answers = {};
+    try { answers = JSON.parse(localStorage.getItem('lms_checkin_answers_' + today) || '{}'); } catch(e) {}
+    const domains = Object.keys(answers);
+    if (domains.length === 0) return '';
+
+    const colorMap = { consciousness:'#6C63FF', health:'#10b981', time:'#f59e0b', work:'#3b82f6', relationship:'#ef4444', assets:'#d97706' };
+    const iconMap  = { consciousness:'一', health:'二', time:'三', work:'四', relationship:'五', assets:'六' };
+    const labelMap = { consciousness:'意識', health:'健康', time:'時間', work:'仕事', relationship:'関係', assets:'資産' };
+    const valueLabels = {
+      consciousness: {calm:'穏やか', neutral:'普通', anxious:'不安'},
+      health:        {good:'良い', fair:'普通', poor:'悪い'},
+      time:          {planned:'しっかりある', loose:'ゆるくある', unknown:'まだ不明'},
+      work:          {yes:'ある', some:'少し', none:'なし'},
+      relationship:  {planned:'予定あり', maybe:'たぶん', none:'なし'},
+      assets:        {secure:'安心', some:'少し', worried:'心配'}
+    };
+    const suggestionMap = {
+      consciousness: {anxious:'今の気持ちを一言書き出すと楽になります。意識ページで記録してみましょう。', neutral:'5分間の深呼吸を試してみましょう。'},
+      health:        {poor:'今日は無理せず休養を優先しましょう。3日続くようなら医師に相談を。', fair:'水分をこまめに取りましょう。'},
+      time:          {unknown:'今日1つだけやることを決めてみましょう。小さな一歩が大切です。', loose:'朝のうちに今日のメイン行動を1つ書き出してみましょう。'},
+      work:          {none:'今日は充電の日です。明日やりたいことをメモしておきましょう。', some:'小さな達成を積み上げましょう。できたことを記録すると自信につながります。'},
+      relationship:  {none:'久しぶりに連絡したい人はいますか？関係ページで確認できます。', maybe:'LINEで一言送るだけで十分です。今日1人に連絡してみましょう。'},
+      assets:        {worried:'心配を具体化すると小さくなります。資産ページで状況を整理しましょう。', some:'今月の支出を確認してみましょう。把握するだけで安心感が変わります。'}
+    };
+    const esc = Components.escapeHtml;
+
+    const pillsHtml = domains.map(d => {
+      const val = answers[d]?.value;
+      const label = valueLabels[d]?.[val] || val || '';
+      const color = colorMap[d] || '#6C63FF';
+      return `<div class="cscr-pill" style="background:${color}18;color:${color}">${iconMap[d]} ${labelMap[d]}: <strong>${esc(label)}</strong></div>`;
+    }).join('');
+
+    // Lowest-score answers get suggestions first
+    const sorted = [...domains].sort((a, b) => (answers[a].score || 9) - (answers[b].score || 9));
+    const suggestions = [];
+    sorted.forEach(d => {
+      if (suggestions.length >= 2) return;
+      const val = answers[d]?.value;
+      const s = suggestionMap[d]?.[val];
+      if (s) suggestions.push({ domain: d, text: s, color: colorMap[d], icon: iconMap[d] });
+    });
+
+    return `<div class="cscr-card" id="checkinSummaryCard">
+      <div class="cscr-header">
+        <span class="cscr-title">✓ 今日のチェックイン完了</span>
+        <button class="cscr-close" onclick="Pages.dismissCheckinSummary()">×</button>
+      </div>
+      <div class="cscr-pills">${pillsHtml}</div>
+      ${suggestions.length > 0 ? `<div class="cscr-suggestions">
+        <div class="cscr-sug-title">今日のおすすめ</div>
+        ${suggestions.map(s => `<div class="cscr-sug-item">
+          <span class="cscr-sug-icon" style="color:${s.color}">${s.icon}</span>
+          <span class="cscr-sug-text">${esc(s.text)}</span>
+        </div>`).join('')}
+      </div>` : ''}
+    </div>`;
+  },
+
+  dismissCheckinSummary() {
+    const today = new Date().toISOString().split('T')[0];
+    try { localStorage.setItem('lms_checkin_summary_dismissed_' + today, '1'); } catch(e) {}
+    const card = document.getElementById('checkinSummaryCard');
+    if (card) card.remove();
   },
 
   // ─── Morning Check-in Modal ───

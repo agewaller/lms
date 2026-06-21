@@ -2416,6 +2416,9 @@ var App = class App {
       store.addDomainEntry(domain, category, fields);
     });
 
+    // Persist answers for the summary card
+    try { localStorage.setItem('lms_checkin_answers_' + today, JSON.stringify(answers)); } catch(e) {}
+
     Components.showToast(`チェックイン完了！${entries.length}領域を記録しました`, 'success');
   }
 

@@ -3131,6 +3131,29 @@ html[data-theme="dark"] .ht-cell.level-3     { background: #10b981; }
 .cdc-icon { font-size: 1.1rem; flex-shrink: 0; line-height: 1.4; }
 .cdc-text { font-size: 0.88rem; color: var(--text-primary); line-height: 1.5; }
 
+/* ─── Check-in Summary Card ─── */
+.cscr-card {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.cscr-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cscr-title { font-size: 0.9rem; font-weight: 600; color: #0369a1; }
+.cscr-close { background: none; border: none; color: #0369a1; opacity: 0.6; cursor: pointer; font-size: 1.05rem; line-height: 1; padding: 2px 6px; }
+.cscr-close:hover { opacity: 1; }
+.cscr-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.cscr-pill { font-size: 0.8rem; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+.cscr-sug-title { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.cscr-sug-item { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-top: 1px solid rgba(0,0,0,0.06); font-size: 0.88rem; line-height: 1.5; color: var(--text-primary); }
+.cscr-sug-icon { font-size: 0.78rem; font-weight: 700; flex-shrink: 0; margin-top: 3px; }
+.cscr-sug-text { flex: 1; }
+html[data-theme="dark"] .cscr-card { background: linear-gradient(135deg, #0c1a2e 0%, #0c2540 100%); border-color: #1e4d7a; }
+html[data-theme="dark"] .cscr-title { color: #60b8e8; }
+html[data-theme="dark"] .cscr-close { color: #60b8e8; }
+html[data-theme="dark"] .cscr-sug-item { border-top-color: rgba(255,255,255,0.07); }
+
 /* ─── Morning Check-in Modal ─── */
 .ci-overlay {
   position: fixed;
