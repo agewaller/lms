@@ -2804,6 +2804,9 @@ body.is-admin .admin-only { display: flex; }
   .dr-stat-val { color: #333 !important; }
   .dr-section h2 { color: #000 !important; }
   .page-content { padding: 0 !important; }
+  /* Print isolation: when body has .print-isolation, show only .print-target */
+  body.print-isolation > * { display: none !important; }
+  body.print-isolation .print-target { display: block !important; }
 }
 
 /* ─── Dark mode specific overrides ─── */

@@ -3879,11 +3879,11 @@ var Pages = {
   printMonthlyReport() {
     const card = document.getElementById('monthlyReportCard');
     if (!card) return;
-    const original = document.body.innerHTML;
-    document.body.innerHTML = `<div style="padding:24px;font-family:sans-serif;">${card.outerHTML}</div>`;
+    card.classList.add('print-target');
+    document.body.classList.add('print-isolation');
     window.print();
-    document.body.innerHTML = original;
-    if (typeof app !== 'undefined') app.renderApp();
+    document.body.classList.remove('print-isolation');
+    card.classList.remove('print-target');
   },
 
   forceMonthlyReport() {
