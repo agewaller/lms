@@ -1064,7 +1064,7 @@ var Pages = {
             <div class="form-group" style="flex:2;">
               <label>検索</label>
               <input type="text" id="dataSearch" class="form-input"
-                value="${filter.search}"
+                value="${Components.escapeHtml(filter.search || '')}"
                 placeholder="記録の中身を検索..."
                 oninput="app.filterDataBrowser('search',this.value)">
             </div>

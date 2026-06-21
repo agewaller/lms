@@ -199,7 +199,7 @@ var TimeMarketplace = {
 
       <div class="form-group">
         <label>場所（対面の場合）</label>
-        <input type="text" id="mpAddress" class="form-input" value="${s.location.address || ''}" placeholder="例：東京都渋谷区...">
+        <input type="text" id="mpAddress" class="form-input" value="${Components.escapeHtml(s.location.address || '')}" placeholder="例：東京都渋谷区...">
       </div>
 
       <div class="form-group">
@@ -245,7 +245,7 @@ var TimeMarketplace = {
 
       <div class="form-group">
         <label>PayPalメールアドレス（決済用）</label>
-        <input type="email" id="mpPaypal" class="form-input" value="${s.paypal.email || ''}" placeholder="your-email@example.com">
+        <input type="email" id="mpPaypal" class="form-input" value="${Components.escapeHtml(s.paypal.email || '')}" placeholder="your-email@example.com">
       </div>
 
       <button class="btn btn-primary" onclick="app.saveMarketplaceSettings()">設定を保存</button>
