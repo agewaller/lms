@@ -46,6 +46,7 @@ var Pages = {
       ${this.renderTodaySummary(domain)}
       ${this.renderDailyPrompt(domain)}
       ${this.renderDomainInsight(domain)}
+      ${this.renderReengagementNudge()}
       ${this.renderFamilyShareCard(domain)}
       ${this.renderWeeklySummary()}
       ${this.renderNotificationPrompt()}`;
@@ -1877,9 +1878,9 @@ var Pages = {
     const weekKey = `${today.getFullYear()}-W${this._weekNumber(today)}`;
     const dismissed = localStorage.getItem('lms_weeklySummaryDismissed');
     if (dismissed === weekKey) return '';
-    // Only show if there was data last week (avoid showing every login for new users)
-    const dayOfWeek = today.getDay();
-    if (dayOfWeek === 0 || dayOfWeek >= 6) return ''; // skip weekends (low context)
+    // Only show Mon/Thu/Sat — weekends excluded on Thu to avoid double-showing near weekend
+    const dayOfWeek = today.getDay(); // 0=Sun,6=Sat
+    if (dayOfWeek !== 1 && dayOfWeek !== 4 && dayOfWeek !== 6 && dayOfWeek !== 0) return '';
 
     // Gather last 7 days counts per domain
     const domainKeys = Object.keys(CONFIG.domains);
@@ -1916,6 +1917,47 @@ var Pages = {
       </div>
       <div class="ws-highlight">
         一番記録が多かった領域: <strong>${topDomain.icon} ${i18n.t(topDomain.d)}</strong>（${topDomain.count}件）
+      </div>
+    </div>`;
+  },
+
+  // ─── Re-engagement nudge (3+ days without any record) ───
+  renderReengagementNudge() {
+    const allDates = new Set();
+    Object.keys(CONFIG.domains).forEach(d => {
+      Object.keys(CONFIG.domains[d]?.categories || {}).forEach(cat => {
+        store.getDomainData(d, cat, 30).forEach(e => {
+          if (e.timestamp) allDates.add(e.timestamp.split('T')[0]);
+        });
+      });
+    });
+    if (allDates.size === 0) return ''; // new user — already handled by getting-started
+    const today = new Date().toISOString().split('T')[0];
+    if (allDates.has(today)) return '';
+    // Count gap
+    let gap = 0;
+    const cur = new Date();
+    while (gap < 30) {
+      const key = cur.toISOString().split('T')[0];
+      if (allDates.has(key)) break;
+      gap++;
+      cur.setDate(cur.getDate() - 1);
+    }
+    if (gap < 3) return '';
+    const msgs = [
+      `${gap}日間、記録がありませんでした。`,
+      `久しぶりですね！少しだけ記録してみませんか？`,
+      `体調の変化も、${gap}日分まとめて記録できます。`
+    ];
+    const msg = msgs[gap < 7 ? 0 : gap < 14 ? 1 : 2];
+    return `<div class="reengagement-card">
+      <span class="re-icon">💌</span>
+      <div class="re-body">
+        <div class="re-msg">${msg}</div>
+        <div class="re-actions">
+          <button class="btn btn-sm btn-primary" onclick="app.navigate('record')">今日の記録をつける</button>
+          <button class="btn btn-sm btn-text" onclick="this.closest('.reengagement-card').remove()">後で</button>
+        </div>
       </div>
     </div>`;
   },

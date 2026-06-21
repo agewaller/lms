@@ -2850,3 +2850,20 @@ html[data-theme="dark"] .form-textarea {
 .frm-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .frm-line { flex: 1; text-align: center; }
 .frm-hint { font-size: 0.78rem; color: var(--text-secondary); margin: 0; }
+
+/* ─── Re-engagement Nudge ─── */
+.reengagement-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 4px solid #f59e0b;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.re-icon  { font-size: 1.4rem; flex-shrink: 0; margin-top: 2px; }
+.re-body  { flex: 1; }
+.re-msg   { font-size: 0.9rem; color: var(--text-primary); margin-bottom: 10px; line-height: 1.5; }
+.re-actions { display: flex; gap: 8px; flex-wrap: wrap; }
