@@ -1,5 +1,5 @@
 /* LMS Service Worker — cache-first for static assets, network-first for API */
-const CACHE = 'lms-v2';
+const CACHE = 'lms-v3';
 const STATIC = [
   '/lms/',
   '/lms/dashboard.html',
