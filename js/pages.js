@@ -122,6 +122,9 @@ var Pages = {
 
     html += `</div></div>`;
 
+    // Activity heatmap calendar (90-day logging history)
+    html += this.renderActivityCalendar(domain);
+
     // 14-day trend chart
     html += this.renderTrendChartContainer(domain);
 
@@ -7256,6 +7259,122 @@ var Pages = {
           </div>`).join('')}
       </div>
       <div class="cdi-foot">過去30日間のデータ（${daysWithData}日分）から算出</div>
+    </div>`;
+  },
+
+  // ─── Activity Calendar Heatmap (90-day logging consistency) ───
+  renderActivityCalendar(domain) {
+    const domainConfig = CONFIG.domains[domain];
+    const categories = Object.keys(domainConfig?.categories || {});
+
+    // Collect entry counts per day for the past 91 days (13 weeks)
+    const countByDay = {};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    categories.forEach(cat => {
+      store.getDomainData(domain, cat, 91).forEach(e => {
+        const day = (e.timestamp || '').split('T')[0];
+        if (day) countByDay[day] = (countByDay[day] || 0) + 1;
+      });
+    });
+
+    const totalDaysLogged = Object.keys(countByDay).length;
+    if (totalDaysLogged < 3) return ''; // only show after a few days of data
+
+    // Build 13-week grid starting from 90 days ago, aligned to Sunday
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - 90);
+    // Back up to the nearest Sunday
+    startDate.setDate(startDate.getDate() - startDate.getDay());
+
+    const domainColor = domainConfig?.color || '#6C63FF';
+    const weeks = [];
+    let cur = new Date(startDate);
+
+    while (cur <= today) {
+      const week = [];
+      for (let d = 0; d < 7; d++) {
+        const dateStr = cur.toISOString().split('T')[0];
+        const isFuture = cur > today;
+        const isToday = cur.toDateString() === today.toDateString();
+        const count = countByDay[dateStr] || 0;
+        const isInRange = cur >= new Date(today.getTime() - 90 * 86400000) && !isFuture;
+        week.push({ dateStr, count, isToday, isFuture, isInRange });
+        cur.setDate(cur.getDate() + 1);
+      }
+      weeks.push(week);
+    }
+
+    // Month labels for the top
+    const monthLabels = [];
+    let prevMonth = -1;
+    weeks.forEach((week, wi) => {
+      const firstDay = week.find(d => d.isInRange && !d.isFuture);
+      if (!firstDay) { monthLabels.push(''); return; }
+      const m = new Date(firstDay.dateStr).getMonth();
+      if (m !== prevMonth) {
+        monthLabels.push((m + 1) + '月');
+        prevMonth = m;
+      } else {
+        monthLabels.push('');
+      }
+    });
+
+    const dayLabels = ['日', '月', '火', '水', '木', '金', '土'];
+
+    // Generate cell HTML
+    const getCellStyle = (cell) => {
+      if (!cell.isInRange || cell.isFuture) return 'background:var(--bg-tertiary);opacity:0.3';
+      if (cell.count === 0) return 'background:var(--bg-tertiary)';
+      const alpha = cell.count === 1 ? '0.35' : cell.count === 2 ? '0.60' : cell.count === 3 ? '0.80' : '1';
+      const base = cell.isToday ? `background:${domainColor};outline:2px solid ${domainColor};outline-offset:1px` : `background:${domainColor};opacity:${alpha}`;
+      return base;
+    };
+
+    // Calculate streak
+    let streak = 0;
+    const check = new Date(today);
+    if (!countByDay[check.toISOString().split('T')[0]]) check.setDate(check.getDate() - 1);
+    while (true) {
+      const k = check.toISOString().split('T')[0];
+      if (!countByDay[k]) break;
+      streak++;
+      check.setDate(check.getDate() - 1);
+      if (streak > 91) break;
+    }
+
+    const streakMsg = streak >= 7 ? `${streak}日連続記録中！` : streak >= 2 ? `${streak}日連続` : '';
+
+    return `<div class="act-cal-card">
+      <div class="act-cal-header">
+        <div class="act-cal-title">記録カレンダー（過去90日）</div>
+        <div class="act-cal-stats">
+          <span class="act-cal-logged">${totalDaysLogged}日 記録済</span>
+          ${streakMsg ? `<span class="act-cal-streak" style="color:${domainColor}">${streakMsg}</span>` : ''}
+        </div>
+      </div>
+      <div class="act-cal-grid-wrap">
+        <div class="act-cal-day-labels">
+          ${dayLabels.map(l => `<div class="act-cal-day-label">${l}</div>`).join('')}
+        </div>
+        <div class="act-cal-grid">
+          ${weeks.map((week, wi) => `
+            <div class="act-cal-week">
+              ${monthLabels[wi] ? `<div class="act-cal-month-label">${monthLabels[wi]}</div>` : ''}
+              ${week.map(cell => `<div class="act-cal-cell${cell.isToday ? ' act-cal-today' : ''}"
+                style="${getCellStyle(cell)}"
+                title="${cell.dateStr}${cell.count > 0 ? ' (' + cell.count + '件)' : ''}"
+                ${cell.count > 0 ? `onclick="app.filterDataBrowser('dateFrom','${cell.dateStr}');app.filterDataBrowser('dateTo','${cell.dateStr}');app.navigate('data')"` : ''}
+              ></div>`).join('')}
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="act-cal-legend">
+        <span class="act-cal-leg-label">少ない</span>
+        ${[0.25, 0.5, 0.75, 1].map(a => `<div class="act-cal-leg-cell" style="background:${domainColor};opacity:${a}"></div>`).join('')}
+        <span class="act-cal-leg-label">多い</span>
+      </div>
     </div>`;
   },
 
