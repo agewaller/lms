@@ -52,7 +52,6 @@ var Pages = {
       ${this.renderTodaySummary(domain)}
       ${this.renderDailyPrompt(domain)}
       ${this.renderDomainInsight(domain)}
-      ${this.renderCrossDomainInsights(domain)}
       ${this.renderMonthlyLifeReport()}
       ${this.renderReengagementNudge()}
       ${this.renderAchievementBadges()}
@@ -2009,8 +2008,93 @@ var Pages = {
       html += `<div class="disclaimer">${i18n.t('disclaimer_assets')}</div>`;
     }
 
+    html += this.renderLifeScoreShare();
     html += `</div>`;
     return html;
+  },
+
+  // ─── Life Score Share Card (drives word-of-mouth user acquisition) ───
+  renderLifeScoreShare() {
+    const scores = store.get('domainScores') || {};
+    const hasAnyScore = Object.values(scores).some(s => s > 0);
+    if (!hasAnyScore) return '';
+
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
+
+    const domainDefs = [
+      { id: 'consciousness', icon: '🧠', label: '意識', color: '#6C63FF' },
+      { id: 'health',        icon: '💚', label: '健康', color: '#10b981' },
+      { id: 'time',          icon: '⏰', label: '時間', color: '#f59e0b' },
+      { id: 'work',          icon: '💼', label: '仕事', color: '#3b82f6' },
+      { id: 'relationship',  icon: '🤝', label: '関係', color: '#ef4444' },
+      { id: 'assets',        icon: '💰', label: '資産', color: '#d97706' }
+    ].filter(d => (scores[d.id] || 0) > 0);
+
+    if (domainDefs.length === 0) return '';
+
+    const totalAvg = Math.round(domainDefs.reduce((s, d) => s + (scores[d.id] || 0), 0) / domainDefs.length);
+
+    // Build share text
+    const shareText = [
+      `📊 今日の私の状態（${dateStr}）`,
+      '',
+      ...domainDefs.map(d => {
+        const s = scores[d.id] || 0;
+        const bars = '■'.repeat(Math.round(s / 20)) + '□'.repeat(5 - Math.round(s / 20));
+        return `${d.icon} ${d.label} ${bars} ${s}/100`;
+      }),
+      '',
+      `総合スコア: ${totalAvg}/100`,
+      '',
+      'LMSで人生の6領域を管理中 https://agewaller.github.io/lms/'
+    ].join('\n');
+    Pages._lifeScoreShareText = shareText;
+
+    return `<div class="lss-card">
+      <div class="lss-header">
+        <span class="lss-title">今の状態を家族・友人に伝える</span>
+      </div>
+      <div class="lss-scores">
+        ${domainDefs.map(d => {
+          const s = scores[d.id] || 0;
+          const pct = s;
+          return `<div class="lss-row">
+            <span class="lss-icon" style="color:${d.color}">${d.icon}</span>
+            <span class="lss-label">${d.label}</span>
+            <div class="lss-bar-track">
+              <div class="lss-bar-fill" style="width:${pct}%;background:${d.color}"></div>
+            </div>
+            <span class="lss-score" style="color:${d.color}">${s}</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="lss-avg">総合 <strong>${totalAvg}</strong>/100</div>
+      <div class="lss-actions">
+        <button class="btn btn-sm btn-primary" onclick="Pages.shareLifeScore()">LINEで共有</button>
+        <button class="btn btn-sm btn-secondary" onclick="Pages.copyLifeScore()">テキストをコピー</button>
+      </div>
+    </div>`;
+  },
+
+  _lifeScoreShareText: '',
+
+  shareLifeScore() {
+    const text = Pages._lifeScoreShareText;
+    if (navigator.share) {
+      navigator.share({ title: '今の私の状態', text }).catch(() => {});
+    } else {
+      window.open('https://social-plugins.line.me/lineit/share?text=' + encodeURIComponent(text), '_blank');
+    }
+  },
+
+  copyLifeScore() {
+    const text = Pages._lifeScoreShareText;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => Components.showToast('コピーしました', 'success'));
+    } else {
+      Components.showToast('共有ボタンをご利用ください', 'info');
+    }
   },
 
   // ═══════════════════════════════════════════════════════════
@@ -3902,94 +3986,6 @@ var Pages = {
   toggleDciAct(el) {
     const label = el.closest('.dci-act-label');
     if (label) label.classList.toggle('selected', el.checked);
-  },
-
-  // ─── Cross-domain holistic insight (rule-based correlation across domains) ───
-  renderCrossDomainInsights(domain) {
-    const days = 14;
-
-    // Build daily average maps for key signals
-    const buildAvgMap = (domainKey, category, valueField) => {
-      const map = {};
-      store.getDomainData(domainKey, category, days).forEach(e => {
-        if (!e.timestamp) return;
-        const d = e.timestamp.split('T')[0];
-        const v = Number(e[valueField]);
-        if (isNaN(v)) return;
-        if (!map[d]) map[d] = [];
-        map[d].push(v);
-      });
-      return map;
-    };
-
-    const buildCountMap = (domainKey, categories) => {
-      const map = {};
-      categories.forEach(cat => {
-        store.getDomainData(domainKey, cat, days).forEach(e => {
-          if (!e.timestamp) return;
-          const d = e.timestamp.split('T')[0];
-          map[d] = (map[d] || 0) + 1;
-        });
-      });
-      return map;
-    };
-
-    // Compute correlation score between two daily maps (0–1, higher = more aligned)
-    const correlate = (mapA, mapB, minDays) => {
-      const shared = Object.keys(mapA).filter(d => mapB[d] !== undefined);
-      if (shared.length < minDays) return null;
-      const avg = (val) => Array.isArray(val) ? val.reduce((s, v) => s + v, 0) / val.length : val;
-      const vA = shared.map(d => avg(mapA[d]));
-      const vB = shared.map(d => avg(mapB[d]));
-      const medA = [...vA].sort((a, b) => a - b)[Math.floor(vA.length / 2)] || 0;
-      const medB = [...vB].sort((a, b) => a - b)[Math.floor(vB.length / 2)] || 0;
-      const highA = new Set(shared.filter((d, i) => vA[i] >= medA));
-      const highB = new Set(shared.filter((d, i) => vB[i] >= medB));
-      const both = [...highA].filter(d => highB.has(d)).length;
-      return { n: shared.length, score: both / Math.max(highA.size, highB.size, 1) };
-    };
-
-    const healthMap  = buildAvgMap('health', 'symptoms', 'condition_level');
-    const moodMap    = buildAvgMap('consciousness', 'observation', 'net_value');
-    const relMap     = buildCountMap('relationship', ['interactions']);
-    const habitsMap  = buildCountMap('time', ['habits']);
-    const workMap    = buildCountMap('work', Object.keys(CONFIG.domains.work?.categories || {}));
-
-    const MIN = 5;
-    const THRESHOLD = 0.65;
-    const insights = [];
-
-    const hc = correlate(healthMap, moodMap, MIN);
-    if (hc && hc.score >= THRESHOLD) {
-      insights.push({ icon: '💚', text: `体調がよい日は心も充実している傾向があります（${hc.n}日分のデータより）` });
-    }
-
-    const rc = correlate(relMap, moodMap, MIN);
-    if (rc && rc.score >= THRESHOLD) {
-      insights.push({ icon: '💞', text: `人と交流した日は心が充実している傾向があります（${rc.n}日分のデータより）` });
-    }
-
-    const th = correlate(habitsMap, healthMap, MIN);
-    if (th && th.score >= THRESHOLD) {
-      insights.push({ icon: '🌿', text: `習慣を続けた日は体調がよい傾向があります（${th.n}日分のデータより）` });
-    }
-
-    const wh = correlate(workMap, healthMap, MIN);
-    if (wh && wh.score >= THRESHOLD) {
-      insights.push({ icon: '🔗', text: `よく動いた日は健康状態もよい傾向があります（${wh.n}日分のデータより）` });
-    }
-
-    if (insights.length === 0) return '';
-
-    return `<div class="cross-domain-card">
-      <div class="cdc-title">6領域のつながり</div>
-      ${insights.slice(0, 2).map(ins => `
-        <div class="cdc-insight">
-          <span class="cdc-icon">${ins.icon}</span>
-          <span class="cdc-text">${Components.escapeHtml(ins.text)}</span>
-        </div>
-      `).join('')}
-    </div>`;
   },
 
   dismissWeeklySummary(weekKey) {

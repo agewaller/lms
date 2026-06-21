@@ -7394,3 +7394,24 @@ html[data-theme="dark"] .wsg-bar-bg { background: rgba(255,255,255,0.1); }
   box-sizing: border-box;
 }
 .buc-msg-actions { display: flex; gap: 8px; margin-top: 8px; }
+
+/* ─── Life Score Share Card (in actions tab) ─── */
+.lss-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+  margin-top: 16px;
+}
+.lss-header { margin-bottom: 12px; }
+.lss-title { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); }
+.lss-scores { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.lss-row { display: flex; align-items: center; gap: 8px; }
+.lss-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+.lss-label { font-size: 0.8rem; color: var(--text-primary); width: 32px; flex-shrink: 0; }
+.lss-bar-track { flex: 1; height: 6px; background: var(--bg-tertiary); border-radius: 3px; overflow: hidden; }
+.lss-bar-fill { height: 100%; border-radius: 3px; min-width: 3px; }
+.lss-score { font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); width: 24px; text-align: right; flex-shrink: 0; }
+.lss-avg { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 10px; }
+.lss-avg strong { color: var(--text-primary); font-size: 1rem; }
+.lss-actions { display: flex; gap: 8px; flex-wrap: wrap; }
