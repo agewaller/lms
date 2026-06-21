@@ -33,6 +33,7 @@ var App = class App {
       setTimeout(() => this.runScheduledPrompts(), 5000);
       setTimeout(() => this._checkPwaInstallOffer(), 10000);
       setTimeout(() => this._checkDailyReminder(), 3000);
+      setTimeout(() => this._checkDailyCheckin(), 4000);
     }
 
     // Listen for auth changes
@@ -46,6 +47,7 @@ var App = class App {
         setTimeout(() => this.runScheduledPrompts(), 5000);
         setTimeout(() => this._checkPwaInstallOffer(), 10000);
         setTimeout(() => this._checkDailyReminder(), 3000);
+        setTimeout(() => this._checkDailyCheckin(), 4000);
       } else {
         this.stopInboxPolling();
       }
@@ -2375,6 +2377,46 @@ var App = class App {
         icon: '/lms/icon.svg'
       });
     }
+  }
+
+  // ─── Morning check-in modal ───
+  _checkDailyCheckin() {
+    const today = new Date().toISOString().split('T')[0];
+    if (localStorage.getItem('lms_checkin_' + today)) return;
+    const hour = new Date().getHours();
+    if (hour < 5 || hour >= 14) return; // Morning window: 5am–2pm
+    if (document.getElementById('modal-overlay')?.classList.contains('active')) return;
+    if (document.getElementById('ciOverlay')) return;
+
+    const div = document.createElement('div');
+    div.innerHTML = Pages.renderDailyCheckinModal();
+    document.body.appendChild(div.firstElementChild);
+  }
+
+  saveDailyCheckin(answers) {
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem('lms_checkin_' + today, '1');
+
+    const entries = Object.entries(answers || {});
+    if (entries.length === 0) return;
+
+    const categoryMap = {
+      consciousness: (v, s) => ['entries',      { mood_level: s, source: 'morning_checkin', checkin_value: v }],
+      health:        (v, s) => ['symptoms',     { condition_level: s, source: 'morning_checkin', checkin_value: v }],
+      time:          (v, s) => ['habits',       { habit_name: '朝のチェックイン', completed: v !== 'unknown', source: 'morning_checkin', checkin_value: v }],
+      work:          (v, s) => ['tasks',        { title: '今日の活動', status: v === 'yes' ? 'in_progress' : 'todo', source: 'morning_checkin', checkin_value: v }],
+      relationship:  (v, s) => ['interactions', { type: 'meeting', quality: Math.round(s / 2), source: 'morning_checkin', checkin_value: v }],
+      assets:        (v, s) => ['overview',     { description: v === 'secure' ? '安心' : v === 'some' ? '少し心配' : '心配あり', source: 'morning_checkin', checkin_value: v }]
+    };
+
+    entries.forEach(([domain, data]) => {
+      const mapper = categoryMap[domain];
+      if (!mapper) return;
+      const [category, fields] = mapper(data.value, data.score);
+      store.addDomainEntry(domain, category, fields);
+    });
+
+    Components.showToast(`チェックイン完了！${entries.length}領域を記録しました`, 'success');
   }
 
   async enableDailyReminder(time) {

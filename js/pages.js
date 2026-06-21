@@ -4,6 +4,9 @@
    ============================================================ */
 var Pages = {
 
+  // ─── Morning check-in state ───
+  _ciAnswers: {},
+
   // ─── Main render dispatcher ───
   render(page, domain) {
     switch (page) {
@@ -3978,6 +3981,99 @@ var Pages = {
         </div>
       </div>
     </div>`;
+  },
+
+  // ─── Morning Check-in Modal ───
+  renderDailyCheckinModal() {
+    this._ciAnswers = {};
+    const steps = [
+      { domain: 'consciousness', label: '意識', icon: '一', color: '#6C63FF',
+        question: '今朝、心の状態は？',
+        answers: [{text:'穏やか',value:'calm',score:9},{text:'普通',value:'neutral',score:6},{text:'不安',value:'anxious',score:3}]
+      },
+      { domain: 'health', label: '健康', icon: '二', color: '#10b981',
+        question: '体の調子は？',
+        answers: [{text:'良い',value:'good',score:9},{text:'普通',value:'fair',score:6},{text:'悪い',value:'poor',score:3}]
+      },
+      { domain: 'time', label: '時間', icon: '三', color: '#f59e0b',
+        question: '今日の予定は？',
+        answers: [{text:'しっかりある',value:'planned',score:9},{text:'ゆるくある',value:'loose',score:6},{text:'まだ不明',value:'unknown',score:4}]
+      },
+      { domain: 'work', label: '仕事', icon: '四', color: '#3b82f6',
+        question: '今日、やることがありますか？',
+        answers: [{text:'ある',value:'yes',score:8},{text:'少し',value:'some',score:6},{text:'なし',value:'none',score:5}]
+      },
+      { domain: 'relationship', label: '関係', icon: '五', color: '#ef4444',
+        question: '今日、誰かと交流しますか？',
+        answers: [{text:'予定あり',value:'planned',score:9},{text:'たぶん',value:'maybe',score:6},{text:'なし',value:'none',score:4}]
+      },
+      { domain: 'assets', label: '資産', icon: '六', color: '#d97706',
+        question: 'お金の心配はありますか？',
+        answers: [{text:'安心',value:'secure',score:9},{text:'少し',value:'some',score:6},{text:'心配',value:'worried',score:3}]
+      }
+    ];
+    const n = steps.length;
+    return `<div class="ci-overlay" id="ciOverlay">
+      <div class="ci-modal">
+        <button class="ci-close" onclick="Pages.closeCheckin()" aria-label="閉じる">✕</button>
+        <div class="ci-header">
+          <div class="ci-title">朝のチェックイン</div>
+          <div class="ci-subtitle">6つの質問、30秒で完了</div>
+        </div>
+        <div class="ci-progress"><div class="ci-progress-bar" id="ciProgressBar" style="width:0%"></div></div>
+        ${steps.map((s, i) => `
+          <div class="ci-step" id="ci-step-${i}" ${i > 0 ? 'style="display:none"' : ''}>
+            <div class="ci-step-badge" style="background:${s.color}20;color:${s.color}">${s.icon} ${s.label}</div>
+            <div class="ci-question">${s.question}</div>
+            <div class="ci-answers">
+              ${s.answers.map(a => `<button class="ci-answer" style="--ci-color:${s.color}"
+                onclick="Pages.selectCheckinAnswer(${i},'${a.value}',${a.score},'${s.domain}',${n})">${Components.escapeHtml(a.text)}</button>`).join('')}
+            </div>
+            <button class="ci-skip" onclick="Pages.skipCheckinStep(${i},${n})">スキップ</button>
+          </div>`).join('')}
+        <div class="ci-step ci-done" id="ci-step-${n}" style="display:none">
+          <div class="ci-done-icon">🌟</div>
+          <div class="ci-done-title">チェックイン完了！</div>
+          <div class="ci-done-sub">今日の状態を記録しました。<br>丁寧な一日を。</div>
+          <button class="btn btn-primary ci-done-btn" onclick="Pages.closeCheckin()">はじめよう</button>
+        </div>
+        <div class="ci-dots">
+          ${steps.map((_, i) => `<div class="ci-dot${i === 0 ? ' ci-dot-active' : ''}" id="ci-dot-${i}"></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  },
+
+  selectCheckinAnswer(stepIdx, value, score, domain, totalSteps) {
+    this._ciAnswers[domain] = { value, score };
+    setTimeout(() => this.advanceCheckin(stepIdx, totalSteps), 280);
+  },
+
+  skipCheckinStep(stepIdx, totalSteps) {
+    this.advanceCheckin(stepIdx, totalSteps);
+  },
+
+  advanceCheckin(stepIdx, totalSteps) {
+    const cur = document.getElementById('ci-step-' + stepIdx);
+    if (cur) cur.style.display = 'none';
+    const curDot = document.getElementById('ci-dot-' + stepIdx);
+    if (curDot) { curDot.classList.remove('ci-dot-active'); curDot.classList.add('ci-dot-done'); }
+
+    const nextIdx = stepIdx + 1;
+    const next = document.getElementById('ci-step-' + nextIdx);
+    if (next) next.style.display = '';
+    const bar = document.getElementById('ciProgressBar');
+    if (bar) bar.style.width = Math.round((nextIdx / totalSteps) * 100) + '%';
+    const nextDot = document.getElementById('ci-dot-' + nextIdx);
+    if (nextDot) nextDot.classList.add('ci-dot-active');
+  },
+
+  closeCheckin() {
+    if (typeof app !== 'undefined') app.saveDailyCheckin(this._ciAnswers);
+    this._ciAnswers = {};
+    const overlay = document.getElementById('ciOverlay');
+    if (overlay) overlay.remove();
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Admin Tab: Data Management ───
