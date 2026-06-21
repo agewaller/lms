@@ -45,6 +45,7 @@ var Pages = {
       ${this.renderCheckinNudge(domain)}
       ${this.renderTodaySummary(domain)}
       ${this.renderDailyPrompt(domain)}
+      ${this.renderDomainInsight(domain)}
       ${this.renderWeeklySummary()}
       ${this.renderNotificationPrompt()}`;
 
@@ -1681,6 +1682,97 @@ var Pages = {
     if (entry) store.addDomainEntry(domain, entry[0], entry[1]);
     Components.showToast('記録しました', 'success');
     if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Rule-based domain insight (shows after 3+ days of data, no AI needed) ───
+  renderDomainInsight(domain) {
+    const cats = Object.keys(CONFIG.domains[domain]?.categories || {});
+    const week1 = [], week2 = [];
+    const now = new Date();
+    cats.forEach(cat => {
+      store.getDomainData(domain, cat, 14).forEach(e => {
+        if (!e.timestamp) return;
+        const daysAgo = Math.floor((now - new Date(e.timestamp)) / 86400000);
+        if (daysAgo < 7)  week1.push(e);
+        else              week2.push(e);
+      });
+    });
+
+    if (week1.length < 3) return ''; // not enough data yet
+
+    const color = CONFIG.domains[domain]?.color || '#6C63FF';
+    let icon = '📊', msg = '';
+
+    if (domain === 'health') {
+      const avg1 = week1.filter(e => e.condition_level).reduce((s,e,_,a) => s + e.condition_level/a.length, 0);
+      const avg2 = week2.filter(e => e.condition_level).reduce((s,e,_,a) => s + e.condition_level/a.length, 0);
+      if (avg1 > 0) {
+        const rounded = avg1.toFixed(1);
+        if (week2.length >= 3 && avg2 > 0) {
+          const diff = avg1 - avg2;
+          if (diff >= 0.5)       msg = `今週の平均体調は${rounded}/10です。先週より${diff.toFixed(1)}ポイント上がっています。`;
+          else if (diff <= -0.5) msg = `今週の平均体調は${rounded}/10です。先週より少し下がっています。無理しないでください。`;
+          else                    msg = `今週の平均体調は${rounded}/10。先週と同じ水準を保っています。`;
+        } else {
+          msg = `今週の平均体調スコアは${rounded}/10です。記録を続けると変化が分かります。`;
+        }
+        icon = avg1 >= 7 ? '💚' : avg1 >= 5 ? '🌿' : '⚠️';
+      }
+    }
+    if (domain === 'consciousness') {
+      const moods = week1.filter(e => e.mood_level);
+      if (moods.length >= 3) {
+        const avg = (moods.reduce((s,e) => s + e.mood_level, 0) / moods.length).toFixed(1);
+        icon = avg >= 7 ? '😊' : '🌙';
+        msg = `今週の気分スコアの平均は${avg}/10です。`;
+        const gratitude = week1.filter(e => e._category === 'appreciation' || e._category === 'entries');
+        if (gratitude.length >= 3) msg += '感謝の記録もよく続いています。';
+      }
+    }
+    if (domain === 'time') {
+      const prod = week1.filter(e => e.productivity);
+      if (prod.length >= 3) {
+        const avg = (prod.reduce((s,e) => s + e.productivity, 0) / prod.length).toFixed(1);
+        icon = '⏱';
+        msg = `今週の充実度の平均は${avg}/10です。`;
+      }
+    }
+    if (domain === 'work') {
+      const active = week1.filter(e => e.status === 'done' || (e.notes && e.notes.includes('活動した')));
+      if (active.length > 0) {
+        icon = '💼';
+        msg = `今週は${active.length}日間、活動の記録があります。`;
+      }
+    }
+    if (domain === 'relationship') {
+      const names = new Set(week1.map(e => e.person).filter(Boolean));
+      if (names.size > 0) {
+        icon = '🤝';
+        msg = `今週は${names.size}人の方と交流の記録があります。`;
+        const prev = new Set(week2.map(e => e.person).filter(Boolean));
+        if (names.size > prev.size) msg += '先週より多い交流です。';
+      }
+    }
+    if (domain === 'assets') {
+      const exps = week1.filter(e => e._category === 'expenses' && e.amount);
+      if (exps.length > 0) {
+        const total = exps.reduce((s,e) => s + (parseFloat(e.amount) || 0), 0);
+        icon = '💰';
+        msg = `今週の出費の記録: 合計¥${Math.round(total).toLocaleString()}。`;
+        const prevExps = week2.filter(e => e._category === 'expenses' && e.amount);
+        if (prevExps.length > 0) {
+          const prevTotal = prevExps.reduce((s,e) => s + (parseFloat(e.amount) || 0), 0);
+          if (total < prevTotal * 0.9) msg += '先週より節約できています。';
+        }
+      }
+    }
+
+    if (!msg) return '';
+
+    return `<div class="domain-insight-card" style="border-left-color:${color}">
+      <span class="dic-icon">${icon}</span>
+      <span class="dic-msg">${msg}</span>
+    </div>`;
   },
 
   // ─── Notification permission prompt (shown once until granted or dismissed) ───
