@@ -223,6 +223,7 @@ var Pages = {
       html += this.renderQuickExpenseEntry();
       html += this.renderMonthlyBudgetSummary();
       html += this.renderBudgetTrendChart();
+      html += this.renderBillReminders();
       html += this.renderSavingsGoals();
       html += this.renderMedicalExpenseTracker();
       if (typeof AssetsFeatures !== 'undefined') {
@@ -7263,6 +7264,118 @@ var Pages = {
       </div>
       <div class="cdi-foot">過去30日間のデータ（${daysWithData}日分）から算出</div>
     </div>`;
+  },
+
+  // ─── Bill Payment Reminder (assets domain) ───
+  renderBillReminders() {
+    const now = new Date();
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const storageKey = 'lms_billReminders';
+    const paidKey = `lms_billsPaid_${thisMonth}`;
+    let bills = [];
+    let paid = {};
+    try { bills = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+    try { paid = JSON.parse(localStorage.getItem(paidKey) || '{}'); } catch(e) {}
+
+    const today = now.getDate();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+    // Sort: unpaid + due soon first
+    const sorted = [...bills].sort((a, b) => {
+      const aOverdue = !paid[a.id] && a.dueDay < today;
+      const bOverdue = !paid[b.id] && b.dueDay < today;
+      if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+      const aDue = !paid[a.id];
+      const bDue = !paid[b.id];
+      if (aDue !== bDue) return aDue ? -1 : 1;
+      return a.dueDay - b.dueDay;
+    });
+
+    const unpaidCount = bills.filter(b => !paid[b.id]).length;
+    const overdueCount = bills.filter(b => !paid[b.id] && b.dueDay < today).length;
+
+    const categoryLabels = {
+      electric: '電気', gas: 'ガス', water: '水道', phone: '電話・通信',
+      insurance: '保険', rent: '家賃', nhn: 'NHK受信料', tax: '税金',
+      credit: 'クレジット', subscription: 'サブスク', other: 'その他'
+    };
+
+    const billRows = sorted.map(b => {
+      const isPaid = !!paid[b.id];
+      const daysUntil = b.dueDay - today;
+      const isOverdue = !isPaid && daysUntil < 0;
+      const isDueSoon = !isPaid && daysUntil >= 0 && daysUntil <= 3;
+      const statusColor = isPaid ? '#10b981' : isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : 'var(--text-secondary)';
+      const statusLabel = isPaid ? '支払済' : isOverdue ? `${Math.abs(daysUntil)}日超過` : daysUntil === 0 ? '今日' : daysUntil === 1 ? '明日' : `${daysUntil}日後`;
+      return `<div class="bill-row ${isPaid ? 'bill-paid' : isOverdue ? 'bill-overdue' : ''}">
+        <button class="bill-check" onclick="Pages.toggleBillPaid('${b.id}','${paidKey}')"
+          style="border-color:${statusColor};${isPaid ? `background:${statusColor};color:#fff` : ''}" aria-label="支払済に変更">✓</button>
+        <div class="bill-body">
+          <span class="bill-name ${isPaid ? 'bill-name-done' : ''}">${Components.escapeHtml(b.name)}</span>
+          <span class="bill-cat">${categoryLabels[b.category] || b.category}</span>
+        </div>
+        <div class="bill-right">
+          ${b.amount ? `<span class="bill-amount">¥${Number(b.amount).toLocaleString()}</span>` : ''}
+          <span class="bill-due" style="color:${statusColor}">${statusLabel}</span>
+        </div>
+        <button class="bill-del" onclick="Pages.deleteBill('${b.id}')" aria-label="削除">✕</button>
+      </div>`;
+    }).join('');
+
+    const addForm = `<div class="bill-add-form">
+      <input type="text" id="billName" class="form-input" placeholder="請求先（例：東京電力）" maxlength="20">
+      <select id="billCategory" class="form-input">
+        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+      </select>
+      <input type="number" id="billDay" class="form-input" placeholder="支払日（例：27）" min="1" max="31">
+      <input type="number" id="billAmount" class="form-input" placeholder="金額（円・省略可）" min="0">
+      <button class="btn btn-primary bill-add-btn" onclick="Pages.addBill()">追加</button>
+    </div>`;
+
+    return `<div class="bill-card">
+      <div class="bill-header">
+        <div class="bill-title-wrap">
+          <div class="bill-title">今月の支払い</div>
+          ${overdueCount > 0 ? `<span class="bill-overdue-badge">未払い ${overdueCount}件</span>` :
+            unpaidCount > 0 ? `<span class="bill-upcoming-badge">残り ${unpaidCount}件</span>` :
+            bills.length > 0 ? `<span class="bill-done-badge">すべて完了</span>` : ''}
+        </div>
+      </div>
+      ${bills.length > 0 ? `<div class="bill-list">${billRows}</div>` : `<div class="bill-empty">定期的な支払いを登録しておくと、払い忘れを防げます</div>`}
+      ${addForm}
+    </div>`;
+  },
+
+  toggleBillPaid(id, paidKey) {
+    let paid = {};
+    try { paid = JSON.parse(localStorage.getItem(paidKey) || '{}'); } catch(e) {}
+    paid[id] = !paid[id];
+    if (!paid[id]) delete paid[id];
+    localStorage.setItem(paidKey, JSON.stringify(paid));
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  addBill() {
+    const name = document.getElementById('billName')?.value.trim();
+    const category = document.getElementById('billCategory')?.value;
+    const day = parseInt(document.getElementById('billDay')?.value || '0', 10);
+    const amount = document.getElementById('billAmount')?.value.trim();
+    if (!name) { Components.showToast('請求先の名前を入力してください', 'error'); return; }
+    if (!day || day < 1 || day > 31) { Components.showToast('支払日を1〜31で入力してください', 'error'); return; }
+    let bills = [];
+    try { bills = JSON.parse(localStorage.getItem('lms_billReminders') || '[]'); } catch(e) {}
+    bills.push({ id: Date.now().toString(), name, category, dueDay: day, amount: amount || '', added: new Date().toISOString() });
+    localStorage.setItem('lms_billReminders', JSON.stringify(bills));
+    Components.showToast('支払い項目を追加しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  deleteBill(id) {
+    let bills = [];
+    try { bills = JSON.parse(localStorage.getItem('lms_billReminders') || '[]'); } catch(e) {}
+    bills = bills.filter(b => b.id !== id);
+    localStorage.setItem('lms_billReminders', JSON.stringify(bills));
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Blood Glucose Tracker (health domain) ───
