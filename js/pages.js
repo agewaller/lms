@@ -160,6 +160,7 @@ var Pages = {
 
     // Consciousness domain: daily intention + gratitude journal + 7-layer visualization + transcript input
     if (domain === 'consciousness') {
+      html += this.renderDailyWisdom();
       html += this.renderDailyZenQuestion();
       html += this.renderDailyIntention();
       html += this.renderMicroJournal();
@@ -7356,6 +7357,112 @@ var Pages = {
     });
     Components.showToast('学びを記録しました！', 'success');
     if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Daily Wisdom / Quote (consciousness domain) ───
+  renderDailyWisdom() {
+    const quotes = [
+      { quote: '七転び八起き', reading: 'ななころびやおき', meaning: '何度転んでも立ち上がる。失敗は終わりではなく、次の一歩への踏み台です。' },
+      { quote: '一期一会', reading: 'いちごいちえ', meaning: '今この出会い、この瞬間は二度と戻らない。だから、今日の一つひとつを大切に。' },
+      { quote: '明日は明日の風が吹く', reading: 'あしたはあしたのかぜがふく', meaning: '今日の心配を明日に持ち越さない。明日になれば新しい力がやってきます。' },
+      { quote: '雨降って地固まる', reading: 'あめふってじかたまる', meaning: '嵐の後は地面が締まって歩きやすくなるように、苦労の後に本当の力がつきます。' },
+      { quote: '花より団子', reading: 'はなよりだんご', meaning: '見た目より中身が大切。本当に必要なものを見極める眼を持ちましょう。' },
+      { quote: '継続は力なり', reading: 'けいぞくはちからなり', meaning: '毎日の小さな積み重ねが、やがて大きな力になります。今日もまた一歩。' },
+      { quote: '石の上にも三年', reading: 'いしのうえにもさんねん', meaning: '冷たい石の上でも三年続ければ温かくなる。辛くても続けることに意味があります。' },
+      { quote: '案ずるより産むが易し', reading: 'あんずるよりうむがやすし', meaning: '心配しているより、実際にやってみた方が案外簡単なことが多いものです。' },
+      { quote: '笑う門には福来たる', reading: 'わらうかどにはふくきたる', meaning: '笑顔のある家に幸せが訪れる。今日も一つ、笑えることを探してみましょう。' },
+      { quote: '初心忘るべからず', reading: 'しょしんわするべからず', meaning: '始めた頃の純粋な気持ちを忘れないこと。その気持ちが何事の原動力になります。' },
+      { quote: '急がば回れ', reading: 'いそがばまわれ', meaning: '近道に見えるものが実は遠回り。丁寧に、確実に進む方が早く着くこともあります。' },
+      { quote: '老いては子に従え', reading: 'おいてはこにしたがえ', meaning: '若い世代の知恵も借りながら、お互いを尊重して生きていく知恵の言葉です。' },
+      { quote: '知足者富', reading: 'ちそくしゃとむ', meaning: '足ることを知る者が本当の豊かさを持つ。今ある幸せに気づくことが富です。' },
+      { quote: '人事を尽くして天命を待つ', reading: 'じんじをつくしててんめいをまつ', meaning: 'できる限りのことをしたら、あとは自然の流れに任せる。それが心の平和につながります。' },
+      { quote: '三人寄れば文殊の知恵', reading: 'さんにんよればもんじゅのちえ', meaning: '一人では解けない問題も、みんなで考えれば名案が出る。頼ることも大切な力です。' },
+      { quote: '柔よく剛を制す', reading: 'じゅうよくごうをせいす', meaning: '柔らかさが強さに勝ることがある。力で押すより、受け流す知恵を持ちましょう。' },
+      { quote: '遠くの親戚より近くの他人', reading: 'とおくのしんせきよりちかくのたにん', meaning: '毎日の暮らしで助け合える近くの人たちとのご縁を大切に。' },
+      { quote: '七十にして心の欲するところに従いて矩を踰えず', reading: '（孔子の言葉）', meaning: '長く生きると、自然と正しい行いができるようになる。歳を重ねることは成熟です。' },
+      { quote: '天知る地知る我知る', reading: 'てんしるちしるわれしる', meaning: '誰も見ていなくても、正しいことをする。その積み重ねが自分を作ります。' },
+      { quote: '光陰矢の如し', reading: 'こういんやのごとし', meaning: '時間は矢のように速い。今日という一日を、悔いなく大切に過ごしましょう。' },
+      { quote: '情けは人の為ならず', reading: 'なさけはひとのためならず', meaning: '人に親切にすることは、めぐりめぐって自分に返ってくるものです。' },
+      { quote: '縁は異なもの味なもの', reading: 'えんはいなものあじなもの', meaning: '不思議な巡り合わせで人と出会う。どんなご縁も大切にしてみましょう。' },
+      { quote: '木を見て森を見ず', reading: 'きをみてもりをみず', meaning: '細かいことにこだわりすぎて全体を見失わないように。時には一歩引いて俯瞰を。' },
+      { quote: '万里の道も一歩から', reading: 'ばんりのみちもいっぽから', meaning: 'どんな長い旅も、最初の一歩から始まります。小さく始めることを恐れないで。' },
+      { quote: '色即是空', reading: 'しきそくぜくう', meaning: 'すべての形あるものはやがて変わる。それを受け入れることが心の自由につながります。' },
+      { quote: '諸行無常', reading: 'しょぎょうむじょう', meaning: 'この世のすべては変わり続ける。変化を恐れず、流れと共に歩みましょう。' },
+      { quote: '人生七十古来稀', reading: 'じんせいしちじゅうこらいまれ', meaning: 'かつては希少だった70歳の命。今を生きることへの深い感謝の源になる言葉です。' },
+      { quote: '禍福は糾える縄の如し', reading: 'かふくはあざなえるなわのごとし', meaning: '幸と不幸は縄のように交わっている。悪いことの後には良いことが来ます。' },
+      { quote: '喜怒哀楽', reading: 'きどあいらく', meaning: '喜び・怒り・悲しみ・楽しみ。すべての感情が人生を豊かにする色です。感じることを大切に。' },
+      { quote: '水の低きに就くが如く', reading: 'みずのひくきにつくがごとく', meaning: '水が自然に低い方へ流れるように、自分の自然な在り方で生きることが一番です。' },
+      { quote: '学びて思わざれば則ち罔し', reading: '（論語より）', meaning: '学ぶだけで考えないと意味がない。今日学んだことを、自分の生活に結びつけてみましょう。' },
+      { quote: '身土不二', reading: 'しんどふじ', meaning: '体と大地はひとつ。地元の食材を食べ、自然と共に生きることが健康の源です。' },
+      { quote: '知者は惑わず、仁者は憂えず、勇者は懼れず', reading: '（論語より）', meaning: '知恵・思いやり・勇気の三つがあれば、人生の困難も乗り越えられます。' },
+      { quote: '物の哀れ', reading: 'もののあわれ', meaning: '美しいものが消えていく儚さに感じる深い情趣。変わりゆく季節を愛でる日本の心。' },
+      { quote: '花は咲けども散るを厭うな', reading: 'はなはさけどもちるをいとうな', meaning: '美しく咲いた花が散ることを惜しまない。精いっぱい生きて、自然に任せましょう。' },
+      { quote: '因果応報', reading: 'いんがおうほう', meaning: '良い行いは良い結果を生む。今日の小さな親切が、未来の幸せにつながります。' },
+      { quote: '知足安分', reading: 'ちそくあんぶん', meaning: '自分に与えられたものを知り、それに満足すること。欲を手放すと心が軽くなります。' },
+      { quote: '温故知新', reading: 'おんこちしん', meaning: '古いものを見直すことで新しい気づきが生まれる。長年の経験が最大の資産です。' },
+      { quote: '彼岸花', reading: 'ひがんばな', meaning: '墓参りの季節に咲く花のように、先祖への感謝と今を生きることのつながりを感じましょう。' },
+      { quote: '天高く馬肥ゆる秋', reading: 'てんたかくうまこゆるあき', meaning: '清々しい季節に、食欲も体力も充実させて、次の季節への備えをしましょう。' },
+      { quote: '春風や 闘志いだきて 丘に立つ', reading: '（高浜虚子）', meaning: '春の穏やかな風の中にも、静かな意志と熱意を宿して。年齢は関係ありません。' },
+      { quote: '古人の跡を求めず、古人の求めたるところを求めよ', reading: '（松尾芭蕉）', meaning: '先人の真似ではなく、先人が何を大切にしたかを学びなさい。本質を探りましょう。' },
+      { quote: '天地は万物の逆旅、光陰は百代の過客', reading: '（李白）', meaning: 'この世は旅宿のようなもの。そう思えば、今この瞬間が輝いて見えます。' },
+      { quote: '明鏡止水', reading: 'めいきょうしすい', meaning: '澄み切った鏡と静かな水面のような、穏やかで澄んだ心の境地。今日目指したい状態。' },
+      { quote: '無為自然', reading: 'むいしぜん', meaning: '作為なく、自然のままに。老子の言葉。力まず、あるがままでいることの深さ。' },
+      { quote: '難行苦行', reading: 'なんぎょうくぎょう', meaning: 'つらい修行の先に悟りがある。今の困難も、成長のための大切なプロセスです。' },
+      { quote: '自業自得', reading: 'じごうじとく', meaning: '自分の行いの結果は自分に返ってくる。だから今日の行いを大切に。' },
+      { quote: '平常心是道', reading: 'へいじょうしんこれどう', meaning: '日常の穏やかな心こそが悟りの道。特別なことをしなくても、今日の暮らしに道があります。' },
+      { quote: '臨機応変', reading: 'りんきおうへん', meaning: 'その場の状況に応じて柔軟に対応する力。人生経験が豊かな方に最も備わっている知恵です。' },
+      { quote: '人間到る処青山あり', reading: 'じんかんいたるところせいざんあり', meaning: 'どこにいても骨を埋める場所はある。思い切って新しい一歩を踏み出せます。' },
+      { quote: '鉄は熱いうちに打て', reading: 'てつはあついうちにうて', meaning: 'やる気があるうちに行動する。今日感じた意欲を、小さな行動に変えてみましょう。' },
+      { quote: '自他共に尊重する', reading: '自他ともに', meaning: '自分も相手も同じように大切にする。その気持ちが豊かな関係を育てます。' },
+      { quote: '日日是好日', reading: 'にちにちこれこうにち', meaning: '毎日が良い日。良い日も悪い日もすべてかけがえのない一日です。' },
+      { quote: '和を以て貴しと為す', reading: 'わをもってとうとしとなす', meaning: '聖徳太子の言葉。調和を大切にすることが、最も尊いことである。' },
+      { quote: '精進努力', reading: 'しょうじんどりょく', meaning: '一心に努め励むこと。大きな結果も、毎日の真剣な積み重ねから生まれます。' },
+      { quote: '春は花 夏ほとどぎす 秋は月 冬雪さえて すずしかりけり', reading: '（道元禅師）', meaning: '四季それぞれの美しさを感じる。今の季節をそのまま味わいましょう。' },
+      { quote: '道理に従え、道理を学べ', reading: '', meaning: '正しい理に従って生きることが、長く穏やかに生きる秘訣です。' },
+      { quote: '百聞は一見に如かず', reading: 'ひゃっぶんはいっけんにしかず', meaning: '百回聞くより一度見る方がよくわかる。今日は何か実際に試してみましょう。' },
+      { quote: '好奇心は不老の薬', reading: '', meaning: '何かに興味を持ち続けることが、心と体を若々しく保つ一番の秘訣です。' },
+      { quote: '人は人、自分は自分', reading: '', meaning: '他人と比べることをやめると、自分らしい幸せが見えてきます。' },
+      { quote: '今日という日は残りの人生の最初の日', reading: '', meaning: '今日から何でも始められる。年齢は関係ない。新しい一歩を踏み出す日はいつでも今日です。' },
+    ];
+
+    const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+    const q = quotes[dayOfYear % quotes.length];
+
+    const favKey = 'lms_wisdomFavorites';
+    let favs = [];
+    try { favs = JSON.parse(localStorage.getItem(favKey) || '[]'); } catch(e) {}
+    const isFav = favs.includes(dayOfYear % quotes.length);
+
+    return `<div class="wisdom-card">
+      <div class="wisdom-header">
+        <span class="wisdom-label">今日のことば</span>
+        <button class="wisdom-fav-btn ${isFav ? 'active' : ''}" onclick="Pages.toggleWisdomFav(${dayOfYear % quotes.length})" title="お気に入り">
+          ${isFav ? '★' : '☆'}
+        </button>
+      </div>
+      <div class="wisdom-quote">${Components.escapeHtml(q.quote)}</div>
+      ${q.reading ? `<div class="wisdom-reading">${Components.escapeHtml(q.reading)}</div>` : ''}
+      <div class="wisdom-meaning">${Components.escapeHtml(q.meaning)}</div>
+    </div>`;
+  },
+
+  toggleWisdomFav(idx) {
+    const favKey = 'lms_wisdomFavorites';
+    let favs = [];
+    try { favs = JSON.parse(localStorage.getItem(favKey) || '[]'); } catch(e) {}
+    if (favs.includes(idx)) {
+      favs = favs.filter(i => i !== idx);
+      Components.showToast('お気に入りから外しました', 'info');
+    } else {
+      favs.push(idx);
+      Components.showToast('お気に入りに追加しました ★', 'success');
+    }
+    localStorage.setItem(favKey, JSON.stringify(favs));
+    const btn = document.querySelector('.wisdom-fav-btn');
+    if (btn) {
+      btn.classList.toggle('active', favs.includes(idx));
+      btn.textContent = favs.includes(idx) ? '★' : '☆';
+    }
   },
 
   // ─── Cognitive Wellness Daily Check-in (health domain) ───

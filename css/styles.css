@@ -6519,3 +6519,58 @@ html[data-theme="dark"] .wsg-bar-bg { background: rgba(255,255,255,0.1); }
 }
 .cog-ex-desc { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5; }
 .cog-save-btn { width: 100%; margin-top: 4px; }
+
+/* ── Daily Wisdom Card ── */
+.wisdom-card {
+  background: linear-gradient(135deg, rgba(108,99,255,0.08) 0%, rgba(108,99,255,0.03) 100%);
+  border: 1px solid rgba(108,99,255,0.2);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  margin-bottom: 12px;
+}
+.wisdom-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.wisdom-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6C63FF;
+}
+.wisdom-fav-btn {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  transition: color 0.15s, transform 0.1s;
+}
+.wisdom-fav-btn.active { color: #f59e0b; }
+.wisdom-fav-btn:hover { transform: scale(1.2); }
+.wisdom-quote {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin-bottom: 4px;
+  letter-spacing: 0.05em;
+}
+.wisdom-reading {
+  font-size: 0.75rem;
+  color: #6C63FF;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+.wisdom-meaning {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  border-left: 3px solid rgba(108,99,255,0.3);
+  padding-left: 10px;
+}
