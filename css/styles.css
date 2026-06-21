@@ -2407,6 +2407,63 @@ body.is-admin .admin-only { display: flex; }
 .npc-time { width: auto !important; padding: 6px 10px !important; font-size: 0.88rem !important; }
 .btn-text { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; padding: 4px 8px; }
 
+/* ─── Today's Summary Bar ─── */
+.today-summary-bar {
+  background: var(--bg-secondary);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px 14px;
+  flex-wrap: wrap;
+  font-size: 0.84rem;
+}
+.tsb-label { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+.tsb-item { color: var(--text-primary); white-space: nowrap; }
+.tsb-item::before { content: '·'; margin-right: 6px; color: var(--border); }
+
+/* ─── Daily Greeting Card ─── */
+.daily-greeting {
+  --dg-color: #6C63FF;
+  background: var(--dg-color);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+.daily-greeting::after {
+  content: '';
+  position: absolute;
+  right: -20px;
+  top: -20px;
+  width: 120px;
+  height: 120px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.dg-text { line-height: 1.4; position: relative; }
+.dg-greeting { font-size: 1rem; font-weight: 600; }
+.dg-date { font-size: 0.8rem; opacity: 0.85; margin-top: 2px; }
+.dg-streak {
+  font-size: 0.82rem;
+  background: rgba(255,255,255,0.22);
+  padding: 5px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+  font-weight: 500;
+  position: relative;
+}
+
 /* ─── Weekly Summary Card ─── */
 .weekly-summary-card {
   background: linear-gradient(135deg, #6C63FF18 0%, #6C63FF08 100%);

@@ -32,6 +32,7 @@ var Pages = {
 
     // Quick input bar
     let html = `<div class="page-home">
+      ${this.renderDailyGreeting(domain)}
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
@@ -42,6 +43,7 @@ var Pages = {
       ${this.renderGettingStarted(domain)}
       ${this.renderTodayPriorities(domain)}
       ${this.renderCheckinNudge(domain)}
+      ${this.renderTodaySummary(domain)}
       ${this.renderDailyPrompt(domain)}
       ${this.renderWeeklySummary()}
       ${this.renderNotificationPrompt()}`;
@@ -1351,6 +1353,108 @@ var Pages = {
           </button>
         `).join('')}
       </div>
+    </div>`;
+  },
+
+  // ─── Today's summary bar (shows after first entry of the day) ───
+  renderTodaySummary(domain) {
+    const today = new Date().toISOString().split('T')[0];
+    const cats = Object.keys(CONFIG.domains[domain]?.categories || {});
+    const todayEntries = [];
+    cats.forEach(cat => {
+      store.getDomainData(domain, cat, 1).forEach(e => {
+        if ((e.timestamp || '').startsWith(today)) todayEntries.push({ ...e, _cat: cat });
+      });
+    });
+    // Also include prompt replies saved today
+    const promptReply = localStorage.getItem(`lms_promptReply_${domain}_${today}`);
+
+    if (todayEntries.length === 0 && !promptReply) return '';
+
+    const esc = Components.escapeHtml;
+    const summaryLines = [];
+    if (domain === 'health') {
+      const s = todayEntries.find(e => e._cat === 'symptoms' && e.condition_level);
+      if (s) summaryLines.push(`体調 ${s.condition_level}/10`);
+      if (todayEntries.some(e => e.medications_taken)) summaryLines.push('服薬 ✓');
+    }
+    if (domain === 'consciousness') {
+      const e = todayEntries.find(e => e.mood_level);
+      if (e) summaryLines.push(`気分 ${e.mood_level}/10`);
+      if (todayEntries.some(e => e._cat === 'appreciation' || e._cat === 'entries')) summaryLines.push('感謝 ✓');
+    }
+    if (domain === 'time') {
+      const e = todayEntries.find(e => e.productivity);
+      if (e) summaryLines.push(`充実度 ${e.productivity}/10`);
+    }
+    if (domain === 'work') {
+      if (todayEntries.some(e => e.status === 'done' || e.notes === '活動した')) summaryLines.push('活動済み ✓');
+    }
+    if (domain === 'relationship') {
+      const names = [...new Set(todayEntries.map(e => e.person).filter(Boolean))];
+      if (names.length > 0) summaryLines.push(`連絡: ${names.slice(0, 2).map(n => esc(n)).join('・')}`);
+    }
+    if (domain === 'assets') {
+      const exps = todayEntries.filter(e => e._cat === 'expenses' && e.amount);
+      if (exps.length > 0) {
+        const total = exps.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+        summaryLines.push(`出費 ¥${total.toLocaleString()}`);
+      }
+    }
+    if (promptReply) summaryLines.push('問いかけ ✓');
+    summaryLines.push(`記録 ${todayEntries.length}件`);
+
+    const color = CONFIG.domains[domain]?.color || '#6C63FF';
+    return `<div class="today-summary-bar" style="border-left-color:${color}">
+      <span class="tsb-label">今日</span>
+      ${summaryLines.map(l => `<span class="tsb-item">${l}</span>`).join('')}
+    </div>`;
+  },
+
+  // ─── Personalized daily greeting card ───
+  renderDailyGreeting(domain) {
+    const profile = store.get('userProfile') || {};
+    const name = profile.displayName || profile.name || store.get('user')?.displayName || '';
+    const hour = new Date().getHours();
+    const greeting = hour < 11 ? 'おはようございます' : hour < 17 ? 'こんにちは' : 'こんばんは';
+    const today = new Date();
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日（${dayNames[today.getDay()]}）`;
+    const color = CONFIG.domains[domain]?.color || '#6C63FF';
+
+    // Overall streak across all domains
+    const allDates = new Set();
+    Object.keys(CONFIG.domains).forEach(d => {
+      Object.keys(CONFIG.domains[d]?.categories || {}).forEach(cat => {
+        store.getDomainData(d, cat, 90).forEach(e => {
+          if (e.timestamp) allDates.add(e.timestamp.split('T')[0]);
+        });
+      });
+    });
+    const todayKey = today.toISOString().split('T')[0];
+    let streak = 0;
+    const cur = new Date(today);
+    if (!allDates.has(todayKey)) cur.setDate(cur.getDate() - 1);
+    while (streak <= 90) {
+      if (!allDates.has(cur.toISOString().split('T')[0])) break;
+      streak++;
+      cur.setDate(cur.getDate() - 1);
+    }
+
+    let streakText;
+    if (streak >= 30) streakText = `🏆 ${streak}日連続記録中！`;
+    else if (streak >= 7)  streakText = `⭐ ${streak}日連続記録中`;
+    else if (streak >= 2)  streakText = `🔥 ${streak}日連続記録中`;
+    else if (streak === 1) streakText = '✅ 今日も記録済み';
+    else                   streakText = '📝 今日もつけてみましょう';
+
+    const nameStr = name ? `、${Components.escapeHtml(name)}さん` : '';
+    return `<div class="daily-greeting" style="--dg-color:${color}">
+      <div class="dg-text">
+        <div class="dg-greeting">${greeting}${nameStr}！</div>
+        <div class="dg-date">${dateStr}</div>
+      </div>
+      <div class="dg-streak">${streakText}</div>
     </div>`;
   },
 
