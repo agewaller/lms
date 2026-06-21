@@ -770,7 +770,7 @@ var Pages = {
       const loggedMark = doneContact ? `<span class="bd-contacted">✓ 連絡済み</span>` : `<button class="btn btn-sm bd-btn-log" onclick="Pages.logBirthdayContact('${esc(c.name)}')">連絡した ✓</button>`;
 
       // Pre-generate birthday message for this person
-      const msgId = `bdMsg_${c.name.replace(/\s+/g, '_')}`;
+      const msgId = `bdMsg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
       const bdMsg = Pages._buildBirthdayMessage(c.name, c.turningAge, c.daysUntil);
       Pages._bdMessages = Pages._bdMessages || {};
       Pages._bdMessages[msgId] = bdMsg;
