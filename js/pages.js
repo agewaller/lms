@@ -40,6 +40,7 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>
       ${this.renderGettingStarted(domain)}
+      ${this.renderTodayPriorities(domain)}
       ${this.renderCheckinNudge(domain)}
       ${this.renderDailyPrompt(domain)}
       ${this.renderWeeklySummary()}`;
@@ -973,6 +974,66 @@ var Pages = {
     </div>`;
   },
 
+  // ─── Today's Priorities (cross-domain actionable items) ───
+  renderTodayPriorities(domain) {
+    const items = [];
+    const today = new Date().toISOString().split('T')[0];
+
+    // 1. Medication not taken yet
+    const meds = store.get('health_medications') || [];
+    if (meds.length > 0) {
+      const takenToday = (store.getDomainData('health', 'symptoms', 1) || [])
+        .some(e => e.timestamp?.startsWith(today) && e.medications_taken);
+      if (!takenToday) {
+        items.push({ icon: '💊', text: '薬を飲みましたか？', action: `app.logMedicationTaken()`, domain: 'health', urgent: true });
+      }
+    }
+
+    // 2. Overdue relationship contacts (top 1)
+    if (typeof RelationshipFeatures !== 'undefined') {
+      const rel = RelationshipFeatures.calculateIsolationScore();
+      const top = rel.details?.filter(d => d.overdue)?.[0];
+      if (top) {
+        const daysText = top.daysSince > 999 ? '長い間' : `${top.daysSince}日間`;
+        items.push({ icon: '📞', text: `${Components.escapeHtml(top.name)}さんに${daysText}連絡できていません`, action: `app.switchDomain('relationship')`, domain: 'relationship', urgent: top.urgency >= 5 });
+      }
+    }
+
+    // 3. No record today in current domain
+    const cats = Object.keys(CONFIG.domains[domain]?.categories || {});
+    const hasRecord = cats.some(cat =>
+      store.getDomainData(domain, cat, 1).some(e => e.timestamp?.startsWith(today))
+    );
+    if (!hasRecord && cats.length > 0) {
+      const domainName = i18n.t(domain);
+      items.push({ icon: CONFIG.domains[domain]?.icon || '●', text: `今日の${domainName}の記録がまだありません`, action: `app.navigate('record')`, domain, urgent: false });
+    }
+
+    // 4. Low domain score warning
+    const score = store.get('domainScores')?.[domain] || 50;
+    if (score < 35) {
+      items.push({ icon: '⚠️', text: `${i18n.t(domain)}スコアが低下しています（${score}/100）。分析を実行してみましょう`, action: `app.navigate('actions')`, domain, urgent: true });
+    }
+
+    if (items.length === 0) return '';
+
+    return `<div class="today-priorities" id="todayPriorities">
+      <div class="tp-header">
+        <span class="tp-title">📋 今日のアクション</span>
+        <button class="tp-close" onclick="this.parentElement.parentElement.style.display='none'">×</button>
+      </div>
+      <div class="tp-items">
+        ${items.slice(0, 3).map(item => `
+          <button class="tp-item ${item.urgent ? 'tp-urgent' : ''}" onclick="${item.action}">
+            <span class="tp-icon">${item.icon}</span>
+            <span class="tp-text">${item.text}</span>
+            <span class="tp-arrow">›</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>`;
+  },
+
   // ─── Getting Started (shown to new users until 3 steps complete) ───
   renderGettingStarted(domain) {
     if (localStorage.getItem('lms_gettingStartedDone')) return '';
@@ -1225,6 +1286,10 @@ var Pages = {
     // Destroy previous chart if exists
     if (canvas._chart) { canvas._chart.destroy(); }
 
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
+    const tickColor = isDark ? '#94a3b8' : '#64748b';
+
     canvas._chart = new Chart(canvas, {
       type: 'bar',
       data: {
@@ -1242,12 +1307,12 @@ var Pages = {
         responsive: true,
         plugins: { legend: { display: false } },
         scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+          x: { grid: { display: false }, ticks: { font: { size: 10 }, color: tickColor } },
           y: {
             min: 0,
             max: domain === 'health' ? 10 : undefined,
-            ticks: { font: { size: 10 }, stepSize: domain === 'health' ? 2 : 1 },
-            grid: { color: 'rgba(0,0,0,0.05)' }
+            ticks: { font: { size: 10 }, stepSize: domain === 'health' ? 2 : 1, color: tickColor },
+            grid: { color: gridColor }
           }
         }
       }

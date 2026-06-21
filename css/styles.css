@@ -2211,6 +2211,54 @@ html[data-theme="dark"] .form-textarea {
   color: var(--text-primary) !important;
 }
 
+/* ─── Today's Priorities ─── */
+.today-priorities {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.tp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.tp-title { font-size: 0.87rem; font-weight: 600; color: var(--text-secondary); }
+.tp-close {
+  background: none; border: none; cursor: pointer;
+  font-size: 18px; color: var(--text-muted); line-height: 1;
+  padding: 0 4px;
+}
+.tp-close:hover { color: var(--text-secondary); }
+.tp-items { display: flex; flex-direction: column; }
+.tp-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.87rem;
+  color: var(--text-primary);
+  transition: background 0.12s;
+  width: 100%;
+}
+.tp-item:first-child { border-top: none; }
+.tp-item:hover { background: var(--bg-hover); }
+.tp-item.tp-urgent { color: var(--danger); }
+.tp-item.tp-urgent .tp-icon { font-size: 18px; }
+.tp-icon { font-size: 16px; flex-shrink: 0; }
+.tp-text { flex: 1; line-height: 1.4; }
+.tp-arrow { color: var(--text-muted); font-size: 18px; flex-shrink: 0; }
+
 /* ─── Voice Input Button ─── */
 .btn-voice {
   padding: 10px 14px;
