@@ -244,26 +244,85 @@ var Store = class Store {
 
   calculateDomainScore(domain) {
     const scores = { ...this.state.domainScores };
-    let score = 50; // default
+    let score = 50;
 
-    if (domain === 'health') {
-      const recent = this.getDomainData('health', 'symptoms', 7);
-      if (recent.length > 0) {
-        const levels = recent.map(s => s.condition_level).filter(v => v != null);
-        if (levels.length > 0) {
-          score = Math.round((levels.reduce((a, b) => a + b, 0) / levels.length) * 10);
-        }
+    switch (domain) {
+      case 'health': {
+        const symptoms = this.getDomainData('health', 'symptoms', 7);
+        const sleep = this.getDomainData('health', 'sleepData', 7);
+        let parts = 0, total = 0;
+        const levels = symptoms.map(s => s.condition_level).filter(v => v != null);
+        if (levels.length) { total += (levels.reduce((a,b)=>a+b,0)/levels.length) * 10; parts++; }
+        const sleepQ = sleep.map(s => s.quality).filter(v => v != null);
+        if (sleepQ.length) { total += (sleepQ.reduce((a,b)=>a+b,0)/sleepQ.length) * 10; parts++; }
+        score = parts > 0 ? Math.round(total / parts) : 50;
+        break;
       }
-    } else {
-      // Generic: based on recent entry count (activity level)
-      const allKeys = Object.keys(this.state).filter(k => k.startsWith(domain + '_'));
-      let totalRecent = 0;
-      allKeys.forEach(k => {
-        if (Array.isArray(this.state[k])) {
-          totalRecent += this.getDomainData(domain, k.replace(domain + '_', ''), 7).length;
+      case 'consciousness': {
+        const obs = this.getDomainData('consciousness', 'observation', 7);
+        if (obs.length) {
+          const netValues = obs.map(o => o.net_value).filter(v => v != null);
+          score = netValues.length ? Math.round(netValues.reduce((a,b)=>a+b,0) / netValues.length) : 50;
         }
-      });
-      score = Math.min(100, 30 + totalRecent * 5);
+        break;
+      }
+      case 'time': {
+        const logs = this.getDomainData('time', 'entries', 7);
+        const prods = logs.map(l => l.productivity).filter(v => v != null);
+        // Productivity score + consistency bonus
+        const avgProd = prods.length ? prods.reduce((a,b)=>a+b,0)/prods.length : 0;
+        const daysCounted = new Set(logs.map(l => (l.timestamp||'').split('T')[0])).size;
+        score = Math.min(100, Math.round((avgProd * 8) + (daysCounted * 4)));
+        if (!logs.length) score = 50;
+        break;
+      }
+      case 'work': {
+        const tasks = this.getDomainData('work', 'tasks', 14);
+        const done = tasks.filter(t => t.status === 'done').length;
+        const completionRate = tasks.length ? done / tasks.length : 0;
+        score = Math.min(100, Math.round(40 + completionRate * 40 + Math.min(tasks.length, 5) * 4));
+        if (!tasks.length) score = 50;
+        break;
+      }
+      case 'relationship': {
+        const contacts = this.state.relationship_contacts || [];
+        const interactions = this.state.relationship_interactions || [];
+        if (!contacts.length) { score = 50; break; }
+        // Use same logic as RelationshipFeatures isolation score but invert it
+        const closeContacts = contacts.filter(c => parseInt(c.distance) <= 3);
+        if (!closeContacts.length) { score = 60; break; }
+        const now = new Date();
+        let overdueWeight = 0;
+        closeContacts.forEach(c => {
+          const last = interactions
+            .filter(i => i.person === c.name)
+            .sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+          const days = last ? Math.floor((now - new Date(last.timestamp)) / 86400000) : 999;
+          const ideal = { 1:1, 2:7, 3:14 }[parseInt(c.distance)] || 14;
+          if (days > ideal) overdueWeight += Math.min(3, Math.round(days / ideal));
+        });
+        score = Math.max(10, Math.min(100, 100 - overdueWeight * 8));
+        break;
+      }
+      case 'assets': {
+        const income = this.getDomainData('assets', 'income', 30);
+        const expenses = this.getDomainData('assets', 'expenses', 30);
+        const totalIncome = income.reduce((s,e) => s + (e.amount||0), 0);
+        const totalExpenses = expenses.reduce((s,e) => s + (e.amount||0), 0);
+        if (!income.length && !expenses.length) { score = 50; break; }
+        const ratio = totalExpenses > 0 ? totalIncome / totalExpenses : 1;
+        // ratio >= 1.2 → score 80+; < 0.8 → score < 40
+        score = Math.min(100, Math.max(10, Math.round(ratio * 65)));
+        break;
+      }
+      default: {
+        const allKeys = Object.keys(this.state).filter(k => k.startsWith(domain + '_'));
+        let totalRecent = 0;
+        allKeys.forEach(k => {
+          if (Array.isArray(this.state[k])) totalRecent += this.getDomainData(domain, k.replace(domain+'_',''), 7).length;
+        });
+        score = Math.min(100, 30 + totalRecent * 5);
+      }
     }
 
     scores[domain] = score;
