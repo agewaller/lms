@@ -830,6 +830,20 @@ var Pages = {
         <button class="btn btn-secondary" onclick="document.getElementById('calImport').click()">カレンダーファイルを取り込む</button>
       </div>` : ''}
 
+      <!-- Display Theme -->
+      <div class="settings-section">
+        <h3>🌙 画面の明るさ</h3>
+        <p>夜間や暗い場所では「ダーク」モードが目に優しいです。</p>
+        <div class="theme-toggle-row">
+          ${['light','dark'].map(t => {
+            const cur = localStorage.getItem('lms_theme') || 'light';
+            const labels = { light: '☀️ ライト', dark: '🌙 ダーク' };
+            return `<button class="theme-toggle-btn ${cur === t ? 'active' : ''}"
+              onclick="app.setTheme('${t}')">${labels[t]}</button>`;
+          }).join('')}
+        </div>
+      </div>
+
       <!-- Text Size Accessibility -->
       <div class="settings-section">
         <h3>🔠 文字の大きさ</h3>

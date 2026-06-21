@@ -17,6 +17,7 @@ var App = class App {
     this.entryDomain = entryDomain || null;
     this.entryPage = entryPage || null;
     this._applyTextSize(localStorage.getItem('lms_textSize') || 'normal');
+    this._applyTheme(localStorage.getItem('lms_theme') || 'light');
     this.checkOAuthCallbacks();
 
     // Initialize Firebase
@@ -2250,6 +2251,22 @@ var App = class App {
       html.removeAttribute('data-text-size');
     } else {
       html.setAttribute('data-text-size', size);
+    }
+  }
+
+  setTheme(theme) {
+    if (!['light', 'dark'].includes(theme)) theme = 'light';
+    localStorage.setItem('lms_theme', theme);
+    this._applyTheme(theme);
+    this.renderApp();
+  }
+
+  _applyTheme(theme) {
+    const html = document.documentElement;
+    if (!theme || theme === 'light') {
+      html.removeAttribute('data-theme');
+    } else {
+      html.setAttribute('data-theme', theme);
     }
   }
 
