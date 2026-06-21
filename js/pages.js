@@ -448,7 +448,7 @@ var Pages = {
     }
     const today = new Date().toISOString().split('T')[0];
     localStorage.setItem('lms_gratitude_' + today, JSON.stringify(items));
-    store.addDomainEntry('consciousness', 'appreciation', { items, content: items.join('、') });
+    store.addDomainEntry('consciousness', 'entries', { gratitude: items.join('、'), reflection: items.join('、'), source: 'appreciation' });
     Components.showToast('感謝を記録しました', 'success');
     if (typeof app !== 'undefined') app.renderApp();
   },
@@ -1655,9 +1655,10 @@ var Pages = {
   saveWorkDayClose(today) {
     const rating = this._wcStars || 0;
     const tomorrow = document.getElementById('wcTomorrow')?.value?.trim() || '';
-    store.addDomainEntry('work', 'reflections', {
-      day_rating: rating,
-      tomorrow_priority: tomorrow,
+    store.addDomainEntry('work', 'reviews', {
+      period: today,
+      achievements: `充実度${rating}/5`,
+      next_steps: tomorrow,
       notes: `充実度${rating}/5 • 明日: ${tomorrow}`
     });
     try { localStorage.setItem('lms_workClose_' + today, '1'); } catch(e) {}
@@ -7274,7 +7275,7 @@ var Pages = {
     if (!text) { Components.showToast('ひとことを入力してください', 'error'); return; }
     const today = new Date().toISOString().split('T')[0];
     localStorage.setItem('lms_microjournal_' + today, text);
-    store.addDomainEntry('consciousness', 'journal', { content: text, notes: 'ひとこと日記' });
+    store.addDomainEntry('consciousness', 'entries', { reflection: text, notes: 'ひとこと日記' });
     Components.showToast('記録しました', 'success');
     if (typeof app !== 'undefined') app.renderApp();
   },
@@ -7413,7 +7414,7 @@ var Pages = {
   _syncSteps(today, steps) {
     const syncKey = 'lms_stepsSynced_' + today;
     if (steps >= 5000 && !localStorage.getItem(syncKey)) {
-      store.addDomainEntry('health', 'activities', { steps, notes: '歩数記録' });
+      store.addDomainEntry('health', 'activityData', { steps, activity_type: 'walking', notes: '歩数記録' });
       localStorage.setItem(syncKey, '1');
     }
   },
@@ -7589,7 +7590,7 @@ var Pages = {
       Components.showToast('種類と金額を入力してください', 'error');
       return;
     }
-    store.addDomainEntry('assets', 'medical', { type, amount, timestamp: new Date().toISOString() });
+    store.addDomainEntry('assets', 'expenses', { item: type, category: 'health', amount, timestamp: new Date().toISOString() });
     Components.showToast('記録しました', 'success');
     if (typeof app !== 'undefined') app.renderApp();
   },
@@ -7772,7 +7773,7 @@ var Pages = {
       Components.showToast('活動の種類と時間を入力してください', 'error');
       return;
     }
-    store.addDomainEntry('work', 'volunteer', { type, hours, timestamp: new Date().toISOString() });
+    store.addDomainEntry('work', 'tasks', { title: type, status: 'done', notes: `ボランティア ${hours}時間`, timestamp: new Date().toISOString() });
     Components.showToast('記録しました', 'success');
     if (typeof app !== 'undefined') app.renderApp();
   },
@@ -7986,9 +7987,9 @@ var Pages = {
     const what    = document.getElementById('learnWhat')?.value.trim();
     const minutes = parseInt(document.getElementById('learnMinutes')?.value || '0', 10);
     if (!what) { Components.showToast('学んだ内容を入力してください', 'error'); return; }
-    store.addDomainEntry('time', 'learning', {
-      subject, what, minutes: minutes || undefined,
-      timestamp: new Date().toISOString()
+    store.addDomainEntry('time', 'entries', {
+      activity: what, category: 'learning', duration: minutes || undefined,
+      notes: subject, timestamp: new Date().toISOString()
     });
     Components.showToast('学びを記録しました！', 'success');
     if (typeof app !== 'undefined') app.renderApp();
@@ -8111,7 +8112,7 @@ var Pages = {
     entries.push({ date: today, ...values, timestamp: new Date().toISOString() });
     entries = entries.slice(-90);
     localStorage.setItem(storageKey, JSON.stringify(entries));
-    store.addDomainEntry('work', 'purpose', { ...values, date: today });
+    store.addDomainEntry('work', 'reviews', { period: today, achievements: JSON.stringify(values), notes: '今日の充実感' });
     Components.showToast('今日の充実感を記録しました', 'success');
     if (typeof app !== 'undefined') app.renderApp();
   },
@@ -8742,8 +8743,9 @@ var Pages = {
       Components.showToast('正しい血糖値を入力してください（50〜600 mg/dL）', 'error');
       return;
     }
-    store.addDomainEntry('health', 'glucose', {
-      value, timing, notes: noteEl?.value?.trim() || '',
+    store.addDomainEntry('health', 'vitals', {
+      glucose_value: value, glucose_timing: timing,
+      notes: noteEl?.value?.trim() || '',
       timestamp: new Date().toISOString()
     });
     sessionStorage.removeItem('lms_glucoseFormOpen');
@@ -9967,7 +9969,7 @@ var Pages = {
     log.push({ date: today, purpose, minutes, companion, weather, mood, timestamp: new Date().toISOString() });
     try { localStorage.setItem('lms_outingLog', JSON.stringify(log)); } catch(e) {}
 
-    store.addDomainEntry('health', 'activity', {
+    store.addDomainEntry('health', 'activityData', {
       activity_type: 'outing', purpose, minutes, companion, weather, mood
     });
 
