@@ -2503,7 +2503,7 @@ var Pages = {
   //  DATA BROWSER (全領域のデータを整理・閲覧)
   // ═══════════════════════════════════════════════════════════
   renderDataBrowser(domain) {
-    const filter = store.get('dataBrowserFilter') || { category: '', search: '', sort: 'desc' };
+    const filter = store.get('dataBrowserFilter') || { category: '', search: '', sort: 'desc', dateFrom: '', dateTo: '' };
     const domainConfig = CONFIG.domains[domain];
     const categories = domainConfig?.categories || {};
 
@@ -2517,6 +2517,12 @@ var Pages = {
     // Filter
     if (filter.category) {
       allEntries = allEntries.filter(e => e._category === filter.category);
+    }
+    if (filter.dateFrom) {
+      allEntries = allEntries.filter(e => (e.timestamp || '').slice(0, 10) >= filter.dateFrom);
+    }
+    if (filter.dateTo) {
+      allEntries = allEntries.filter(e => (e.timestamp || '').slice(0, 10) <= filter.dateTo);
     }
     if (filter.search) {
       const s = filter.search.toLowerCase();
@@ -2591,6 +2597,23 @@ var Pages = {
                 <option value="desc" ${filter.sort === 'desc' ? 'selected' : ''}>新しい順</option>
                 <option value="asc" ${filter.sort === 'asc' ? 'selected' : ''}>古い順</option>
               </select>
+            </div>
+          </div>
+          <div class="data-filters" style="margin-top:8px;">
+            <div class="form-group" style="flex:1;">
+              <label>開始日</label>
+              <input type="date" id="dataDateFrom" class="form-input"
+                value="${Components.escapeHtml(filter.dateFrom || '')}"
+                onchange="app.filterDataBrowser('dateFrom',this.value)">
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label>終了日</label>
+              <input type="date" id="dataDateTo" class="form-input"
+                value="${Components.escapeHtml(filter.dateTo || '')}"
+                onchange="app.filterDataBrowser('dateTo',this.value)">
+            </div>
+            <div class="form-group" style="flex:1;align-self:flex-end;">
+              ${filter.dateFrom || filter.dateTo ? `<p style="font-size:12px;color:var(--accent);margin:0 0 4px 0;">${allEntries.length}件表示中</p>` : ''}
             </div>
           </div>
           <div class="data-actions">

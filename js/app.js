@@ -925,7 +925,7 @@ var App = class App {
   }
 
   clearDataFilter() {
-    store.set('dataBrowserFilter', { category: '', search: '', sort: 'desc' });
+    store.set('dataBrowserFilter', { category: '', search: '', sort: 'desc', dateFrom: '', dateTo: '' });
     this.renderApp();
   }
 

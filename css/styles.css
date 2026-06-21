@@ -2754,6 +2754,15 @@ html[data-theme="dark"] .form-textarea {
 .tp-text { flex: 1; line-height: 1.4; }
 .tp-arrow { color: var(--text-muted); font-size: 18px; flex-shrink: 0; }
 
+/* ─── Voice Field Wrap (dataEntryForm textareas) ─── */
+.voice-field-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.voice-field-wrap textarea { flex: 1; min-width: 0; }
+.voice-field-wrap .btn-voice { margin-top: 2px; }
+
 /* ─── Voice Input Button ─── */
 .btn-voice {
   padding: 10px 14px;

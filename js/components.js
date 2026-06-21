@@ -85,8 +85,13 @@ var Components = {
         return `<input type="number" name="${name}" step="${f.step||1}" class="form-input" placeholder="${i18n.t(f.label)}${f.unit ? ' ('+f.unit+')' : ''}">`;
       case 'text':
         return `<input type="text" name="${name}" class="form-input" placeholder="${i18n.t(f.label)}">`;
-      case 'textarea':
-        return `<textarea name="${name}" class="form-input" rows="3" placeholder="${i18n.t(f.label)}"></textarea>`;
+      case 'textarea': {
+        const vid = `field_${name}`;
+        return `<div class="voice-field-wrap">
+          <textarea id="${vid}" name="${name}" class="form-input" rows="3" placeholder="${i18n.t(f.label)}"></textarea>
+          <button type="button" class="btn-voice" id="voiceBtn_${vid}" onclick="app.startVoiceInput('${vid}')" title="音声で入力">🎤</button>
+        </div>`;
+      }
       case 'select':
         return `<select name="${name}" class="form-input">
           ${(f.options||[]).map(o => `<option value="${o}">${i18n.t(o)}</option>`).join('')}
