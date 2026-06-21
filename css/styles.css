@@ -7032,3 +7032,58 @@ html[data-theme="dark"] .wsg-bar-bg { background: rgba(255,255,255,0.1); }
   opacity: 0.6;
 }
 .dream-del-btn:hover { opacity: 1; color: #ef4444; }
+
+/* ─── Gratitude Letter (感謝の手紙, relationship domain) ─── */
+.letter-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.letter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.letter-title-wrap { display: flex; align-items: center; gap: 8px; }
+.letter-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+.letter-count-badge {
+  background: rgba(239,68,68,0.1);
+  color: #ef4444;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.letter-open-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 4px 10px;
+  transition: border-color 0.2s;
+}
+.letter-open-btn:hover { border-color: var(--accent); }
+.letter-sub { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px; }
+.letter-form { margin-bottom: 12px; }
+.letter-textarea { resize: vertical; min-height: 70px; font-size: 0.88rem; line-height: 1.7; }
+.letter-form-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.letter-recent {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  border-left: 3px solid #ef4444;
+}
+.letter-recent-label { font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+.letter-recent-to { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); }
+.letter-recent-date { font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 4px; }
+.letter-recent-preview { font-size: 0.82rem; color: var(--text-secondary); font-style: italic; line-height: 1.6; }

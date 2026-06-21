@@ -216,6 +216,7 @@ var Pages = {
       html += this.renderConnectionActivity();
       if (typeof RelationshipFeatures !== 'undefined') html += RelationshipFeatures.renderDashboard();
       html += this.renderTodayContactSuggestion();
+      html += this.renderGratitudeLetter();
       html += this.renderSocialGraph();
       html += this.renderUpcomingBirthdays();
     }
@@ -3100,6 +3101,7 @@ var Pages = {
     { id: 'outing_7',         icon: '🚶', title: '外出習慣',       desc: '7日連続で外出を記録しました' },
     { id: 'longevity_perfect', icon: '🌈', title: '完璧な一日',     desc: '長寿7習慣をすべて達成しました' },
     { id: 'dream_fulfilled',   icon: '🌠', title: '夢が叶った',     desc: '夢リストの夢を一つ叶えました' },
+    { id: 'first_letter',      icon: '✉', title: '感謝の一通',     desc: '初めての感謝の手紙を書きました' },
   ],
 
   checkAchievements() {
@@ -3264,6 +3266,9 @@ var Pages = {
           const dl = JSON.parse(localStorage.getItem('lms_dreamList') || '[]');
           return dl.some(d => d.status === 'done');
         } catch(e) { return false; }
+      })(),
+      first_letter: (() => {
+        try { return JSON.parse(localStorage.getItem('lms_letters') || '[]').length >= 1; } catch(e) { return false; }
       })()
     };
 
@@ -8919,6 +8924,158 @@ var Pages = {
       const b = document.getElementById('outStar' + n);
       if (b) b.textContent = n <= val ? '★' : '☆';
     });
+  },
+
+  // ─── Gratitude Letter (感謝の手紙, relationship domain) ───
+  renderGratitudeLetter() {
+    const storageKey = 'lms_letters';
+    let letters = [];
+    try { letters = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+    const recentCount = letters.length;
+    const contacts = (store.get('relationship_contacts') || []).map(c => c.name).filter(Boolean);
+
+    const formOpen = sessionStorage.getItem('lms_letterForm') === '1';
+
+    const latestLetter = letters[0];
+    const esc = Components.escapeHtml;
+
+    return `<div class="letter-card">
+      <div class="letter-header">
+        <div class="letter-title-wrap">
+          <div class="letter-title">感謝の手紙</div>
+          ${recentCount > 0 ? `<span class="letter-count-badge">${recentCount}通</span>` : ''}
+        </div>
+        <button class="letter-open-btn" onclick="
+          const o = sessionStorage.getItem('lms_letterForm') === '1';
+          sessionStorage.setItem('lms_letterForm', o ? '0' : '1');
+          document.getElementById('letterForm').style.display = o ? 'none' : 'block';
+        ">手紙を書く</button>
+      </div>
+      <div class="letter-sub">大切な人への気持ちを言葉にしましょう</div>
+
+      <div class="letter-form" id="letterForm" style="display:${formOpen ? 'block' : 'none'}">
+        <div class="form-group">
+          <label class="form-label">宛名（誰への手紙ですか？）</label>
+          ${contacts.length > 0
+            ? `<select id="letterTo" class="form-input">
+                <option value="">-- 選んでください --</option>
+                ${contacts.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('')}
+                <option value="__other__">その他（直接入力）</option>
+              </select>
+              <input type="text" id="letterToOther" class="form-input" placeholder="お名前" style="display:none;margin-top:6px"
+                oninput="document.getElementById('letterTo').value='__other__'">`
+            : `<input type="text" id="letterToOther" class="form-input" placeholder="例：お母さん、田中さん、○○くん">`}
+        </div>
+        <div class="form-group">
+          <label class="form-label">ありがとう、と伝えたいことは？</label>
+          <textarea id="letterThank" class="form-input letter-textarea" rows="3"
+            placeholder="例：いつも話を聞いてくれてありがとう。先日の食事会が本当に楽しかったです。"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">この方から学んだこと・影響を受けたことは？</label>
+          <textarea id="letterLesson" class="form-input letter-textarea" rows="3"
+            placeholder="例：あなたの「どんな時も笑顔で」という生き方に、何度も救われました。"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">最後に伝えたいことを自由に</label>
+          <textarea id="letterMessage" class="form-input letter-textarea" rows="3"
+            placeholder="例：これからも、どうぞよろしくお願いします。お体に気をつけて。"></textarea>
+        </div>
+        <div class="letter-form-actions">
+          <button class="btn btn-primary" onclick="Pages.saveLetter()">手紙を保存する</button>
+          <button class="btn btn-ghost btn-sm" onclick="Pages.previewLetter()">プレビュー</button>
+        </div>
+      </div>
+
+      ${latestLetter ? `<div class="letter-recent">
+        <div class="letter-recent-label">最新の手紙</div>
+        <div class="letter-recent-to">宛先：${esc(latestLetter.to)}</div>
+        <div class="letter-recent-date">${(latestLetter.date || '').slice(0, 10)}</div>
+        <div class="letter-recent-preview">${esc((latestLetter.thank || '').slice(0, 60))}${latestLetter.thank && latestLetter.thank.length > 60 ? '…' : ''}</div>
+        <button class="btn btn-xs btn-secondary" onclick="Pages.showLetterArchive()" style="margin-top:8px">過去の手紙を見る（${recentCount}通）</button>
+      </div>` : ''}
+    </div>`;
+  },
+
+  _getLetterRecipient() {
+    const sel = document.getElementById('letterTo');
+    const other = document.getElementById('letterToOther');
+    if (sel) {
+      return sel.value === '__other__' ? (other?.value.trim() || '') : sel.value;
+    }
+    return other?.value.trim() || '';
+  },
+
+  previewLetter() {
+    const to      = this._getLetterRecipient();
+    const thank   = document.getElementById('letterThank')?.value.trim();
+    const lesson  = document.getElementById('letterLesson')?.value.trim();
+    const message = document.getElementById('letterMessage')?.value.trim();
+    if (!to) { Components.showToast('宛名を入力してください', 'error'); return; }
+    const esc = Components.escapeHtml;
+    const today = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+    const body = [
+      to ? `${esc(to)} 様\n` : '',
+      thank ? esc(thank) + '\n' : '',
+      lesson ? esc(lesson) + '\n' : '',
+      message ? esc(message) + '\n' : '',
+      `\n${today}`
+    ].filter(Boolean).join('\n');
+
+    const letterFull = [to ? to + ' 様' : '', thank, lesson, message, today + '\n（LMSより）'].filter(Boolean).join('\n\n');
+    const shareText = encodeURIComponent(letterFull);
+    const lineUrl = 'https://social-plugins.line.me/lineit/share?text=' + shareText;
+    Pages._letterClipboard = letterFull;
+
+    Components.showModal?.('<div style="white-space:pre-wrap;font-size:0.9rem;line-height:1.8;font-family:inherit">' + body + '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">' +
+      '<a href="' + lineUrl + '" target="_blank" rel="noopener" class="btn btn-primary btn-sm">LINEで送る</a>' +
+      '<button class="btn btn-secondary btn-sm" onclick="navigator.clipboard?.writeText(Pages._letterClipboard).then(()=>Components.showToast(\'コピーしました\',\'success\'))">コピー</button>' +
+      '</div>', '手紙のプレビュー') || Components.showToast(body.slice(0,80), 'info');
+  },
+
+  saveLetter() {
+    const to      = this._getLetterRecipient();
+    const thank   = document.getElementById('letterThank')?.value.trim();
+    const lesson  = document.getElementById('letterLesson')?.value.trim();
+    const message = document.getElementById('letterMessage')?.value.trim();
+
+    if (!to) { Components.showToast('宛名を入力してください', 'error'); return; }
+    if (!thank && !lesson && !message) { Components.showToast('内容を入力してください', 'error'); return; }
+
+    const storageKey = 'lms_letters';
+    let letters = [];
+    try { letters = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+    const date = new Date().toISOString().split('T')[0];
+    letters.unshift({ date, to, thank, lesson, message, timestamp: new Date().toISOString() });
+    // Keep 50 letters max
+    if (letters.length > 50) letters = letters.slice(0, 50);
+    try { localStorage.setItem(storageKey, JSON.stringify(letters)); } catch(e) {}
+
+    store.addDomainEntry('relationship', 'interactions', {
+      person: to, type: 'gratitude_letter', content: thank || message || '',
+      timestamp: new Date().toISOString()
+    });
+
+    sessionStorage.setItem('lms_letterForm', '0');
+    Components.showToast('手紙を保存しました', 'success');
+
+    const { newlyUnlocked } = this.checkAchievements();
+    newlyUnlocked.forEach(b => Components.showToast(`🏅 実績解除：${b.title}`, 'success'));
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  showLetterArchive() {
+    const storageKey = 'lms_letters';
+    let letters = [];
+    try { letters = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+    const esc = Components.escapeHtml;
+    const html = letters.map(l => `<div style="border-bottom:1px solid var(--border);padding:10px 0">
+      <div style="font-weight:700;font-size:0.9rem">${esc(l.to)} 様</div>
+      <div style="font-size:0.75rem;color:var(--text-secondary)">${(l.date || '').slice(0,10)}</div>
+      <div style="font-size:0.82rem;margin-top:4px;color:var(--text-primary)">${esc((l.thank || l.message || '').slice(0,80))}…</div>
+    </div>`).join('');
+    Components.showModal?.(html || '手紙がありません', '過去の手紙');
   },
 
   // ─── Dream List (夢リスト, time domain) ───
