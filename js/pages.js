@@ -140,8 +140,9 @@ var Pages = {
 
     // ─── Domain-specific widgets ───
 
-    // Consciousness domain: gratitude journal + 7-layer visualization + transcript input
+    // Consciousness domain: daily intention + gratitude journal + 7-layer visualization + transcript input
     if (domain === 'consciousness') {
+      html += this.renderDailyIntention();
       html += this.renderGratitudeWidget();
       html += this.renderConsciousnessLayers();
       html += this.renderTranscriptInput();
@@ -210,6 +211,54 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Daily Intention (Consciousness domain) ───
+  renderDailyIntention() {
+    const today = new Date().toISOString().split('T')[0];
+    const key = 'lms_intention_' + today;
+    let intention = '';
+    try { intention = localStorage.getItem(key) || ''; } catch (e) {}
+
+    const hour = new Date().getHours();
+    const isMorning = hour >= 5 && hour < 12;
+    const isEvening = hour >= 17;
+    const esc = Components.escapeHtml;
+
+    if (!intention) {
+      // Morning: prompt to set intention; rest of day: quiet prompt
+      const prompt = isMorning
+        ? '今日一日、どんな自分でいたいですか？ひと言で表してみてください。'
+        : '今日の誓いをまだ決めていません。今からでも遅くありません。';
+      return `<div class="daily-intention-card empty">
+        <div class="di-icon">🌅</div>
+        <div class="di-prompt">${prompt}</div>
+        <div class="di-input-row">
+          <input type="text" id="intentionInput" class="form-input" placeholder="例：穏やか、感謝、挑戦" maxlength="20">
+          <button class="btn btn-primary btn-sm" onclick="app.saveDailyIntention()">決める</button>
+        </div>
+      </div>`;
+    }
+
+    // Evening reflection prompt
+    const reflectionHtml = isEvening ? `
+      <div class="di-reflect">
+        <span class="di-reflect-label">今日「${esc(intention)}」を体現できましたか？</span>
+        <div class="di-reflect-btns">
+          <button class="btn btn-xs btn-secondary" onclick="app.logIntentionReflection('yes')">できた ✓</button>
+          <button class="btn btn-xs btn-secondary" onclick="app.logIntentionReflection('partly')">まあまあ</button>
+          <button class="btn btn-xs btn-secondary" onclick="app.logIntentionReflection('no')">難しかった</button>
+        </div>
+      </div>` : '';
+
+    return `<div class="daily-intention-card set">
+      <div class="di-header">
+        <span class="di-label">今日の誓い</span>
+        <button class="btn-link" onclick="app.clearDailyIntention()" title="リセット">✕</button>
+      </div>
+      <div class="di-word">${esc(intention)}</div>
+      ${reflectionHtml}
+    </div>`;
   },
 
   // ─── Gratitude Journal (Consciousness domain quick widget) ───

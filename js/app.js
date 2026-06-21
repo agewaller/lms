@@ -2705,6 +2705,32 @@ var App = class App {
     setTimeout(() => this.renderApp(), 100);
   }
 
+  saveDailyIntention() {
+    const input = document.getElementById('intentionInput');
+    const val = (input?.value || '').trim();
+    if (!val) { Components.showToast('ひと言入力してください', 'warning'); return; }
+    const today = new Date().toISOString().split('T')[0];
+    try { localStorage.setItem('lms_intention_' + today, val); } catch (e) {}
+    store.addDomainEntry('consciousness', 'entries', { type: 'intention', intention: val });
+    Components.showToast(`今日の誓い「${Components.escapeHtml(val)}」を決めました`, 'success');
+    this.renderApp();
+  }
+
+  clearDailyIntention() {
+    const today = new Date().toISOString().split('T')[0];
+    try { localStorage.removeItem('lms_intention_' + today); } catch (e) {}
+    this.renderApp();
+  }
+
+  logIntentionReflection(result) {
+    const today = new Date().toISOString().split('T')[0];
+    let intention = '';
+    try { intention = localStorage.getItem('lms_intention_' + today) || ''; } catch (e) {}
+    store.addDomainEntry('consciousness', 'entries', { type: 'intention_reflection', intention, result });
+    const msg = result === 'yes' ? 'すばらしい！今日の誓いを全うしました' : result === 'partly' ? '大丈夫。少しずつ積み重ねていきましょう' : '明日また新しい誓いを立てましょう';
+    Components.showToast(msg, 'success');
+  }
+
   quickExpenseEntry() {
     this.openModal('今日の出費を記録', `
       <div class="form-group">

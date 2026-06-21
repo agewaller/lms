@@ -1632,6 +1632,32 @@ body.is-admin .admin-only { display: flex; }
 .empty-icon { font-size: 48px; margin-bottom: 12px; }
 .empty-state h3 { color: var(--text-light); margin-bottom: 8px; }
 
+/* ─── Daily Intention Card ─── */
+.daily-intention-card {
+  border-radius: var(--radius); padding: 18px 20px;
+  margin-bottom: 20px; box-shadow: var(--shadow);
+}
+.daily-intention-card.empty {
+  background: linear-gradient(135deg, #ede9fe 0%, #f0fdf4 100%);
+  border-left: 4px solid #6C63FF;
+  text-align: center;
+}
+.daily-intention-card.set {
+  background: linear-gradient(135deg, #f5f3ff 0%, #eff6ff 100%);
+  border-left: 4px solid #6C63FF;
+}
+.di-icon { font-size: 28px; margin-bottom: 6px; }
+.di-prompt { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.6; }
+.di-input-row { display: flex; gap: 8px; max-width: 320px; margin: 0 auto; }
+.di-input-row .form-input { flex: 1; }
+.di-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.di-label { font-size: 12px; color: #6C63FF; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.di-word { font-size: 26px; font-weight: 800; color: #4c1d95; letter-spacing: 0.02em; margin-bottom: 4px; }
+.btn-link { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 14px; padding: 2px 4px; }
+.di-reflect { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(108,99,255,0.15); }
+.di-reflect-label { font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 8px; }
+.di-reflect-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+
 /* ─── Gratitude Journal Widget ─── */
 .gratitude-widget {
   background: var(--bg-card); border-radius: var(--radius);
