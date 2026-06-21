@@ -613,6 +613,13 @@ select.form-input { appearance: auto; }
 
 /* Footer */
 .lp-footer { text-align: center; padding: 32px; color: var(--text-muted); font-size: 14px; }
+.footer-share { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.footer-share-label { font-size: 14px; color: var(--text-secondary); }
+.footer-line-btn { background: #06C755; color: white; border-color: #06C755; }
+.footer-line-btn:hover { background: #05b34c; border-color: #05b34c; }
+.footer-copy-btn { background: var(--bg-card); color: var(--text-secondary); border-color: var(--border); }
+.line-share-btn { background: #06C755; color: white; border-color: #06C755; }
+.line-share-btn:hover { background: #05b34c; border-color: #05b34c; }
 
 /* Trust Badges */
 .trust-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; margin-top: 40px; }

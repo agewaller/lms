@@ -331,6 +331,11 @@
 
   <!-- Footer -->
   <footer class="lp-footer">
+    <div class="footer-share">
+      <span class="footer-share-label">友人・家族に教える：</span>
+      <a href="https://social-plugins.line.me/lineit/share?url=https%3A%2F%2Fagewaller.github.io%2Flms%2F&text=%E3%81%93%E3%81%AE%E3%82%A2%E3%83%97%E3%83%AA%E3%80%81%E4%BD%BF%E3%81%84%E3%82%84%E3%81%99%E3%81%8F%E3%81%A6%E3%81%8A%E3%81%99%E3%81%99%E3%82%81%EF%BC%81" class="btn btn-sm footer-line-btn" target="_blank" rel="noopener">LINEで送る</a>
+      <button class="btn btn-sm footer-copy-btn" onclick="lmsCopyLink()">リンクをコピー</button>
+    </div>
     <p>&copy; 2026 LMS - Life Management System. All rights reserved.</p>
   </footer>
 
@@ -367,8 +372,17 @@
         navigator.share({
           title: 'LMS - 65歳からの人生管理アプリ',
           text: '健康・時間・お金・仕事・関係・心の6つを一緒に管理できる無料アプリです。使いやすくておすすめ！',
-          url: window.location.href
+          url: 'https://agewaller.github.io/lms/'
         }).catch(() => {});
+      }
+    }
+    function lmsCopyLink() {
+      const url = 'https://agewaller.github.io/lms/';
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => {
+          const btn = document.querySelector('.footer-copy-btn');
+          if (btn) { const orig = btn.textContent; btn.textContent = 'コピーしました！'; setTimeout(() => { btn.textContent = orig; }, 2000); }
+        });
       }
     }
   </script>

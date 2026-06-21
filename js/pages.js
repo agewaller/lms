@@ -1016,6 +1016,7 @@ var Pages = {
         <p style="color:var(--text-secondary);font-size:15px;margin-bottom:16px">このアプリが役立てば、大切な方にも教えてあげましょう。</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           ${navigator.share ? `<button class="btn btn-primary" onclick="app.shareApp()">📤 友人に教える</button>` : ''}
+          <a href="https://social-plugins.line.me/lineit/share?url=https%3A%2F%2Fagewaller.github.io%2Flms%2F&text=%E3%81%93%E3%81%AE%E3%82%A2%E3%83%97%E3%83%AA%E3%80%81%E4%BD%BF%E3%81%84%E3%82%84%E3%81%99%E3%81%8F%E3%81%A6%E3%81%8A%E3%81%99%E3%81%99%E3%82%81%EF%BC%81" class="btn line-share-btn" target="_blank" rel="noopener">LINEで送る</a>
           <button class="btn btn-secondary" onclick="app.copyShareLink()">🔗 リンクをコピー</button>
         </div>
       </div>
