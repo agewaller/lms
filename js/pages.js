@@ -191,6 +191,7 @@ var Pages = {
     if (domain === 'assets') {
       html += this.renderMonthlyBudgetSummary();
       html += this.renderBudgetTrendChart();
+      html += this.renderSavingsGoals();
       if (typeof AssetsFeatures !== 'undefined') {
         html += AssetsFeatures.renderNISASimulator();
         html += AssetsFeatures.renderAIAdvisor();
@@ -3284,6 +3285,51 @@ var Pages = {
       </div>
       <div class="ca-grid">${cells.join('')}</div>
       <div class="ca-footer">今週 <strong>${weekPeople.size}人</strong> と交流しました</div>
+    </div>`;
+  },
+
+  // ─── Savings goals tracker (assets domain home) ───
+  renderSavingsGoals() {
+    const goals = store.getDomainData('assets', 'goals', 365);
+    if (goals.length === 0) return '';
+    const today = new Date().toISOString().split('T')[0];
+    const active = goals
+      .filter(g => !g.deadline || g.deadline >= today)
+      .sort((a, b) => (a.deadline || '9999') < (b.deadline || '9999') ? -1 : 1)
+      .slice(0, 4);
+    if (active.length === 0) return '';
+
+    const fmt = n => n >= 10000 ? `¥${Math.round(n/10000)}万` : `¥${Math.round(n).toLocaleString()}`;
+    const esc = Components.escapeHtml;
+
+    const rows = active.map(g => {
+      const target  = Number(g.target_amount) || 0;
+      const current = Number(g.current_amount) || 0;
+      const pct = target > 0 ? Math.min(100, Math.round(current / target * 100)) : 0;
+      const barColor = pct >= 80 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#d97706';
+      let deadline = '';
+      if (g.deadline) {
+        const daysLeft = Math.ceil((new Date(g.deadline) - new Date()) / 86400000);
+        const cls = daysLeft <= 30 ? 'sg-deadline urgent' : 'sg-deadline';
+        deadline = `<span class="${cls}">${daysLeft <= 0 ? '期限超過' : `あと${daysLeft}日`}</span>`;
+      }
+      return `<div class="sg-row">
+        <div class="sg-top">
+          <span class="sg-name">${esc(g.goal || '目標')}</span>
+          ${deadline}
+          <span class="sg-pct">${pct}%</span>
+        </div>
+        ${target > 0 ? `<div class="sg-amounts">${fmt(current)} / ${fmt(target)}</div>` : ''}
+        <div class="sg-bar-bg"><div class="sg-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+      </div>`;
+    }).join('');
+
+    return `<div class="savings-goals-card">
+      <div class="sg-header">
+        <span class="sg-title">貯蓄・目標の進捗</span>
+        <button class="btn btn-xs btn-secondary" onclick="app.navigate('record')">＋ 追加</button>
+      </div>
+      ${rows}
     </div>`;
   },
 
