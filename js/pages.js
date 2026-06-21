@@ -52,6 +52,7 @@ var Pages = {
       ${this.renderDailyPrompt(domain)}
       ${this.renderDomainInsight(domain)}
       ${this.renderCrossDomainInsights(domain)}
+      ${this.renderMonthlyLifeReport()}
       ${this.renderReengagementNudge()}
       ${this.renderAchievementBadges()}
       ${this.renderFamilyShareCard(domain)}
@@ -1917,6 +1918,9 @@ var Pages = {
         <button class="btn btn-secondary btn-holistic" onclick="app.generateRecommendations('holistic')">
           🌐 6領域まとめて分析
         </button>
+        <button class="btn btn-secondary" style="width:100%" onclick="Pages.forceMonthlyReport()">
+          📅 先月のまとめを見る
+        </button>
       </div>`;
 
     if (store.get('isAnalyzing')) {
@@ -3514,6 +3518,166 @@ var Pages = {
         </div>
       </div>
     </div>`;
+  },
+
+  // ─── Monthly Life Report (appears 1st–5th of month, printable/shareable) ───
+  renderMonthlyLifeReport() {
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+
+    // Show only on days 1–5 of the month (or if user manually triggered)
+    const forceKey = 'lms_reportForce';
+    const forced = localStorage.getItem(forceKey) === today.toISOString().split('T')[0];
+    if (dayOfMonth > 5 && !forced) return '';
+
+    // Build key for previous month
+    const prevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const monthKey = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;
+    const monthLabel = `${prevMonth.getFullYear()}年${prevMonth.getMonth() + 1}月`;
+
+    // Dismiss check
+    if (localStorage.getItem('lms_reportDismissed') === monthKey) return '';
+
+    // Build per-domain stats from previous month data (up to 45 days back to cover full prev month)
+    const prevStart = prevMonth.toISOString().split('T')[0];
+    const prevEnd = new Date(today.getFullYear(), today.getMonth(), 0).toISOString().split('T')[0];
+
+    const getMonthEntries = (domain, cat) =>
+      store.getDomainData(domain, cat, 45).filter(e => {
+        if (!e.timestamp) return false;
+        const d = e.timestamp.split('T')[0];
+        return d >= prevStart && d <= prevEnd;
+      });
+
+    const domainKeys = Object.keys(CONFIG.domains);
+    const stats = {};
+    let totalEntries = 0;
+
+    domainKeys.forEach(d => {
+      const cats = Object.keys(CONFIG.domains[d]?.categories || {});
+      let count = 0;
+      const dates = new Set();
+      cats.forEach(cat => {
+        const entries = getMonthEntries(d, cat);
+        count += entries.length;
+        entries.forEach(e => {
+          if (e.timestamp) dates.add(e.timestamp.split('T')[0]);
+        });
+      });
+      stats[d] = { count, days: dates.size };
+      totalEntries += count;
+    });
+
+    // Only render if there's at least something to show
+    if (totalEntries === 0) return '';
+
+    // Compute best domain and totals
+    const bestDomain = domainKeys.reduce((a, b) => stats[b].days > stats[a].days ? b : a, domainKeys[0]);
+    const totalDays = new Set(domainKeys.flatMap(d => {
+      const cats = Object.keys(CONFIG.domains[d]?.categories || {});
+      return cats.flatMap(cat => getMonthEntries(d, cat).map(e => e.timestamp?.split('T')[0])).filter(Boolean);
+    })).size;
+
+    // Achievements unlocked this month
+    const achievements = JSON.parse(localStorage.getItem('lms_achievements') || '[]');
+    const monthAchievements = achievements.filter(a => a.unlockedAt && a.unlockedAt.startsWith(monthKey));
+
+    // Build shareable text for LINE/etc.
+    const shareLines = [
+      `📊 ${monthLabel}の生活まとめ`,
+      `記録した日数：${totalDays}日`,
+      ...domainKeys.filter(d => stats[d].days > 0).map(d =>
+        `${CONFIG.domains[d]?.icon || '●'} ${CONFIG.domains[d]?.label || d}：${stats[d].days}日`
+      ),
+      monthAchievements.length > 0 ? `\n🏅 今月の実績：${monthAchievements.map(a => a.title).join('、')}` : '',
+      `\nLMS で記録中 https://agewaller.github.io/lms/`
+    ].filter(Boolean).join('\n');
+    Pages._monthShareText = shareLines;
+
+    const maxDays = Math.max(...domainKeys.map(d => stats[d].days), 1);
+
+    return `<div class="monthly-report-card" id="monthlyReportCard">
+      <div class="mr-header">
+        <div class="mr-title-row">
+          <span class="mr-title">📅 ${monthLabel}のまとめ</span>
+          <button class="mr-close" onclick="Pages.dismissMonthlyReport('${monthKey}')" aria-label="閉じる">&times;</button>
+        </div>
+        <div class="mr-subtitle">${totalDays}日間 記録しました</div>
+      </div>
+
+      <div class="mr-domains">
+        ${domainKeys.map(d => {
+          const cfg = CONFIG.domains[d] || {};
+          const s = stats[d];
+          const pct = Math.round(s.days / maxDays * 100);
+          return `<div class="mr-domain-row">
+            <span class="mr-domain-icon" style="color:${cfg.color || '#6C63FF'}">${cfg.icon || '●'}</span>
+            <span class="mr-domain-label">${cfg.label || d}</span>
+            <div class="mr-bar-track">
+              <div class="mr-bar-fill" style="width:${pct}%;background:${cfg.color || '#6C63FF'}"></div>
+            </div>
+            <span class="mr-domain-days">${s.days}日</span>
+          </div>`;
+        }).join('')}
+      </div>
+
+      ${monthAchievements.length > 0 ? `
+      <div class="mr-achievements">
+        <div class="mr-ach-label">今月の実績</div>
+        <div class="mr-ach-list">
+          ${monthAchievements.slice(0, 5).map(a =>
+            `<span class="mr-ach-badge">${a.icon || '🏅'} ${Components.escapeHtml(a.title)}</span>`
+          ).join('')}
+        </div>
+      </div>` : ''}
+
+      <div class="mr-highlight">
+        最も続いた領域: <strong>${CONFIG.domains[bestDomain]?.icon || ''} ${CONFIG.domains[bestDomain]?.label || bestDomain}</strong>（${stats[bestDomain].days}日）
+      </div>
+
+      <div class="mr-actions">
+        <button class="btn btn-sm btn-primary" onclick="Pages.shareMonthlySummary()">LINEで共有</button>
+        <button class="btn btn-sm btn-secondary" onclick="Pages.printMonthlyReport()">印刷する</button>
+        <button class="btn btn-sm btn-text" onclick="Pages.dismissMonthlyReport('${monthKey}')">閉じる</button>
+      </div>
+    </div>`;
+  },
+
+  dismissMonthlyReport(monthKey) {
+    localStorage.setItem('lms_reportDismissed', monthKey);
+    const card = document.getElementById('monthlyReportCard');
+    if (card) card.remove();
+  },
+
+  shareMonthlySummary() {
+    const text = Pages._monthShareText || '';
+    if (navigator.share) {
+      navigator.share({ title: '今月の生活まとめ', text }).catch(() => {});
+    } else {
+      const url = 'https://social-plugins.line.me/lineit/share?text=' + encodeURIComponent(text);
+      window.open(url, '_blank');
+    }
+  },
+
+  printMonthlyReport() {
+    const card = document.getElementById('monthlyReportCard');
+    if (!card) return;
+    const original = document.body.innerHTML;
+    document.body.innerHTML = `<div style="padding:24px;font-family:sans-serif;">${card.outerHTML}</div>`;
+    window.print();
+    document.body.innerHTML = original;
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  forceMonthlyReport() {
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem('lms_reportForce', today);
+    // Clear dismiss for this month to ensure it shows
+    const now = new Date();
+    const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const monthKey = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;
+    localStorage.removeItem('lms_reportDismissed');
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Cross-domain holistic insight (rule-based correlation across domains) ───

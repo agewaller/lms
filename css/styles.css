@@ -7182,3 +7182,79 @@ html[data-theme="dark"] .wsg-bar-bg { background: rgba(255,255,255,0.1); }
   color: var(--text-secondary);
   margin-top: 4px;
 }
+
+/* ─── Monthly Life Report Card (appears on 1st-5th of month) ─── */
+.monthly-report-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  border: 2px solid var(--accent);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.mr-header { margin-bottom: 12px; }
+.mr-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.mr-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+.mr-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+}
+.mr-subtitle { font-size: 0.82rem; color: var(--text-secondary); }
+.mr-domains { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.mr-domain-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mr-domain-icon { font-size: 1rem; flex-shrink: 0; width: 20px; text-align: center; }
+.mr-domain-label { font-size: 0.82rem; color: var(--text-primary); width: 48px; flex-shrink: 0; }
+.mr-bar-track {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.mr-bar-fill { height: 100%; border-radius: 4px; min-width: 4px; transition: width 0.5s; }
+.mr-domain-days {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.mr-achievements { margin-bottom: 10px; }
+.mr-ach-label { font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+.mr-ach-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.mr-ach-badge {
+  background: rgba(107,99,255,0.1);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+.mr-highlight {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+.mr-highlight strong { color: var(--text-primary); }
+.mr-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+@media print {
+  .monthly-report-card { border-color: #999; }
+  .mr-close, .mr-actions { display: none; }
+}
