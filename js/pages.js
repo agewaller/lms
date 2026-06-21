@@ -961,14 +961,15 @@ var Pages = {
     </div>`;
   },
 
-  // ─── Weekly Summary (shown on Mondays or first login of the week) ───
+  // ─── Weekly Summary (shown once per week, first login of each week) ───
   renderWeeklySummary() {
     const today = new Date();
-    const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon
     const weekKey = `${today.getFullYear()}-W${this._weekNumber(today)}`;
     const dismissed = localStorage.getItem('lms_weeklySummaryDismissed');
     if (dismissed === weekKey) return '';
-    if (dayOfWeek !== 1) return ''; // Only on Mondays
+    // Only show if there was data last week (avoid showing every login for new users)
+    const dayOfWeek = today.getDay();
+    if (dayOfWeek === 0 || dayOfWeek >= 6) return ''; // skip weekends (low context)
 
     // Gather last 7 days counts per domain
     const domainKeys = Object.keys(CONFIG.domains);
