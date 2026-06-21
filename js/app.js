@@ -2462,6 +2462,142 @@ var App = class App {
     setTimeout(() => this.renderApp(), 100);
   }
 
+  // ─── Domain quick check-ins (one-tap from checkin nudge) ───
+
+  quickConsciousnessCheckin(level) {
+    store.addDomainEntry('consciousness', 'entries', {
+      mood_level: level,
+      notes: ''
+    });
+    Components.showToast('今日の気持ちを記録しました', 'success');
+    setTimeout(() => this.renderApp(), 100);
+  }
+
+  quickTimeCheckin(level) {
+    store.addDomainEntry('time', 'entries', {
+      activity: '日課チェックイン',
+      category: 'leisure',
+      productivity: level,
+      notes: ''
+    });
+    Components.showToast('今日の充実度を記録しました', 'success');
+    setTimeout(() => this.renderApp(), 100);
+  }
+
+  quickWorkCheckin(status) {
+    const noteMap = { active: '活動した', planned: '予定あり', rest: '今日は休み' };
+    store.addDomainEntry('work', 'tasks', {
+      title: '日課チェックイン',
+      status: status === 'active' ? 'done' : 'todo',
+      notes: noteMap[status] || status
+    });
+    Components.showToast('今日の活動状況を記録しました', 'success');
+    setTimeout(() => this.renderApp(), 100);
+  }
+
+  quickRelationshipCheckin(talked) {
+    if (!talked) {
+      Components.showToast('また明日声をかけてみましょう', 'info');
+      return;
+    }
+    const contacts = store.get('relationship_contacts') || [];
+    const esc = Components.escapeHtml;
+    const opts = contacts.slice(0, 15).map(c =>
+      `<option value="${esc(c.name)}">${esc(c.name)}</option>`
+    ).join('');
+    this.openModal('今日連絡した方', `
+      <div class="form-group">
+        <label>誰と連絡しましたか？</label>
+        ${contacts.length > 0
+          ? `<select id="qr_person" class="form-input"
+               onchange="document.getElementById('qr_other').style.display=this.value==='_other'?'block':'none'">
+               <option value="">選択してください</option>
+               ${opts}
+               <option value="_other">その他（名前を入力）</option>
+             </select>
+             <input type="text" id="qr_other" class="form-input" placeholder="お名前を入力"
+               style="display:none;margin-top:8px">`
+          : `<input type="text" id="qr_other" class="form-input" placeholder="お名前を入力してください">`
+        }
+      </div>
+      <div class="form-group">
+        <label>連絡の種類</label>
+        <select id="qr_type" class="form-input">
+          <option value="call">電話</option>
+          <option value="message" selected>メッセージ・LINE</option>
+          <option value="meeting">直接会った</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+      <div class="form-actions" style="margin-top:20px">
+        <button class="btn btn-primary btn-lg" style="width:100%" onclick="app.saveQuickRelationship()">記録する</button>
+      </div>
+    `);
+  }
+
+  saveQuickRelationship() {
+    const selectEl = document.getElementById('qr_person');
+    const otherEl = document.getElementById('qr_other');
+    const typeEl = document.getElementById('qr_type');
+    let person = selectEl ? selectEl.value : '';
+    if (!person || person === '_other') person = otherEl?.value?.trim() || '';
+    const type = typeEl?.value || 'message';
+    if (!person) { Components.showToast('お名前を入力してください', 'info'); return; }
+    store.addDomainEntry('relationship', 'interactions', {
+      person,
+      type,
+      quality: 3,
+      notes: 'ワンタッチ記録'
+    });
+    this.closeModal();
+    Components.showToast(`${person}さんへの連絡を記録しました`, 'success');
+    setTimeout(() => this.renderApp(), 100);
+  }
+
+  quickExpenseEntry() {
+    this.openModal('今日の出費を記録', `
+      <div class="form-group">
+        <label>金額（円）<span style="color:var(--danger)"> *</span></label>
+        <input type="number" id="qe_amount" class="form-input" placeholder="例：1200" min="0" step="100" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label>カテゴリ</label>
+        <select id="qe_category" class="form-input">
+          <option value="food">食費</option>
+          <option value="medical">医療・薬</option>
+          <option value="transport">交通費</option>
+          <option value="utility">光熱費</option>
+          <option value="entertainment">娯楽・趣味</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>メモ（省略可）</label>
+        <input type="text" id="qe_note" class="form-input" placeholder="何に使いましたか？">
+      </div>
+      <div class="form-actions" style="margin-top:20px">
+        <button class="btn btn-primary btn-lg" style="width:100%" onclick="app.saveQuickExpense()">記録する</button>
+      </div>
+    `);
+  }
+
+  saveQuickExpense() {
+    const amount = parseFloat(document.getElementById('qe_amount')?.value || '0');
+    const category = document.getElementById('qe_category')?.value || 'other';
+    const note = document.getElementById('qe_note')?.value?.trim() || '';
+    if (!amount || amount <= 0) { Components.showToast('金額を入力してください', 'info'); return; }
+    const catLabels = { food: '食費', medical: '医療・薬', transport: '交通費', utility: '光熱費', entertainment: '娯楽・趣味', other: 'その他' };
+    store.addDomainEntry('assets', 'expenses', {
+      amount,
+      category,
+      description: note || catLabels[category] || 'その他',
+      notes: 'ワンタッチ記録'
+    });
+    this.closeModal();
+    Components.showToast(`${amount.toLocaleString()}円の出費を記録しました`, 'success');
+    setTimeout(() => this.renderApp(), 100);
+  }
+
   shareApp() {
     if (navigator.share) {
       navigator.share({

@@ -1420,19 +1420,77 @@ var Pages = {
         ${streakBadge}
       </div>`;
     }
+    const moodScale = (onclickFn) => [
+      ['😢','1','とても辛い'],['😕','3','少し辛い'],['😐','5','普通'],['🙂','7','良い'],['😄','9','とても良い']
+    ].map(([emoji, val, label]) =>
+      `<button class="mood-btn" title="${Components.escapeHtml(label)}" onclick="${onclickFn}(${val})" aria-label="${Components.escapeHtml(label)}">
+        <span class="mood-emoji">${emoji}</span>
+        <span class="mood-label">${Components.escapeHtml(label)}</span>
+      </button>`
+    ).join('');
+
     if (domain === 'health') {
       return `<div class="checkin-nudge checkin-nudge-health">
         <div class="checkin-nudge-top">
           <span class="checkin-nudge-text">今日の体調は？${streak >= 2 ? '　' : ''}</span>
           ${streakBadge}
         </div>
+        <div class="mood-picker">${moodScale('app.quickMoodCheckin')}</div>
+      </div>`;
+    }
+    if (domain === 'consciousness') {
+      return `<div class="checkin-nudge checkin-nudge-health">
+        <div class="checkin-nudge-top">
+          <span class="checkin-nudge-text">今日の気持ちは？${streak >= 2 ? '　' : ''}</span>
+          ${streakBadge}
+        </div>
+        <div class="mood-picker">${moodScale('app.quickConsciousnessCheckin')}</div>
+      </div>`;
+    }
+    if (domain === 'time') {
+      return `<div class="checkin-nudge checkin-nudge-health">
+        <div class="checkin-nudge-top">
+          <span class="checkin-nudge-text">今日の充実度は？${streak >= 2 ? '　' : ''}</span>
+          ${streakBadge}
+        </div>
         <div class="mood-picker">
-          ${[['😢','1','とても辛い'],['😕','3','少し辛い'],['😐','5','普通'],['🙂','7','良い'],['😄','9','とても良い']].map(([emoji, val, label]) =>
-            `<button class="mood-btn" title="${Components.escapeHtml(label)}" onclick="app.quickMoodCheckin(${val})" aria-label="${Components.escapeHtml(label)}">
+          ${[['😴','1','退屈'],['😐','3','普通'],['🙂','5','まあまあ'],['😊','7','充実'],['🌟','9','とても充実']].map(([emoji, val, label]) =>
+            `<button class="mood-btn" title="${Components.escapeHtml(label)}" onclick="app.quickTimeCheckin(${val})" aria-label="${Components.escapeHtml(label)}">
               <span class="mood-emoji">${emoji}</span>
               <span class="mood-label">${Components.escapeHtml(label)}</span>
             </button>`
           ).join('')}
+        </div>
+      </div>`;
+    }
+    if (domain === 'work') {
+      return `<div class="checkin-nudge">
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;flex-wrap:wrap;gap:8px;">
+          <span class="checkin-nudge-text">今日の活動は？${streak >= 2 ? '　' : ''}${streakBadge}</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-sm btn-primary" onclick="app.quickWorkCheckin('active')">🙌 活動した</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.quickWorkCheckin('planned')">📅 予定あり</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.quickWorkCheckin('rest')">🌿 休み</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    if (domain === 'relationship') {
+      return `<div class="checkin-nudge">
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;flex-wrap:wrap;gap:8px;">
+          <span class="checkin-nudge-text">今日誰かに連絡しましたか？${streak >= 2 ? '　' : ''}${streakBadge}</span>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-sm btn-primary" onclick="app.quickRelationshipCheckin(true)">✅ 連絡した</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.quickRelationshipCheckin(false)">まだ</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    if (domain === 'assets') {
+      return `<div class="checkin-nudge">
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;flex-wrap:wrap;gap:8px;">
+          <span class="checkin-nudge-text">今日の出費を記録しませんか？${streak >= 2 ? '　' : ''}${streakBadge}</span>
+          <button class="btn btn-sm btn-primary" onclick="app.quickExpenseEntry()">💰 出費を記録</button>
         </div>
       </div>`;
     }
