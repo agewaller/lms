@@ -221,6 +221,7 @@ var Pages = {
       html += this.renderGratitudeLetter();
       html += this.renderSocialGraph();
       html += this.renderUpcomingBirthdays();
+      html += this.renderGiftTracker();
     }
 
     // Assets domain: monthly budget summary + NISA simulator + advisor + screenshot + auto trading
@@ -865,6 +866,136 @@ var Pages = {
     const ta = document.getElementById(msgId + '_text');
     const text = ta ? ta.value : (Pages._bdMessages[msgId] || '');
     window.open('https://social-plugins.line.me/lineit/share?text=' + encodeURIComponent(text), '_blank');
+  },
+
+  // ─── Gift Tracker (relationship domain) ───
+  renderGiftTracker() {
+    const gifts = store.getDomainData('relationship', 'gifts', 365)
+      .sort((a, b) => new Date(b.timestamp || b.date || 0) - new Date(a.timestamp || a.date || 0));
+
+    const occasionLabel = k => ({
+      birthday:   '誕生日',
+      oseibo:     'お歳暮',
+      ochugen:    'お中元',
+      omiyage:    'お土産',
+      wedding:    'お祝い',
+      condolence: 'お見舞い',
+      newyear:    'お年賀',
+      other:      'その他'
+    })[k] || k || '';
+
+    const typeLabel = t => t === 'sent' ? '贈った' : 'もらった';
+
+    // Current month / season reminders
+    const month = new Date().getMonth() + 1;
+    const seasonHint = month >= 6 && month <= 8
+      ? 'お中元の季節です（7月）。今年もお世話になった方へのご挨拶を忘れずに。'
+      : month >= 11 || month <= 1
+      ? 'お歳暮・お年賀の季節です（12〜1月）。感謝の気持ちを届けましょう。'
+      : null;
+
+    const formOpen = sessionStorage.getItem('lms_giftFormOpen') === '1';
+    const today = new Date().toISOString().split('T')[0];
+
+    return `<div class="gift-card">
+      <div class="gift-header">
+        <div class="gift-title">贈り物の記録</div>
+        <button class="btn btn-sm btn-secondary" onclick="Pages.toggleGiftForm()">記録する</button>
+      </div>
+
+      ${seasonHint ? `<div class="gift-season-hint">${seasonHint}</div>` : ''}
+
+      ${gifts.length > 0
+        ? `<div class="gift-list">
+            ${gifts.slice(0, 5).map(g => {
+              const d = new Date(g.timestamp || g.date || 0).toLocaleDateString('ja-JP', { month:'short', day:'numeric' });
+              return `<div class="gift-item">
+                <span class="gift-type-tag ${g.type === 'sent' ? 'gift-sent' : 'gift-rcvd'}">${typeLabel(g.type)}</span>
+                <span class="gift-who">${Components.escapeHtml(g.contact_name || '')}</span>
+                <span class="gift-occ">${occasionLabel(g.occasion)}</span>
+                <span class="gift-desc">${Components.escapeHtml((g.gift_description || '').slice(0, 16))}${(g.gift_description || '').length > 16 ? '…' : ''}</span>
+                <span class="gift-date">${d}</span>
+              </div>`;
+            }).join('')}
+            ${gifts.length > 5 ? `<div class="gift-more">他 ${gifts.length - 5} 件</div>` : ''}
+          </div>`
+        : `<div class="gift-empty">贈り物の記録がありません。お歳暮・誕生日・お返しなど記録できます</div>`
+      }
+
+      <div id="giftForm" style="${formOpen ? '' : 'display:none'}">
+        <div class="gift-form">
+          <div class="gift-form-row gift-type-row">
+            <label class="gift-form-label">種別</label>
+            <div class="gift-type-btns">
+              <label><input type="radio" name="giftType" value="sent" checked> 贈った</label>
+              <label><input type="radio" name="giftType" value="received"> もらった</label>
+            </div>
+          </div>
+          <div class="gift-form-row">
+            <input type="text" id="giftContact" class="form-input" placeholder="相手の名前" maxlength="20">
+          </div>
+          <div class="gift-form-row">
+            <select id="giftOccasion" class="form-input gift-select">
+              <option value="birthday">誕生日</option>
+              <option value="oseibo">お歳暮</option>
+              <option value="ochugen">お中元</option>
+              <option value="newyear">お年賀</option>
+              <option value="omiyage">お土産</option>
+              <option value="wedding">お祝い</option>
+              <option value="condolence">お見舞い</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+          <div class="gift-form-row">
+            <input type="text" id="giftDesc" class="form-input" placeholder="贈り物の内容（例：フルーツセット）" maxlength="40">
+          </div>
+          <div class="gift-form-row gift-amount-row">
+            <input type="number" id="giftAmount" class="form-input gift-amount" placeholder="金額（任意）" min="0" step="100">
+            <span class="gift-yen">円</span>
+            <input type="date" id="giftDate" class="form-input gift-date" value="${today}">
+          </div>
+          <button class="btn btn-primary gift-save-btn" onclick="Pages.saveGift()">記録する</button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  toggleGiftForm() {
+    const form = document.getElementById('giftForm');
+    if (!form) return;
+    const open = form.style.display !== 'none';
+    form.style.display = open ? 'none' : '';
+    if (!open) sessionStorage.setItem('lms_giftFormOpen', '1');
+    else sessionStorage.removeItem('lms_giftFormOpen');
+  },
+
+  saveGift() {
+    const typeEl   = document.querySelector('input[name="giftType"]:checked');
+    const contactEl = document.getElementById('giftContact');
+    const occasionEl = document.getElementById('giftOccasion');
+    const descEl   = document.getElementById('giftDesc');
+    const amountEl = document.getElementById('giftAmount');
+    const dateEl   = document.getElementById('giftDate');
+
+    const contact = contactEl?.value?.trim() || '';
+    const desc    = descEl?.value?.trim() || '';
+    if (!contact || !desc) {
+      Components.showToast('相手の名前と贈り物の内容を入力してください', 'error');
+      return;
+    }
+    const date = dateEl?.value || new Date().toISOString().split('T')[0];
+    store.addDomainEntry('relationship', 'gifts', {
+      type:             typeEl?.value || 'sent',
+      contact_name:     contact,
+      occasion:         occasionEl?.value || 'other',
+      gift_description: desc,
+      amount:           amountEl?.value ? Number(amountEl.value) : undefined,
+      date,
+      timestamp:        new Date(date + 'T12:00:00').toISOString()
+    });
+    sessionStorage.removeItem('lms_giftFormOpen');
+    Components.showToast('贈り物を記録しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Stock Analysis Widget (Assets domain) ───

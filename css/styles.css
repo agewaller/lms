@@ -6472,6 +6472,80 @@ html[data-theme="dark"] .wsg-bar-bg { background: rgba(255,255,255,0.1); }
 .meal-hist-date { color: var(--text-secondary); min-width: 55px; }
 .meal-hist-content { color: var(--text-primary); }
 
+/* ─── Gift Tracker ─── */
+.gift-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.gift-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.gift-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.gift-season-hint {
+  font-size: 0.8rem;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  margin-bottom: 10px;
+}
+.gift-list { display: flex; flex-direction: column; gap: 5px; }
+.gift-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  flex-wrap: wrap;
+}
+.gift-type-tag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+.gift-sent  { background: #dbeafe; color: #1e40af; }
+.gift-rcvd  { background: #fce7f3; color: #9d174d; }
+.gift-who   { font-weight: 600; color: var(--text-primary); }
+.gift-occ   { color: var(--text-secondary); font-size: 0.76rem; }
+.gift-desc  { flex: 1; color: var(--text-primary); }
+.gift-date  { color: var(--text-secondary); font-size: 0.74rem; white-space: nowrap; }
+.gift-more  { font-size: 0.78rem; color: var(--text-secondary); text-align: center; padding: 3px; }
+.gift-empty { font-size: 0.84rem; color: var(--text-secondary); padding: 6px 0 10px; }
+.gift-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+}
+.gift-form-row { display: flex; flex-direction: column; gap: 4px; }
+.gift-form-label { font-size: 0.78rem; color: var(--text-secondary); font-weight: 500; }
+.gift-type-row { flex-direction: row; align-items: center; gap: 16px; }
+.gift-type-btns { display: flex; gap: 14px; }
+.gift-type-btns label { display: flex; align-items: center; gap: 5px; font-size: 0.88rem; cursor: pointer; }
+.gift-select { font-size: 0.84rem; }
+.gift-amount-row { flex-direction: row; align-items: center; gap: 8px; }
+.gift-amount { flex: 1; font-size: 0.88rem; }
+.gift-yen { font-size: 0.84rem; color: var(--text-secondary); white-space: nowrap; }
+.gift-date.form-input { flex: 1.2; font-size: 0.84rem; }
+.gift-save-btn { align-self: flex-start; font-size: 0.84rem; }
+
 /* ─── Bill Payment Reminder ─── */
 .bill-card {
   background: var(--bg-secondary);
