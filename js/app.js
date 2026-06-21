@@ -291,6 +291,7 @@ var App = class App {
         Pages.initRadarChart();
         if (domain === 'health') Pages.initBPTrendChart();
         if (domain === 'health') Pages.initSleepTrendChart();
+        if (domain === 'health') Pages.initWeightTrendChart();
         if (domain === 'consciousness') Pages.initMoodTrendChart();
         if (domain === 'assets') Pages.initBudgetTrendChart();
         if (domain === 'time') Pages.initTimeAllocationChart();

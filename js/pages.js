@@ -204,6 +204,7 @@ var Pages = {
       html += this.renderMedicationReminder();
       html += this.renderBPTrendCard();
       html += this.renderSleepTrendCard();
+      html += this.renderWeightTrendCard();
       html += `<div class="doctor-report-banner">
         <div class="drb-text">
           <strong>かかりつけ医への受診準備</strong>
@@ -2820,6 +2821,74 @@ var Pages = {
         scales: {
           x: { grid: { display: false }, ticks: { font: { size: 10 }, color: tickColor } },
           y: { min: 0, max: 10, ticks: { font: { size: 10 }, stepSize: 2, color: tickColor }, grid: { color: gridColor } }
+        }
+      }
+    });
+  },
+
+  // ─── Weight trend chart (health domain home, ≥3 weight readings) ───
+  renderWeightTrendCard() {
+    const weights = store.getDomainData('health', 'vitals', 90).filter(e => e.weight);
+    if (weights.length < 3) return '';
+    return `<div class="weight-trend-card">
+      <div class="weight-trend-header">
+        <h3>体重の推移（直近90日）</h3>
+      </div>
+      <canvas id="weightTrendChart" height="110"></canvas>
+    </div>`;
+  },
+
+  initWeightTrendChart() {
+    const canvas = document.getElementById('weightTrendChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    const vitals = store.getDomainData('health', 'vitals', 90)
+      .filter(e => e.weight && e.timestamp)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      .slice(-30);
+    if (vitals.length < 3) { canvas.closest('.weight-trend-card')?.remove(); return; }
+
+    const labels = vitals.map(e => { const d = new Date(e.timestamp); return `${d.getMonth()+1}/${d.getDate()}`; });
+    if (canvas._chart) canvas._chart.destroy();
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
+    const tickColor = isDark ? '#94a3b8' : '#64748b';
+    const wts = vitals.map(e => e.weight);
+    const min = Math.floor(Math.min(...wts) - 1);
+    const max = Math.ceil(Math.max(...wts) + 1);
+
+    // Use profile baseline weight as a reference if available
+    const profile = store.get('userProfile') || {};
+    const baseWeight = Number(profile.weight) || null;
+    const datasets = [{
+      label: '体重 (kg)',
+      data: wts,
+      borderColor: '#f59e0b',
+      backgroundColor: 'rgba(245,158,11,0.08)',
+      tension: 0.35,
+      pointRadius: 3,
+      fill: true,
+      spanGaps: true
+    }];
+    if (baseWeight && baseWeight >= min && baseWeight <= max) {
+      datasets.push({
+        label: '基準体重',
+        data: labels.map(() => baseWeight),
+        borderColor: 'rgba(148,163,184,0.5)',
+        borderDash: [4, 4],
+        pointRadius: 0,
+        borderWidth: 1.5
+      });
+    }
+
+    canvas._chart = new Chart(canvas, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, color: tickColor, boxWidth: 12, padding: 8 } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 }, color: tickColor } },
+          y: { min, max, ticks: { font: { size: 10 }, stepSize: 1, color: tickColor }, grid: { color: gridColor } }
         }
       }
     });
