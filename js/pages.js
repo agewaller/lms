@@ -153,6 +153,7 @@ var Pages = {
       html += this.renderQuickLayerPick();
       html += this.renderGratitudeWidget();
       html += this.renderConsciousnessLayers();
+      html += this.renderLayerTrendChart();
       html += this.renderMoodTrendCard();
       html += this.renderTranscriptInput();
     }
@@ -3240,6 +3241,63 @@ var Pages = {
     card.querySelector('.breath-idle').style.display = '';
     const circle = document.getElementById('breathCircle');
     if (circle) circle.classList.remove('expand');
+  },
+
+  // ─── 7-layer trend chart (consciousness domain home, ≥3 observations) ───
+  renderLayerTrendChart() {
+    const obs = store.getDomainData('consciousness', 'observation', 30)
+      .filter(e => Object.keys(e).some(k => k.startsWith('layer_') && e[k] > 0));
+    if (obs.length < 3) return '';
+    return `<div class="layer-trend-card">
+      <div class="layer-trend-header">
+        <h3>意識レイヤーの推移（直近30日）</h3>
+      </div>
+      <canvas id="layerTrendChart" height="130"></canvas>
+    </div>`;
+  },
+
+  initLayerTrendChart() {
+    const canvas = document.getElementById('layerTrendChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    const obs = store.getDomainData('consciousness', 'observation', 30)
+      .filter(e => e.timestamp)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      .slice(-14);
+    if (obs.length < 3) { canvas.closest('.layer-trend-card')?.remove(); return; }
+
+    const labels = obs.map(e => { const d = new Date(e.timestamp); return `${d.getMonth()+1}/${d.getDate()}`; });
+    if (canvas._chart) canvas._chart.destroy();
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const tickColor = isDark ? '#94a3b8' : '#64748b';
+    const layers = CONFIG.domains.consciousness?.layers || {};
+    const layerKeys = ['layer_1','layer_2','layer_3','layer_35','layer_4','layer_5','layer_6','layer_7'];
+
+    canvas._chart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: layerKeys.map(k => {
+          const lk = k.replace('layer_', '');
+          const layer = layers[parseFloat(lk)];
+          return {
+            label: layer ? layer.name : k,
+            data: obs.map(e => Number(e[k]) || 0),
+            backgroundColor: (layer?.color || '#6C63FF') + 'cc',
+            stack: 'layers'
+          };
+        })
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, color: tickColor, boxWidth: 10, padding: 6 } }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 }, color: tickColor } },
+          y: { stacked: true, max: 100, ticks: { font: { size: 10 }, color: tickColor, stepSize: 25 }, grid: { color: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)' } }
+        }
+      }
+    });
   },
 
   // ─── Mood trend chart (consciousness domain home, ≥3 entries with mood_level) ───

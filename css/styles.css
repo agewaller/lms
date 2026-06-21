@@ -2967,6 +2967,17 @@ html[data-theme="dark"] .ht-cell.level-3     { background: #10b981; }
 .sleep-trend-header h3 { margin: 0; font-size: 15px; }
 .sleep-trend-ref { font-size: 12px; color: var(--text-muted); }
 
+/* ─── Layer Trend Card ─── */
+.layer-trend-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.layer-trend-header { margin-bottom: 10px; }
+.layer-trend-header h3 { margin: 0; font-size: 15px; }
+
 /* ─── Mood Trend Card ─── */
 .mood-trend-card {
   background: var(--bg-secondary);
