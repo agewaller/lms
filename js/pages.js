@@ -3088,7 +3088,12 @@ var Pages = {
     { id: 'medication_7',     icon: '💊', title: 'お薬習慣',       desc: '7日連続でお薬を記録しました' },
     { id: 'contacts_10',      icon: '👥', title: 'つながり達人',   desc: '10人以上と交流を記録しました' },
     { id: 'checkin_14',       icon: '☀️', title: '朝の習慣',      desc: '14日間、朝のチェックインを完了しました' },
-    { id: 'breath_5',         icon: '🫁', title: '呼吸の達人',     desc: '呼吸法を5回記録しました' }
+    { id: 'breath_5',         icon: '🫁', title: '呼吸の達人',     desc: '呼吸法を5回記録しました' },
+    { id: 'exercise_5',       icon: '🏃', title: '運動の習慣',     desc: '5日間、運動を記録しました' },
+    { id: 'learning_100min',  icon: '📚', title: '学び100分',      desc: '今月100分以上学びを記録しました' },
+    { id: 'wisdom_fav',       icon: '⭐', title: 'ことばを大切に', desc: '今日のことばをお気に入りにしました' },
+    { id: 'cog_check_7',      icon: '🧩', title: '脳活習慣',       desc: '7日連続で脳の健康チェックをしました' },
+    { id: 'purpose_check_14', icon: '💡', title: '充実の記録',     desc: '14日間、充実感チェックを続けました' },
   ],
 
   checkAchievements() {
@@ -3154,17 +3159,79 @@ var Pages = {
     const breathCount = store.getDomainData('consciousness', 'practices', 365)
       .filter(e => e.practice_type === 'breathwork').length;
 
+    // exercise_5: 5+ distinct exercise dates
+    let exStreak5 = false;
+    try {
+      const exLog = JSON.parse(localStorage.getItem('lms_exerciseLog') || '[]');
+      const exDates = [...new Set(exLog.map(e => e.date))].sort();
+      if (exDates.length >= 5) {
+        let run = 1, max = 1;
+        for (let i = 1; i < exDates.length; i++) {
+          const diff = (new Date(exDates[i]) - new Date(exDates[i-1])) / 86400000;
+          run = diff === 1 ? run + 1 : 1;
+          if (run > max) max = run;
+        }
+        exStreak5 = max >= 5;
+      }
+    } catch(e) {}
+
+    // learning_100min: ≥100 min in time.learning this month
+    const now100 = new Date();
+    const monthStart = new Date(now100.getFullYear(), now100.getMonth(), 1).toISOString().slice(0,10);
+    const learningMin = store.getDomainData('time', 'learning', 90)
+      .filter(e => e.date >= monthStart)
+      .reduce((sum, e) => sum + (Number(e.minutes) || 0), 0);
+
+    // wisdom_fav: any favorited wisdom quote
+    let wisdomFav = false;
+    try {
+      wisdomFav = JSON.parse(localStorage.getItem('lms_wisdomFavorites') || '[]').length >= 1;
+    } catch(e) {}
+
+    // cog_check_7: 7 consecutive days in lms_cogWellness
+    let cogStreak7 = false;
+    try {
+      const cogDates = [...new Set(JSON.parse(localStorage.getItem('lms_cogWellness') || '[]').map(e => e.date))].sort().reverse();
+      if (cogDates.length >= 7) {
+        let run = 1;
+        for (let i = 1; i < cogDates.length && run < 7; i++) {
+          const diff = (new Date(cogDates[i-1]) - new Date(cogDates[i])) / 86400000;
+          if (diff === 1) run++; else break;
+        }
+        cogStreak7 = run >= 7;
+      }
+    } catch(e) {}
+
+    // purpose_check_14: 14 consecutive days in lms_purposeCheck
+    let purposeStreak14 = false;
+    try {
+      const pDates = [...new Set(JSON.parse(localStorage.getItem('lms_purposeCheck') || '[]').map(e => e.date))].sort().reverse();
+      if (pDates.length >= 14) {
+        let run = 1;
+        for (let i = 1; i < pDates.length && run < 14; i++) {
+          const diff = (new Date(pDates[i-1]) - new Date(pDates[i])) / 86400000;
+          if (diff === 1) run++; else break;
+        }
+        purposeStreak14 = run >= 14;
+      }
+    } catch(e) {}
+
     const checks = {
-      first_entry:   totalEntries >= 1,
-      streak_3:      streak >= 3,
-      streak_7:      streak >= 7,
-      streak_30:     streak >= 30,
-      all_6_domains: domainsWithData.size >= 6,
-      entries_100:   totalEntries >= 100,
-      medication_7:  medStreak >= 7,
-      contacts_10:   uniqueContacts.size >= 10,
-      checkin_14:    checkinCount >= 14,
-      breath_5:      breathCount >= 5
+      first_entry:      totalEntries >= 1,
+      streak_3:         streak >= 3,
+      streak_7:         streak >= 7,
+      streak_30:        streak >= 30,
+      all_6_domains:    domainsWithData.size >= 6,
+      entries_100:      totalEntries >= 100,
+      medication_7:     medStreak >= 7,
+      contacts_10:      uniqueContacts.size >= 10,
+      checkin_14:       checkinCount >= 14,
+      breath_5:         breathCount >= 5,
+      exercise_5:       exStreak5,
+      learning_100min:  learningMin >= 100,
+      wisdom_fav:       wisdomFav,
+      cog_check_7:      cogStreak7,
+      purpose_check_14: purposeStreak14
     };
 
     this._achievementDefs.forEach(def => {
