@@ -1697,8 +1697,9 @@ var Pages = {
       store.getDomainData(domain, cat, 14).forEach(e => {
         if (!e.timestamp) return;
         const daysAgo = Math.floor((now - new Date(e.timestamp)) / 86400000);
-        if (daysAgo < 7)  week1.push(e);
-        else              week2.push(e);
+        const tagged = { ...e, _category: cat };
+        if (daysAgo < 7)  week1.push(tagged);
+        else              week2.push(tagged);
       });
     });
 
