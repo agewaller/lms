@@ -106,11 +106,16 @@ var Components = {
 
   // ─── Chat Message ───
   chatMessage(msg) {
-    const cls = msg.role === 'user' ? 'chat-user' : 'chat-ai';
-    const icon = msg.role === 'user' ? 'あ' : 'S';
+    const isUser = msg.role === 'user';
+    const cls = isUser ? 'chat-user' : 'chat-ai';
+    const icon = isUser ? 'あ' : '◈';
+    // Escape user input before markdown; trust AI responses (already sanitized by formatMarkdown)
+    const body = isUser
+      ? this.escapeHtml(msg.content || '').replace(/\n/g, '<br>')
+      : this.formatMarkdown(msg.content || '');
     return `<div class="chat-msg ${cls}">
       <div class="chat-icon">${icon}</div>
-      <div class="chat-content">${this.formatMarkdown(msg.content || '')}</div>
+      <div class="chat-content">${body}</div>
       <div class="chat-time">${msg.timestamp ? new Date(msg.timestamp).toLocaleString() : ''}</div>
     </div>`;
   },
