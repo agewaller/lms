@@ -2054,45 +2054,59 @@ var Pages = {
     const weekKey = `${today.getFullYear()}-W${this._weekNumber(today)}`;
     const dismissed = localStorage.getItem('lms_weeklySummaryDismissed');
     if (dismissed === weekKey) return '';
-    // Only show Mon/Thu/Sat — weekends excluded on Thu to avoid double-showing near weekend
-    const dayOfWeek = today.getDay(); // 0=Sun,6=Sat
+    // Only show Mon/Thu/Sat/Sun
+    const dayOfWeek = today.getDay();
     if (dayOfWeek !== 1 && dayOfWeek !== 4 && dayOfWeek !== 6 && dayOfWeek !== 0) return '';
 
-    // Gather last 7 days counts per domain
     const domainKeys = Object.keys(CONFIG.domains);
+
+    // This week (0–7 days) and last week (7–14 days) counts per domain
     const rows = domainKeys.map(d => {
       const cats = Object.keys(CONFIG.domains[d]?.categories || {});
-      let count = 0;
-      cats.forEach(cat => { count += store.getDomainData(d, cat, 7).length; });
-      const color = CONFIG.domains[d]?.color || '#6C63FF';
-      const icon = CONFIG.domains[d]?.icon || '';
-      return { d, icon, count, color };
+      let thisWeek = 0, lastWeek = 0;
+      cats.forEach(cat => {
+        const all14 = store.getDomainData(d, cat, 14);
+        const cutoff7 = new Date(); cutoff7.setDate(cutoff7.getDate() - 7);
+        thisWeek += all14.filter(e => new Date(e.timestamp) >= cutoff7).length;
+        lastWeek += all14.filter(e => new Date(e.timestamp) < cutoff7).length;
+      });
+      return { d, icon: CONFIG.domains[d]?.icon || '', color: CONFIG.domains[d]?.color || '#6C63FF', thisWeek, lastWeek };
     });
 
-    const totalRecords = rows.reduce((s, r) => s + r.count, 0);
-    if (totalRecords === 0) return '';
+    const totalThis = rows.reduce((s, r) => s + r.thisWeek, 0);
+    if (totalThis === 0) return '';
 
-    const topDomain = rows.reduce((a, b) => b.count > a.count ? b : a);
+    const totalLast = rows.reduce((s, r) => s + r.lastWeek, 0);
+    const diff = totalThis - totalLast;
+    const trendIcon = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+    const trendClass = diff > 0 ? 'trend-up' : diff < 0 ? 'trend-down' : 'trend-flat';
+    const trendMsg = diff > 5 ? 'すばらしい伸びです！' : diff > 0 ? '先週より増えています' : diff < -5 ? '少し減っています。続けましょう' : diff < 0 ? '先週より少し減っています' : '先週と同じペースです';
+
+    const topDomain = rows.reduce((a, b) => b.thisWeek > a.thisWeek ? b : a);
+    const maxCount = Math.max(...rows.map(r => r.thisWeek), 1);
 
     return `<div class="weekly-summary-card" id="weeklySummaryCard">
       <div class="ws-header">
-        <span class="ws-title">先週の記録まとめ</span>
+        <span class="ws-title">今週の記録まとめ</span>
         <button class="ws-close" onclick="Pages.dismissWeeklySummary('${weekKey}')">&times;</button>
       </div>
-      <div class="ws-total">合計 <strong>${totalRecords}</strong> 件の記録</div>
+      <div class="ws-total-row">
+        <div class="ws-total">合計 <strong>${totalThis}</strong> 件</div>
+        ${totalLast > 0 ? `<div class="ws-trend ${trendClass}">${trendIcon} ${Math.abs(diff)}件 ${trendMsg}</div>` : ''}
+      </div>
       <div class="ws-domains">
-        ${rows.map(r => r.count > 0 ? `
+        ${rows.map(r => r.thisWeek > 0 ? `
           <div class="ws-domain-bar">
             <span class="ws-domain-label">${r.icon} ${i18n.t(r.d)}</span>
             <div class="ws-bar-track">
-              <div class="ws-bar-fill" style="width:${Math.min(100, r.count * 10)}%;background:${r.color}"></div>
+              <div class="ws-bar-fill" style="width:${Math.round(r.thisWeek / maxCount * 100)}%;background:${r.color}"></div>
             </div>
-            <span class="ws-domain-count">${r.count}</span>
+            <span class="ws-domain-count">${r.thisWeek}</span>
           </div>
         ` : '').join('')}
       </div>
       <div class="ws-highlight">
-        一番記録が多かった領域: <strong>${topDomain.icon} ${i18n.t(topDomain.d)}</strong>（${topDomain.count}件）
+        最も記録が多い領域: <strong>${topDomain.icon} ${i18n.t(topDomain.d)}</strong>（${topDomain.thisWeek}件）
       </div>
     </div>`;
   },

@@ -2504,7 +2504,12 @@ body.is-admin .admin-only { display: flex; }
   font-size: 18px; color: var(--text-secondary); line-height: 1;
   padding: 0 4px;
 }
-.ws-total { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
+.ws-total-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.ws-total { font-size: 14px; color: var(--text-secondary); }
+.ws-trend { font-size: 12px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+.ws-trend.trend-up { color: #10b981; background: rgba(16,185,129,0.1); }
+.ws-trend.trend-down { color: #ef4444; background: rgba(239,68,68,0.1); }
+.ws-trend.trend-flat { color: var(--text-muted); background: var(--bg-secondary); }
 .ws-domains { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .ws-domain-bar { display: flex; align-items: center; gap: 8px; }
 .ws-domain-label { font-size: 0.8rem; width: 70px; flex-shrink: 0; color: var(--text-secondary); }
