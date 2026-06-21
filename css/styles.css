@@ -7415,3 +7415,68 @@ html[data-theme="dark"] .wsg-bar-bg { background: rgba(255,255,255,0.1); }
 .lss-avg { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 10px; }
 .lss-avg strong { color: var(--text-primary); font-size: 1rem; }
 .lss-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ─── Today's Domain Balance Card (shown after 3pm) ─── */
+.domain-balance-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+.dbc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.dbc-title { font-size: 0.82rem; font-weight: 700; color: var(--text-primary); }
+.dbc-close {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0 4px;
+}
+.dbc-domains {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+@media (max-width: 480px) { .dbc-domains { grid-template-columns: repeat(3, 1fr); } }
+.dbc-domain {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s;
+}
+.dbc-domain.active { background: rgba(16,185,129,0.08); }
+.dbc-domain.inactive { opacity: 0.5; }
+.dbc-domain:hover { background: var(--bg-tertiary); }
+.dbc-domain-icon { font-size: 1.1rem; }
+.dbc-domain-label { font-size: 0.6rem; color: var(--text-secondary); text-align: center; }
+.dbc-check {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  font-size: 0.55rem;
+  color: #10b981;
+  font-weight: 700;
+}
+.dbc-suggest {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}

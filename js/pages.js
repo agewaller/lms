@@ -48,6 +48,7 @@ var Pages = {
       ${this.renderGettingStarted(domain)}
       ${this.renderTodayPriorities(domain)}
       ${this.renderCheckinNudge(domain)}
+      ${this.renderTodayDomainBalance()}
       ${this.renderWeeklyReflectionCard()}
       ${this.renderTodaySummary(domain)}
       ${this.renderDailyPrompt(domain)}
@@ -2890,6 +2891,86 @@ var Pages = {
         <div class="dg-date">${dateStr}</div>
       </div>
       <div class="dg-streak">${streakText}</div>
+    </div>`;
+  },
+
+  // ─── Today's Domain Balance (shows after 3pm, which domains got attention today) ───
+  renderTodayDomainBalance() {
+    const hour = new Date().getHours();
+    if (hour < 15) return ''; // Only show afternoons / evenings
+
+    const today = new Date().toISOString().split('T')[0];
+    const domainDefs = [
+      { id: 'consciousness', icon: '🧠', label: '意識', color: '#6C63FF' },
+      { id: 'health',        icon: '💚', label: '健康', color: '#10b981' },
+      { id: 'time',          icon: '⏰', label: '時間', color: '#f59e0b' },
+      { id: 'work',          icon: '💼', label: '仕事', color: '#3b82f6' },
+      { id: 'relationship',  icon: '🤝', label: '関係', color: '#ef4444' },
+      { id: 'assets',        icon: '💰', label: '資産', color: '#d97706' }
+    ];
+
+    // Also check localStorage-based data sources
+    const domainActivity = {};
+    domainDefs.forEach(d => {
+      const cats = Object.keys(CONFIG.domains[d.id]?.categories || {});
+      const hasFirestoreEntry = cats.some(cat =>
+        store.getDomainData(d.id, cat, 1).some(e => e.timestamp?.startsWith(today))
+      );
+      domainActivity[d.id] = hasFirestoreEntry;
+    });
+
+    // Check daily check-in as cross-domain activity
+    const checkinDone = localStorage.getItem('lms_dailyCheckin') === today;
+    if (checkinDone) {
+      // Daily checkin counts as consciousness + health
+      domainActivity.consciousness = domainActivity.consciousness || true;
+      domainActivity.health = domainActivity.health || true;
+    }
+
+    // Check longevity habits, outing, etc. in localStorage
+    try {
+      const lhLog = JSON.parse(localStorage.getItem('lms_longevityHabits') || '[]');
+      if (lhLog.some(e => e.date === today)) domainActivity.consciousness = true;
+      const outLog = JSON.parse(localStorage.getItem('lms_outingLog') || '[]');
+      if (outLog.some(e => e.date === today)) domainActivity.health = true;
+      const letters = JSON.parse(localStorage.getItem('lms_letters') || '[]');
+      if (letters.some(e => e.date === today)) domainActivity.relationship = true;
+      const dreamList = JSON.parse(localStorage.getItem('lms_dreamList') || '[]');
+      if (dreamList.some(e => e.updatedAt?.startsWith(today))) domainActivity.time = true;
+    } catch(e) {}
+
+    const activeDomains = domainDefs.filter(d => domainActivity[d.id]);
+    const inactiveDomains = domainDefs.filter(d => !domainActivity[d.id]);
+
+    // Don't show if all domains active (great!) or no domains active (too early)
+    if (activeDomains.length === 0 || inactiveDomains.length === 0) return '';
+
+    // Suggest the first inactive domain
+    const suggest = inactiveDomains[0];
+
+    const dismissKey = `lms_domainBalance_${today}`;
+    if (localStorage.getItem(dismissKey)) return '';
+
+    return `<div class="domain-balance-card" id="domainBalanceCard">
+      <div class="dbc-header">
+        <span class="dbc-title">今日の6領域バランス</span>
+        <button class="dbc-close" onclick="localStorage.setItem('${dismissKey}','1');document.getElementById('domainBalanceCard').remove()" aria-label="閉じる">×</button>
+      </div>
+      <div class="dbc-domains">
+        ${domainDefs.map(d => `
+          <div class="dbc-domain ${domainActivity[d.id] ? 'active' : 'inactive'}"
+               onclick="app.switchDomain('${d.id}')" title="${d.label}">
+            <span class="dbc-domain-icon" style="color:${domainActivity[d.id] ? d.color : 'var(--text-secondary)'}">${d.icon}</span>
+            <span class="dbc-domain-label">${d.label}</span>
+            ${domainActivity[d.id] ? '<span class="dbc-check">✓</span>' : ''}
+          </div>
+        `).join('')}
+      </div>
+      ${inactiveDomains.length > 0 ? `
+      <div class="dbc-suggest">
+        <span style="color:${suggest.color}">${suggest.icon} ${suggest.label}</span>の記録がまだです。
+        <button class="btn btn-sm btn-secondary" style="margin-left:8px" onclick="app.switchDomain('${suggest.id}')">記録する →</button>
+      </div>` : ''}
     </div>`;
   },
 
