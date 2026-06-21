@@ -218,6 +218,7 @@ var Pages = {
       html += this.renderProfileCompletionBanner();
       html += this.renderBPAlertCard();
       html += this.renderMorningVitalsCard();
+      html += this.renderAfternoonSleepLog();
       html += this.renderWaterTracker();
       html += this.renderStepCounter();
       html += this.renderSOSWidget();
@@ -5665,6 +5666,67 @@ var Pages = {
     this._ciAnswers = {};
     const overlay = document.getElementById('ciOverlay');
     if (overlay) overlay.remove();
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Afternoon/Evening Sleep Log (health domain, 11am-10pm, if no sleep logged today) ───
+  renderAfternoonSleepLog() {
+    const hour = new Date().getHours();
+    if (hour < 11 || hour >= 22) return ''; // morning vitals card handles 5–11am
+    const today = new Date().toISOString().split('T')[0];
+    const lsKey = 'lms_sleepLog_' + today;
+    if (localStorage.getItem(lsKey)) return '';
+    // Also skip if already captured via morning vitals card
+    const vitals = store.getDomainData('health', 'vitals', 1).filter(e => (e.timestamp || '').startsWith(today) && e.sleep_quality);
+    if (vitals.length > 0) return '';
+    const sleepEntries = store.getDomainData('health', 'sleepData', 1).filter(e => (e.timestamp || '').startsWith(today));
+    if (sleepEntries.length > 0) return '';
+
+    const emojis = [['😴','良く眠れた',9],['🙂','まあまあ',7],['😐','普通',5],['😕','あまり眠れず',3],['😫','ほとんど眠れず',1]];
+
+    const emojiButtons = emojis.map(([e, label, val]) =>
+      `<button class="sl-emoji-btn" data-val="${val}" title="${label}"
+        onclick="Pages.selectSleepQuality(${val}, this)">${e}</button>`
+    ).join('');
+
+    return `<div class="sleep-log-card" id="sleepLogCard">
+      <div class="sl-header">
+        <span class="sl-icon">😴</span>
+        <span class="sl-title">昨夜の睡眠はどうでしたか？</span>
+      </div>
+      <div class="sl-emojis">${emojiButtons}</div>
+      <div class="sl-extra" id="slExtra" style="display:none">
+        <div class="sl-dur-row">
+          <label class="sl-label">就寝時刻</label>
+          <input type="time" id="slBedtime" class="form-input sl-time-input" value="23:00">
+          <label class="sl-label">起床時刻</label>
+          <input type="time" id="slWaketime" class="form-input sl-time-input" value="07:00">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="Pages.saveSleepLog()">記録する</button>
+        <button class="btn btn-ghost btn-sm" onclick="localStorage.setItem('${lsKey}','skip');document.getElementById('sleepLogCard').remove()">後で</button>
+      </div>
+      <input type="hidden" id="slQuality" value="">
+    </div>`;
+  },
+
+  selectSleepQuality(val, btn) {
+    document.querySelectorAll('.sl-emoji-btn').forEach(b => b.classList.remove('selected'));
+    if (btn) btn.classList.add('selected');
+    const hiddenEl = document.getElementById('slQuality');
+    if (hiddenEl) hiddenEl.value = String(val);
+    const extra = document.getElementById('slExtra');
+    if (extra) extra.style.display = 'flex';
+  },
+
+  saveSleepLog() {
+    const quality = parseInt(document.getElementById('slQuality')?.value || '', 10);
+    if (!quality) { Components.showToast('睡眠の質を選択してください', 'error'); return; }
+    const bedtime  = document.getElementById('slBedtime')?.value || '';
+    const waketime = document.getElementById('slWaketime')?.value || '';
+    store.addDomainEntry('health', 'sleepData', { quality, sleep_time: bedtime, wake_time: waketime });
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem('lms_sleepLog_' + today, '1');
+    Components.showToast('睡眠記録を保存しました', 'success');
     if (typeof app !== 'undefined') app.renderApp();
   },
 

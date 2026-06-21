@@ -4317,3 +4317,59 @@ html[data-theme="dark"] .gs-dot-label { color: #d97706; }
 .mj-textarea { width: 100%; resize: vertical; min-height: 60px; }
 .mj-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
 .mj-input-row { margin-bottom: 4px; }
+
+/* ─── Sleep Log Card (health domain, afternoon/evening) ─── */
+.sleep-log-card {
+  background: linear-gradient(135deg, #1e2d42 0%, #16213a 100%);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  color: #e2e8f0;
+}
+html[data-theme="light"] .sleep-log-card { background: linear-gradient(135deg, #1e2d42, #16213a); }
+.sl-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.sl-icon { font-size: 1.2rem; }
+.sl-title { font-size: 0.95rem; font-weight: 600; color: #e2e8f0; }
+.sl-emojis {
+  display: flex;
+  gap: 8px;
+  justify-content: space-around;
+  margin-bottom: 10px;
+}
+.sl-emoji-btn {
+  font-size: 1.8rem;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  padding: 6px;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  line-height: 1;
+}
+.sl-emoji-btn:hover { transform: scale(1.15); }
+.sl-emoji-btn.selected { border-color: #6C63FF; background: rgba(108,99,255,0.15); }
+.sl-extra {
+  flex-direction: column;
+  gap: 10px;
+}
+.sl-dur-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sl-label { font-size: 0.8rem; color: #94a3b8; white-space: nowrap; }
+.sl-time-input {
+  flex: 1;
+  min-width: 100px;
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.15);
+  color: #e2e8f0;
+  padding: 6px 8px;
+  font-size: 0.85rem;
+}
