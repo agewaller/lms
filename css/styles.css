@@ -2040,3 +2040,50 @@ body.is-admin .admin-only { display: flex; }
 .ws-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
 .ws-domain-count { font-size: 0.8rem; width: 24px; text-align: right; color: var(--text-secondary); }
 .ws-highlight { font-size: 0.87rem; color: var(--text-secondary); padding-top: 8px; border-top: 1px solid #6C63FF22; }
+
+/* ─── Doctor Report ─── */
+.doctor-report-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--success-bg); border: 1px solid rgba(16,185,129,0.2);
+  border-radius: var(--radius); padding: 16px 20px; margin: 16px 0;
+  gap: 16px; flex-wrap: wrap;
+}
+.drb-text { display: flex; flex-direction: column; gap: 4px; }
+.drb-text strong { font-size: 15px; color: var(--text-primary); }
+.drb-text span { font-size: 0.87rem; color: var(--text-secondary); }
+
+.doctor-report { max-width: 860px; margin: 0 auto; padding: 24px 20px; }
+.dr-actions { display: flex; gap: 10px; margin-bottom: 24px; }
+.dr-header { border-bottom: 2px solid var(--text-primary); padding-bottom: 16px; margin-bottom: 24px; }
+.dr-header h1 { font-size: 22px; margin-bottom: 12px; }
+.dr-meta { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 6px; font-size: 0.87rem; color: var(--text-secondary); }
+.dr-meta strong { color: var(--text-primary); }
+.dr-period { grid-column: 1 / -1; margin-top: 4px; }
+.dr-section { margin-bottom: 28px; }
+.dr-section h2 { font-size: 16px; color: var(--text-primary); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 14px; }
+.dr-stats-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px,1fr)); gap: 12px; }
+.dr-stat { background: var(--bg-tertiary); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
+.dr-stat-val { font-size: 22px; font-weight: 700; color: var(--accent); }
+.dr-stat-label { font-size: 0.73rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4; }
+.dr-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+.dr-table th { background: var(--bg-tertiary); padding: 8px 10px; text-align: left; font-weight: 600; border: 1px solid var(--border); }
+.dr-table td { padding: 8px 10px; border: 1px solid var(--border); vertical-align: top; }
+.dr-table tr:nth-child(even) td { background: var(--bg-tertiary); }
+.dr-notes { display: flex; flex-direction: column; gap: 10px; }
+.dr-note-item { border-left: 3px solid var(--accent); padding-left: 12px; }
+.dr-note-date { font-size: 0.73rem; color: var(--text-secondary); margin-bottom: 4px; }
+.dr-note-text { font-size: 0.87rem; color: var(--text-primary); white-space: pre-wrap; }
+.dr-footer { display: flex; gap: 12px; justify-content: center; margin-top: 32px; flex-wrap: wrap; }
+.dr-disclaimer { font-size: 0.73rem; color: var(--text-muted); text-align: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+/* ─── Print Styles ─── */
+@media print {
+  .no-print, .sidebar, .top-bar, .sidebar-overlay, .toast-container,
+  .modal-overlay, .top-bar-right, .menu-toggle { display: none !important; }
+  .main-content { margin-left: 0 !important; }
+  body { background: #fff !important; font-size: 12pt; }
+  .doctor-report { padding: 0; max-width: 100%; }
+  .dr-stat-val { color: #333 !important; }
+  .dr-section h2 { color: #000 !important; }
+  .page-content { padding: 0 !important; }
+}

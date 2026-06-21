@@ -14,7 +14,8 @@ var Pages = {
       case 'actions':  return this.renderActions(domain);
       case 'ask_ai':   return this.renderAskAI(domain);
       case 'settings': return this.renderSettings(domain);
-      case 'admin':    return this.renderAdmin();
+      case 'admin':        return this.renderAdmin();
+      case 'doctor_report': return this.renderDoctorReport(domain);
       default:         return this.renderHome(domain);
     }
   },
@@ -159,6 +160,17 @@ var Pages = {
         html += AssetsFeatures.renderScreenshotReader();
         html += AssetsFeatures.renderAutoTrading();
       }
+    }
+
+    // Health: doctor report shortcut
+    if (domain === 'health') {
+      html += `<div class="doctor-report-banner">
+        <div class="drb-text">
+          <strong>かかりつけ医への受診準備</strong>
+          <span>直近30日間の健康データをまとめて印刷できます</span>
+        </div>
+        <button class="btn btn-secondary" onclick="app.navigate('doctor_report')">レポートを作成 →</button>
+      </div>`;
     }
 
     // Domain disclaimers
@@ -1109,6 +1121,149 @@ var Pages = {
         }
       }
     });
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  DOCTOR VISIT REPORT (健康 → かかりつけ医へのレポート)
+  // ═══════════════════════════════════════════════════════════
+  renderDoctorReport() {
+    const profile = store.get('userProfile') || {};
+    const today = new Date();
+    const since30 = new Date(today); since30.setDate(today.getDate() - 30);
+
+    const symptoms   = store.getDomainData('health', 'symptoms', 30);
+    const vitals     = store.getDomainData('health', 'vitals', 30);
+    const meds       = store.getDomainData('health', 'medications', 30);
+    const bloodTests = store.getDomainData('health', 'bloodTests', 30);
+    const sleep      = store.getDomainData('health', 'sleepData', 30);
+    const activity   = store.getDomainData('health', 'activityData', 30);
+
+    // Averages
+    const avgCondition = symptoms.length
+      ? (symptoms.reduce((s,e) => s + (e.condition_level||0), 0) / symptoms.length).toFixed(1) : '-';
+    const avgFatigue = symptoms.length
+      ? (symptoms.reduce((s,e) => s + (e.fatigue_level||0), 0) / symptoms.length).toFixed(1) : '-';
+    const avgBP_s = vitals.filter(v=>v.bp_systolic).length
+      ? Math.round(vitals.filter(v=>v.bp_systolic).reduce((s,v)=>s+(v.bp_systolic||0),0)/vitals.filter(v=>v.bp_systolic).length) : '-';
+    const avgBP_d = vitals.filter(v=>v.bp_diastolic).length
+      ? Math.round(vitals.filter(v=>v.bp_diastolic).reduce((s,v)=>s+(v.bp_diastolic||0),0)/vitals.filter(v=>v.bp_diastolic).length) : '-';
+    const avgSleep = sleep.length
+      ? (sleep.reduce((s,e)=>s+(e.quality||0),0)/sleep.length).toFixed(1) : '-';
+
+    // Most recent vitals
+    const latestVital = vitals.length ? vitals[vitals.length - 1] : null;
+
+    // Medications (unique by name)
+    const uniqueMeds = [...new Map((meds).map(m => [m.name, m])).values()];
+
+    // Notable symptoms (notes with content)
+    const notedSymptoms = symptoms.filter(s => s.notes && s.notes.trim()).slice(-5).reverse();
+
+    const dateStr = today.toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric' });
+
+    return `<div class="doctor-report" id="doctorReport">
+      <div class="dr-actions no-print">
+        <button class="btn btn-secondary" onclick="app.navigate('home')">← 戻る</button>
+        <button class="btn btn-primary" onclick="window.print()">🖨️ 印刷する</button>
+      </div>
+
+      <div class="dr-header">
+        <h1>受診準備レポート</h1>
+        <div class="dr-meta">
+          <div>患者名：<strong>${Components.escapeHtml(profile.displayName || profile.name || '（未登録）')}</strong></div>
+          <div>年齢：<strong>${profile.age ? profile.age + '歳' : '（未登録）'}</strong></div>
+          <div>作成日：<strong>${dateStr}</strong></div>
+          <div class="dr-period">直近30日間のデータ（${since30.toLocaleDateString('ja-JP')}〜${today.toLocaleDateString('ja-JP')}）</div>
+        </div>
+      </div>
+
+      <div class="dr-section">
+        <h2>1. 体調の概要</h2>
+        <div class="dr-stats-row">
+          <div class="dr-stat"><div class="dr-stat-val">${avgCondition}/10</div><div class="dr-stat-label">平均体調</div></div>
+          <div class="dr-stat"><div class="dr-stat-val">${avgFatigue}/10</div><div class="dr-stat-label">平均疲労感</div></div>
+          <div class="dr-stat"><div class="dr-stat-val">${avgBP_s}/${avgBP_d}</div><div class="dr-stat-label">平均血圧<br>(mmHg)</div></div>
+          <div class="dr-stat"><div class="dr-stat-val">${avgSleep}/10</div><div class="dr-stat-label">睡眠の質</div></div>
+        </div>
+      </div>
+
+      ${latestVital ? `
+      <div class="dr-section">
+        <h2>2. 最新バイタル（${new Date(latestVital.timestamp).toLocaleDateString('ja-JP')}）</h2>
+        <table class="dr-table">
+          <thead><tr><th>項目</th><th>値</th></tr></thead>
+          <tbody>
+            ${latestVital.heart_rate ? `<tr><td>脈拍</td><td>${latestVital.heart_rate} bpm</td></tr>` : ''}
+            ${latestVital.bp_systolic ? `<tr><td>血圧</td><td>${latestVital.bp_systolic}/${latestVital.bp_diastolic} mmHg</td></tr>` : ''}
+            ${latestVital.temperature ? `<tr><td>体温</td><td>${latestVital.temperature} °C</td></tr>` : ''}
+            ${latestVital.weight ? `<tr><td>体重</td><td>${latestVital.weight} kg</td></tr>` : ''}
+          </tbody>
+        </table>
+      </div>` : ''}
+
+      ${uniqueMeds.length > 0 ? `
+      <div class="dr-section">
+        <h2>3. 現在の服薬・サプリメント</h2>
+        <table class="dr-table">
+          <thead><tr><th>薬品名</th><th>用量</th><th>服用タイミング</th><th>備考</th></tr></thead>
+          <tbody>
+            ${uniqueMeds.map(m => `<tr>
+              <td>${Components.escapeHtml(m.name || '')}</td>
+              <td>${Components.escapeHtml(m.dosage || '')}</td>
+              <td>${Components.escapeHtml(m.timing || '')}</td>
+              <td>${Components.escapeHtml(m.notes || '')}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : ''}
+
+      ${bloodTests.length > 0 ? `
+      <div class="dr-section">
+        <h2>4. 検査値の記録</h2>
+        <table class="dr-table">
+          <thead><tr><th>日付</th><th>検査項目</th><th>値</th><th>単位</th><th>基準値</th></tr></thead>
+          <tbody>
+            ${bloodTests.slice(-10).reverse().map(t => `<tr>
+              <td>${new Date(t.timestamp).toLocaleDateString('ja-JP')}</td>
+              <td>${Components.escapeHtml(t.test_name || '')}</td>
+              <td>${Components.escapeHtml(String(t.value || ''))}</td>
+              <td>${Components.escapeHtml(t.unit || '')}</td>
+              <td>${Components.escapeHtml(t.reference || '')}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : ''}
+
+      ${notedSymptoms.length > 0 ? `
+      <div class="dr-section">
+        <h2>5. 気になった症状・メモ</h2>
+        <div class="dr-notes">
+          ${notedSymptoms.map(s => `<div class="dr-note-item">
+            <div class="dr-note-date">${new Date(s.timestamp).toLocaleDateString('ja-JP')}</div>
+            <div class="dr-note-text">${Components.escapeHtml(s.notes || '')}</div>
+          </div>`).join('')}
+        </div>
+      </div>` : ''}
+
+      <div class="dr-section">
+        <h2>${uniqueMeds.length > 0 ? '6' : notedSymptoms.length > 0 ? '6' : '3'}. 生活習慣の概要（直近30日）</h2>
+        <div class="dr-stats-row">
+          <div class="dr-stat"><div class="dr-stat-val">${symptoms.length}</div><div class="dr-stat-label">体調記録日数</div></div>
+          <div class="dr-stat"><div class="dr-stat-val">${sleep.length}</div><div class="dr-stat-label">睡眠記録日数</div></div>
+          <div class="dr-stat"><div class="dr-stat-val">${activity.length}</div><div class="dr-stat-label">運動記録日数</div></div>
+        </div>
+      </div>
+
+      <div class="dr-footer no-print">
+        <button class="btn btn-primary btn-lg" onclick="window.print()">🖨️ 印刷する</button>
+        <button class="btn btn-secondary" onclick="app.navigate('home')">ホームに戻る</button>
+      </div>
+
+      <div class="dr-disclaimer">
+        このレポートはLMSアプリに記録されたデータを元に自動生成されました。
+        医療診断ではありません。必ず医師にご相談ください。
+      </div>
+    </div>`;
   },
 
   // ═══════════════════════════════════════════════════════════

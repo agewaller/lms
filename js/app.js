@@ -225,8 +225,10 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理' };
-    if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
+    const pageNames = { home: 'ホーム', record: '記録する', data: 'データ', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理', doctor_report: '受診準備レポート', integrations: '連携' };
+    if (titleEl) titleEl.textContent = page === 'doctor_report'
+      ? '受診準備レポート'
+      : `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
     document.querySelectorAll('.nav-item').forEach(el => {
