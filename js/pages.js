@@ -960,18 +960,18 @@ var Pages = {
 
           html += `<div class="data-entry-card">
             <div class="data-entry-header">
-              <span class="data-entry-cat">${catLabel}</span>
+              <span class="data-entry-cat">${Components.escapeHtml(catLabel)}</span>
               <span class="data-entry-time">${new Date(entry.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
               <div class="data-entry-actions">
-                <button class="btn-icon-sm" onclick="app.editDataEntry('${domain}','${entry._category}','${entry.id}')" title="編集">編集</button>
-                <button class="btn-icon-sm" onclick="app.deleteDataEntry('${domain}','${entry._category}','${entry.id}')" title="削除">削除</button>
+                <button class="btn-icon-sm" onclick="app.editDataEntry('${Components.escapeHtml(domain)}','${Components.escapeHtml(entry._category)}','${Components.escapeHtml(entry.id)}')" title="編集">編集</button>
+                <button class="btn-icon-sm" onclick="app.deleteDataEntry('${Components.escapeHtml(domain)}','${Components.escapeHtml(entry._category)}','${Components.escapeHtml(entry.id)}')" title="削除">削除</button>
               </div>
             </div>
             <div class="data-entry-fields">
               ${fields.map(([k, v]) => {
-                const label = i18n.t(k) || k;
-                const val = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
-                return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${val}</span></div>`;
+                const label = Components.escapeHtml(i18n.t(k) || k);
+                const raw = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
+                return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${Components.escapeHtml(raw)}</span></div>`;
               }).join('')}
             </div>
           </div>`;

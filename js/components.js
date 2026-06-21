@@ -45,7 +45,7 @@ var Components = {
         <span class="rec-domain-badge" style="background:${CONFIG.domains[rec.domain]?.color || '#666'}">${CONFIG.domains[rec.domain]?.icon || ''} ${i18n.t(rec.domain)}</span>
         <span class="rec-priority">${i18n.t(rec.priority || 'medium')}</span>
       </div>
-      <div class="rec-body">${rec.text || ''}</div>
+      <div class="rec-body">${this.formatMarkdown(rec.text || '')}</div>
       ${rec.action ? `<button class="btn btn-sm btn-primary" onclick="app.executeAction('${rec.actionType}','${rec.actionData || ''}')">${rec.action}</button>` : ''}
     </div>`;
   },
@@ -257,14 +257,72 @@ var Components = {
     const summary = Object.entries(entry)
       .filter(([k]) => !['id','timestamp','domain','category','_synced'].includes(k))
       .slice(0, 3)
-      .map(([k, v]) => `${i18n.t(k)}: ${v}`)
+      .map(([k, v]) => `${this.escapeHtml(i18n.t(k) || k)}: ${this.escapeHtml(String(v))}`)
       .join(' | ');
     return `<div class="record-item" style="border-left-color:${color}">
       <div class="record-header">
-        <span class="record-cat">${cat}</span>
+        <span class="record-cat">${this.escapeHtml(cat)}</span>
         <span class="record-time">${time}</span>
       </div>
       <div class="record-summary">${summary}</div>
     </div>`;
+  },
+
+  // ─── XSS Prevention ───
+  escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  // ─── Inline Confirm Dialog (replaces confirm() — iOS/Android safe) ───
+  _state: { confirmCallback: null, promptCallback: null },
+
+  confirmModal(message, onConfirm, confirmText, danger) {
+    this._state.confirmCallback = onConfirm;
+    const btnClass = danger ? 'btn-danger' : 'btn-primary';
+    app.openModal('確認', `
+      <p style="margin-bottom:20px;line-height:1.7;">${this.escapeHtml(message)}</p>
+      <div class="form-actions">
+        <button class="btn ${btnClass}" onclick="Components.resolveConfirm(true)">${this.escapeHtml(confirmText || '実行')}</button>
+        <button class="btn btn-secondary" onclick="Components.resolveConfirm(false)">キャンセル</button>
+      </div>
+    `);
+  },
+
+  resolveConfirm(confirmed) {
+    const cb = this._state.confirmCallback;
+    this._state.confirmCallback = null;
+    app.closeModal();
+    if (confirmed && cb) cb();
+  },
+
+  // ─── Inline Prompt Dialog (replaces prompt() — iOS/Android safe) ───
+  promptModal(message, placeholder, onConfirm) {
+    this._state.promptCallback = onConfirm;
+    app.openModal('入力', `
+      <p style="margin-bottom:12px;">${this.escapeHtml(message)}</p>
+      <input type="text" id="promptInput" class="form-input"
+        placeholder="${this.escapeHtml(placeholder || '')}"
+        style="margin-bottom:16px;"
+        onkeydown="if(event.key==='Enter')Components.resolvePrompt()">
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="Components.resolvePrompt()">確認</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+    setTimeout(() => document.getElementById('promptInput')?.focus(), 50);
+  },
+
+  resolvePrompt() {
+    const val = document.getElementById('promptInput')?.value?.trim();
+    const cb = this._state.promptCallback;
+    this._state.promptCallback = null;
+    app.closeModal();
+    if (val && cb) cb(val);
   }
 };
