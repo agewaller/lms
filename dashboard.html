@@ -167,11 +167,12 @@
 
     const params = new URLSearchParams(window.location.search);
     const entryDomain = params.get('domain') || null;
+    const entryPage = params.get('page') || null;
 
     if (!store.get('isAuthenticated')) {
       window.location.href = entryDomain ? entryDomain + '.html' : 'index.html';
     } else {
-      app.init(entryDomain);
+      app.init(entryDomain, entryPage);
     }
 
     // Register service worker for PWA offline support

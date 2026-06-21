@@ -13,8 +13,9 @@ var App = class App {
   }
 
   // ─── Initialize ───
-  async init(entryDomain) {
+  async init(entryDomain, entryPage) {
     this.entryDomain = entryDomain || null;
+    this.entryPage = entryPage || null;
     this.checkOAuthCallbacks();
 
     // Initialize Firebase
@@ -23,7 +24,7 @@ var App = class App {
     // Check if already authenticated
     if (store.get('isAuthenticated') && store.get('user')) {
       store.set('currentDomain', entryDomain || store.get('currentDomain') || 'health');
-      store.set('currentPage', 'home');
+      store.set('currentPage', entryPage || 'home');
       this.renderApp();
       this.startInboxPolling();
       setTimeout(() => this.checkFirstRun(), 1200);
@@ -36,12 +37,13 @@ var App = class App {
     store.on('isAuthenticated', (val) => {
       if (val) {
         store.set('currentDomain', this.entryDomain || store.get('currentDomain') || 'health');
-        store.set('currentPage', 'home');
+        store.set('currentPage', this.entryPage || 'home');
         this.renderApp();
         this.startInboxPolling();
         setTimeout(() => this.checkFirstRun(), 1200);
         setTimeout(() => this.runScheduledPrompts(), 5000);
         setTimeout(() => this._checkPwaInstallOffer(), 10000);
+        setTimeout(() => this._checkDailyReminder(), 3000);
       } else {
         this.stopInboxPolling();
       }
