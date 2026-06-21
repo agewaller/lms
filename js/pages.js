@@ -154,6 +154,7 @@ var Pages = {
       html += this.renderPracticeHistory();
       html += this.renderQuickLayerPick();
       html += this.renderGratitudeWidget();
+      html += this.renderGratitudeStreak();
       html += this.renderConsciousnessLayers();
       html += this.renderLayerTrendChart();
       html += this.renderMoodTrendCard();
@@ -175,6 +176,7 @@ var Pages = {
       html += this.renderDailyPlanCard();
       html += this.renderTaskCompletionCard();
       html += this.renderWorkDayCloseCard();
+      html += this.renderWorkWeeklyStats();
       if (typeof WorkFeatures !== 'undefined') {
         html += WorkFeatures.renderIkigaiDiscover();
         html += WorkFeatures.renderSideBizDiagnosis();
@@ -215,6 +217,7 @@ var Pages = {
       html += this.renderBPAlertCard();
       html += this.renderMorningVitalsCard();
       html += this.renderWaterTracker();
+      html += this.renderStepCounter();
       html += this.renderSOSWidget();
       html += this.renderMedicationReminder();
       html += this.renderBPTrendCard();
@@ -5661,6 +5664,187 @@ var Pages = {
     const overlay = document.getElementById('ciOverlay');
     if (overlay) overlay.remove();
     if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Step Counter (health domain) ───
+  renderStepCounter() {
+    const today = new Date().toISOString().split('T')[0];
+    const lsKey = 'lms_steps_' + today;
+    let steps = 0;
+    try { steps = parseInt(localStorage.getItem(lsKey) || '0', 10); } catch(e) {}
+
+    const goal = 8000;
+    const pct = Math.min(100, Math.round(steps / goal * 100));
+    const remaining = Math.max(0, goal - steps);
+    const achieved = steps >= goal;
+    const deg = Math.round(pct * 3.6);
+
+    const statusHtml = achieved
+      ? '<div class="sc-achieved">目標達成！</div>'
+      : `<div class="sc-remaining">あと <strong>${remaining.toLocaleString()}</strong> 歩</div>`;
+
+    return `<div class="step-counter-card">
+      <div class="sc-header">
+        <span class="sc-title">今日の歩数</span>
+        <span class="sc-goal">目標 ${goal.toLocaleString()}歩</span>
+      </div>
+      <div class="sc-body">
+        <div class="sc-ring-wrap">
+          <div class="sc-ring" style="background: conic-gradient(#10b981 ${deg}deg, var(--bg-tertiary) 0)">
+            <div class="sc-inner">
+              <div class="sc-count">${steps >= 10000 ? (steps/10000).toFixed(1)+'万' : steps.toLocaleString()}</div>
+              <div class="sc-unit">歩</div>
+            </div>
+          </div>
+          <div class="sc-pct-badge">${pct}%</div>
+        </div>
+        <div class="sc-side">
+          ${statusHtml}
+          <div class="sc-buttons">
+            <button class="sc-btn" onclick="Pages.addSteps(1000)">+1,000</button>
+            <button class="sc-btn" onclick="Pages.addSteps(2000)">+2,000</button>
+            <button class="sc-btn" onclick="Pages.addSteps(3000)">+3,000</button>
+            <button class="sc-btn" onclick="Pages.addSteps(5000)">+5,000</button>
+          </div>
+          <div class="sc-custom-row">
+            <input type="number" id="scCustom" class="form-input form-input-sm" placeholder="直接入力（例：6500）" min="0" max="99999">
+            <button class="btn btn-sm btn-secondary" onclick="Pages.setStepsCustom()">設定</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  addSteps(n) {
+    const today = new Date().toISOString().split('T')[0];
+    const lsKey = 'lms_steps_' + today;
+    let steps = 0;
+    try { steps = parseInt(localStorage.getItem(lsKey) || '0', 10); } catch(e) {}
+    steps = Math.min(99999, steps + n);
+    localStorage.setItem(lsKey, String(steps));
+    this._syncSteps(today, steps);
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  setStepsCustom() {
+    const el = document.getElementById('scCustom');
+    const val = parseInt(el ? el.value : '', 10);
+    if (isNaN(val) || val < 0) { Components.showToast('歩数を入力してください', 'error'); return; }
+    const today = new Date().toISOString().split('T')[0];
+    const capped = Math.min(99999, val);
+    localStorage.setItem('lms_steps_' + today, String(capped));
+    this._syncSteps(today, capped);
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  _syncSteps(today, steps) {
+    const syncKey = 'lms_stepsSynced_' + today;
+    if (steps >= 5000 && !localStorage.getItem(syncKey)) {
+      store.addDomainEntry('health', 'activities', { steps, notes: '歩数記録' });
+      localStorage.setItem(syncKey, '1');
+    }
+  },
+
+  // ─── Gratitude Streak (consciousness domain) ───
+  renderGratitudeStreak() {
+    const entries = store.getDomainData('consciousness', 'appreciation', 60);
+    if (entries.length < 2) return '';
+
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    const daysWithEntries = new Set();
+    entries.forEach(e => {
+      if (e.timestamp) daysWithEntries.add(e.timestamp.split('T')[0]);
+    });
+    try {
+      if (localStorage.getItem('lms_gratitude_' + todayStr)) daysWithEntries.add(todayStr);
+    } catch(e) {}
+
+    // Count consecutive streak backwards from today
+    let streak = 0;
+    const cursor = new Date(today);
+    for (let i = 0; i < 120; i++) {
+      const ds = cursor.toISOString().split('T')[0];
+      if (daysWithEntries.has(ds)) { streak++; cursor.setDate(cursor.getDate() - 1); }
+      else break;
+    }
+
+    if (streak < 2) return '';
+
+    const dayNames = ['日','月','火','水','木','金','土'];
+    const dots = Array.from({length: 7}, (_, i) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - (6 - i));
+      const ds = d.toISOString().split('T')[0];
+      const has = daysWithEntries.has(ds);
+      return `<div class="gs-dot-wrap">
+        <div class="gs-dot${has ? ' filled' : ''}"></div>
+        <div class="gs-dot-label">${dayNames[d.getDay()]}</div>
+      </div>`;
+    }).join('');
+
+    const milestones = [3, 7, 14, 21, 30, 60, 100];
+    const next = milestones.find(m => m > streak) || (streak + 10);
+
+    return `<div class="gratitude-streak-card">
+      <div class="gs-header">
+        <div class="gs-flame">🔥</div>
+        <div class="gs-info">
+          <div class="gs-count"><strong>${streak}</strong> 日連続</div>
+          <div class="gs-sub">次の目標：${next}日</div>
+        </div>
+        <div class="gs-milestone">${streak >= 30 ? '🏆' : streak >= 7 ? '⭐' : '✨'}</div>
+      </div>
+      <div class="gs-week">${dots}</div>
+    </div>`;
+  },
+
+  // ─── Work Weekly Stats Card (work domain) ───
+  renderWorkWeeklyStats() {
+    const tasks = store.getDomainData('work', 'tasks', 7);
+    const completions = store.getDomainData('work', 'completions', 7);
+    const reflections = store.getDomainData('work', 'reflections', 7);
+
+    if (tasks.length === 0 && completions.length === 0 && reflections.length === 0) return '';
+
+    const allDates = [
+      ...tasks.map(e => (e.timestamp || '').split('T')[0]),
+      ...completions.map(e => (e.timestamp || '').split('T')[0]),
+      ...reflections.map(e => (e.timestamp || '').split('T')[0])
+    ].filter(Boolean);
+    const activeDays = new Set(allDates).size;
+
+    const totalCompleted = completions.reduce((s, e) => {
+      if (Array.isArray(e.completed)) return s + e.completed.length;
+      return s + (e.completed ? 1 : 0);
+    }, 0);
+
+    const totalPlanned = tasks.reduce((s, e) => {
+      if (Array.isArray(e.tasks)) return s + e.tasks.length;
+      return s + (e.tasks ? 1 : 0);
+    }, 0);
+
+    const avgRating = reflections.length > 0
+      ? (reflections.reduce((s, e) => s + (parseFloat(e.day_rating) || 0), 0) / reflections.length).toFixed(1)
+      : null;
+
+    const stats = [
+      { num: activeDays, label: '活動した日' },
+      ...(totalCompleted > 0 ? [{ num: totalCompleted, label: '完了したこと' }] : []),
+      ...(totalPlanned > 0 ? [{ num: totalPlanned, label: '計画したこと' }] : []),
+      ...(avgRating ? [{ num: avgRating, label: '平均満足度' }] : [])
+    ];
+
+    const statCells = stats.map(s => `<div class="wws-stat">
+      <div class="wws-num">${s.num}</div>
+      <div class="wws-label">${s.label}</div>
+    </div>`).join('');
+
+    return `<div class="work-weekly-stats-card">
+      <div class="wws-header">今週の仕事サマリー</div>
+      <div class="wws-grid">${statCells}</div>
+    </div>`;
   },
 
   // ─── Admin Tab: Data Management ───

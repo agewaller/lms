@@ -4055,3 +4055,147 @@ html[data-theme="dark"] .cscr-sug-item { border-top-color: rgba(255,255,255,0.07
 .wc-tmr .form-input::placeholder { color: #64748b; }
 .wc-actions { display: flex; gap: 8px; }
 html[data-theme="light"] .work-close-card { background: linear-gradient(135deg, #1e3a5f, #1a2e48); }
+
+/* ─── Step Counter Card (health domain) ─── */
+.step-counter-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.sc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.sc-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+.sc-goal { font-size: 0.8rem; color: var(--text-secondary); }
+.sc-body {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.sc-ring-wrap { position: relative; flex-shrink: 0; }
+.sc-ring {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sc-inner {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+.sc-count { font-size: 1.1rem; font-weight: 700; color: #10b981; line-height: 1; }
+.sc-unit { font-size: 0.7rem; color: var(--text-secondary); }
+.sc-pct-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: #10b981;
+  color: #fff;
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.sc-side { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.sc-achieved { font-size: 0.9rem; font-weight: 600; color: #10b981; }
+.sc-remaining { font-size: 0.85rem; color: var(--text-secondary); }
+.sc-remaining strong { color: var(--text-primary); }
+.sc-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.sc-btn {
+  padding: 7px 4px;
+  border: 1.5px solid #10b981;
+  border-radius: var(--radius-sm);
+  background: rgba(16,185,129,0.07);
+  color: #10b981;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sc-btn:hover { background: rgba(16,185,129,0.18); }
+.sc-custom-row { display: flex; gap: 6px; }
+.sc-custom-row .form-input-sm { flex: 1; padding: 6px 10px; font-size: 0.8rem; }
+@media (max-width: 480px) { .sc-body { flex-direction: column; align-items: flex-start; } }
+
+/* ─── Gratitude Streak Card (consciousness domain) ─── */
+.gratitude-streak-card {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+html[data-theme="dark"] .gratitude-streak-card {
+  background: linear-gradient(135deg, #3b2f0a 0%, #2d2308 100%);
+}
+.gs-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.gs-flame { font-size: 2rem; line-height: 1; }
+.gs-info { flex: 1; }
+.gs-count { font-size: 1rem; font-weight: 700; color: #92400e; }
+.gs-count strong { font-size: 1.4rem; }
+html[data-theme="dark"] .gs-count { color: #fbbf24; }
+.gs-sub { font-size: 0.78rem; color: #b45309; margin-top: 2px; }
+html[data-theme="dark"] .gs-sub { color: #d97706; }
+.gs-milestone { font-size: 1.5rem; }
+.gs-week { display: flex; gap: 6px; justify-content: space-between; }
+.gs-dot-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+.gs-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(180,83,9,0.15);
+  border: 2px solid rgba(180,83,9,0.2);
+}
+.gs-dot.filled {
+  background: #f59e0b;
+  border-color: #d97706;
+  box-shadow: 0 0 6px rgba(245,158,11,0.4);
+}
+.gs-dot-label { font-size: 0.7rem; color: #92400e; font-weight: 500; }
+html[data-theme="dark"] .gs-dot-label { color: #d97706; }
+
+/* ─── Work Weekly Stats Card (work domain) ─── */
+.work-weekly-stats-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.wws-header {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.wws-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 8px;
+}
+.wws-stat {
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  padding: 12px 8px;
+  text-align: center;
+}
+.wws-num { font-size: 1.5rem; font-weight: 700; color: #3b82f6; line-height: 1; }
+.wws-label { font-size: 0.72rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.3; }
