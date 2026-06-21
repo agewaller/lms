@@ -246,6 +246,7 @@ var Pages = {
       html += this.renderWeeklyStepGoal();
       html += this.renderSOSWidget();
       html += this.renderMedicationReminder();
+      html += this.renderDoctorAppointments();
       html += this.renderBPTrendCard();
       html += this.renderSleepTrendCard();
       html += this.renderWeightTrendCard();
@@ -7260,6 +7261,95 @@ var Pages = {
       </div>
       <div class="cdi-foot">過去30日間のデータ（${daysWithData}日分）から算出</div>
     </div>`;
+  },
+
+  // ─── Doctor Appointment Tracker (health domain) ───
+  renderDoctorAppointments() {
+    let appointments = [];
+    try { appointments = JSON.parse(localStorage.getItem('lms_appointments') || '[]'); } catch(e) {}
+
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
+
+    const upcoming = appointments
+      .filter(a => new Date(a.date) >= todayDate)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const next = upcoming[0];
+    const todayStr = todayDate.toISOString().split('T')[0];
+
+    let nextCard = '';
+    if (next) {
+      const daysUntil = Math.ceil((new Date(next.date) - todayDate) / 86400000);
+      const urgColor = daysUntil === 0 ? '#ef4444' : daysUntil <= 3 ? '#f59e0b' : '#10b981';
+      const countdownLabel = daysUntil === 0 ? '今日' : daysUntil === 1 ? '明日' : `あと${daysUntil}日`;
+      const dateLabel = new Date(next.date + 'T00:00:00').toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' });
+      nextCard = `<div class="appt-next" style="border-left-color:${urgColor}">
+        <div class="appt-countdown" style="color:${urgColor}">${countdownLabel}</div>
+        <div class="appt-next-body">
+          <div class="appt-next-name">${Components.escapeHtml(next.doctor)}</div>
+          <div class="appt-next-meta">${dateLabel}${next.time ? '　' + Components.escapeHtml(next.time) : ''}</div>
+          ${next.purpose ? `<div class="appt-next-purpose">${Components.escapeHtml(next.purpose)}</div>` : ''}
+        </div>
+        <div class="appt-next-btns">
+          <button class="btn btn-sm btn-secondary" onclick="app.navigate('doctor_report')">記録確認</button>
+          <button class="btn btn-sm btn-ghost" onclick="Pages.deleteAppointment('${Components.escapeHtml(next.id)}')">削除</button>
+        </div>
+      </div>`;
+    } else {
+      nextCard = `<div class="appt-none">受診予定はまだ登録されていません</div>`;
+    }
+
+    const otherList = upcoming.slice(1, 4).map(a => {
+      const d = new Date(a.date + 'T00:00:00').toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+      return `<li class="appt-item">
+        <span class="appt-item-date">${d}</span>
+        <span class="appt-item-name">${Components.escapeHtml(a.doctor)}</span>
+        ${a.purpose ? `<span class="appt-item-purpose">${Components.escapeHtml(a.purpose)}</span>` : ''}
+        <button class="appt-del-btn" onclick="Pages.deleteAppointment('${Components.escapeHtml(a.id)}')" aria-label="削除">✕</button>
+      </li>`;
+    }).join('');
+
+    return `<div class="appt-card">
+      <div class="appt-header">
+        <div class="appt-title">受診予定</div>
+        ${upcoming.length > 0 ? `<span class="appt-badge">${upcoming.length}件</span>` : ''}
+      </div>
+      ${nextCard}
+      ${otherList ? `<ul class="appt-list">${otherList}</ul>` : ''}
+      <div class="appt-add">
+        <input type="text" id="apptDoctor" class="form-input appt-field" placeholder="病院・担当医の名前" maxlength="30">
+        <input type="date" id="apptDate" class="form-input appt-field" value="${todayStr}" min="${todayStr}">
+        <input type="text" id="apptPurpose" class="form-input appt-field" placeholder="受診の目的（例：血圧検査）" maxlength="30">
+        <button class="btn btn-primary appt-add-btn" onclick="Pages.addAppointment()">予定を追加</button>
+      </div>
+    </div>`;
+  },
+
+  addAppointment() {
+    const doctorEl = document.getElementById('apptDoctor');
+    const dateEl   = document.getElementById('apptDate');
+    const purposeEl = document.getElementById('apptPurpose');
+    if (!doctorEl || !dateEl) return;
+    const doctor  = doctorEl.value.trim();
+    const date    = dateEl.value;
+    const purpose = purposeEl ? purposeEl.value.trim() : '';
+    if (!doctor) { Components.showToast('病院名または担当医の名前を入力してください', 'error'); return; }
+    if (!date)   { Components.showToast('日付を選択してください', 'error'); return; }
+    let appts = [];
+    try { appts = JSON.parse(localStorage.getItem('lms_appointments') || '[]'); } catch(e) {}
+    appts.push({ id: Date.now().toString(), doctor, date, time: '', purpose, added: new Date().toISOString() });
+    localStorage.setItem('lms_appointments', JSON.stringify(appts));
+    Components.showToast('受診予定を登録しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  deleteAppointment(id) {
+    let appts = [];
+    try { appts = JSON.parse(localStorage.getItem('lms_appointments') || '[]'); } catch(e) {}
+    appts = appts.filter(a => a.id !== id);
+    localStorage.setItem('lms_appointments', JSON.stringify(appts));
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Activity Calendar Heatmap (90-day logging consistency) ───

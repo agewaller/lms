@@ -5948,3 +5948,133 @@ html[data-theme="dark"] .wsg-bar-bg { background: rgba(255,255,255,0.1); }
   .act-cal-cell { width: 10px; height: 10px; }
   .act-cal-leg-cell { width: 8px; height: 8px; }
 }
+
+/* ─── Doctor Appointment Tracker ─── */
+.appt-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.appt-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.appt-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  flex: 1;
+}
+.appt-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--accent-bg);
+  color: var(--accent);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.appt-next {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--bg-primary);
+  border-left: 4px solid #10b981;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.appt-countdown {
+  font-size: 1.05rem;
+  font-weight: 900;
+  white-space: nowrap;
+  min-width: 50px;
+  text-align: center;
+}
+.appt-next-body { flex: 1; min-width: 0; }
+.appt-next-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.appt-next-meta {
+  font-size: 0.79rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.appt-next-purpose {
+  font-size: 0.77rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+.appt-next-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.appt-none {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  padding: 10px 0;
+  margin-bottom: 8px;
+}
+.appt-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px 0;
+  border-top: 1px solid var(--bg-tertiary);
+}
+.appt-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--bg-tertiary);
+  flex-wrap: wrap;
+}
+.appt-item-date {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  min-width: 52px;
+}
+.appt-item-name {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+.appt-item-purpose {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+.appt-del-btn {
+  background: none;
+  border: none;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0.45;
+  padding: 3px 5px;
+}
+.appt-del-btn:hover { opacity: 1; color: var(--danger); }
+.appt-add {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+.appt-field { font-size: 0.84rem; }
+.appt-add-btn {
+  grid-column: 1 / -1;
+  font-size: 0.84rem;
+}
+@media (max-width: 480px) {
+  .appt-add { grid-template-columns: 1fr; }
+  .appt-next { flex-wrap: wrap; }
+  .appt-next-btns { flex-direction: row; }
+}
