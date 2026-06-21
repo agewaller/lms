@@ -13,7 +13,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <meta name="theme-color" content="#6C63FF">
-  <link rel="stylesheet" href="css/styles.css?v=57">
+  <link rel="stylesheet" href="css/styles.css?v=58">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
@@ -78,6 +78,58 @@
         <h3>資産</h3>
         <p>安心の資産管理・株式投資・収支の把握</p>
       </a>
+    </div>
+  </section>
+
+  <!-- Interactive Demo -->
+  <section id="demo" class="lp-section lp-demo-section">
+    <h2>まず、試してみてください</h2>
+    <p class="section-sub">登録不要・1分で体験できます。毎日届くサポートの雰囲気をご確認ください。</p>
+    <div class="demo-card" id="demoCard">
+
+      <!-- Step 1: Mood -->
+      <div class="demo-step active" id="demoStep1">
+        <div class="demo-step-num">1 / 3</div>
+        <div class="demo-q">今日の<strong>気分</strong>は？</div>
+        <div class="demo-choices">
+          <button class="demo-btn" onclick="lmsDemo.pick('mood','calm',this)">穏やか</button>
+          <button class="demo-btn" onclick="lmsDemo.pick('mood','neutral',this)">普通</button>
+          <button class="demo-btn" onclick="lmsDemo.pick('mood','anxious',this)">不安・憂うつ</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Health -->
+      <div class="demo-step" id="demoStep2">
+        <div class="demo-step-num">2 / 3</div>
+        <div class="demo-q"><strong>体の調子</strong>は？</div>
+        <div class="demo-choices">
+          <button class="demo-btn" onclick="lmsDemo.pick('health','good',this)">良い</button>
+          <button class="demo-btn" onclick="lmsDemo.pick('health','fair',this)">普通</button>
+          <button class="demo-btn" onclick="lmsDemo.pick('health','poor',this)">少し悪い</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Schedule -->
+      <div class="demo-step" id="demoStep3">
+        <div class="demo-step-num">3 / 3</div>
+        <div class="demo-q">今日の<strong>予定</strong>は？</div>
+        <div class="demo-choices">
+          <button class="demo-btn" onclick="lmsDemo.pick('schedule','planned',this)">たっぷりある</button>
+          <button class="demo-btn" onclick="lmsDemo.pick('schedule','some',this)">少しある</button>
+          <button class="demo-btn" onclick="lmsDemo.pick('schedule','empty',this)">特になし</button>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div class="demo-step" id="demoResult">
+        <div class="demo-result-label">今日のあなたへ</div>
+        <div class="demo-result-msg" id="demoMsg"></div>
+        <div class="demo-result-domains" id="demoDomains"></div>
+        <p class="demo-result-note">これは1回の記録でできる提案です。<br>記録を重ねると、あなたの生活パターンに合った、より深いアドバイスが届きます。</p>
+        <a href="#login" class="btn btn-lg btn-primary demo-cta">無料でアカウントを作成する →</a>
+        <button class="btn btn-sm btn-text" onclick="lmsDemo.reset()" style="margin-top:8px">もう一度試す</button>
+      </div>
+
     </div>
   </section>
 
@@ -385,6 +437,93 @@
         });
       }
     }
+  </script>
+
+  <!-- Landing page interactive demo (no login required) -->
+  <script>
+  var lmsDemo = {
+    answers: {},
+    stepOrder: ['mood', 'health', 'schedule'],
+    stepIndex: 0,
+
+    pick(key, value, btn) {
+      this.answers[key] = value;
+      btn.closest('.demo-choices').querySelectorAll('.demo-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      setTimeout(() => this.advance(), 340);
+    },
+
+    advance() {
+      this.stepIndex++;
+      if (this.stepIndex < this.stepOrder.length) {
+        document.getElementById('demoStep' + (this.stepIndex)).classList.remove('active');
+        document.getElementById('demoStep' + (this.stepIndex + 1)).classList.add('active');
+      } else {
+        this.showResult();
+      }
+    },
+
+    showResult() {
+      const { mood, health, schedule } = this.answers;
+      const msgs = {
+        'calm-good-planned':   '絶好調ですね！今日の充実感を誰かと分かち合いましょう。久しぶりの友人に一言送るだけで、相手もきっと喜びます。',
+        'calm-good-some':      '穏やかで体調も良い日。今日こそ後回しにしていた小さな一歩を踏み出すチャンスです。',
+        'calm-good-empty':     '心と体が整っている日は、じっくり自分と向き合うのに最適です。散歩に出かけると新しい発見があるかもしれません。',
+        'calm-fair-planned':   '穏やかな気持ちで予定に向かえますね。少し疲れを感じたら無理せず休憩を入れましょう。',
+        'calm-fair-some':      '心は落ち着いています。水分補給を意識して、ゆったりとした一日を過ごしましょう。',
+        'calm-fair-empty':     '何もない日は、心の充電日です。好きな本を読んだり、ゆっくりお茶を飲んだりして過ごしてください。',
+        'calm-poor-planned':   '体がつらい時は無理禁物です。今日の予定を見直し、本当に必要なことだけに絞りましょう。',
+        'calm-poor-some':      '穏やかな気持ちでいられているのは大切なことです。体を優先して、今日は無理せずゆっくり過ごしてください。',
+        'calm-poor-empty':     '体が優位に立っています。今日は完全休養日と決めて、温かいものを飲んでゆっくり過ごしましょう。',
+        'neutral-good-planned': '体調が良く準備万端ですね。予定の中で一番楽しみなことから始めると、一日がいい流れになります。',
+        'neutral-good-some':   '普通の一日も、小さな喜びを見つけると豊かになります。今日、何か一つ「良かったこと」を見つけてみましょう。',
+        'neutral-good-empty':  '自由な時間があります。ずっとやりたかったことに30分だけ使ってみませんか？小さな始まりが大きな変化につながります。',
+        'neutral-fair-planned':'予定通りにこなすことを意識しすぎず、自分のペースで進みましょう。',
+        'neutral-fair-some':   '普通の日こそ、記録をつけることで後からパターンが見えてきます。今日も一言残しておきましょう。',
+        'neutral-fair-empty':  '何もない日に焦らなくて大丈夫です。70歳を超えてのんびり過ごすことは、立派な充電です。',
+        'neutral-poor-planned':'体調がすぐれない時の予定はストレスになります。どれか一つに絞り、残りは明日に回しましょう。',
+        'neutral-poor-some':   '体がついてこない日は、今日できることを小さく設定しましょう。少しの達成でも十分です。',
+        'neutral-poor-empty':  '体を休めることが今日の仕事です。体の声を聞いて、無理せずゆっくり過ごしてください。',
+        'anxious-good-planned':'不安を感じていても体は元気。予定をこなすことで気分が晴れることもあります。まず一つだけ始めてみましょう。',
+        'anxious-good-some':   '心の不安は、書き出すと小さくなります。何が不安なのか、紙に一言書いてみましょう。',
+        'anxious-good-empty':  '不安な時に一人でいると気持ちが沈みがちです。誰かに一言連絡してみると、気持ちが楽になることがあります。',
+        'anxious-fair-planned':'心と体の両方が少し疲れています。今日の予定を半分にして、残りの時間はゆっくり過ごしてください。',
+        'anxious-fair-some':   '不安な時ほど、自分の状態を記録することが助けになります。「今日の気分」を一言書くことから始めましょう。',
+        'anxious-fair-empty':  '心が揺れている日は、一人で抱え込まないことが大切です。家族や友人に短いメッセージを送ってみましょう。',
+        'anxious-poor-planned':'心も体も疲れているサインです。今日の予定は見直して、体を優先しましょう。深刻な不調が続くなら医師にご相談を。',
+        'anxious-poor-some':   '心と体、両方からシグナルが出ています。今日は無理をせず、温かいお風呂に入ってゆっくり休んでください。',
+        'anxious-poor-empty':  '心と体が休息を求めています。今日は何もしなくていい日です。自分を責めずに、ゆっくりと休みましょう。'
+      };
+      const key = `${mood}-${health}-${schedule}`;
+      const msg = msgs[key] || '今日もお疲れさまです。一日一歩、あなたのペースで進んでいきましょう。';
+
+      const domainSuggestions = [];
+      if (health === 'poor') domainSuggestions.push({ color:'#10b981', icon:'二', text:'健康: 今日の体調を記録しておくと、パターンが見えてきます' });
+      if (mood === 'anxious') domainSuggestions.push({ color:'#6C63FF', icon:'一', text:'意識: 気持ちを一言書き出すと、頭がすっきりします' });
+      if (schedule === 'empty') domainSuggestions.push({ color:'#ef4444', icon:'五', text:'関係: 久しぶりの方へ一言連絡してみましょう' });
+      if (schedule === 'planned') domainSuggestions.push({ color:'#3b82f6', icon:'四', text:'仕事: 今日の予定を3つ書き出しておくと達成感が得られます' });
+
+      document.getElementById('demoMsg').textContent = msg;
+      const domsEl = document.getElementById('demoDomains');
+      domsEl.innerHTML = domainSuggestions.slice(0, 2).map(d =>
+        `<div class="demo-domain-tip" style="border-left-color:${d.color}">
+           <span style="color:${d.color};font-weight:700">${d.icon}</span> ${d.text}
+         </div>`
+      ).join('');
+
+      document.getElementById('demoStep3').classList.remove('active');
+      document.getElementById('demoResult').classList.add('active');
+    },
+
+    reset() {
+      this.answers = {};
+      this.stepIndex = 0;
+      document.querySelectorAll('.demo-step').forEach((el, i) => {
+        el.classList.toggle('active', i === 0);
+      });
+      document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('selected'));
+    }
+  };
   </script>
 </body>
 </html>
