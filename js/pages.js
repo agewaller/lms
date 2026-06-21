@@ -46,6 +46,7 @@ var Pages = {
       ${this.renderTodaySummary(domain)}
       ${this.renderDailyPrompt(domain)}
       ${this.renderDomainInsight(domain)}
+      ${this.renderFamilyShareCard(domain)}
       ${this.renderWeeklySummary()}
       ${this.renderNotificationPrompt()}`;
 
@@ -1773,6 +1774,59 @@ var Pages = {
       <span class="dic-icon">${icon}</span>
       <span class="dic-msg">${msg}</span>
     </div>`;
+  },
+
+  // ─── Family share card (drives organic growth via LINE/SNS) ───
+  renderFamilyShareCard(domain) {
+    // Only health & consciousness domains get the family share card
+    if (!['health', 'consciousness', 'relationship'].includes(domain)) return '';
+
+    // Show on weekends, or if user has 5+ day streak (social sharing moment)
+    const dayOfWeek = new Date().getDay(); // 0=Sun, 6=Sat
+    const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+
+    // Check if dismissed this week
+    const today = new Date();
+    const weekKey = `${today.getFullYear()}-W${Pages._isoWeek(today)}`;
+    if (localStorage.getItem('lms_familyShareDismissed') === weekKey) return '';
+
+    // Need at least 3 records in last 7 days to have something to report
+    const cats = Object.keys(CONFIG.domains[domain]?.categories || {});
+    let recordCount = 0;
+    cats.forEach(cat => { recordCount += store.getDomainData(domain, cat, 7).length; });
+    if (recordCount < 3) return '';
+
+    if (!isWeekend) return '';
+
+    const color = CONFIG.domains[domain]?.color || '#6C63FF';
+    return `<div class="family-share-card" style="border-left-color:${color}">
+      <div class="fsc-left">
+        <div class="fsc-icon">👨‍👩‍👧</div>
+        <div class="fsc-text">
+          <div class="fsc-title">今週の記録を家族に知らせましょう</div>
+          <div class="fsc-desc">LINEや SMS で近況を共有できます</div>
+        </div>
+      </div>
+      <div class="fsc-actions">
+        <button class="btn btn-sm btn-primary" onclick="app.openFamilyReport()">報告を作る</button>
+        <button class="btn btn-sm btn-text" onclick="Pages.dismissFamilyShare('${weekKey}')">×</button>
+      </div>
+    </div>`;
+  },
+
+  dismissFamilyShare(weekKey) {
+    localStorage.setItem('lms_familyShareDismissed', weekKey);
+    const card = document.querySelector('.family-share-card');
+    if (card) card.remove();
+  },
+
+  // ISO week number helper
+  _isoWeek: function(d) {
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
   },
 
   // ─── Notification permission prompt (shown once until granted or dismissed) ───

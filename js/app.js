@@ -2624,6 +2624,105 @@ var App = class App {
     }
   }
 
+  // ─── Family weekly report ───
+  buildFamilyReportText() {
+    const profile = store.get('userProfile') || {};
+    const name = profile.displayName || profile.name || '';
+    const today = new Date();
+    const week = new Date(today); week.setDate(today.getDate() - 6);
+    const fmt = d => `${d.getMonth()+1}/${d.getDate()}`;
+    const lines = [];
+
+    lines.push(`【LMS週報】${name ? name + 'の' : ''}${fmt(week)}〜${fmt(today)}`);
+    lines.push('');
+
+    // Health
+    const symptoms = store.getDomainData('health', 'symptoms', 7);
+    if (symptoms.length > 0) {
+      const avg = (symptoms.reduce((s,e) => s + (e.condition_level||0), 0) / symptoms.filter(e=>e.condition_level).length || 0);
+      if (avg > 0) lines.push(`💚 健康：今週の平均体調 ${avg.toFixed(1)}/10（${symptoms.length}日間記録）`);
+    }
+
+    // Consciousness / mood
+    const moods = store.getDomainData('consciousness', 'entries', 7).filter(e => e.mood_level);
+    if (moods.length > 0) {
+      const avg = (moods.reduce((s,e) => s + e.mood_level, 0) / moods.length);
+      lines.push(`🌸 気持ち：今週の平均 ${avg.toFixed(1)}/10`);
+    }
+
+    // Relationship
+    const contacts = [];
+    store.getDomainData('relationship', 'interactions', 7).forEach(e => { if (e.person) contacts.push(e.person); });
+    if (contacts.length > 0) {
+      const unique = [...new Set(contacts)];
+      lines.push(`🤝 交流：今週${unique.length}人と連絡（${unique.slice(0,2).join('・')}${unique.length>2?'など':''}）`);
+    }
+
+    // Activity / time
+    const activities = store.getDomainData('time', 'entries', 7);
+    if (activities.length >= 3) {
+      const avgProd = activities.filter(e=>e.productivity).reduce((s,e,_,a) => s + e.productivity/a.length, 0);
+      if (avgProd > 0) lines.push(`⏱ 時間：今週の充実度 ${avgProd.toFixed(1)}/10`);
+    }
+
+    // Streak
+    const allDates = new Set();
+    Object.keys(CONFIG.domains).forEach(d => {
+      Object.keys(CONFIG.domains[d]?.categories || {}).forEach(cat => {
+        store.getDomainData(d, cat, 30).forEach(e => { if (e.timestamp) allDates.add(e.timestamp.split('T')[0]); });
+      });
+    });
+    let streak = 0;
+    const cur = new Date(today);
+    while (streak <= 30) {
+      if (!allDates.has(cur.toISOString().split('T')[0])) break;
+      streak++;
+      cur.setDate(cur.getDate() - 1);
+    }
+    if (streak >= 2) lines.push(`🔥 記録継続：${streak}日連続`);
+
+    lines.push('');
+    lines.push('LMSアプリを使って自分の生活を記録しています。');
+    lines.push('https://agewaller.github.io/lms/');
+
+    return lines.join('\n');
+  }
+
+  openFamilyReport() {
+    const text = this.buildFamilyReportText();
+    const esc = Components.escapeHtml;
+    const lineText = encodeURIComponent(text);
+    const lineUrl = `https://social-plugins.line.me/lineit/share?url=https%3A%2F%2Fagewaller.github.io%2Flms%2F&text=${lineText}`;
+
+    this.openModal('今週の状況を家族に報告', `
+      <div class="family-report-modal">
+        <pre class="frm-text">${esc(text)}</pre>
+        <div class="frm-actions">
+          <a href="${lineUrl}" class="btn btn-primary frm-line" target="_blank" rel="noopener" onclick="app.closeModal()">LINEで送る</a>
+          <button class="btn btn-secondary" onclick="app._copyFamilyReport(${JSON.stringify(JSON.stringify(text))})">コピーする</button>
+          ${navigator.share ? `<button class="btn btn-secondary" onclick="app._shareFamilyReport()">その他の方法</button>` : ''}
+        </div>
+        <p class="frm-hint">LINEや SMS でご家族に送りましょう。</p>
+      </div>
+    `);
+  }
+
+  _copyFamilyReport(textJson) {
+    const text = JSON.parse(textJson);
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text)
+        .then(() => { Components.showToast('レポートをコピーしました', 'success'); this.closeModal(); })
+        .catch(() => Components.showToast('コピーに失敗しました', 'error'));
+    }
+  }
+
+  _shareFamilyReport() {
+    const text = this.buildFamilyReportText();
+    if (navigator.share) {
+      navigator.share({ title: 'LMS 週報', text }).catch(() => {});
+    }
+  }
+
   openModal(title, bodyHtml) {
     const overlay = document.getElementById('modal-overlay');
     const titleEl = document.getElementById('modal-title');
