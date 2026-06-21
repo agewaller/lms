@@ -170,6 +170,7 @@ var Pages = {
     // Work domain: Ikigai + Resume + side biz diagnosis + time marketplace link
     if (domain === 'work') {
       html += this.renderDailyPlanCard();
+      html += this.renderTaskCompletionCard();
       if (typeof WorkFeatures !== 'undefined') {
         html += WorkFeatures.renderIkigaiDiscover();
         html += WorkFeatures.renderSideBizDiagnosis();
@@ -1002,6 +1003,59 @@ var Pages = {
       </div>
       <button class="btn btn-primary dp-save" onclick="app.saveDailyPlan('${today}')">計画する</button>
     </div>`;
+  },
+
+  // ─── Task completion card (work domain, afternoon 12pm+ when plan exists) ───
+  renderTaskCompletionCard() {
+    const hour = new Date().getHours();
+    if (hour < 12) return '';
+    const today = new Date().toISOString().split('T')[0];
+    let tasks = [];
+    try { tasks = JSON.parse(localStorage.getItem('lms_dailyPlan_' + today) || '[]'); } catch(e) {}
+    if (tasks.length === 0) return '';
+
+    let done = {};
+    try { done = JSON.parse(localStorage.getItem('lms_tasksDone_' + today) || '{}'); } catch(e) {}
+    const allDone = tasks.every(t => done[t]);
+    const esc = Components.escapeHtml;
+
+    return `<div class="task-completion-card${allDone ? ' tc-all-done' : ''}" id="taskCompletionCard">
+      <div class="tc-header">
+        <span class="tc-title">📋 今日の進捗</span>
+        ${allDone ? '<span class="tc-badge">全完了 ✅</span>' : `<span class="tc-count">${Object.keys(done).length}/${tasks.length}</span>`}
+      </div>
+      <div class="tc-tasks">
+        ${tasks.map(t => {
+          const isDone = !!done[t];
+          const tEsc = esc(t).replace(/'/g, '&#39;');
+          return `<label class="tc-task${isDone ? ' tc-done' : ''}">
+            <input type="checkbox" ${isDone ? 'checked' : ''} onchange="Pages.toggleTaskDone('${tEsc}', this.checked, '${today}')">
+            <span>${esc(t)}</span>
+          </label>`;
+        }).join('')}
+      </div>
+      ${allDone ? '<div class="tc-congrats">今日の計画をすべて達成しました！お疲れ様でした。</div>' : ''}
+    </div>`;
+  },
+
+  toggleTaskDone(task, checked, today) {
+    let done = {};
+    try { done = JSON.parse(localStorage.getItem('lms_tasksDone_' + today) || '{}'); } catch(e) {}
+    if (checked) {
+      done[task] = 1;
+      store.addDomainEntry('work', 'tasks', { title: task, status: 'done', source: 'task_completion' });
+    } else {
+      delete done[task];
+    }
+    try { localStorage.setItem('lms_tasksDone_' + today, JSON.stringify(done)); } catch(e) {}
+    // Rerender only the card to avoid losing checkbox state
+    const card = document.getElementById('taskCompletionCard');
+    if (card) {
+      const newHtml = Pages.renderTaskCompletionCard();
+      const tmp = document.createElement('div');
+      tmp.innerHTML = newHtml;
+      if (tmp.firstElementChild) card.replaceWith(tmp.firstElementChild);
+    }
   },
 
   dismissDailyPlan(today) {

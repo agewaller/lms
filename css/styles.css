@@ -3134,6 +3134,25 @@ html[data-theme="dark"] .ht-cell.level-3     { background: #10b981; }
 .dp-input { font-size: 14px; }
 .dp-save { width: 100%; }
 
+/* ─── Task Completion Card ─── */
+.task-completion-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.task-completion-card.tc-all-done { border-color: #10b981; background: rgba(16,185,129,0.05); }
+.tc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.tc-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.tc-count { font-size: 13px; color: var(--text-secondary); }
+.tc-badge { font-size: 12px; font-weight: 700; color: #10b981; }
+.tc-tasks { display: flex; flex-direction: column; gap: 8px; }
+.tc-task { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; color: var(--text-primary); }
+.tc-task input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: #3b82f6; }
+.tc-task.tc-done span { text-decoration: line-through; color: var(--text-muted); }
+.tc-congrats { font-size: 13px; color: #10b981; font-weight: 600; margin-top: 10px; text-align: center; }
+
 /* ─── Evening Review Card ─── */
 .evening-review-card {
   background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
