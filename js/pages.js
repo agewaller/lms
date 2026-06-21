@@ -165,8 +165,9 @@ var Pages = {
       }
     }
 
-    // Health: doctor report shortcut
+    // Health: medication reminder + doctor report shortcut
     if (domain === 'health') {
+      html += this.renderMedicationReminder();
       html += `<div class="doctor-report-banner">
         <div class="drb-text">
           <strong>かかりつけ医への受診準備</strong>
@@ -912,6 +913,47 @@ var Pages = {
         </select>
       </div>
       <button class="btn btn-primary" onclick="app.saveResume()">${i18n.t('save')}</button>
+    </div>`;
+  },
+
+  // ─── Medication reminder (health domain only) ───
+  renderMedicationReminder() {
+    const meds = store.get('health_medications') || [];
+    if (meds.length === 0) return '';
+
+    const today = new Date().toISOString().split('T')[0];
+    // Check if any medication entry was logged today with medications_taken flag
+    const takenToday = (store.get('health_symptoms') || []).some(
+      e => e.medications_taken && e.timestamp?.startsWith(today)
+    );
+
+    if (takenToday) {
+      return `<div class="med-reminder med-done">
+        <span class="med-check">✓</span>
+        <span>今日の薬の記録 完了</span>
+      </div>`;
+    }
+
+    // List unique medication names (most recent entry per name)
+    const latestByName = new Map();
+    [...meds].reverse().forEach(m => {
+      if (m.name && !latestByName.has(m.name)) latestByName.set(m.name, m);
+    });
+    const medNames = [...latestByName.keys()].slice(0, 5);
+
+    const hour = new Date().getHours();
+    const timeLabel = hour < 10 ? '朝の' : hour < 14 ? '昼の' : hour < 19 ? '夕方の' : '夜の';
+
+    return `<div class="med-reminder">
+      <div class="med-reminder-header">
+        <span class="med-icon">💊</span>
+        <strong>${timeLabel}お薬は飲みましたか？</strong>
+      </div>
+      <div class="med-list">
+        ${medNames.map(n => `<span class="med-tag">${Components.escapeHtml(n)}</span>`).join('')}
+        ${latestByName.size > 5 ? `<span class="med-tag">…他${latestByName.size - 5}件</span>` : ''}
+      </div>
+      <button class="btn btn-sm btn-primary" onclick="app.logMedicationTaken()">飲みました ✓</button>
     </div>`;
   },
 

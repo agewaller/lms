@@ -614,6 +614,16 @@ var App = class App {
     }, '削除する', true);
   }
 
+  // ─── Medication taken log (health domain) ───
+  logMedicationTaken() {
+    store.addDomainEntry('health', 'symptoms', {
+      medications_taken: true,
+      notes: '薬を服用しました'
+    });
+    Components.showToast('薬の服用を記録しました ✓', 'success');
+    this.renderApp();
+  }
+
   // ─── Stock Analysis (Assets domain) ───
   // Uses the VM Hands-on prompt (assets_stock) configured by admin.
   // The prompt is loaded via AIEngine.buildSystemPrompt which maps

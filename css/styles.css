@@ -2083,6 +2083,25 @@ body.is-admin .admin-only { display: flex; }
 .ws-domain-count { font-size: 0.8rem; width: 24px; text-align: right; color: var(--text-secondary); }
 .ws-highlight { font-size: 0.87rem; color: var(--text-secondary); padding-top: 8px; border-top: 1px solid #6C63FF22; }
 
+/* ─── Medication Reminder ─── */
+.med-reminder {
+  background: #FFF8E1; border: 1.5px solid #F59E0B33;
+  border-radius: var(--radius); padding: 16px 20px; margin: 12px 0;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.med-reminder-header { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 160px; }
+.med-icon { font-size: 24px; }
+.med-list { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+.med-tag {
+  background: #fff; border: 1px solid #F59E0B88; border-radius: 12px;
+  padding: 3px 10px; font-size: 0.8rem; color: #92400e;
+}
+.med-reminder.med-done {
+  background: var(--success-bg); border-color: rgba(16,185,129,0.2);
+  color: var(--success, #10b981); gap: 10px;
+}
+.med-check { font-size: 22px; font-weight: 700; color: var(--success, #10b981); }
+
 /* ─── Doctor Report ─── */
 .doctor-report-banner {
   display: flex; align-items: center; justify-content: space-between;
