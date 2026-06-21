@@ -150,6 +150,7 @@ var Pages = {
     // Time domain: Habit tracker + Calendar widget + Marketplace widget
     if (domain === 'time') {
       html += this.renderHabitTracker();
+      html += this.renderTimeAllocationChart();
       if (typeof CalendarIntegration !== 'undefined') html += CalendarIntegration.renderWidget();
       if (typeof TimeMarketplace !== 'undefined') html += TimeMarketplace.renderWidget();
     }
@@ -623,6 +624,75 @@ var Pages = {
     }
     localStorage.setItem(storageKey, JSON.stringify(completed));
     if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Weekly Time Allocation Chart (Time domain) ───
+  renderTimeAllocationChart() {
+    const logs = store.getDomainData('time', 'entries', 7);
+    if (logs.length === 0) return '';
+    const catColors = { work:'#3b82f6', health:'#10b981', learning:'#6C63FF', relationships:'#ef4444', leisure:'#f59e0b', sleep:'#94a3b8', commute:'#64748b', housework:'#d97706', other:'#a0aec0' };
+    const catLabels = { work:'仕事', health:'健康・運動', learning:'学び', relationships:'交流', leisure:'余暇', sleep:'睡眠', commute:'移動', housework:'家事', other:'その他' };
+    const totals = {};
+    let grandTotal = 0;
+    logs.forEach(e => {
+      if (!e.duration) return;
+      const cat = e.category || 'other';
+      totals[cat] = (totals[cat] || 0) + Number(e.duration);
+      grandTotal += Number(e.duration);
+    });
+    if (grandTotal === 0) return '';
+    const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+    const legendHtml = sorted.map(([cat, min]) => {
+      const pct = Math.round(min / grandTotal * 100);
+      const hrs = (min / 60).toFixed(1);
+      return `<div class="tac-legend-item">
+        <span class="tac-dot" style="background:${catColors[cat]||'#a0aec0'}"></span>
+        <span class="tac-cat">${catLabels[cat]||cat}</span>
+        <span class="tac-val">${hrs}h (${pct}%)</span>
+      </div>`;
+    }).join('');
+    return `<div class="time-alloc-card">
+      <div class="tac-header">
+        <span class="tac-title">過去7日の時間の使い方</span>
+        <span class="tac-total">${(grandTotal/60).toFixed(1)}h 合計</span>
+      </div>
+      <div class="tac-body">
+        <canvas id="timeAllocChart" width="160" height="160" style="flex-shrink:0;"></canvas>
+        <div class="tac-legend">${legendHtml}</div>
+      </div>
+    </div>`;
+  },
+
+  initTimeAllocationChart() {
+    const canvas = document.getElementById('timeAllocChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    const logs = store.getDomainData('time', 'entries', 7);
+    const catColors = { work:'#3b82f6', health:'#10b981', learning:'#6C63FF', relationships:'#ef4444', leisure:'#f59e0b', sleep:'#94a3b8', commute:'#64748b', housework:'#d97706', other:'#a0aec0' };
+    const catLabels = { work:'仕事', health:'健康・運動', learning:'学び', relationships:'交流', leisure:'余暇', sleep:'睡眠', commute:'移動', housework:'家事', other:'その他' };
+    const totals = {};
+    logs.forEach(e => {
+      if (!e.duration) return;
+      const cat = e.category || 'other';
+      totals[cat] = (totals[cat] || 0) + Number(e.duration);
+    });
+    const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+    if (!sorted.length) return;
+    if (canvas._chart) canvas._chart.destroy();
+    canvas._chart = new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: sorted.map(([cat]) => catLabels[cat]||cat),
+        datasets: [{ data: sorted.map(([,min]) => +(min/60).toFixed(1)), backgroundColor: sorted.map(([cat]) => catColors[cat]||'#a0aec0'), borderWidth: 2, borderColor: '#fff' }]
+      },
+      options: {
+        responsive: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed}h` } }
+        },
+        cutout: '65%'
+      }
+    });
   },
 
   // ─── Monthly Budget Summary (Assets domain) ───

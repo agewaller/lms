@@ -288,6 +288,7 @@ var App = class App {
         Pages.initTrendChart(domain);
         Pages.initRadarChart();
         if (domain === 'health') Pages.initBPTrendChart();
+        if (domain === 'time') Pages.initTimeAllocationChart();
       }, 150);
     }
   }
