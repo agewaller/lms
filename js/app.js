@@ -346,6 +346,11 @@ var App = class App {
     store.addDomainEntry(domain, category, data);
     Components.showToast(i18n.t('saved'), 'success');
     form.reset();
+    // Sync slider display spans after reset (oninput won't fire on programmatic reset)
+    form.querySelectorAll('input[type="range"]').forEach(r => {
+      const span = r.nextElementSibling;
+      if (span && span.classList.contains('slider-val')) span.textContent = r.value;
+    });
   }
 
   async saveAndAnalyze(domain, category) {
