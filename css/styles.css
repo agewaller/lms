@@ -1853,6 +1853,10 @@ body.is-admin .admin-only { display: flex; }
 .bs-cat-track { flex: 1; height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden; }
 .bs-cat-fill { height: 100%; background: var(--warning, #f59e0b); border-radius: 4px; transition: width 0.4s ease; }
 .bs-cat-amt { font-size: 13px; font-weight: 600; width: 80px; text-align: right; flex-shrink: 0; }
+.bs-status { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 12px; }
+.bs-status.surplus { background: #d1fae5; color: #065f46; }
+.bs-status.deficit { background: #fee2e2; color: #991b1b; }
+.bs-mom { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
 @media (max-width: 400px) {
   .bs-totals { grid-template-columns: 1fr; }
   .bs-total-value { font-size: 20px; }

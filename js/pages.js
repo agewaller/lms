@@ -783,10 +783,27 @@ var Pages = {
       </div>`;
     }
 
+    // Previous month comparison
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
+    const prevMonthEnd = monthStart;
+    const prevExpense = store.getDomainData('assets', 'expenses', 90)
+      .filter(e => (e.timestamp||'') >= prevMonthStart && (e.timestamp||'') < prevMonthEnd)
+      .reduce((s, e) => s + (Number(e.amount)||0), 0);
+    const momDiff = prevExpense > 0 ? totalExpense - prevExpense : null;
+
+    const savingsRate = totalIncome > 0 ? Math.round(balance / totalIncome * 100) : null;
+    const statusBadge = balance >= 0
+      ? `<span class="bs-status surplus">黒字 ${savingsRate !== null ? savingsRate + '%' : ''}</span>`
+      : `<span class="bs-status deficit">赤字 ${fmt(Math.abs(balance))}</span>`;
+
+    const momHtml = momDiff !== null
+      ? `<div class="bs-mom">先月比 支出: <strong style="color:${momDiff<=0?'var(--success,#10b981)':'var(--danger,#ef4444)'}">${momDiff<=0?'▼':'▲'}${fmt(Math.abs(momDiff))}</strong></div>`
+      : '';
+
     return `<div class="budget-summary-card">
       <div class="bs-header">
         <span class="bs-title">${monthLabel}の家計</span>
-        <button class="btn btn-sm btn-secondary" onclick="app.navigate('record')">記録を追加</button>
+        <div style="display:flex;align-items:center;gap:8px">${statusBadge}<button class="btn btn-sm btn-secondary" onclick="app.navigate('record')">記録を追加</button></div>
       </div>
       <div class="bs-totals">
         <div class="bs-total-item bs-income">
@@ -802,6 +819,7 @@ var Pages = {
           <div class="bs-total-value" style="color:${balanceColor}">${balance >= 0 ? '+' : ''}${fmt(balance)}</div>
         </div>
       </div>
+      ${momHtml}
       ${topCats.length > 0 ? `
         <div class="bs-categories">
           <div class="bs-cat-title">支出の内訳</div>
