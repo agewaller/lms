@@ -3030,6 +3030,24 @@ html[data-theme="dark"] .ht-cell.level-3     { background: #10b981; }
 .at-body strong { font-size: 14px; color: #6C63FF; }
 .at-body span { font-size: 12px; color: var(--text-secondary); }
 
+/* ─── Profile Completion Banner ─── */
+.profile-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(59,130,246,0.07);
+  border: 1px solid rgba(59,130,246,0.25);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.pb-icon { font-size: 1.3rem; flex-shrink: 0; }
+.pb-text { flex: 1; min-width: 180px; }
+.pb-text strong { display: block; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.pb-text span { font-size: 11px; color: var(--text-secondary); }
+.pb-close { font-size: 1rem; color: var(--text-muted); padding: 2px 6px; }
+
 /* ─── BP Alert Card ─── */
 .bp-alert-card {
   border-radius: var(--radius);

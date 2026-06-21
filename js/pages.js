@@ -205,6 +205,7 @@ var Pages = {
 
     // Health: morning vitals + SOS button + medication reminder + BP trend + doctor report shortcut
     if (domain === 'health') {
+      html += this.renderProfileCompletionBanner();
       html += this.renderBPAlertCard();
       html += this.renderMorningVitalsCard();
       html += this.renderSOSWidget();
@@ -3121,6 +3122,27 @@ var Pages = {
         }
       }
     });
+  },
+
+  // ─── Profile completion banner (health domain, until core fields filled) ───
+  renderProfileCompletionBanner() {
+    if (localStorage.getItem('lms_profileBannerDismissed')) return '';
+    const profile = store.get('userProfile') || {};
+    const missing = [];
+    if (!profile.age && !profile.birthdate) missing.push('年齢');
+    if (!profile.height) missing.push('身長');
+    if (!profile.weight && !profile.displayName) missing.push('基本情報');
+    if (missing.length === 0) return '';
+    const esc = Components.escapeHtml;
+    return `<div class="profile-banner">
+      <span class="pb-icon">👤</span>
+      <div class="pb-text">
+        <strong>プロフィールを完成させましょう</strong>
+        <span>未入力: ${missing.map(esc).join('・')} — 設定すると分析の精度が上がります</span>
+      </div>
+      <button class="btn btn-sm btn-primary" onclick="app.navigate('settings')">設定する</button>
+      <button class="btn btn-ghost pb-close" onclick="localStorage.setItem('lms_profileBannerDismissed','1');this.closest('.profile-banner').remove()">&times;</button>
+    </div>`;
   },
 
   // ─── Blood pressure alert card (health domain, appears when BP is elevated) ───
