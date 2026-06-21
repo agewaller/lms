@@ -201,6 +201,7 @@ var Pages = {
     // Assets domain: monthly budget summary + NISA simulator + advisor + screenshot + auto trading
     // (Stock analysis widget is rendered at the top of the page.)
     if (domain === 'assets') {
+      html += this.renderRetirementRunway();
       html += this.renderQuickExpenseEntry();
       html += this.renderMonthlyBudgetSummary();
       html += this.renderBudgetTrendChart();
@@ -4260,6 +4261,168 @@ var Pages = {
         }
       }
     });
+  },
+
+  // ─── Retirement Runway (老後の安心計算) ───
+  renderRetirementRunway() {
+    const esc = Components.escapeHtml;
+    const fmt = (n) => n >= 10000 ? `¥${Math.round(n / 10000)}万` : `¥${Math.round(n).toLocaleString()}`;
+
+    // 1. Net worth from overview + portfolio
+    const overviews = store.getDomainData('assets', 'overview', 365)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const ov = overviews[0] || {};
+    const portfolioTotal = store.getDomainData('assets', 'portfolio', 365)
+      .reduce((s, e) => s + (Number(e.value) || 0), 0);
+    let netWorth = (Number(ov.total_assets) || 0) + portfolioTotal - (Number(ov.total_debt) || 0);
+
+    // Quick-setup override (万円 stored as yen)
+    let setup = {};
+    try { setup = JSON.parse(localStorage.getItem('lms_retirementSetup') || '{}'); } catch (e) {}
+    if (setup.netWorth > 0 && netWorth <= 0) netWorth = setup.netWorth;
+
+    // 2. Monthly cashflow — average across months with data
+    const incomeData  = store.getDomainData('assets', 'income',   90);
+    const expenseData = store.getDomainData('assets', 'expenses', 90);
+    const byMonth = (arr) => {
+      const map = {};
+      arr.forEach(e => {
+        if (!e.timestamp) return;
+        const m = e.timestamp.slice(0, 7);
+        map[m] = (map[m] || 0) + (Number(e.amount) || 0);
+      });
+      return map;
+    };
+    const incMap = byMonth(incomeData);
+    const expMap = byMonth(expenseData);
+    const allMonths = [...new Set([...Object.keys(incMap), ...Object.keys(expMap)])];
+    const avgInc  = allMonths.length ? allMonths.reduce((s, m) => s + (incMap[m] || 0), 0) / allMonths.length : (setup.monthlyIncome || 0);
+    const avgExp  = allMonths.length ? allMonths.reduce((s, m) => s + (expMap[m] || 0), 0) / allMonths.length : (setup.monthlyExpense || 0);
+    const deficit = avgExp - avgInc;
+
+    const hasData = netWorth > 0 || avgInc > 0 || avgExp > 0;
+    if (!hasData) return this._renderRetirementSetup();
+
+    // 3. User age
+    const profile = store.get('userProfile') || {};
+    const age = Number(profile.age) || 70;
+    const spanYears = 30;
+
+    // 4. Runway calculation
+    let runwayYears = null;
+    let runwayMsg = '';
+    let statusColor = '#10b981';
+
+    if (deficit > 0 && netWorth > 0) {
+      runwayYears = netWorth / deficit / 12;
+      const endAge = Math.round(age + runwayYears);
+      if (endAge >= 95) {
+        runwayMsg = '95歳以降も安心できます';
+        statusColor = '#10b981';
+      } else if (endAge >= 85) {
+        runwayMsg = `${endAge}歳頃まで安心できます`;
+        statusColor = '#f59e0b';
+      } else {
+        runwayMsg = `試算では${endAge}歳頃に資産が尽きる可能性があります`;
+        statusColor = '#ef4444';
+      }
+    } else if (deficit <= 0 && (avgInc > 0 || avgExp > 0)) {
+      runwayMsg = '収入が支出を上回っています。資産は増え続けています。';
+      statusColor = '#10b981';
+    } else {
+      runwayMsg = '収支情報を記録すると試算できます';
+      statusColor = '#94a3b8';
+    }
+
+    // 5. Timeline bar
+    const fillPct = runwayYears !== null ? Math.min(100, (runwayYears / spanYears) * 100) : 100;
+    const fillColor = fillPct >= 83 ? '#10b981' : fillPct >= 50 ? '#f59e0b' : '#ef4444';
+    const markers = [75, 80, 85, 90, 95].map(a => {
+      const pct = ((a - age) / spanYears) * 100;
+      return (pct > 2 && pct <= 98) ? `<div class="rr-marker" style="left:${pct.toFixed(1)}%"><span>${a}</span></div>` : '';
+    }).join('');
+
+    const nwDisplay = netWorth > 0 ? fmt(netWorth) : '未設定';
+    const cashDisplay = deficit > 0
+      ? `<span style="color:#ef4444">月${fmt(deficit)}の不足</span>`
+      : deficit < 0
+        ? `<span style="color:#10b981">月${fmt(-deficit)}の黒字</span>`
+        : '記録なし';
+
+    return `<div class="retirement-runway-card">
+      <div class="rr-header">
+        <span class="rr-title">老後の安心計算</span>
+        <button class="btn btn-xs btn-secondary" onclick="Pages.showRetirementSetup()">更新する</button>
+      </div>
+      <div class="rr-stats">
+        <div class="rr-stat">
+          <div class="rr-stat-label">総資産（推定）</div>
+          <div class="rr-stat-value">${esc(nwDisplay)}</div>
+        </div>
+        <div class="rr-stat">
+          <div class="rr-stat-label">毎月の収支</div>
+          <div class="rr-stat-value">${cashDisplay}</div>
+        </div>
+      </div>
+      <div class="rr-status" style="color:${statusColor}">${esc(runwayMsg)}</div>
+      ${runwayYears !== null ? `
+      <div class="rr-timeline">
+        <div class="rr-bar-bg">
+          <div class="rr-bar-fill" style="width:${fillPct.toFixed(1)}%;background:${fillColor}"></div>
+          ${runwayYears < spanYears ? `<div class="rr-bar-end" style="left:${fillPct.toFixed(1)}%"></div>` : ''}
+        </div>
+        <div class="rr-markers">${markers}</div>
+        <div class="rr-age-labels">
+          <span>${age}歳（現在）</span>
+          <span>${age + spanYears}歳</span>
+        </div>
+      </div>` : ''}
+      <div class="rr-disclaimer">※試算です。年金・税金・医療費の変動は加味していません。</div>
+      ${netWorth <= 0 ? `<button class="btn btn-sm btn-primary" style="margin-top:8px" onclick="Pages.showRetirementSetup()">資産を入力して試算する</button>` : ''}
+    </div>`;
+  },
+
+  _renderRetirementSetup() {
+    return `<div class="retirement-runway-card rr-setup">
+      <div class="rr-header">
+        <span class="rr-title">老後の安心計算</span>
+      </div>
+      <p class="rr-setup-desc">現在の資産と毎月の収支を入力するだけで、<br>老後のお金が何歳まで持つか試算します。</p>
+      <div class="rr-setup-fields">
+        <div class="form-group">
+          <label class="form-label" style="font-size:0.82rem">現在の総貯蓄・資産（万円）</label>
+          <input type="number" id="rrNetWorth" class="form-input" placeholder="例: 2500" min="0" step="100">
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="font-size:0.82rem">月の収入（年金・給与など）（万円）</label>
+          <input type="number" id="rrIncome" class="form-input" placeholder="例: 18" min="0" step="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="font-size:0.82rem">月の生活費（万円）</label>
+          <input type="number" id="rrExpense" class="form-input" placeholder="例: 22" min="0" step="1">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="Pages.saveRetirementSetup()">試算する</button>
+    </div>`;
+  },
+
+  showRetirementSetup() {
+    const existing = document.querySelector('.retirement-runway-card');
+    if (existing) existing.outerHTML = this._renderRetirementSetup();
+  },
+
+  saveRetirementSetup() {
+    const nwMAN  = parseFloat(document.getElementById('rrNetWorth')?.value || '0');
+    const incMAN = parseFloat(document.getElementById('rrIncome')?.value || '0');
+    const expMAN = parseFloat(document.getElementById('rrExpense')?.value || '0');
+    if (nwMAN <= 0) { Components.showToast('資産額を入力してください', 'error'); return; }
+    const setup = { netWorth: nwMAN * 10000, monthlyIncome: incMAN * 10000, monthlyExpense: expMAN * 10000 };
+    try { localStorage.setItem('lms_retirementSetup', JSON.stringify(setup)); } catch (e) {}
+    store.addDomainEntry('assets', 'overview', { total_assets: nwMAN * 10000, total_debt: 0, description: '老後の安心計算より入力' });
+    if (incMAN > 0) store.addDomainEntry('assets', 'income',   { source: '月収入（年金等）', type: 'pension', amount: incMAN * 10000, recurring: true });
+    if (expMAN > 0) store.addDomainEntry('assets', 'expenses', { item: '月の生活費', category: 'other', amount: expMAN * 10000 });
+    Components.showToast('試算しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ═══════════════════════════════════════════════════════════

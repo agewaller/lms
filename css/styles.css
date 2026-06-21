@@ -4408,3 +4408,113 @@ html[data-theme="light"] .sleep-log-card { background: linear-gradient(135deg, #
 }
 .med-quick-btns { display: flex; gap: 8px; }
 .med-setup-actions { display: flex; gap: 8px; }
+
+/* ─── Retirement Runway Card (老後の安心計算) ─── */
+.retirement-runway-card {
+  background: linear-gradient(135deg, rgba(217,119,6,0.07) 0%, var(--bg-secondary) 100%);
+  border: 1px solid rgba(217,119,6,0.22);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.rr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.rr-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.rr-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.rr-stat {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+.rr-stat-label {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.rr-stat-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.rr-status {
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  background: rgba(0,0,0,0.04);
+  border-radius: var(--radius-sm);
+  line-height: 1.4;
+}
+html[data-theme="dark"] .rr-status { background: rgba(255,255,255,0.05); }
+.rr-timeline { margin-bottom: 4px; }
+.rr-bar-bg {
+  height: 10px;
+  background: rgba(0,0,0,0.08);
+  border-radius: 5px;
+  position: relative;
+  margin-bottom: 4px;
+}
+html[data-theme="dark"] .rr-bar-bg { background: rgba(255,255,255,0.1); }
+.rr-bar-fill {
+  height: 100%;
+  border-radius: 5px 0 0 5px;
+  transition: width 0.5s ease;
+}
+.rr-bar-end {
+  position: absolute;
+  top: -4px;
+  width: 3px;
+  height: 18px;
+  background: #ef4444;
+  border-radius: 2px;
+  transform: translateX(-50%);
+}
+.rr-markers {
+  position: relative;
+  height: 16px;
+}
+.rr-marker {
+  position: absolute;
+  transform: translateX(-50%);
+}
+.rr-marker span {
+  font-size: 0.67rem;
+  color: var(--text-secondary);
+}
+.rr-age-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.rr-disclaimer {
+  font-size: 0.69rem;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+.rr-setup-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+.rr-setup-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
