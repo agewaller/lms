@@ -262,6 +262,7 @@ var Pages = {
       html += this.renderDoctorAppointments();
       html += this.renderBPTrendCard();
       html += this.renderGlucoseTracker();
+      html += this.renderBloodTestRecorder();
       html += this.renderSleepTrendCard();
       html += this.renderWeightTrendCard();
       html += this.renderCognitiveWellness();
@@ -8752,6 +8753,162 @@ var Pages = {
     });
     sessionStorage.removeItem('lms_glucoseFormOpen');
     Components.showToast('血糖値を記録しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Blood Test Recorder ───
+  renderBloodTestRecorder() {
+    const tests = [
+      { key:'glucose',  label:'空腹時血糖',       unit:'mg/dL',  ref:'70-109',    lo:70,   hi:109  },
+      { key:'hba1c',    label:'HbA1c',             unit:'%',      ref:'<5.6',      lo:null, hi:5.6  },
+      { key:'tchol',    label:'総コレステロール',  unit:'mg/dL',  ref:'<200',      lo:null, hi:200  },
+      { key:'ldl',      label:'LDLコレステロール', unit:'mg/dL',  ref:'<120',      lo:null, hi:120  },
+      { key:'hdl',      label:'HDLコレステロール', unit:'mg/dL',  ref:'≥40',       lo:40,   hi:null },
+      { key:'tg',       label:'中性脂肪',          unit:'mg/dL',  ref:'<150',      lo:null, hi:150  },
+      { key:'uric',     label:'尿酸',              unit:'mg/dL',  ref:'3.6-7.0',   lo:3.6,  hi:7.0  },
+      { key:'creat',    label:'クレアチニン',      unit:'mg/dL',  ref:'0.6-1.1',   lo:0.6,  hi:1.1  },
+      { key:'egfr',     label:'eGFR',              unit:'mL/min', ref:'≥60',       lo:60,   hi:null },
+      { key:'ast',      label:'AST（GOT）',        unit:'U/L',    ref:'10-40',     lo:10,   hi:40   },
+      { key:'alt',      label:'ALT（GPT）',        unit:'U/L',    ref:'4-40',      lo:4,    hi:40   },
+      { key:'ggt',      label:'γ-GTP',             unit:'U/L',    ref:'<50',       lo:null, hi:50   },
+      { key:'hgb',      label:'ヘモグロビン',      unit:'g/dL',   ref:'11.6-16.8', lo:11.6, hi:16.8 },
+      { key:'wbc',      label:'白血球',            unit:'百/μL',  ref:'33-86',     lo:33,   hi:86   },
+      { key:'plt',      label:'血小板',            unit:'万/μL',  ref:'15-35',     lo:15,   hi:35   },
+      { key:'other',    label:'その他',            unit:'',       ref:'',          lo:null, hi:null },
+    ];
+
+    const records = store.getDomainData('health', 'bloodTests', 365)
+      .sort((a, b) => new Date(b.timestamp || b.date || 0) - new Date(a.timestamp || a.date || 0));
+
+    const formOpen = sessionStorage.getItem('lms_btFormOpen') === '1';
+    const today = new Date().toISOString().split('T')[0];
+
+    // Group most-recent value per test for summary
+    const latestByTest = {};
+    records.forEach(r => {
+      if (!latestByTest[r.test_name]) latestByTest[r.test_name] = r;
+    });
+
+    const isAbnormal = (r) => {
+      const t = tests.find(t2 => t2.label === r.test_name);
+      if (!t || t.lo === null && t.hi === null) return false;
+      const v = parseFloat(r.value);
+      if (isNaN(v)) return false;
+      if (t.lo !== null && v < t.lo) return true;
+      if (t.hi !== null && v > t.hi) return true;
+      return false;
+    };
+
+    const summaryItems = Object.values(latestByTest).slice(0, 6);
+    const abnormalCount = summaryItems.filter(isAbnormal).length;
+
+    return `<div class="bt-card">
+      <div class="bt-header">
+        <div class="bt-title">
+          検査値の記録
+          ${abnormalCount > 0 ? `<span class="bt-badge-warn">${abnormalCount}項目 要注意</span>` : ''}
+        </div>
+        <button class="btn btn-sm btn-secondary" onclick="Pages.toggleBTForm()">記録する</button>
+      </div>
+
+      ${summaryItems.length > 0 ? `<div class="bt-summary">
+        ${summaryItems.map(r => {
+          const abn = isAbnormal(r);
+          const d = new Date(r.timestamp || r.date || 0).toLocaleDateString('ja-JP', { month:'short', day:'numeric' });
+          return `<div class="bt-item ${abn ? 'bt-item-warn' : ''}">
+            <span class="bt-item-name">${Components.escapeHtml(r.test_name || '')}</span>
+            <span class="bt-item-val">${Components.escapeHtml(String(r.value || ''))} ${Components.escapeHtml(r.unit || '')}</span>
+            <span class="bt-item-date">${d}</span>
+          </div>`;
+        }).join('')}
+        ${records.length > 6 ? `<div class="bt-more">他 ${records.length - 6} 件</div>` : ''}
+      </div>` : `<div class="bt-empty">健診・通院時の検査値を記録しておくと、受診時に役立ちます</div>`}
+
+      <div id="btForm" style="${formOpen ? '' : 'display:none'}">
+        <div class="bt-form">
+          <div class="bt-form-row">
+            <label class="bt-label">検査日</label>
+            <input type="date" id="btDate" class="form-input bt-date" value="${today}">
+          </div>
+          <div class="bt-form-row">
+            <label class="bt-label">検査項目</label>
+            <select id="btTest" class="form-input bt-select" onchange="Pages.onBTTestChange()">
+              ${tests.map(t => `<option value="${t.key}" data-label="${Components.escapeHtml(t.label)}" data-unit="${Components.escapeHtml(t.unit)}" data-ref="${Components.escapeHtml(t.ref)}">${Components.escapeHtml(t.label)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="bt-form-row bt-val-row">
+            <div class="bt-val-group">
+              <label class="bt-label">値</label>
+              <input type="number" id="btValue" class="form-input bt-val-input" placeholder="例: 98" step="0.1">
+            </div>
+            <div class="bt-unit-group">
+              <label class="bt-label">単位</label>
+              <input type="text" id="btUnit" class="form-input bt-unit-input" value="${tests[0].unit}" placeholder="mg/dL">
+            </div>
+          </div>
+          <div class="bt-ref-hint" id="btRefHint">基準値: <strong>${tests[0].ref}</strong></div>
+          <div class="bt-form-row">
+            <label class="bt-label">メモ（任意）</label>
+            <input type="text" id="btNotes" class="form-input" placeholder="病院名など" maxlength="40">
+          </div>
+          <button class="btn btn-primary bt-save-btn" onclick="Pages.saveBloodTest()">保存する</button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  toggleBTForm() {
+    const form = document.getElementById('btForm');
+    if (!form) return;
+    const open = form.style.display !== 'none';
+    form.style.display = open ? 'none' : '';
+    if (!open) sessionStorage.setItem('lms_btFormOpen', '1');
+    else sessionStorage.removeItem('lms_btFormOpen');
+  },
+
+  onBTTestChange() {
+    const sel = document.getElementById('btTest');
+    if (!sel) return;
+    const opt = sel.options[sel.selectedIndex];
+    const unitEl = document.getElementById('btUnit');
+    const refEl = document.getElementById('btRefHint');
+    if (unitEl) unitEl.value = opt.dataset.unit || '';
+    if (refEl) {
+      const ref = opt.dataset.ref || '';
+      refEl.innerHTML = ref ? `基準値: <strong>${Components.escapeHtml(ref)}</strong>` : '';
+    }
+  },
+
+  saveBloodTest() {
+    const dateEl  = document.getElementById('btDate');
+    const testSel = document.getElementById('btTest');
+    const valEl   = document.getElementById('btValue');
+    const unitEl  = document.getElementById('btUnit');
+    const notesEl = document.getElementById('btNotes');
+
+    const date = dateEl?.value || new Date().toISOString().split('T')[0];
+    const opt  = testSel?.options[testSel.selectedIndex];
+    let testName = opt?.dataset.label || testSel?.value || '';
+    if (testName === 'その他') {
+      testName = (notesEl?.value?.trim() || 'その他');
+    }
+    const value = valEl?.value?.trim();
+    if (!value) {
+      Components.showToast('値を入力してください', 'error');
+      return;
+    }
+    const ref = opt?.dataset.ref || '';
+    store.addDomainEntry('health', 'bloodTests', {
+      test_name: testName,
+      value: isNaN(parseFloat(value)) ? value : parseFloat(value),
+      unit: unitEl?.value?.trim() || '',
+      reference: ref,
+      date,
+      notes: notesEl?.value?.trim() || '',
+      timestamp: new Date(date + 'T12:00:00').toISOString()
+    });
+    sessionStorage.removeItem('lms_btFormOpen');
+    Components.showToast('検査値を記録しました', 'success');
     if (typeof app !== 'undefined') app.renderApp();
   },
 

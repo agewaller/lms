@@ -6278,6 +6278,119 @@ html[data-theme="dark"] .wsg-bar-bg { background: rgba(255,255,255,0.1); }
   opacity: 0.7;
 }
 
+/* ─── Blood Test Recorder ─── */
+.bt-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.bt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.bt-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bt-badge-warn {
+  font-size: 0.72rem;
+  font-weight: 500;
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fca5a5;
+  border-radius: 20px;
+  padding: 2px 8px;
+}
+.bt-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.bt-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid #10b981;
+}
+.bt-item.bt-item-warn {
+  border-left-color: #ef4444;
+  background: #fef2f2;
+}
+.bt-item-name {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  min-width: 120px;
+}
+.bt-item-val {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+.bt-item-date {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.bt-more {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 4px;
+}
+.bt-empty {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  padding: 8px 0;
+}
+.bt-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+}
+.bt-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.bt-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.bt-date, .bt-select { font-size: 0.84rem; }
+.bt-val-row {
+  display: flex;
+  gap: 10px;
+  flex-direction: row;
+}
+.bt-val-group { flex: 2; display: flex; flex-direction: column; gap: 4px; }
+.bt-unit-group { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.bt-val-input, .bt-unit-input { font-size: 0.88rem; }
+.bt-ref-hint {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  min-height: 24px;
+}
+.bt-save-btn { align-self: flex-start; font-size: 0.84rem; }
+
 /* ─── Bill Payment Reminder ─── */
 .bill-card {
   background: var(--bg-secondary);
