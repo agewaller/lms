@@ -2410,6 +2410,47 @@ var App = class App {
     setTimeout(() => this.renderApp(), 100);
   }
 
+  openQuickAddContact() {
+    const levels = CONFIG.domains?.relationship?.distanceLevels || {};
+    const levelOpts = [1,2,3,4,5].map(n => {
+      const lv = levels[n] || {};
+      return `<option value="${n}">${n}. ${Components.escapeHtml(lv.description || '')}</option>`;
+    }).join('');
+    this.openModal('連絡先を追加', `
+      <div class="form-group">
+        <label>お名前 <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="qc_name" class="form-input" placeholder="例：田中 花子" autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label>電話番号（任意）</label>
+        <input type="tel" id="qc_phone" class="form-input" placeholder="例：090-1234-5678" autocomplete="tel">
+      </div>
+      <div class="form-group">
+        <label>この方との距離感</label>
+        <select id="qc_distance" class="form-input">${levelOpts}</select>
+      </div>
+      <div class="form-group">
+        <label>メモ（任意）</label>
+        <input type="text" id="qc_notes" class="form-input" placeholder="例：毎週会う親友">
+      </div>
+      <div class="form-actions" style="margin-top:20px">
+        <button class="btn btn-primary btn-lg" style="width:100%" onclick="app.saveQuickContact()">追加する</button>
+      </div>
+    `);
+  }
+
+  saveQuickContact() {
+    const name = document.getElementById('qc_name')?.value?.trim() || '';
+    if (!name) { Components.showToast('お名前を入力してください', 'error'); return; }
+    const phone = document.getElementById('qc_phone')?.value?.trim() || '';
+    const distance = document.getElementById('qc_distance')?.value || '3';
+    const notes = document.getElementById('qc_notes')?.value?.trim() || '';
+    store.addDomainEntry('relationship', 'contacts', { name, phone, distance, notes, relationship: 'other' });
+    this.closeModal();
+    Components.showToast(`${name}さんを追加しました`, 'success');
+    setTimeout(() => this.renderApp(), 100);
+  }
+
   // One-tap mood check-in from health home emoji picker
   quickMoodCheckin(level) {
     store.addDomainEntry('health', 'symptoms', {

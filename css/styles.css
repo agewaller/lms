@@ -1511,6 +1511,24 @@ body.is-admin .admin-only { display: flex; }
 .empty-icon { font-size: 48px; margin-bottom: 12px; }
 .empty-state h3 { color: var(--text-light); margin-bottom: 8px; }
 
+/* ─── Gratitude Journal Widget ─── */
+.gratitude-widget {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow);
+  border-left: 4px solid #9B59B6;
+}
+.gw-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.gw-title { font-size: 17px; font-weight: 700; color: var(--text-primary); }
+.gw-done-badge { font-size: 13px; font-weight: 600; color: var(--success, #059669); background: rgba(16,185,129,0.1); padding: 3px 8px; border-radius: 12px; }
+.gw-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.8; }
+.gw-inputs { display: flex; flex-direction: column; gap: 10px; }
+.gw-input-row { display: flex; align-items: center; gap: 10px; }
+.gw-num { width: 28px; height: 28px; border-radius: 50%; background: #9B59B6; color: white; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.gw-list { list-style: none; padding: 0; margin: 0; }
+.gw-item { padding: 8px 0; font-size: 16px; color: var(--text-primary); border-bottom: 1px solid var(--border); line-height: 1.7; }
+.gw-item:last-child { border-bottom: none; }
+.gw-item::before { content: '✦ '; color: #9B59B6; }
+
 /* ─── Consciousness Layers ─── */
 .consciousness-layers-section {
   background: var(--bg-card); border-radius: var(--radius);

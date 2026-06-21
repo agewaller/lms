@@ -128,8 +128,9 @@ var Pages = {
 
     // ─── Domain-specific widgets ───
 
-    // Consciousness domain: 7-layer visualization + transcript input
+    // Consciousness domain: gratitude journal + 7-layer visualization + transcript input
     if (domain === 'consciousness') {
+      html += this.renderGratitudeWidget();
       html += this.renderConsciousnessLayers();
       html += this.renderTranscriptInput();
     }
@@ -191,6 +192,61 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Gratitude Journal (Consciousness domain quick widget) ───
+  renderGratitudeWidget() {
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = 'lms_gratitude_' + today;
+    let saved = [];
+    try { saved = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch (e) {}
+    const hasSaved = saved.length > 0;
+
+    // Recent entries from Firestore
+    const recentEntries = store.getDomainData('consciousness', 'appreciation', 7);
+    const todayEntry = recentEntries.find(e => (e.timestamp || '').startsWith(today));
+
+    if (todayEntry || hasSaved) {
+      const items = hasSaved ? saved : (Array.isArray(todayEntry?.items) ? todayEntry.items : [todayEntry?.content].filter(Boolean));
+      return `<div class="gratitude-widget">
+        <div class="gw-header">
+          <span class="gw-title">今日の感謝 <span class="gw-done-badge">✓ 記録済み</span></span>
+        </div>
+        <ul class="gw-list">
+          ${items.slice(0, 3).map(item => `<li class="gw-item">${Components.escapeHtml(String(item))}</li>`).join('')}
+        </ul>
+      </div>`;
+    }
+
+    return `<div class="gratitude-widget">
+      <div class="gw-header">
+        <span class="gw-title">今日の感謝を3つ書きましょう</span>
+      </div>
+      <p class="gw-desc">小さなことでも大丈夫。毎日続けると、心が穏やかになります。</p>
+      <div class="gw-inputs">
+        <div class="gw-input-row"><span class="gw-num">1</span><input type="text" id="gw1" class="form-input" placeholder="例：おいしいお茶が飲めた"></div>
+        <div class="gw-input-row"><span class="gw-num">2</span><input type="text" id="gw2" class="form-input" placeholder="例：今日もお天気が良かった"></div>
+        <div class="gw-input-row"><span class="gw-num">3</span><input type="text" id="gw3" class="form-input" placeholder="例：友人から連絡がきた"></div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:14px;width:100%" onclick="Pages.saveGratitude()">感謝を記録する</button>
+    </div>`;
+  },
+
+  saveGratitude() {
+    const items = ['gw1','gw2','gw3'].map(id => {
+      const el = document.getElementById(id);
+      return el ? el.value.trim() : '';
+    }).filter(Boolean);
+
+    if (items.length === 0) {
+      Components.showToast('1つ以上入力してください', 'error');
+      return;
+    }
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem('lms_gratitude_' + today, JSON.stringify(items));
+    store.addDomainEntry('consciousness', 'appreciation', { items, content: items.join('、') });
+    Components.showToast('感謝を記録しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Consciousness 7-Layer Visualization ───
@@ -294,10 +350,14 @@ var Pages = {
   // ─── Social Graph (Relationship domain) ───
   renderSocialGraph() {
     const contacts = store.get('relationship_contacts') || [];
+    const addBtn = `<button class="btn btn-sm btn-secondary" onclick="app.openQuickAddContact()">＋ 追加</button>`;
     if (contacts.length === 0) {
       return `<div class="social-graph-section">
-        <h3>つながりの地図</h3>
-        ${Components.emptyState('🤝', 'まだ連絡先がありません', '「記録する」から連絡先を追加、または取り込んでください')}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h3 style="margin:0">つながりの地図</h3>
+          ${addBtn}
+        </div>
+        ${Components.emptyState('🤝', 'まだ連絡先がありません', '「＋ 追加」から大切な方を登録してみましょう')}
       </div>`;
     }
 
@@ -309,7 +369,10 @@ var Pages = {
     });
 
     let html = `<div class="social-graph-section">
-      <h3>つながりの地図（${contacts.length}人）</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <h3 style="margin:0">つながりの地図（${contacts.length}人）</h3>
+        ${addBtn}
+      </div>
       <div class="social-graph">
         <div class="graph-center">あなた</div>`;
 
