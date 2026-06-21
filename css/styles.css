@@ -4787,3 +4787,81 @@ html[data-theme="dark"] .rr-bar-bg { background: rgba(255,255,255,0.1); }
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   line-height: 1.5;
 }
+
+/* ─── Portfolio Summary Card ─── */
+.portfolio-summary-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.ps-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.ps-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.ps-totals {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.ps-total-item {
+  flex: 1;
+  min-width: 80px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+.ps-total-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-bottom: 3px;
+}
+.ps-total-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.ps-rows { display: flex; flex-direction: column; gap: 8px; }
+.ps-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 64px 36px;
+  align-items: center;
+  gap: 6px;
+}
+.ps-type {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.ps-bar-track {
+  height: 6px;
+  background: rgba(0,0,0,0.07);
+  border-radius: 3px;
+}
+html[data-theme="dark"] .ps-bar-track { background: rgba(255,255,255,0.1); }
+.ps-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.ps-amt {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: right;
+  white-space: nowrap;
+}
+.ps-pct {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-align: right;
+}

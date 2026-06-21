@@ -202,6 +202,7 @@ var Pages = {
     // (Stock analysis widget is rendered at the top of the page.)
     if (domain === 'assets') {
       html += this.renderRetirementRunway();
+      html += this.renderPortfolioSummary();
       html += this.renderQuickExpenseEntry();
       html += this.renderMonthlyBudgetSummary();
       html += this.renderBudgetTrendChart();
@@ -4604,6 +4605,90 @@ var Pages = {
     if (expMAN > 0) store.addDomainEntry('assets', 'expenses', { item: '月の生活費', category: 'other', amount: expMAN * 10000 });
     Components.showToast('試算しました', 'success');
     if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Portfolio Summary (資産ポートフォリオ) ───
+  renderPortfolioSummary() {
+    const portfolio = store.getDomainData('assets', 'portfolio', 365);
+    const overviews = store.getDomainData('assets', 'overview', 365)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const ov = overviews[0] || {};
+
+    const hasPortfolio = portfolio.length > 0;
+    const hasOverview  = Number(ov.total_assets) > 0;
+    if (!hasPortfolio && !hasOverview) return '';
+
+    const fmt = (n) => {
+      if (n >= 100000000) return `¥${(n / 100000000).toFixed(1)}億`;
+      if (n >= 10000)     return `¥${Math.round(n / 10000)}万`;
+      return `¥${Math.round(n).toLocaleString()}`;
+    };
+
+    const typeLabels = {
+      stock: '株式', bond: '債券', real_estate: '不動産',
+      fund: '投資信託', insurance: '保険', deposit: '預貯金',
+      pension: '年金', other: 'その他'
+    };
+    const typeColors = {
+      stock: '#3b82f6', bond: '#8b5cf6', real_estate: '#d97706',
+      fund: '#06b6d4', insurance: '#10b981', deposit: '#6C63FF',
+      pension: '#f59e0b', other: '#94a3b8'
+    };
+
+    // Aggregate portfolio by type
+    const byType = {};
+    portfolio.forEach(e => {
+      const t = e.asset_type || 'other';
+      byType[t] = (byType[t] || 0) + (Number(e.value) || 0);
+    });
+
+    // Add overview deposit if no explicit deposit entry and overview has total_assets
+    if (!byType.deposit && hasOverview && !hasPortfolio) {
+      byType.deposit = Number(ov.total_assets) || 0;
+    }
+
+    const total = Object.values(byType).reduce((s, v) => s + v, 0);
+    const debt  = Number(ov.total_debt) || 0;
+    const netWorth = total - debt;
+
+    const entries = Object.entries(byType).sort((a, b) => b[1] - a[1]);
+    const maxVal = entries[0]?.[1] || 1;
+
+    const esc = Components.escapeHtml;
+    const rows = entries.map(([type, val]) => {
+      const pct = Math.round(val / total * 100);
+      const color = typeColors[type] || '#94a3b8';
+      return `<div class="ps-row">
+        <span class="ps-type">${esc(typeLabels[type] || type)}</span>
+        <div class="ps-bar-track">
+          <div class="ps-bar-fill" style="width:${Math.round(val/maxVal*100)}%;background:${color}"></div>
+        </div>
+        <span class="ps-amt">${esc(fmt(val))}</span>
+        <span class="ps-pct">${pct}%</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="portfolio-summary-card">
+      <div class="ps-header">
+        <span class="ps-title">資産の内訳</span>
+        <button class="btn btn-xs btn-secondary" onclick="app.navigate('record')">＋ 追加</button>
+      </div>
+      <div class="ps-totals">
+        <div class="ps-total-item">
+          <div class="ps-total-label">総資産</div>
+          <div class="ps-total-value">${esc(fmt(total))}</div>
+        </div>
+        ${debt > 0 ? `<div class="ps-total-item">
+          <div class="ps-total-label">負債</div>
+          <div class="ps-total-value" style="color:#ef4444">${esc(fmt(debt))}</div>
+        </div>` : ''}
+        <div class="ps-total-item">
+          <div class="ps-total-label">純資産</div>
+          <div class="ps-total-value" style="color:${netWorth >= 0 ? '#10b981' : '#ef4444'}">${esc(fmt(netWorth))}</div>
+        </div>
+      </div>
+      <div class="ps-rows">${rows}</div>
+    </div>`;
   },
 
   // ═══════════════════════════════════════════════════════════
