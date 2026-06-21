@@ -214,6 +214,7 @@ var Pages = {
       html += this.renderBPTrendCard();
       html += this.renderSleepTrendCard();
       html += this.renderWeightTrendCard();
+      html += this.renderMonthlyHealthComparison();
       html += `<div class="doctor-report-banner">
         <div class="drb-text">
           <strong>かかりつけ医への受診準備</strong>
@@ -3274,6 +3275,64 @@ var Pages = {
         }
       }
     });
+  },
+
+  // ─── Monthly health comparison card (this month vs last month) ───
+  renderMonthlyHealthComparison() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const thisMonthPrefix = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+    const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthPrefix = `${prevDate.getFullYear()}-${pad(prevDate.getMonth() + 1)}`;
+
+    const symptomsAll = store.getDomainData('health', 'symptoms', 90);
+    const sleepAll    = store.getDomainData('health', 'sleepData', 90);
+
+    const thisSx  = symptomsAll.filter(e => e.timestamp?.startsWith(thisMonthPrefix));
+    const prevSx  = symptomsAll.filter(e => e.timestamp?.startsWith(lastMonthPrefix));
+    const thisSl  = sleepAll.filter(e => e.timestamp?.startsWith(thisMonthPrefix));
+    const prevSl  = sleepAll.filter(e => e.timestamp?.startsWith(lastMonthPrefix));
+
+    if ((thisSx.length === 0 && thisSl.length === 0) || (prevSx.length === 0 && prevSl.length === 0)) return '';
+
+    const avg = (arr, key) => arr.length > 0 ? arr.reduce((s, e) => s + (Number(e[key]) || 0), 0) / arr.length : null;
+
+    const metrics = [];
+    const cn = avg(thisSx, 'condition_level'), cp = avg(prevSx, 'condition_level');
+    if (cn !== null && cp !== null) metrics.push({ label: '体調', unit: '/10', now: cn.toFixed(1), prev: cp.toFixed(1), diff: cn - cp, hb: true });
+    const sn = avg(thisSl, 'quality'), sp = avg(prevSl, 'quality');
+    if (sn !== null && sp !== null) metrics.push({ label: '睡眠', unit: '/10', now: sn.toFixed(1), prev: sp.toFixed(1), diff: sn - sp, hb: true });
+    const fn = avg(thisSx, 'fatigue_level'), fp = avg(prevSx, 'fatigue_level');
+    if (fn !== null && fp !== null) metrics.push({ label: '疲れ', unit: '/10', now: fn.toFixed(1), prev: fp.toFixed(1), diff: fn - fp, hb: false });
+    if (metrics.length === 0) return '';
+
+    const trendEl = (diff, hb) => {
+      if (Math.abs(diff) < 0.2) return `<span class="mhc-flat">→</span>`;
+      const good = hb ? diff > 0 : diff < 0;
+      return diff > 0 ? `<span class="mhc-${good ? 'up' : 'down'}">↑</span>` : `<span class="mhc-${good ? 'up' : 'down'}">↓</span>`;
+    };
+
+    const rows = metrics.map(m => `<div class="mhc-metric">
+      <div class="mhc-label">${m.label}</div>
+      <div class="mhc-now">${m.now}<span class="mhc-unit">${m.unit}</span></div>
+      <div class="mhc-trend">${trendEl(m.diff, m.hb)}</div>
+      <div class="mhc-prev">${m.prev}${m.unit}</div>
+    </div>`).join('');
+
+    const thisLabel = `${now.getMonth() + 1}月`;
+    const lastLabel = `${prevDate.getMonth() + 1}月`;
+
+    return `<div class="monthly-health-card">
+      <div class="mhc-header">
+        <h4>月別の変化</h4>
+        <div class="mhc-legend">
+          <span class="mhc-leg-now">${thisLabel}</span>
+          <span class="mhc-vs">vs</span>
+          <span class="mhc-leg-prev">${lastLabel}</span>
+        </div>
+      </div>
+      <div class="mhc-grid">${rows}</div>
+    </div>`;
   },
 
   // ─── Breathing exercise (consciousness domain home) ───
