@@ -712,8 +712,11 @@ var Pages = {
       <!-- Diary / free text input -->
       <div class="diary-section">
         <h3>📝 ${i18n.t('content')}</h3>
-        <textarea id="diaryText" class="form-input diary-textarea" rows="4"
-          placeholder="${i18n.t('quick_input_placeholder')}"></textarea>
+        <div class="diary-input-row">
+          <textarea id="diaryText" class="form-input diary-textarea" rows="4"
+            placeholder="${i18n.t('quick_input_placeholder')}"></textarea>
+          <button class="btn btn-voice diary-voice" id="voiceBtn_diaryText" onclick="app.startVoiceInput('diaryText')" title="音声入力">🎤</button>
+        </div>
         <div class="diary-actions">
           <button class="btn btn-secondary" onclick="app.saveDiary('${domain}')">${i18n.t('save')}</button>
           <button class="btn btn-primary" onclick="app.saveDiaryAndAnalyze('${domain}')">${i18n.t('save_and_analyze')}</button>
