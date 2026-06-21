@@ -144,6 +144,9 @@ var Pages = {
       </div>`;
     }
 
+    // Monthly goal tracker (every domain home)
+    html += this.renderMonthlyGoalTracker();
+
     // Today's balance radar (appears on every domain home when 2+ domains have today's data)
     html += this.renderDailyBalanceRadar();
 
@@ -231,6 +234,7 @@ var Pages = {
     if (domain === 'health') {
       html += this.renderWeeklyHealthSummary();
       html += this.renderProfileCompletionBanner();
+      html += this.renderSeasonalHealthAlert();
       html += this.renderBPAlertCard();
       html += this.renderMorningVitalsCard();
       html += this.renderAfternoonSleepLog();
@@ -7253,6 +7257,196 @@ var Pages = {
       </div>
       <div class="cdi-foot">過去30日間のデータ（${daysWithData}日分）から算出</div>
     </div>`;
+  },
+
+  // ─── Seasonal Health Alert (health domain, dismissible once per day) ───
+  renderSeasonalHealthAlert() {
+    const today = new Date();
+    const month = today.getMonth() + 1;
+    const dismissKey = `lms_seasonalAlert_${today.toISOString().split('T')[0]}`;
+    if (localStorage.getItem(dismissKey)) return '';
+
+    let alertData = null;
+
+    if (month >= 6 && month <= 9) {
+      const isHigh = month === 7 || month === 8;
+      alertData = {
+        color: '#E67E22',
+        icon: '☀',
+        title: isHigh ? '猛暑が続いています。熱中症に特に注意を' : '夏の熱中症予防を毎日心がけましょう',
+        tips: [
+          '水分は1時間ごとにコップ1杯（のどが渇く前に補給）',
+          '正午〜午後3時の外出はできるだけ控える',
+          '室内でも冷房を28度以下に（エアコンを遠慮しない）',
+          '朝・夕の涼しい時間帯に散歩・外出を',
+          '尿の色が濃い黄色のときは水分不足のサイン'
+        ],
+        warn: '急なめまい・頭痛・吐き気・体の熱さは熱中症のサインです。涼しい場所に移動し、水分補給を。症状が続く場合は119番へ。'
+      };
+    } else if (month === 12 || month <= 2) {
+      alertData = {
+        color: '#2980B9',
+        icon: '❄',
+        title: '冬は血圧が上がりやすく、心臓への負担が増す季節です',
+        tips: [
+          '起床直後の急激な動作・立ち上がりに注意',
+          'トイレ・浴室など寒い場所へ移動する前に暖める（ヒートショック予防）',
+          '入浴はぬるめ（40度以下）で長湯しない',
+          '定期的な血圧測定を続け、記録しましょう',
+          '温かい飲み物で体の内側から温める'
+        ],
+        warn: '胸の痛み・圧迫感・左腕のしびれ・突然の頭痛は緊急サインです。ためらわず119番へ。'
+      };
+    } else if (month === 3 || month === 4) {
+      alertData = {
+        color: '#27AE60',
+        icon: '◈',
+        title: '春は気温差が大きく、体調を崩しやすい季節です',
+        tips: [
+          '朝晩の冷え込みに備えて重ね着を心がける',
+          '花粉症の方は外出前後に手洗い・洗顔を忘れずに',
+          '睡眠リズムを一定に保つ（就寝・起床時間を揃える）',
+          '過ごしやすい気候を活かして軽い運動を始めるチャンスです',
+          '食欲が落ちても少量でも栄養のある食事を'
+        ],
+        warn: '春は気分の落ち込みが起きやすい季節です。気になることがあればかかりつけ医にご相談ください。'
+      };
+    } else if (month === 10 || month === 11) {
+      alertData = {
+        color: '#8e6914',
+        icon: '◆',
+        title: '秋は体を冬に備える大切な季節です',
+        tips: [
+          '朝晩の気温差に備えて一枚多めに着る',
+          'インフルエンザ予防接種は10〜11月が最適な時期です',
+          '免疫力を高めるため睡眠7時間を目標に',
+          '乾燥が始まります。室内の湿度を50〜60%に保つ',
+          '秋の散歩は血糖値コントロールにも効果的です'
+        ],
+        warn: '急な気温低下のあとは風邪・感染症に注意です。体調の変化に早めに気づくことが大切です。'
+      };
+    } else {
+      alertData = {
+        color: '#27AE60',
+        icon: '◇',
+        title: '初夏の健康管理：変化に体を慣らしていく時期です',
+        tips: [
+          '急に暑くなる日は水分補給を意識して行う',
+          '初夏の紫外線は肌・目へのダメージが大きい',
+          '睡眠中も気温変化に合わせた寝具を選ぶ',
+          '体を動かす習慣をこの季節に始めるのが最適です',
+          '心身が疲れを感じたら無理せず休む'
+        ],
+        warn: null
+      };
+    }
+
+    const tips = alertData.tips.slice(0, 4);
+
+    return `<div class="seasonal-alert-card" style="--sa-color:${alertData.color}">
+      <div class="sa-header">
+        <div class="sa-icon-wrap" style="background:${alertData.color}20;color:${alertData.color}">${alertData.icon}</div>
+        <div class="sa-title-wrap">
+          <div class="sa-label" style="color:${alertData.color}">今月の健康アドバイス</div>
+          <div class="sa-title">${alertData.title}</div>
+        </div>
+        <button class="sa-close" onclick="localStorage.setItem('${dismissKey}','1');this.closest('.seasonal-alert-card').remove()" aria-label="閉じる">✕</button>
+      </div>
+      <ul class="sa-tips">
+        ${tips.map(t => `<li class="sa-tip"><span class="sa-check" style="color:${alertData.color}">◆</span>${Components.escapeHtml(t)}</li>`).join('')}
+      </ul>
+      ${alertData.warn ? `<div class="sa-warn"><span class="sa-warn-icon">⚠</span>${Components.escapeHtml(alertData.warn)}</div>` : ''}
+    </div>`;
+  },
+
+  // ─── Monthly Goal Tracker (all domains, up to 3 goals per month) ───
+  renderMonthlyGoalTracker() {
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const storageKey = `lms_monthGoals_${monthKey}`;
+    let goals = [];
+    try { goals = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) { goals = []; }
+
+    const domainLabels = {
+      consciousness: '意識', health: '健康', time: '時間',
+      work: '仕事', relationship: '関係', assets: '資産'
+    };
+    const domainColors = {
+      consciousness: '#6C63FF', health: '#10b981', time: '#f59e0b',
+      work: '#3b82f6', relationship: '#ef4444', assets: '#d97706'
+    };
+    const monthLabel = `${now.getFullYear()}年${now.getMonth() + 1}月`;
+    const doneCount = goals.filter(g => g.done).length;
+    const pct = goals.length > 0 ? Math.round(doneCount / goals.length * 100) : 0;
+
+    const goalsHtml = goals.length > 0 ? goals.map((g, i) => {
+      const color = domainColors[g.domain] || '#6C63FF';
+      return `<div class="mgt-goal ${g.done ? 'mgt-done' : ''}">
+        <button class="mgt-check" onclick="Pages.toggleMonthGoal('${monthKey}',${i})"
+          style="border-color:${color};${g.done ? `background:${color};color:#fff` : 'color:transparent'}" aria-label="完了切替">✓</button>
+        <div class="mgt-goal-body">
+          <span class="mgt-tag" style="color:${color};background:${color}20">${domainLabels[g.domain] || g.domain}</span>
+          <span class="mgt-text${g.done ? ' mgt-text-done' : ''}">${Components.escapeHtml(g.text)}</span>
+        </div>
+        <button class="mgt-del" onclick="Pages.deleteMonthGoal('${monthKey}',${i})" aria-label="削除">✕</button>
+      </div>`;
+    }).join('') : `<div class="mgt-empty">今月の目標をまだ設定していません。<br>小さな目標を1つ立ててみましょう。</div>`;
+
+    const addFormHtml = goals.length < 3 ? `
+      <div class="mgt-add-row">
+        <select id="mgtDomain" class="form-input mgt-select">
+          ${Object.entries(domainLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+        </select>
+        <input type="text" id="mgtGoalText" class="form-input mgt-input" placeholder="今月やりたいこと…" maxlength="30"
+          onkeydown="if(event.key==='Enter')Pages.addMonthGoal('${monthKey}')">
+        <button class="btn btn-primary mgt-add-btn" onclick="Pages.addMonthGoal('${monthKey}')">追加</button>
+      </div>` : `<div class="mgt-full-msg">目標は3つまで設定できます（達成済みを削除して追加できます）</div>`;
+
+    return `<div class="mgt-card">
+      <div class="mgt-header">
+        <div class="mgt-title-wrap">
+          <div class="mgt-title">${monthLabel}の目標</div>
+          ${goals.length > 0 ? `<div class="mgt-pct">${doneCount}/${goals.length} 達成</div>` : ''}
+        </div>
+        ${goals.length > 0 ? `<div class="mgt-bar"><div class="mgt-bar-fill" style="width:${pct}%"></div></div>` : ''}
+      </div>
+      <div class="mgt-goals">${goalsHtml}</div>
+      ${addFormHtml}
+    </div>`;
+  },
+
+  addMonthGoal(monthKey) {
+    const domainEl = document.getElementById('mgtDomain');
+    const textEl = document.getElementById('mgtGoalText');
+    if (!domainEl || !textEl) return;
+    const text = textEl.value.trim();
+    if (!text) { Components.showToast('目標を入力してください', 'error'); return; }
+    const storageKey = `lms_monthGoals_${monthKey}`;
+    let goals = [];
+    try { goals = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+    if (goals.length >= 3) { Components.showToast('目標は3つまでです', 'error'); return; }
+    goals.push({ domain: domainEl.value, text, done: false, added: new Date().toISOString() });
+    localStorage.setItem(storageKey, JSON.stringify(goals));
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  toggleMonthGoal(monthKey, idx) {
+    const storageKey = `lms_monthGoals_${monthKey}`;
+    let goals = [];
+    try { goals = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+    if (!goals[idx]) return;
+    goals[idx].done = !goals[idx].done;
+    localStorage.setItem(storageKey, JSON.stringify(goals));
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  deleteMonthGoal(monthKey, idx) {
+    const storageKey = `lms_monthGoals_${monthKey}`;
+    let goals = [];
+    try { goals = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+    goals.splice(idx, 1);
+    localStorage.setItem(storageKey, JSON.stringify(goals));
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Admin Tab: Data Management ───
