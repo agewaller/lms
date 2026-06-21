@@ -191,6 +191,7 @@ var Pages = {
 
     // Work domain: Ikigai + Resume + side biz diagnosis + time marketplace link
     if (domain === 'work') {
+      html += this.renderDailyPurposeCheck();
       html += this.renderDailyPlanCard();
       html += this.renderTaskCompletionCard();
       html += this.renderWorkDayCloseCard();
@@ -7409,6 +7410,128 @@ var Pages = {
       timestamp: new Date().toISOString()
     });
     Components.showToast('学びを記録しました！', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Daily Purpose Check (work domain) ───
+  renderDailyPurposeCheck() {
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = 'lms_purposeCheck';
+    let entries = [];
+    try { entries = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+    const todayEntry = entries.find(e => e.date === today);
+
+    // 30-day trend
+    const last30 = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const dk = d.toISOString().split('T')[0];
+      const e = entries.find(x => x.date === dk);
+      last30.push(e ? Math.round((e.fulfillment + e.contribution) / 2 * 20) : null);
+    }
+    const hasChart = last30.filter(v => v !== null).length >= 7;
+
+    // Streak
+    let streak = 0;
+    const cur = new Date();
+    if (!todayEntry) cur.setDate(cur.getDate() - 1);
+    for (let i = 0; i < 60; i++) {
+      const dk = cur.toISOString().split('T')[0];
+      if (!entries.find(e => e.date === dk)) break;
+      streak++;
+      cur.setDate(cur.getDate() - 1);
+    }
+
+    if (todayEntry) {
+      const score = Math.round((todayEntry.fulfillment + todayEntry.contribution) / 2 * 20);
+      const scoreColor = score >= 70 ? '#3b82f6' : score >= 50 ? '#f59e0b' : '#94a3b8';
+      const scoreMsg = score >= 80 ? '充実した一日でした' : score >= 60 ? 'まずまずの一日' : score >= 40 ? '普通の一日' : '少し物足りない一日';
+      return `<div class="purpose-card">
+        <div class="purpose-header">
+          <div class="purpose-title-wrap">
+            <span class="purpose-title">💡 今日の充実感</span>
+            ${streak >= 3 ? `<span class="purpose-streak">${streak}日連続</span>` : ''}
+          </div>
+          <div class="purpose-score" style="color:${scoreColor}">${score}<span class="purpose-score-unit">/100</span></div>
+        </div>
+        <div class="purpose-msg">${scoreMsg}</div>
+        ${hasChart ? `<canvas id="purposeTrendChart" height="50" style="margin-top:10px"></canvas>
+        <script>
+          (function() {
+            const ctx = document.getElementById('purposeTrendChart');
+            if (!ctx || !window.Chart) return;
+            new Chart(ctx, {
+              type: 'line',
+              data: {
+                labels: Array.from({length:30},()=>''),
+                datasets: [{ data: ${JSON.stringify(last30)}, borderColor:'#3b82f6', borderWidth:2,
+                  tension:0.4, fill:true, backgroundColor:'rgba(59,130,246,0.08)',
+                  pointRadius:0, spanGaps:true }]
+              },
+              options: { plugins:{legend:{display:false}}, scales:{
+                x:{display:false}, y:{display:true, min:0, max:100,
+                  ticks:{font:{size:10},color:'#9ca3af'}, grid:{color:'rgba(0,0,0,0.05)'}}
+              }, animation:{duration:0} }
+            });
+          })();
+        <\/script>` : ''}
+      </div>`;
+    }
+
+    return `<div class="purpose-card">
+      <div class="purpose-header">
+        <div class="purpose-title-wrap">
+          <span class="purpose-title">💡 今日の充実感チェック</span>
+          ${streak >= 3 ? `<span class="purpose-streak">${streak}日連続</span>` : ''}
+        </div>
+        <div class="purpose-sub">1日の終わりに記録しましょう</div>
+      </div>
+      <div class="purpose-questions">
+        <div class="purpose-q">
+          <div class="purpose-q-label">充実感 — 今日は意味のある時間を過ごせましたか？</div>
+          <div class="purpose-stars" id="purposeStars_fulfillment">
+            ${[1,2,3,4,5].map(n => `<button class="purpose-star" onclick="Pages.setPurposeStar('fulfillment',${n})" data-val="${n}">★</button>`).join('')}
+          </div>
+        </div>
+        <div class="purpose-q">
+          <div class="purpose-q-label">貢献感 — 今日、誰かや何かの役に立てましたか？</div>
+          <div class="purpose-stars" id="purposeStars_contribution">
+            ${[1,2,3,4,5].map(n => `<button class="purpose-star" onclick="Pages.setPurposeStar('contribution',${n})" data-val="${n}">★</button>`).join('')}
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm purpose-save-btn" onclick="Pages.savePurposeCheck()">記録する</button>
+    </div>`;
+  },
+
+  setPurposeStar(key, val) {
+    const container = document.getElementById('purposeStars_' + key);
+    if (!container) return;
+    container.dataset.selected = val;
+    container.querySelectorAll('.purpose-star').forEach(btn => {
+      btn.classList.toggle('active', Number(btn.dataset.val) <= val);
+    });
+  },
+
+  savePurposeCheck() {
+    const keys = ['fulfillment', 'contribution'];
+    const values = {};
+    for (const k of keys) {
+      const el = document.getElementById('purposeStars_' + k);
+      const v = Number(el?.dataset?.selected || 0);
+      if (!v) { Components.showToast('両方の項目を選んでください', 'warning'); return; }
+      values[k] = v;
+    }
+    const storageKey = 'lms_purposeCheck';
+    let entries = [];
+    try { entries = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+    const today = new Date().toISOString().split('T')[0];
+    entries = entries.filter(e => e.date !== today);
+    entries.push({ date: today, ...values, timestamp: new Date().toISOString() });
+    entries = entries.slice(-90);
+    localStorage.setItem(storageKey, JSON.stringify(entries));
+    store.addDomainEntry('work', 'purpose', { ...values, date: today });
+    Components.showToast('今日の充実感を記録しました', 'success');
     if (typeof app !== 'undefined') app.renderApp();
   },
 
