@@ -16,6 +16,7 @@ var App = class App {
   async init(entryDomain, entryPage) {
     this.entryDomain = entryDomain || null;
     this.entryPage = entryPage || null;
+    this._applyTextSize(localStorage.getItem('lms_textSize') || 'normal');
     this.checkOAuthCallbacks();
 
     // Initialize Firebase
@@ -1914,7 +1915,7 @@ var App = class App {
           <hr>
           <details>
             <summary>含まれていたファイル (${result.files.length}件)</summary>
-            <ul style="font-size:12px;color:var(--text-muted);max-height:200px;overflow-y:auto;">
+            <ul style="font-size:0.8rem;color:var(--text-muted);max-height:200px;overflow-y:auto;">
               ${result.files.slice(0, 100).map(f => `<li>${f}</li>`).join('')}
               ${result.files.length > 100 ? `<li>...他${result.files.length - 100}件</li>` : ''}
             </ul>
@@ -2014,7 +2015,7 @@ var App = class App {
           <div class="user-scores-grid">${scoreHtml}</div>
         </div>` : ''}
 
-        <div class="user-detail-section" style="font-size:11px;color:var(--text-muted);">
+        <div class="user-detail-section" style="font-size:0.73rem;color:var(--text-muted);">
           UID: ${user.uid}<br>
           最終アクティビティ: ${user.lastActive ? new Date(user.lastActive).toLocaleString('ja-JP') : '-'}
         </div>
@@ -2183,6 +2184,22 @@ var App = class App {
     localStorage.removeItem('lms_notificationEnabled');
     Components.showToast('リマインダーをオフにしました', 'info');
     this.renderApp();
+  }
+
+  setTextSize(size) {
+    if (!['normal', 'lg', 'xl'].includes(size)) size = 'normal';
+    localStorage.setItem('lms_textSize', size);
+    this._applyTextSize(size);
+    this.renderApp();
+  }
+
+  _applyTextSize(size) {
+    const html = document.documentElement;
+    if (!size || size === 'normal') {
+      html.removeAttribute('data-text-size');
+    } else {
+      html.setAttribute('data-text-size', size);
+    }
   }
 
   _checkPwaInstallOffer() {

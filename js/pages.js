@@ -794,6 +794,20 @@ var Pages = {
         <button class="btn btn-secondary" onclick="document.getElementById('calImport').click()">カレンダーファイルを取り込む</button>
       </div>` : ''}
 
+      <!-- Text Size Accessibility -->
+      <div class="settings-section">
+        <h3>🔠 文字の大きさ</h3>
+        <p>目に合わせて文字の大きさを変えられます。</p>
+        <div class="form-group" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+          ${['normal','lg','xl'].map(size => {
+            const current = localStorage.getItem('lms_textSize') || 'normal';
+            const labels = { normal: '標準', lg: '大きめ', xl: '特大' };
+            return `<button class="btn ${current === size ? 'btn-primary' : 'btn-secondary'}"
+              onclick="app.setTextSize('${size}')">${labels[size]}</button>`;
+          }).join('')}
+        </div>
+      </div>
+
       <!-- Notification Settings -->
       <div class="settings-section">
         <h3>🔔 毎日のリマインダー</h3>
@@ -1027,7 +1041,7 @@ var Pages = {
     const label = domain === 'health' ? '体調スコア（10段階）' : '記録件数';
     return `<div class="trend-chart-card">
       <h3>14日間のトレンド</h3>
-      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:12px;">${label}</p>
+      <p style="color:var(--text-secondary);font-size:0.87rem;margin-bottom:12px;">${label}</p>
       <canvas id="domainTrendChart" height="120"></canvas>
     </div>`;
   },
@@ -1367,7 +1381,7 @@ var Pages = {
 
           <div class="integration-steps">
             <h4>ICSファイルから取り込み</h4>
-            <p style="font-size:13px;color:var(--text-secondary);">カレンダーアプリの設定から.icsファイルをエクスポートして取り込めます。</p>
+            <p style="font-size:0.87rem;color:var(--text-secondary);">カレンダーアプリの設定から.icsファイルをエクスポートして取り込めます。</p>
           </div>
           <input type="file" id="calendarFile" accept=".ics" style="display:none" onchange="app.importCalendarFile(event)">
           <button class="btn btn-secondary" onclick="document.getElementById('calendarFile').click()">ICSファイルを選択</button>
@@ -2011,7 +2025,7 @@ var Pages = {
         <p class="page-desc">タップすると詳細情報（プロフィール・疾患・資産・目標）が見られます。</p>
 
         ${allUsers.length === 0 ? `
-          <p style="color:var(--text-muted);font-size:13px;">ユーザー一覧を読み込むには「更新」ボタンを押してください。</p>
+          <p style="color:var(--text-muted);font-size:0.87rem;">ユーザー一覧を読み込むには「更新」ボタンを押してください。</p>
         ` : this.renderUserListWithFilters(allUsers, adminEmails)}
       </div>
     </div>`;
@@ -2068,7 +2082,7 @@ var Pages = {
         ` : ''}
       </div>
 
-      <div style="margin:12px 0;color:var(--text-secondary);font-size:13px;">
+      <div style="margin:12px 0;color:var(--text-secondary);font-size:0.87rem;">
         ${filtered.length}件を表示中（全${allUsers.length}件）
       </div>
 
