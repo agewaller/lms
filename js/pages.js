@@ -158,6 +158,7 @@ var Pages = {
       html += this.renderGratitudeStreak();
       html += this.renderConsciousnessLayers();
       html += this.renderLayerTrendChart();
+      html += this.renderWeeklyConsciousnessTrend();
       html += this.renderMoodTrendCard();
       html += this.renderTranscriptInput();
     }
@@ -168,6 +169,7 @@ var Pages = {
       html += this.renderQuickTimeLog();
       html += this.renderEveningReviewCard();
       html += this.renderTimeAllocationChart();
+      html += this.renderWeeklyTimeComparison();
       if (typeof CalendarIntegration !== 'undefined') html += CalendarIntegration.renderWidget();
       if (typeof TimeMarketplace !== 'undefined') html += TimeMarketplace.renderWidget();
     }
@@ -1053,6 +1055,85 @@ var Pages = {
         cutout: '65%'
       }
     });
+  },
+
+  // ─── Weekly time comparison card (time domain, week-over-week) ───
+  renderWeeklyTimeComparison() {
+    const now = new Date();
+    const dow = (now.getDay() + 6) % 7; // 0=Mon, 6=Sun
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - dow);
+    weekStart.setHours(0, 0, 0, 0);
+    const prevWeekStart = new Date(weekStart);
+    prevWeekStart.setDate(weekStart.getDate() - 7);
+
+    const logs = store.getDomainData('time', 'entries', 14);
+    if (logs.length < 3) return '';
+
+    const catLabels = { work:'仕事', health:'健康・運動', learning:'学び', relationships:'交流', leisure:'余暇', sleep:'睡眠', commute:'移動', housework:'家事', other:'その他' };
+    const thisWeek = {};
+    const prevWeek = {};
+
+    logs.forEach(e => {
+      if (!e.duration || !e.timestamp) return;
+      const d = new Date(e.timestamp);
+      const cat = e.category || 'other';
+      const min = Number(e.duration);
+      if (d >= weekStart) thisWeek[cat] = (thisWeek[cat] || 0) + min;
+      else if (d >= prevWeekStart) prevWeek[cat] = (prevWeek[cat] || 0) + min;
+    });
+
+    const thisTotal = Object.values(thisWeek).reduce((s, v) => s + v, 0);
+    if (thisTotal === 0) return '';
+
+    const allCats = [...new Set([...Object.keys(thisWeek), ...Object.keys(prevWeek)])];
+    allCats.sort((a, b) => (thisWeek[b] || 0) - (thisWeek[a] || 0));
+    const top = allCats.slice(0, 5);
+    const maxMin = Math.max(...top.map(c => Math.max(thisWeek[c] || 0, prevWeek[c] || 0)), 1);
+
+    const rows = top.map(cat => {
+      const t = thisWeek[cat] || 0;
+      const p = prevWeek[cat] || 0;
+      const thisPct = Math.round(t / maxMin * 100);
+      const prevPct = Math.round(p / maxMin * 100);
+      const diff = t - p;
+      const trend = diff > 30 ? '▲' : diff < -30 ? '▼' : '–';
+      const trendColor = diff > 30 ? '#10b981' : diff < -30 ? '#ef4444' : '#94a3b8';
+      return `<div class="twc-row">
+        <div class="twc-cat">${catLabels[cat] || cat}</div>
+        <div class="twc-bars">
+          <div class="twc-bar twc-bar-this" style="width:${thisPct}%"></div>
+          <div class="twc-bar twc-bar-prev" style="width:${prevPct}%"></div>
+        </div>
+        <div class="twc-hrs">${(t / 60).toFixed(1)}h</div>
+        <div class="twc-trend" style="color:${trendColor}">${trend}</div>
+      </div>`;
+    }).join('');
+
+    const prevTotal = Object.values(prevWeek).reduce((s, v) => s + v, 0);
+    const diffMin = thisTotal - prevTotal;
+    const diffLabel = prevTotal > 0
+      ? `<span style="color:${diffMin >= 0 ? '#10b981' : '#ef4444'}">${diffMin >= 0 ? '+' : ''}${(diffMin / 60).toFixed(1)}h 先週比</span>`
+      : '';
+
+    const daysRecorded = new Set(
+      logs.filter(e => e.timestamp && new Date(e.timestamp) >= weekStart)
+        .map(e => (e.timestamp || '').split('T')[0])
+    ).size;
+
+    return `<div class="time-weekly-compare-card">
+      <div class="twc-header">
+        <span class="twc-title">今週の時間の使い方</span>
+        <span class="twc-badge">${daysRecorded}日記録</span>
+      </div>
+      <div class="twc-legend">
+        <span class="twc-leg-dot twc-leg-this"></span><span>今週</span>
+        <span class="twc-leg-spacer"></span>
+        <span class="twc-leg-dot twc-leg-prev"></span><span>先週</span>
+      </div>
+      <div class="twc-rows">${rows}</div>
+      <div class="twc-footer">今週合計 <strong>${(thisTotal / 60).toFixed(1)}h</strong> ${diffLabel}</div>
+    </div>`;
   },
 
   // ─── Quick Expense Entry (Assets domain home) ───
@@ -4182,6 +4263,86 @@ var Pages = {
         }
       }
     });
+  },
+
+  // ─── Weekly consciousness heatmap (consciousness domain, ≥3 obs this week) ───
+  renderWeeklyConsciousnessTrend() {
+    const obs7 = store.getDomainData('consciousness', 'observation', 7)
+      .filter(e => Object.keys(e).some(k => k.startsWith('layer_') && Number(e[k]) > 0));
+    if (obs7.length < 3) return '';
+
+    const layerNames = ['肉体', '感情', '思考', '役割', '世界観', '知性', '悟り'];
+    const layerColors = ['#10b981', '#3b82f6', '#6C63FF', '#f59e0b', '#ef4444', '#8b5cf6', '#0ea5e9'];
+
+    const now = new Date();
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(now);
+      d.setDate(now.getDate() - (6 - i));
+      return d.toISOString().split('T')[0];
+    });
+    const todayStr = now.toISOString().split('T')[0];
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+
+    const dayMap = {};
+    obs7.forEach(e => {
+      const d = (e.timestamp || '').split('T')[0];
+      if (!dayMap[d]) dayMap[d] = {};
+      for (let i = 1; i <= 7; i++) {
+        const v = Number(e[`layer_${i}`] || 0);
+        if (v > 0) dayMap[d][i] = Math.max(dayMap[d][i] || 0, v);
+      }
+    });
+
+    const totals = {};
+    obs7.forEach(e => {
+      for (let i = 1; i <= 7; i++) {
+        const v = Number(e[`layer_${i}`] || 0);
+        if (v > 0) totals[i] = (totals[i] || 0) + v;
+      }
+    });
+    const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+    const topLayer = sorted[0];
+    const bottomLayer = sorted[sorted.length - 1];
+
+    const dayHeader = `<div class="cwt-day-headers">
+      <div class="cwt-layer-spacer"></div>
+      ${days.map(d => {
+        const isToday = d === todayStr;
+        return `<div class="cwt-day-col${isToday ? ' cwt-today' : ''}">${dayNames[new Date(d).getDay()]}</div>`;
+      }).join('')}
+    </div>`;
+
+    const layerRows = layerNames.map((name, idx) => {
+      const num = idx + 1;
+      const color = layerColors[idx];
+      const cells = days.map(d => {
+        const val = dayMap[d]?.[num] || 0;
+        if (!val) return `<div class="cwt-cell"></div>`;
+        const opacity = (0.3 + (val / 10) * 0.7).toFixed(2);
+        return `<div class="cwt-cell cwt-cell-on" style="background:${color};opacity:${opacity}" title="${name}: ${val}"></div>`;
+      }).join('');
+      return `<div class="cwt-layer-row">
+        <div class="cwt-layer-label">${name}</div>
+        ${cells}
+      </div>`;
+    }).join('');
+
+    const insight = topLayer
+      ? `<div class="cwt-insight">最も活発: <strong style="color:${layerColors[topLayer[0]-1]}">${layerNames[topLayer[0]-1]}</strong>` +
+        (bottomLayer && bottomLayer[0] !== topLayer[0] ? ` / 伸びしろ: <strong>${layerNames[bottomLayer[0]-1]}</strong>` : '') +
+        `</div>`
+      : '';
+
+    return `<div class="consciousness-weekly-card">
+      <div class="cwt-header">
+        <span class="cwt-title">今週の意識レイヤー</span>
+      </div>
+      <div class="cwt-grid">
+        ${dayHeader}
+        ${layerRows}
+      </div>
+      ${insight}
+    </div>`;
   },
 
   // ─── Mood trend chart (consciousness domain home, ≥3 entries with mood_level) ───

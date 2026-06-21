@@ -4865,3 +4865,163 @@ html[data-theme="dark"] .ps-bar-track { background: rgba(255,255,255,0.1); }
   color: var(--text-secondary);
   text-align: right;
 }
+
+/* ─── Weekly Time Comparison Card ─── */
+.time-weekly-compare-card {
+  background: linear-gradient(135deg, rgba(245,158,11,0.07) 0%, var(--bg-secondary) 100%);
+  border: 1px solid rgba(245,158,11,0.2);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.twc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.twc-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.twc-badge {
+  font-size: 0.72rem;
+  background: rgba(245,158,11,0.12);
+  color: #b45309;
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-weight: 600;
+}
+html[data-theme="dark"] .twc-badge { color: #fbbf24; }
+.twc-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.73rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+.twc-leg-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.twc-leg-this { background: #f59e0b; }
+.twc-leg-prev { background: rgba(245,158,11,0.3); }
+.twc-leg-spacer { flex: 0 0 12px; }
+.twc-rows { display: flex; flex-direction: column; gap: 8px; }
+.twc-row {
+  display: grid;
+  grid-template-columns: 72px 1fr 40px 20px;
+  align-items: center;
+  gap: 6px;
+}
+.twc-cat {
+  font-size: 0.73rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.twc-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.twc-bar {
+  height: 6px;
+  border-radius: 3px;
+  min-width: 2px;
+  transition: width 0.4s ease;
+}
+.twc-bar-this { background: #f59e0b; }
+.twc-bar-prev { background: rgba(245,158,11,0.3); }
+.twc-hrs {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: right;
+}
+.twc-trend {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-align: right;
+}
+.twc-footer {
+  margin-top: 12px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 10px;
+}
+.twc-footer strong { color: var(--text-primary); }
+
+/* ─── Weekly Consciousness Heatmap Card ─── */
+.consciousness-weekly-card {
+  background: linear-gradient(135deg, rgba(108,99,255,0.07) 0%, var(--bg-secondary) 100%);
+  border: 1px solid rgba(108,99,255,0.2);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.cwt-header {
+  margin-bottom: 12px;
+}
+.cwt-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.cwt-grid { display: flex; flex-direction: column; gap: 4px; }
+.cwt-day-headers {
+  display: grid;
+  grid-template-columns: 52px repeat(7, 1fr);
+  gap: 3px;
+  margin-bottom: 2px;
+}
+.cwt-layer-spacer { /* empty placeholder */ }
+.cwt-day-col {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  text-align: center;
+  font-weight: 500;
+}
+.cwt-today {
+  color: #6C63FF;
+  font-weight: 700;
+}
+.cwt-layer-row {
+  display: grid;
+  grid-template-columns: 52px repeat(7, 1fr);
+  gap: 3px;
+  align-items: center;
+}
+.cwt-layer-label {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cwt-cell {
+  height: 22px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+}
+.cwt-cell-on {
+  background: #6C63FF;
+}
+.cwt-insight {
+  margin-top: 12px;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  background: rgba(108,99,255,0.07);
+  border-left: 3px solid #6C63FF;
+  padding: 8px 10px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
