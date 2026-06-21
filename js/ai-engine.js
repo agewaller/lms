@@ -92,6 +92,19 @@ var AIEngine = {
     if (profile.age) msg += `, Age: ${profile.age}`;
     if (profile.gender) msg += `, Gender: ${profile.gender}`;
     if (profile.location) msg += `, Location: ${profile.location}`;
+    if (profile.displayName || profile.name) msg += `, Name: ${profile.displayName || profile.name}`;
+
+    // Medical context (critical for 65+ users)
+    const diseases = Array.isArray(profile.diseases) && profile.diseases.length > 0
+      ? profile.diseases : null;
+    if (diseases) msg += `\n[Existing Conditions] ${diseases.join(', ')}`;
+    if (profile.medications) msg += `\n[Current Medications] ${profile.medications}`;
+    if (profile.allergies) msg += `\n[Allergies] ${profile.allergies}`;
+
+    // User's concerns and goals (entered during onboarding)
+    if (profile.concerns) msg += `\n[Primary Concern] ${profile.concerns}`;
+    if (profile.lifeGoals) msg += `\n[Life Goals] ${profile.lifeGoals}`;
+
     msg += '\n\n';
 
     if (domain === 'holistic' || !domain) {
