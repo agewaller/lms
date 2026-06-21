@@ -254,6 +254,7 @@ var Pages = {
       html += this.renderGlucoseTracker();
       html += this.renderSleepTrendCard();
       html += this.renderWeightTrendCard();
+      html += this.renderCognitiveWellness();
       html += this.renderMonthlyHealthComparison();
       html += `<div class="doctor-report-banner">
         <div class="drb-text">
@@ -7354,6 +7355,159 @@ var Pages = {
       timestamp: new Date().toISOString()
     });
     Components.showToast('学びを記録しました！', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Cognitive Wellness Daily Check-in (health domain) ───
+  renderCognitiveWellness() {
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = 'lms_cogWellness';
+    let entries = [];
+    try { entries = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+
+    const todayEntry = entries.find(e => e.date === today);
+
+    // Brain exercises (rotating by day-of-year)
+    const exercises = [
+      { title: '逆順唱え', desc: '今日の日付「' + today.replace(/-/g,'') + '」を逆から声に出して言ってみましょう。' },
+      { title: '単語連想', desc: '「春」から連想する言葉を1分間でできるだけ多く思い浮かべてみましょう。' },
+      { title: '計算チャレンジ', desc: '100から7を引き続けてください（100→93→86…）できるだけ速く。' },
+      { title: '昨日の振り返り', desc: '昨日の朝ごはんを思い出してください。何を食べましたか？いつ・どこで食べましたか？' },
+      { title: '手の体操', desc: '両手の指を1本ずつ順に折り、またゆっくり開いてください。5回繰り返しましょう。' },
+      { title: '形の記憶', desc: '目を閉じて、自分の家のリビングを頭の中で思い描いてください。家具の位置は？' },
+      { title: '音読トレーニング', desc: '好きな本や新聞を1段落、声に出してゆっくり読んでみましょう。' },
+      { title: '両手運動', desc: '右手はグー、左手はパー。同時に動かしてから、左右入れ替えて10回繰り返しましょう。' },
+      { title: '数字の記憶', desc: '「3・7・2・8・5」この5つの数字を30秒で覚えてから、別のことを1分考えて、思い出してみましょう。' },
+      { title: '言葉さがし', desc: '「な」から始まる食べ物を5つ思い浮かべてください。次に「さ」から始まる食べ物を5つ。' },
+      { title: '新しいルートで歩く', desc: '今日の散歩はいつもと違うルートを歩いてみましょう。新しい景色を脳に刻んで。' },
+      { title: '感謝の記憶', desc: '今週、誰かに感謝を感じた瞬間を3つ思い出してください。なぜそう感じましたか？' },
+      { title: 'しりとり', desc: '「りんご」から始めて、頭の中でしりとりを続けてみましょう。何個まで続けられますか？' },
+      { title: '色の観察', desc: '今いる部屋を見回して、赤いものをすべて探してください。次に青いものを。' },
+    ];
+    const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+    const exercise = exercises[dayOfYear % exercises.length];
+
+    const questions = [
+      { key: 'focus',   label: '集中力', desc: '今日は集中して物事に取り組めましたか？' },
+      { key: 'memory',  label: '記憶',   desc: '今日、人の名前やものの場所をすぐ思い出せましたか？' },
+      { key: 'mood',    label: '気分',   desc: '全体的に気分はいかがでしたか？' },
+      { key: 'energy',  label: '活力',   desc: '身体的・精神的なエネルギーはありましたか？' },
+      { key: 'social',  label: '交流',   desc: '今日、誰かと話したり関わりましたか？' },
+    ];
+
+    // Streak
+    let streak = 0;
+    for (let i = 0; i < 60; i++) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      if (!entries.find(e => e.date === key)) break;
+      streak++;
+    }
+
+    // 30-day trend for chart
+    const last30 = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      const e = entries.find(x => x.date === key);
+      last30.push(e ? Math.round((e.focus + e.memory + e.mood + e.energy + e.social) / 5 * 20) : null);
+    }
+    const hasChartData = last30.filter(v => v !== null).length >= 5;
+
+    if (todayEntry) {
+      const score = Math.round((todayEntry.focus + todayEntry.memory + todayEntry.mood + todayEntry.energy + todayEntry.social) / 5 * 20);
+      const scoreColor = score >= 70 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
+      const scoreLabel = score >= 80 ? '絶好調' : score >= 60 ? '良好' : score >= 40 ? '普通' : '少し疲れ気味';
+      return `<div class="cog-card">
+        <div class="cog-header">
+          <div class="cog-title-wrap">
+            <span class="cog-title">🧩 脳の健康チェック</span>
+            ${streak >= 3 ? `<span class="cog-streak">${streak}日連続</span>` : ''}
+          </div>
+          <div class="cog-score" style="color:${scoreColor}">${score}<span class="cog-score-unit">/100</span></div>
+        </div>
+        <div class="cog-label">${scoreLabel} — 今日のチェック完了</div>
+        ${hasChartData ? `<canvas id="cogTrendChart" height="60" style="margin-top:12px"></canvas>` : ''}
+        <div class="cog-exercise">
+          <div class="cog-ex-title">今日の脳トレ：${exercise.title}</div>
+          <div class="cog-ex-desc">${exercise.desc}</div>
+        </div>
+      </div>
+      ${hasChartData ? `<script>
+        (function() {
+          const ctx = document.getElementById('cogTrendChart');
+          if (!ctx || !window.Chart) return;
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: Array.from({length:30},(_,i)=>''),
+              datasets: [{ data: ${JSON.stringify(last30)}, borderColor:'#6C63FF', borderWidth:2,
+                tension:0.4, fill:true, backgroundColor:'rgba(108,99,255,0.1)',
+                pointRadius:0, spanGaps:true }]
+            },
+            options: { plugins:{legend:{display:false}}, scales:{
+              x:{display:false}, y:{display:true, min:0, max:100,
+                ticks:{font:{size:10},color:'#9ca3af'}, grid:{color:'rgba(0,0,0,0.05)'}}
+            }, animation:{duration:0} }
+          });
+        })();
+      <\/script>` : ''}`;
+    }
+
+    // Form — not yet answered today
+    return `<div class="cog-card">
+      <div class="cog-header">
+        <div class="cog-title-wrap">
+          <span class="cog-title">🧩 脳の健康チェック</span>
+          ${streak >= 3 ? `<span class="cog-streak">${streak}日連続</span>` : ''}
+        </div>
+        <div class="cog-meta">${streak > 0 ? `${streak}日継続中` : '毎日の習慣に'}</div>
+      </div>
+      <div class="cog-questions">
+        ${questions.map(q => `
+        <div class="cog-q-item">
+          <div class="cog-q-label">${q.label}<span class="cog-q-desc">— ${q.desc}</span></div>
+          <div class="cog-stars" id="cogStars_${q.key}">
+            ${[1,2,3,4,5].map(n => `<button class="cog-star" onclick="Pages.setCogStar('${q.key}',${n})" data-val="${n}" aria-label="${n}点">★</button>`).join('')}
+          </div>
+        </div>`).join('')}
+      </div>
+      <div class="cog-exercise">
+        <div class="cog-ex-title">今日の脳トレ：${exercise.title}</div>
+        <div class="cog-ex-desc">${exercise.desc}</div>
+      </div>
+      <button class="btn btn-primary btn-sm cog-save-btn" onclick="Pages.saveCogWellness()">記録する</button>
+    </div>`;
+  },
+
+  setCogStar(key, val) {
+    const container = document.getElementById('cogStars_' + key);
+    if (!container) return;
+    container.dataset.selected = val;
+    container.querySelectorAll('.cog-star').forEach(btn => {
+      btn.classList.toggle('active', Number(btn.dataset.val) <= val);
+    });
+  },
+
+  saveCogWellness() {
+    const keys = ['focus', 'memory', 'mood', 'energy', 'social'];
+    const values = {};
+    for (const k of keys) {
+      const el = document.getElementById('cogStars_' + k);
+      const v = el ? Number(el.dataset.selected || 0) : 0;
+      if (!v) { Components.showToast('すべての項目を選んでください', 'warning'); return; }
+      values[k] = v;
+    }
+    const storageKey = 'lms_cogWellness';
+    let entries = [];
+    try { entries = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+    const today = new Date().toISOString().split('T')[0];
+    entries = entries.filter(e => e.date !== today);
+    entries.push({ date: today, ...values, timestamp: new Date().toISOString() });
+    // Keep last 90 days
+    entries = entries.slice(-90);
+    localStorage.setItem(storageKey, JSON.stringify(entries));
+    Components.showToast('脳の健康チェックを記録しました！', 'success');
     if (typeof app !== 'undefined') app.renderApp();
   },
 
