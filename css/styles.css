@@ -3131,6 +3131,15 @@ html[data-theme="dark"] .ht-cell.level-3     { background: #10b981; }
 .cdc-icon { font-size: 1.1rem; flex-shrink: 0; line-height: 1.4; }
 .cdc-text { font-size: 0.88rem; color: var(--text-primary); line-height: 1.5; }
 
+/* ─── Medication Adherence Heatmap ─── */
+.med-done-row { display: flex; align-items: center; gap: 8px; }
+.med-adherence { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+.med-adh-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.med-adh-label { font-size: 0.78rem; color: var(--text-secondary); }
+.med-adh-rate { font-size: 0.85rem; font-weight: 700; }
+.med-adh-grid { display: flex; gap: 3px; flex-wrap: wrap; }
+.med-adh-today { outline: 2px solid var(--accent); outline-offset: 1px; }
+
 /* ─── Check-in Summary Card ─── */
 .cscr-card {
   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);

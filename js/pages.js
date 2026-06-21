@@ -1686,15 +1686,31 @@ var Pages = {
     if (meds.length === 0) return '';
 
     const today = new Date().toISOString().split('T')[0];
-    // Check if any medication entry was logged today with medications_taken flag
-    const takenToday = (store.get('health_symptoms') || []).some(
-      e => e.medications_taken && e.timestamp?.startsWith(today)
-    );
+    const symptoms = store.get('health_symptoms') || [];
+    const medDates = new Set(symptoms.filter(e => e.medications_taken && e.timestamp).map(e => e.timestamp.split('T')[0]));
+    const takenToday = medDates.has(today);
+
+    // 28-day adherence heatmap (shared between taken/not-taken states)
+    const heatmapCells = [];
+    for (let i = 27; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const k = d.toISOString().split('T')[0];
+      heatmapCells.push({ k, taken: medDates.has(k), isToday: i === 0 });
+    }
+    const takenCount = heatmapCells.filter(c => c.taken).length;
+    const adherencePct = Math.round((takenCount / 28) * 100);
+    const rateColor = adherencePct >= 80 ? '#10b981' : adherencePct >= 60 ? '#f59e0b' : '#ef4444';
+    const heatmapHtml = takenCount >= 2 ? `<div class="med-adherence">
+      <div class="med-adh-header">
+        <span class="med-adh-label">28日間の服薬記録</span>
+        <span class="med-adh-rate" style="color:${rateColor}">${adherencePct}%</span>
+      </div>
+      <div class="med-adh-grid">
+        ${heatmapCells.map(c => `<div class="ht-cell ${c.taken ? 'level-3' : 'level-0'}${c.isToday ? ' med-adh-today' : ''}" title="${c.k}"></div>`).join('')}
+      </div>
+    </div>` : '';
 
     if (takenToday) {
-      // Calculate medication adherence streak
-      const symptoms = store.get('health_symptoms') || [];
-      const medDates = new Set(symptoms.filter(e => e.medications_taken && e.timestamp).map(e => e.timestamp.split('T')[0]));
       let medStreak = 0;
       const cur = new Date();
       while (medStreak < 90) {
@@ -1705,19 +1721,21 @@ var Pages = {
       }
       const streakText = medStreak >= 2 ? `<span class="streak-badge">${medStreak}日連続</span>` : '';
       return `<div class="med-reminder med-done">
-        <span class="med-check">✓</span>
-        <span>今日のお薬 完了</span>
-        ${streakText}
+        <div class="med-done-row">
+          <span class="med-check">✓</span>
+          <span>今日のお薬 完了</span>
+          ${streakText}
+        </div>
+        ${heatmapHtml}
       </div>`;
     }
 
-    // List unique medication names (most recent entry per name)
+    // List unique medication names
     const latestByName = new Map();
     [...meds].reverse().forEach(m => {
       if (m.name && !latestByName.has(m.name)) latestByName.set(m.name, m);
     });
     const medNames = [...latestByName.keys()].slice(0, 5);
-
     const hour = new Date().getHours();
     const timeLabel = hour < 10 ? '朝の' : hour < 14 ? '昼の' : hour < 19 ? '夕方の' : '夜の';
 
@@ -1731,6 +1749,7 @@ var Pages = {
         ${latestByName.size > 5 ? `<span class="med-tag">…他${latestByName.size - 5}件</span>` : ''}
       </div>
       <button class="btn btn-sm btn-primary" onclick="app.logMedicationTaken()">飲みました ✓</button>
+      ${heatmapHtml}
     </div>`;
   },
 
