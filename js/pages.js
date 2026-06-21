@@ -769,6 +769,12 @@ var Pages = {
       const smsLink   = c.phone ? `<a href="sms:${esc(c.phone)}" class="btn btn-sm bd-btn-sms">メッセージ</a>` : '';
       const loggedMark = doneContact ? `<span class="bd-contacted">✓ 連絡済み</span>` : `<button class="btn btn-sm bd-btn-log" onclick="Pages.logBirthdayContact('${esc(c.name)}')">連絡した ✓</button>`;
 
+      // Pre-generate birthday message for this person
+      const msgId = `bdMsg_${c.name.replace(/\s+/g, '_')}`;
+      const bdMsg = Pages._buildBirthdayMessage(c.name, c.turningAge, c.daysUntil);
+      Pages._bdMessages = Pages._bdMessages || {};
+      Pages._bdMessages[msgId] = bdMsg;
+
       html += `<div class="birthday-urgent-card${doneContact ? ' bd-done' : ''}">
         <div class="buc-top">
           <div class="buc-avatar">${esc((c.name || '?').substring(0, 2))}</div>
@@ -779,7 +785,16 @@ var Pages = {
           </div>
         </div>
         <div class="buc-actions">
-          ${phoneLink}${smsLink}${loggedMark}
+          ${phoneLink}${smsLink}
+          <button class="btn btn-sm bd-btn-msg" onclick="Pages.showBirthdayMessage('${esc(msgId)}')">文例 →</button>
+          ${loggedMark}
+        </div>
+        <div class="buc-msg-preview" id="${esc(msgId)}" style="display:none">
+          <textarea class="buc-msg-text" rows="4" id="${esc(msgId)}_text">${esc(bdMsg)}</textarea>
+          <div class="buc-msg-actions">
+            <button class="btn btn-sm btn-secondary" onclick="Pages.copyBirthdayMessage('${esc(msgId)}')">コピー</button>
+            <button class="btn btn-sm btn-primary" onclick="Pages.lineBirthdayMessage('${esc(msgId)}')">LINEで送る</button>
+          </div>
         </div>
       </div>`;
     });
@@ -811,6 +826,42 @@ var Pages = {
     });
     Components.showToast(`${name}さんへの連絡を記録しました`, 'success');
     if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  _bdMessages: {},
+
+  _buildBirthdayMessage(name, age, daysUntil) {
+    const agePhrase = age ? `${age}歳のお誕生日を迎えられ、` : '';
+    const timingPrefix = daysUntil === 0 ? '' : daysUntil <= 1 ? '明日はお誕生日ですね。早めにひと言お伝えしたく。\n\n' : `もうすぐお誕生日ですね。\n\n`;
+    const greetings = [
+      `${timingPrefix}${name}さん、お誕生日おめでとうございます！\n${agePhrase}心よりお祝い申し上げます。\nいつもありがとうございます。これからも健やかにお過ごしください。`,
+      `${timingPrefix}${name}さん、お誕生日をお祝い申し上げます。\n${agePhrase}どうかお健やかで素晴らしい一年をお過ごしになりますよう、願っております。`,
+      `${timingPrefix}${name}さん、お誕生日おめでとうございます！\n${agePhrase}いつも感謝しております。これからもどうかよろしくお願いします。`
+    ];
+    return greetings[Math.floor(Math.random() * greetings.length)];
+  },
+
+  showBirthdayMessage(msgId) {
+    const el = document.getElementById(msgId);
+    if (!el) return;
+    el.style.display = el.style.display === 'none' ? '' : 'none';
+  },
+
+  copyBirthdayMessage(msgId) {
+    const ta = document.getElementById(msgId + '_text');
+    const text = ta ? ta.value : (Pages._bdMessages[msgId] || '');
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => Components.showToast('コピーしました', 'success'));
+    } else {
+      if (ta) { ta.select(); try { document.execCommand('copy'); } catch(e) {} }
+      Components.showToast('コピーしました', 'success');
+    }
+  },
+
+  lineBirthdayMessage(msgId) {
+    const ta = document.getElementById(msgId + '_text');
+    const text = ta ? ta.value : (Pages._bdMessages[msgId] || '');
+    window.open('https://social-plugins.line.me/lineit/share?text=' + encodeURIComponent(text), '_blank');
   },
 
   // ─── Stock Analysis Widget (Assets domain) ───

@@ -7366,3 +7366,31 @@ html[data-theme="dark"] .wsg-bar-bg { background: rgba(255,255,255,0.1); }
 .dci-complete-icon { font-size: 2.5rem; margin-bottom: 8px; }
 .dci-complete-text { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
 .dci-complete-sub { font-size: 0.82rem; color: var(--text-secondary); }
+
+/* ─── Birthday message generator panel ─── */
+.bd-btn-msg {
+  background: rgba(239,68,68,0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239,68,68,0.3);
+}
+.bd-btn-msg:hover { background: rgba(239,68,68,0.18); }
+.buc-msg-preview {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  animation: fadeIn 0.2s ease;
+}
+.buc-msg-text {
+  width: 100%;
+  font-size: 0.82rem;
+  line-height: 1.7;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.buc-msg-actions { display: flex; gap: 8px; margin-top: 8px; }
