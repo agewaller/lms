@@ -294,7 +294,7 @@ var Pages = {
       html += `<div class="graph-ring ring-${level}" style="--ring-color: ${levels[level].color}">
         <div class="ring-label">${levels[level].description}（${people.length}人）</div>
         <div class="ring-people">
-          ${people.slice(0, 8).map(p => `<span class="ring-person" title="${p.name}">${(p.name || '').substring(0, 3)}</span>`).join('')}
+          ${people.slice(0, 8).map(p => `<span class="ring-person" title="${Components.escapeHtml(p.name || '')}">${Components.escapeHtml((p.name || '').substring(0, 3))}</span>`).join('')}
           ${people.length > 8 ? `<span class="ring-more">+${people.length - 8}</span>` : ''}
         </div>
       </div>`;
@@ -330,7 +330,7 @@ var Pages = {
       const dateStr = c.nextBirthday.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
       const label = c.daysUntil === 0 ? '今日！' : `あと${c.daysUntil}日`;
       html += `<div class="birthday-item ${c.daysUntil <= 3 ? 'birthday-soon' : ''}">
-        <span class="birthday-name">${c.name}</span>
+        <span class="birthday-name">${Components.escapeHtml(c.name)}</span>
         <span class="birthday-date">${dateStr}（${label}）</span>
         <span class="birthday-distance">${CONFIG.domains.relationship.distanceLevels[c.distance]?.description || ''}</span>
       </div>`;
@@ -373,9 +373,9 @@ var Pages = {
     return `<div class="resume-widget">
       <h3>📄 レジュメ</h3>
       <div class="resume-summary">
-        <p><strong>${resume.name || ''}</strong></p>
-        <p>${resume.summary || ''}</p>
-        <p>スキル: ${(resume.skills || []).join(', ')}</p>
+        <p><strong>${Components.escapeHtml(resume.name || '')}</strong></p>
+        <p>${Components.escapeHtml(resume.summary || '')}</p>
+        <p>スキル: ${Components.escapeHtml((resume.skills || []).join(', '))}</p>
       </div>
       <div class="resume-actions">
         <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')">編集</button>
@@ -601,7 +601,7 @@ var Pages = {
         <h3>📋 アクション項目</h3>
         ${actions.map((a, i) => `
           <div class="action-item ${a.done ? 'done' : ''}">
-            <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${a.text}</label>
+            <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${Components.escapeHtml(a.text || '')}</label>
             <span class="action-domain" style="background:${CONFIG.domains[a.domain]?.color || '#666'}">${CONFIG.domains[a.domain]?.icon || ''}</span>
           </div>
         `).join('')}
@@ -662,22 +662,23 @@ var Pages = {
     const renderField = (field, value) => {
       const val = value ?? '';
       const id = 'profile_' + field.key;
+      const esc = Components.escapeHtml;
       switch (field.type) {
         case 'number':
-          return `<input type="number" id="${id}" class="form-input" value="${val}" ${field.step ? `step="${field.step}"` : ''}>`;
+          return `<input type="number" id="${id}" class="form-input" value="${esc(String(val))}" ${field.step ? `step="${field.step}"` : ''}>`;
         case 'text':
-          return `<input type="text" id="${id}" class="form-input" value="${val}">`;
+          return `<input type="text" id="${id}" class="form-input" value="${esc(String(val))}">`;
         case 'date':
-          return `<input type="date" id="${id}" class="form-input" value="${val}">`;
+          return `<input type="date" id="${id}" class="form-input" value="${esc(String(val))}">`;
         case 'textarea':
-          return `<textarea id="${id}" class="form-input" rows="3">${val}</textarea>`;
+          return `<textarea id="${id}" class="form-input" rows="3">${esc(String(val))}</textarea>`;
         case 'select':
           return `<select id="${id}" class="form-input">
             <option value="">選択してください</option>
-            ${(field.options || []).map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
+            ${(field.options || []).map(o => `<option value="${esc(o)}" ${val === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
           </select>`;
         default:
-          return `<input type="text" id="${id}" class="form-input" value="${val}">`;
+          return `<input type="text" id="${id}" class="form-input" value="${esc(String(val))}">`;
       }
     };
 
@@ -805,19 +806,19 @@ var Pages = {
       <p>ここに登録した内容を求人プラットフォームにワンクリックで送信できます。</p>
       <div class="form-group">
         <label>お名前</label>
-        <input type="text" id="resumeName" class="form-input" value="${r.name || ''}" placeholder="山田花子">
+        <input type="text" id="resumeName" class="form-input" value="${Components.escapeHtml(r.name || '')}" placeholder="山田花子">
       </div>
       <div class="form-group">
         <label>職務要約・自己PR</label>
-        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${r.summary || ''}</textarea>
+        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${Components.escapeHtml(r.summary || '')}</textarea>
       </div>
       <div class="form-group">
         <label>スキル・資格（カンマ区切り）</label>
-        <input type="text" id="resumeSkills" class="form-input" value="${(r.skills || []).join(', ')}" placeholder="例：看護師免許, 英検2級, Excel">
+        <input type="text" id="resumeSkills" class="form-input" value="${Components.escapeHtml((r.skills || []).join(', '))}" placeholder="例：看護師免許, 英検2級, Excel">
       </div>
       <div class="form-group">
         <label>職務経歴</label>
-        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${r.history || ''}</textarea>
+        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${Components.escapeHtml(r.history || '')}</textarea>
       </div>
       <div class="form-group">
         <label>希望する働き方</label>

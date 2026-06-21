@@ -239,8 +239,12 @@ var App = class App {
 
     if (nameEl) nameEl.textContent = user?.displayName || user?.email || 'ゲスト';
     if (avatarEl) {
-      if (user?.photoURL) {
-        avatarEl.innerHTML = `<img src="${user.photoURL}" alt="">`;
+      if (user?.photoURL && /^https?:\/\//i.test(user.photoURL)) {
+        const img = document.createElement('img');
+        img.src = user.photoURL;
+        img.alt = '';
+        avatarEl.textContent = '';
+        avatarEl.appendChild(img);
       } else {
         avatarEl.textContent = (user?.displayName || user?.email || '?').charAt(0).toUpperCase();
       }
