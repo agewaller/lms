@@ -184,8 +184,9 @@ var Pages = {
       }
     }
 
-    // Health: SOS button + medication reminder + doctor report shortcut
+    // Health: morning vitals + SOS button + medication reminder + doctor report shortcut
     if (domain === 'health') {
+      html += this.renderMorningVitalsCard();
       html += this.renderSOSWidget();
       html += this.renderMedicationReminder();
       html += `<div class="doctor-report-banner">
@@ -1325,6 +1326,56 @@ var Pages = {
     </div>`;
   },
 
+  // ─── Morning vitals quick-entry (health domain, 5am–11am only) ───
+  renderMorningVitalsCard() {
+    const hour = new Date().getHours();
+    if (hour < 5 || hour >= 11) return '';
+
+    // Don't show if vitals already recorded today
+    const today = new Date().toISOString().split('T')[0];
+    const vitals = store.get('health_vitals') || [];
+    if (vitals.some(e => (e.timestamp || '').startsWith(today))) return '';
+
+    return `<div class="morning-vitals-card">
+      <div class="mvc-header">
+        <span class="mvc-icon">🌅</span>
+        <div>
+          <div class="mvc-title">朝の健康チェック</div>
+          <div class="mvc-sub">血圧・体重を記録しておきましょう</div>
+        </div>
+      </div>
+      <div class="mvc-fields">
+        <div class="mvc-field-group">
+          <label class="mvc-label">血圧（上 / 下）</label>
+          <div class="mvc-bp-row">
+            <input type="number" id="mvc_sys" class="form-input mvc-input" placeholder="120" min="60" max="250">
+            <span class="mvc-slash">/</span>
+            <input type="number" id="mvc_dia" class="form-input mvc-input" placeholder="80" min="40" max="150">
+            <span class="mvc-unit">mmHg</span>
+          </div>
+        </div>
+        <div class="mvc-field-group">
+          <label class="mvc-label">体重</label>
+          <div class="mvc-bp-row">
+            <input type="number" id="mvc_weight" class="form-input mvc-input" placeholder="65.0" step="0.1" min="20" max="200">
+            <span class="mvc-unit">kg</span>
+          </div>
+        </div>
+        <div class="mvc-field-group">
+          <label class="mvc-label">今朝の睡眠</label>
+          <div class="mvc-sleep-row">
+            ${[['😴','1'],['😕','3'],['😐','5'],['🙂','7'],['😄','9']].map(([e, v]) =>
+              `<button type="button" class="mvc-sleep-btn" data-val="${v}" onclick="app.selectMorningSleep(${v}, this)">${e}</button>`
+            ).join('')}
+          </div>
+          <input type="hidden" id="mvc_sleep" value="">
+        </div>
+      </div>
+      <button class="btn btn-primary mvc-save" onclick="app.saveMorningVitals()">記録する</button>
+      <button class="btn-text mvc-skip" onclick="this.closest('.morning-vitals-card').remove()">スキップ</button>
+    </div>`;
+  },
+
   // ─── SOS Emergency Widget (health domain only) ───
   renderSOSWidget() {
     const profile = store.get('userProfile') || {};
@@ -1674,18 +1725,23 @@ var Pages = {
     ).join('');
 
     if (domain === 'health') {
+      const hour = new Date().getHours();
+      const isEvening = hour >= 17;
+      const promptText = hour < 11 ? '今朝の目覚めは？' : isEvening ? '今夜の体調は？' : '今日の体調は？';
       return `<div class="checkin-nudge checkin-nudge-health">
         <div class="checkin-nudge-top">
-          <span class="checkin-nudge-text">今日の体調は？${streak >= 2 ? '　' : ''}</span>
+          <span class="checkin-nudge-text">${promptText}${streak >= 2 ? '　' : ''}</span>
           ${streakBadge}
         </div>
         <div class="mood-picker">${moodScale('app.quickMoodCheckin')}</div>
       </div>`;
     }
     if (domain === 'consciousness') {
+      const hour = new Date().getHours();
+      const promptText = hour < 11 ? '今朝の気持ちは？' : hour >= 17 ? '今夜の心の状態は？' : '今の気持ちは？';
       return `<div class="checkin-nudge checkin-nudge-health">
         <div class="checkin-nudge-top">
-          <span class="checkin-nudge-text">今日の気持ちは？${streak >= 2 ? '　' : ''}</span>
+          <span class="checkin-nudge-text">${promptText}${streak >= 2 ? '　' : ''}</span>
           ${streakBadge}
         </div>
         <div class="mood-picker">${moodScale('app.quickConsciousnessCheckin')}</div>

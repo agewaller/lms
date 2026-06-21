@@ -2565,6 +2565,40 @@ var App = class App {
     setTimeout(() => this.renderApp(), 100);
   }
 
+  // ─── Morning vitals card ───
+  selectMorningSleep(val, btn) {
+    document.querySelectorAll('.mvc-sleep-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    const hidden = document.getElementById('mvc_sleep');
+    if (hidden) hidden.value = val;
+  }
+
+  saveMorningVitals() {
+    const sys = parseFloat(document.getElementById('mvc_sys')?.value || '');
+    const dia = parseFloat(document.getElementById('mvc_dia')?.value || '');
+    const weight = parseFloat(document.getElementById('mvc_weight')?.value || '');
+    const sleep = parseInt(document.getElementById('mvc_sleep')?.value || '');
+
+    let saved = 0;
+    if (!isNaN(sys) && !isNaN(dia) && sys > 0 && dia > 0) {
+      store.addDomainEntry('health', 'vitals', { bp_systolic: sys, bp_diastolic: dia, ...(isNaN(weight) ? {} : { weight }) });
+      saved++;
+    } else if (!isNaN(weight) && weight > 0) {
+      store.addDomainEntry('health', 'vitals', { weight });
+      saved++;
+    }
+    if (sleep > 0) {
+      store.addDomainEntry('health', 'sleepData', { quality: sleep });
+      saved++;
+    }
+    if (saved === 0) {
+      Components.showToast('何か入力してから記録してください', 'info');
+      return;
+    }
+    Components.showToast('朝のチェックを記録しました', 'success');
+    setTimeout(() => this.renderApp(), 100);
+  }
+
   // ─── Domain quick check-ins (one-tap from checkin nudge) ───
 
   quickConsciousnessCheckin(level) {
