@@ -1676,6 +1676,30 @@ body.is-admin .admin-only { display: flex; }
 .gw-item:last-child { border-bottom: none; }
 .gw-item::before { content: '✦ '; color: #9B59B6; }
 
+/* ─── Quick Layer Pick ─── */
+.quick-layer-pick {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 16px 18px; margin-bottom: 20px; box-shadow: var(--shadow);
+  border-left: 4px solid #6C63FF;
+}
+.qlp-header { font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; }
+.qlp-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.qlp-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 20px;
+  border: 2px solid var(--qlp-color, #6C63FF);
+  background: none; cursor: pointer; font-size: 13px;
+  color: var(--text-primary); transition: background 0.15s;
+}
+.qlp-btn.selected { background: color-mix(in srgb, var(--qlp-color, #6C63FF) 15%, transparent); }
+.qlp-btn:hover { background: color-mix(in srgb, var(--qlp-color, #6C63FF) 10%, transparent); }
+.qlp-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.qlp-name { font-size: 13px; font-weight: 500; }
+
 /* ─── Consciousness Layers ─── */
 .consciousness-layers-section {
   background: var(--bg-card); border-radius: var(--radius);

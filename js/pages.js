@@ -143,6 +143,7 @@ var Pages = {
     // Consciousness domain: daily intention + gratitude journal + 7-layer visualization + transcript input
     if (domain === 'consciousness') {
       html += this.renderDailyIntention();
+      html += this.renderQuickLayerPick();
       html += this.renderGratitudeWidget();
       html += this.renderConsciousnessLayers();
       html += this.renderTranscriptInput();
@@ -313,6 +314,52 @@ var Pages = {
     localStorage.setItem('lms_gratitude_' + today, JSON.stringify(items));
     store.addDomainEntry('consciousness', 'appreciation', { items, content: items.join('、') });
     Components.showToast('感謝を記録しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Quick Consciousness Layer Pick (today) ───
+  renderQuickLayerPick() {
+    const today = new Date().toISOString().split('T')[0];
+    const observations = store.getDomainData('consciousness', 'observation', 1);
+    if (observations.some(e => (e.timestamp || '').startsWith(today))) return '';
+
+    const layers = CONFIG.domains.consciousness.layers;
+    const layerKeys = ['1', '2', '3', '3.5', '4', '5', '6', '7'];
+    const btns = layerKeys.map(k => {
+      const l = layers[k];
+      return `<button class="qlp-btn" style="border-color:${l.color};--qlp-color:${l.color}"
+        onclick="Pages.quickLayerPick('${k}', this)">
+        <span class="qlp-num" style="background:${l.color}">${k}</span>
+        <span class="qlp-name">${l.name}</span>
+      </button>`;
+    }).join('');
+    return `<div class="quick-layer-pick">
+      <div class="qlp-header">今日いちばん意識が向いたのは？（複数選べます）</div>
+      <div class="qlp-grid">${btns}</div>
+      <button class="btn btn-primary btn-sm qlp-save" onclick="Pages.saveQuickLayerPick()" style="margin-top:12px;width:100%;display:none">記録する</button>
+    </div>`;
+  },
+
+  quickLayerPick(key, btn) {
+    btn.classList.toggle('selected');
+    const anySelected = document.querySelectorAll('.qlp-btn.selected').length > 0;
+    const saveBtn = document.querySelector('.qlp-save');
+    if (saveBtn) saveBtn.style.display = anySelected ? 'block' : 'none';
+  },
+
+  saveQuickLayerPick() {
+    const selected = [...document.querySelectorAll('.qlp-btn.selected')].map(b => {
+      const key = b.querySelector('.qlp-num')?.textContent?.trim();
+      return key === '3.5' ? 'layer_35' : `layer_${key?.replace('.', '')}`;
+    });
+    if (selected.length === 0) return;
+    const data = {};
+    ['1','2','3','3.5','4','5','6','7'].forEach(k => {
+      const storeKey = k === '3.5' ? 'layer_35' : `layer_${k}`;
+      data[storeKey] = selected.includes(storeKey) ? Math.round(100 / selected.length) : 15;
+    });
+    store.addDomainEntry('consciousness', 'observation', data);
+    Components.showToast('今日の意識レイヤーを記録しました', 'success');
     if (typeof app !== 'undefined') app.renderApp();
   },
 
