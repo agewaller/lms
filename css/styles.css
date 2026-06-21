@@ -6375,3 +6375,74 @@ html[data-theme="dark"] .wsg-bar-bg { background: rgba(255,255,255,0.1); }
 @media (max-width: 480px) {
   .bill-add-form { grid-template-columns: 1fr; }
 }
+
+/* ─── Daily Learning Log ─── */
+.learn-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.learn-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.learn-title-wrap { display: flex; align-items: center; gap: 8px; }
+.learn-title { font-size: 0.92rem; font-weight: 700; color: var(--text-primary); }
+.learn-streak {
+  font-size: 0.71rem; font-weight: 700;
+  background: rgba(245,158,11,0.12); color: #d97706;
+  padding: 2px 8px; border-radius: 20px;
+}
+.learn-meta { font-size: 0.78rem; color: var(--text-secondary); text-align: right; }
+.learn-meta strong { color: var(--text-primary); }
+.learn-today { margin-bottom: 12px; }
+.learn-today-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--bg-tertiary);
+  font-size: 0.82rem;
+}
+.learn-today-item:last-child { border-bottom: none; }
+.learn-subj {
+  font-size: 0.69rem;
+  background: var(--accent-bg);
+  color: var(--accent);
+  padding: 1px 6px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.learn-what { flex: 1; color: var(--text-primary); }
+.learn-min { font-size: 0.73rem; color: var(--text-secondary); white-space: nowrap; }
+.learn-form { display: flex; flex-direction: column; gap: 8px; }
+.learn-select { font-size: 0.84rem; }
+.learn-form-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.learn-min-input { width: 70px; font-size: 0.84rem; text-align: center; }
+.learn-min-label { font-size: 0.8rem; color: var(--text-secondary); flex: 1; }
+.learn-save-btn { font-size: 0.84rem; flex-shrink: 0; }
+.learn-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bg-tertiary);
+}
+.learn-tags-label { font-size: 0.73rem; color: var(--text-secondary); }
+.learn-tag {
+  font-size: 0.71rem;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}

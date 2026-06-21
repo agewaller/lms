@@ -179,6 +179,7 @@ var Pages = {
     // Time domain: Habit tracker + Calendar widget + Marketplace widget
     if (domain === 'time') {
       html += this.renderHabitTracker();
+      html += this.renderLearningLog();
       html += this.renderQuickTimeLog();
       html += this.renderEveningReviewCard();
       html += this.renderTimeAllocationChart();
@@ -7264,6 +7265,96 @@ var Pages = {
       </div>
       <div class="cdi-foot">過去30日間のデータ（${daysWithData}日分）から算出</div>
     </div>`;
+  },
+
+  // ─── Daily Learning Log (time domain) ───
+  renderLearningLog() {
+    const today = new Date().toISOString().split('T')[0];
+    const records = store.getDomainData('time', 'learning', 30)
+      .filter(r => r.timestamp)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    const todayRecords = records.filter(r => r.timestamp.startsWith(today));
+    const todayMinutes = todayRecords.reduce((s, r) => s + (Number(r.minutes) || 0), 0);
+
+    // Streak: consecutive days with at least one record
+    const daysWithData = new Set(records.map(r => r.timestamp.split('T')[0]));
+    let streak = 0;
+    const check = new Date();
+    if (!daysWithData.has(today)) check.setDate(check.getDate() - 1);
+    while (true) {
+      const k = check.toISOString().split('T')[0];
+      if (!daysWithData.has(k)) break;
+      streak++;
+      check.setDate(check.getDate() - 1);
+      if (streak > 90) break;
+    }
+
+    const subjectLabels = {
+      digital: 'デジタル・スマホ', cooking: '料理・食', music: '音楽',
+      language: '語学', art: '絵・書道', gardening: '園芸',
+      health_knowledge: '健康・医療の知識', history: '歴史・文化',
+      reading: '読書', craft: '手芸・工作', other: 'その他'
+    };
+
+    const recentSubjects = [...new Set(records.slice(0, 10).map(r => r.subject).filter(Boolean))];
+    const totalMonthMinutes = records.filter(r => {
+      const m = r.timestamp?.slice(0, 7);
+      const nowM = today.slice(0, 7);
+      return m === nowM;
+    }).reduce((s, r) => s + (Number(r.minutes) || 0), 0);
+
+    return `<div class="learn-card">
+      <div class="learn-header">
+        <div class="learn-title-wrap">
+          <div class="learn-title">今日の学び</div>
+          ${streak >= 2 ? `<span class="learn-streak">${streak}日連続</span>` : ''}
+        </div>
+        <div class="learn-meta">
+          ${todayMinutes > 0 ? `今日 <strong>${todayMinutes}分</strong>` : ''}
+          ${totalMonthMinutes > 0 ? `　今月 <strong>${Math.round(totalMonthMinutes / 60 * 10) / 10}h</strong>` : ''}
+        </div>
+      </div>
+
+      ${todayRecords.length > 0 ? `<div class="learn-today">
+        ${todayRecords.slice(0, 3).map(r => `
+          <div class="learn-today-item">
+            <span class="learn-subj">${Components.escapeHtml(subjectLabels[r.subject] || r.subject || '')}</span>
+            <span class="learn-what">${Components.escapeHtml(r.what || '')}</span>
+            ${r.minutes ? `<span class="learn-min">${r.minutes}分</span>` : ''}
+          </div>`).join('')}
+      </div>` : ''}
+
+      <div class="learn-form" id="learnForm">
+        <select id="learnSubject" class="form-input learn-select">
+          ${Object.entries(subjectLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+        </select>
+        <input type="text" id="learnWhat" class="form-input" placeholder="今日学んだこと（例：スマホで写真を送る方法）" maxlength="40">
+        <div class="learn-form-row">
+          <input type="number" id="learnMinutes" class="form-input learn-min-input" placeholder="分" min="1" max="999">
+          <span class="learn-min-label">分間学んだ</span>
+          <button class="btn btn-primary learn-save-btn" onclick="Pages.saveLearnEntry()">記録</button>
+        </div>
+      </div>
+
+      ${recentSubjects.length > 1 ? `<div class="learn-tags">
+        <div class="learn-tags-label">よく学ぶテーマ：</div>
+        ${recentSubjects.slice(0, 4).map(s => `<span class="learn-tag">${Components.escapeHtml(subjectLabels[s] || s)}</span>`).join('')}
+      </div>` : ''}
+    </div>`;
+  },
+
+  saveLearnEntry() {
+    const subject = document.getElementById('learnSubject')?.value;
+    const what    = document.getElementById('learnWhat')?.value.trim();
+    const minutes = parseInt(document.getElementById('learnMinutes')?.value || '0', 10);
+    if (!what) { Components.showToast('学んだ内容を入力してください', 'error'); return; }
+    store.addDomainEntry('time', 'learning', {
+      subject, what, minutes: minutes || undefined,
+      timestamp: new Date().toISOString()
+    });
+    Components.showToast('学びを記録しました！', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Bill Payment Reminder (assets domain) ───
