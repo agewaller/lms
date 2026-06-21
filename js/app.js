@@ -2559,6 +2559,18 @@ var App = class App {
     setTimeout(() => this.renderApp(), 100);
   }
 
+  quickContactLog(name) {
+    if (!name) return;
+    store.addDomainEntry('relationship', 'interactions', {
+      person: name,
+      type: 'message',
+      quality: 3,
+      notes: '連絡候補からの記録'
+    });
+    Components.showToast(`${Components.escapeHtml(name)}さんへの連絡を記録しました`, 'success');
+    setTimeout(() => this.renderApp(), 100);
+  }
+
   quickExpenseEntry() {
     this.openModal('今日の出費を記録', `
       <div class="form-group">

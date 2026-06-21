@@ -161,6 +161,7 @@ var Pages = {
     // Relationship domain: Isolation score + today contacts + social graph + birthdays
     if (domain === 'relationship') {
       if (typeof RelationshipFeatures !== 'undefined') html += RelationshipFeatures.renderDashboard();
+      html += this.renderTodayContactSuggestion();
       html += this.renderSocialGraph();
       html += this.renderUpcomingBirthdays();
     }
@@ -351,6 +352,78 @@ var Pages = {
         🧠 意識レイヤー分析を実行
       </button>
       <div id="transcriptResult"></div>
+    </div>`;
+  },
+
+  // ─── Today's Contact Suggestion (Relationship domain) ───
+  renderTodayContactSuggestion() {
+    const contacts = store.get('relationship_contacts') || [];
+    if (contacts.length === 0) return '';
+
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    // Skip if user already logged an interaction today
+    const todayInteractions = store.getDomainData('relationship', 'interactions', 1)
+      .filter(e => (e.timestamp || '').startsWith(todayStr));
+    if (todayInteractions.length > 0) return '';
+
+    // Find best candidate: birthday soon OR most overdue
+    const interactions = store.get('relationship_interactions') || [];
+    const now = Date.now();
+
+    const candidates = contacts.map(c => {
+      const last = interactions
+        .filter(i => i.person === c.name)
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+      const daysSince = last ? Math.floor((now - new Date(last.timestamp)) / 86400000) : 999;
+      const idealDays = { 1: 1, 2: 7, 3: 14, 4: 30, 5: 90 }[parseInt(c.distance)] || 30;
+      const overdueDays = Math.max(0, daysSince - idealDays);
+
+      // Check upcoming birthday (within 7 days)
+      let birthdaySoon = false;
+      if (c.birthday) {
+        const bd = new Date(c.birthday);
+        const next = new Date(today.getFullYear(), bd.getMonth(), bd.getDate());
+        if (next < today) next.setFullYear(next.getFullYear() + 1);
+        birthdaySoon = (next - today) / 86400000 <= 7;
+      }
+
+      return { ...c, daysSince, overdueDays, birthdaySoon };
+    });
+
+    // Priority: birthday first, then most overdue
+    const suggested = candidates
+      .sort((a, b) => {
+        if (a.birthdaySoon !== b.birthdaySoon) return a.birthdaySoon ? -1 : 1;
+        return b.overdueDays - a.overdueDays;
+      })
+      .filter(c => c.overdueDays > 0 || c.birthdaySoon)[0];
+
+    if (!suggested) return '';
+
+    const esc = Components.escapeHtml;
+    let reason = '';
+    if (suggested.birthdaySoon) {
+      reason = '🎂 もうすぐお誕生日です';
+    } else if (suggested.daysSince >= 999) {
+      reason = 'まだ連絡を記録していません';
+    } else {
+      reason = `最後の連絡から${suggested.daysSince}日経っています`;
+    }
+
+    return `<div class="contact-suggestion-card">
+      <div class="csc-left">
+        <div class="csc-avatar">${esc((suggested.name || '？').substring(0, 2))}</div>
+        <div class="csc-info">
+          <div class="csc-name">${esc(suggested.name)}</div>
+          <div class="csc-reason">${reason}</div>
+        </div>
+      </div>
+      <div class="csc-actions">
+        <button class="btn btn-sm btn-primary" onclick="app.quickContactLog('${esc(suggested.name)}')">連絡した ✓</button>
+        ${suggested.phone ? `<a href="tel:${esc(suggested.phone)}" class="btn btn-sm btn-secondary">📞 電話</a>` : ''}
+      </div>
     </div>`;
   },
 

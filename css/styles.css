@@ -2870,3 +2870,30 @@ html[data-theme="dark"] .form-textarea {
 .re-body  { flex: 1; }
 .re-msg   { font-size: 0.9rem; color: var(--text-primary); margin-bottom: 10px; line-height: 1.5; }
 .re-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ─── Today's Contact Suggestion Card ─── */
+.contact-suggestion-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 4px solid #ef4444;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.csc-left  { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.csc-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: #ef444422;
+  color: #ef4444;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem; font-weight: 700; flex-shrink: 0;
+}
+.csc-name   { font-weight: 600; font-size: 0.95rem; color: var(--text-primary); }
+.csc-reason { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+.csc-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
