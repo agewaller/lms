@@ -163,6 +163,7 @@ var Pages = {
     // Time domain: Habit tracker + Calendar widget + Marketplace widget
     if (domain === 'time') {
       html += this.renderHabitTracker();
+      html += this.renderQuickTimeLog();
       html += this.renderEveningReviewCard();
       html += this.renderTimeAllocationChart();
       if (typeof CalendarIntegration !== 'undefined') html += CalendarIntegration.renderWidget();
@@ -659,6 +660,107 @@ var Pages = {
       </div>
       <div id="stockResult"></div>
     </div>`;
+  },
+
+  // ─── Quick Time Activity Log (Time domain home) ───
+  renderQuickTimeLog() {
+    const esc = Components.escapeHtml;
+    const today = new Date().toISOString().split('T')[0];
+    const todayLogs = store.getDomainData('time', 'entries', 1)
+      .filter(e => e.timestamp?.startsWith(today));
+    const todayMinutes = todayLogs.reduce((s, e) => s + (Number(e.duration) || 0), 0);
+
+    const cats = [
+      { key: 'health',        label: '運動・健康', icon: '🏃' },
+      { key: 'learning',      label: '学び',       icon: '📚' },
+      { key: 'relationships', label: '交流',       icon: '👥' },
+      { key: 'housework',     label: '家事',       icon: '🏠' },
+      { key: 'leisure',       label: '余暇',       icon: '🎭' },
+      { key: 'work',          label: '仕事',       icon: '💼' }
+    ];
+
+    const recentHtml = todayLogs.slice(-3).reverse().map(e => {
+      const cat = cats.find(c => c.key === e.category);
+      const dur = Number(e.duration);
+      const durStr = dur >= 60 ? `${Math.floor(dur/60)}時間${dur%60?dur%60+'分':''}` : `${dur}分`;
+      return `<div class="qtl-log-item">
+        <span class="qtl-log-icon">${cat?.icon || '⏱'}</span>
+        <span class="qtl-log-label">${cat?.label || esc(e.category || '')}</span>
+        <span class="qtl-log-dur">${durStr}</span>
+      </div>`;
+    }).join('');
+
+    const catBtns = cats.map(c =>
+      `<button class="qtl-cat-btn" data-cat="${c.key}" onclick="Pages.selectTimeCat('${c.key}', this)">${c.icon} ${c.label}</button>`
+    ).join('');
+
+    const durBtns = [30, 60, 90, 120].map(m =>
+      `<button class="qtl-dur-btn" onclick="Pages.selectTimeDur(${m}, this)">${m >= 60 ? m/60+'時間' : m+'分'}</button>`
+    ).join('');
+
+    const todayStr = todayMinutes >= 60
+      ? `${Math.floor(todayMinutes/60)}時間${todayMinutes%60 ? todayMinutes%60+'分' : ''}` : `${todayMinutes}分`;
+
+    return `<div class="quick-time-card">
+      <div class="qtl-header">
+        <span class="qtl-title">今日の活動を記録</span>
+        ${todayMinutes > 0 ? `<span class="qtl-today">今日 ${todayStr}</span>` : ''}
+      </div>
+      ${recentHtml ? `<div class="qtl-recent">${recentHtml}</div>` : ''}
+      <div class="qtl-cats">${catBtns}</div>
+      <div class="qtl-entry" id="qtlEntry" style="display:none">
+        <span class="qtl-entry-label" id="qtlEntryLabel">時間を選択</span>
+        <div class="qtl-dur-row">${durBtns}</div>
+        <input type="number" id="qtlCustomDur" class="form-input qtl-custom-dur" placeholder="その他(分)">
+        <div class="qtl-entry-btns">
+          <button class="btn btn-primary" onclick="Pages.saveQuickTimeLog()">記録する</button>
+          <button class="btn btn-ghost" onclick="Pages.cancelTimeCat()">キャンセル</button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  selectTimeCat(cat, btn) {
+    document.querySelectorAll('.qtl-cat-btn').forEach(b => b.classList.remove('selected'));
+    if (btn) btn.classList.add('selected');
+    this._qtlCat = cat;
+    this._qtlDur = null;
+    document.querySelectorAll('.qtl-dur-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('qtlCustomDur').value = '';
+    const entry = document.getElementById('qtlEntry');
+    if (entry) { entry.style.display = ''; }
+    const catLabels = { health:'運動・健康', learning:'学び', relationships:'交流', housework:'家事', leisure:'余暇', work:'仕事' };
+    const label = document.getElementById('qtlEntryLabel');
+    if (label) label.textContent = (catLabels[cat] || cat) + ' — 時間を選択';
+  },
+
+  selectTimeDur(minutes, btn) {
+    document.querySelectorAll('.qtl-dur-btn').forEach(b => b.classList.remove('selected'));
+    if (btn) btn.classList.add('selected');
+    this._qtlDur = minutes;
+    document.getElementById('qtlCustomDur').value = '';
+  },
+
+  cancelTimeCat() {
+    document.querySelectorAll('.qtl-cat-btn,.qtl-dur-btn').forEach(b => b.classList.remove('selected'));
+    const entry = document.getElementById('qtlEntry');
+    if (entry) entry.style.display = 'none';
+    this._qtlCat = null;
+    this._qtlDur = null;
+  },
+
+  saveQuickTimeLog() {
+    const cat = this._qtlCat;
+    const customDur = parseInt(document.getElementById('qtlCustomDur')?.value || '0', 10);
+    const duration = customDur > 0 ? customDur : this._qtlDur;
+    if (!cat) { Components.showToast('活動を選んでください', 'error'); return; }
+    if (!duration || duration <= 0) { Components.showToast('時間を選択または入力してください', 'error'); return; }
+    store.addDomainEntry('time', 'entries', { category: cat, duration, notes: '' });
+    const catLabels = { health:'運動・健康', learning:'学び', relationships:'交流', housework:'家事', leisure:'余暇', work:'仕事' };
+    const durStr = duration >= 60 ? `${Math.floor(duration/60)}時間${duration%60?duration%60+'分':''}` : `${duration}分`;
+    Components.showToast(`${catLabels[cat] || cat} ${durStr}を記録しました`, 'success');
+    this.cancelTimeCat();
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Daily Habit Tracker (Time domain) ───
