@@ -183,7 +183,8 @@ var Store = class Store {
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
       'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
-      'latestAnalysis', 'hasOnboarded'
+      'latestAnalysis', 'hasOnboarded',
+      'workProvisionPrefs'
     ];
   }
 

@@ -123,13 +123,20 @@ var Components = {
   // ─── Markdown Formatter ───
   formatMarkdown(text) {
     if (!text) return '';
-    return text
+    // Escape raw HTML first so injected tags in AI/user content can't execute
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return escaped
       .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, url) => {
-        const safeUrl = /^https?:\/\//i.test(url) ? url : '#';
+        // Decode &amp; back to & so URLs with query strings work correctly
+        const rawUrl = url.replace(/&amp;/g, '&');
+        const safeUrl = /^https?:\/\//i.test(rawUrl) ? rawUrl : '#';
         return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${label}</a>`;
       })
       .replace(/^### (.+)$/gm, '<h4>$1</h4>')
