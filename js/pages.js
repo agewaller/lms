@@ -36,6 +36,7 @@ var Pages = {
     // Quick input bar
     let html = `<div class="page-home">
       ${this.renderDailyGreeting(domain)}
+      ${this.renderDailyCheckIn()}
       ${this.renderCheckinSummaryCard()}
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
@@ -3678,6 +3679,178 @@ var Pages = {
     const monthKey = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;
     localStorage.removeItem('lms_reportDismissed');
     if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Daily 5-min All-Domain Check-in Card ───
+  _checkinData: {},
+
+  renderDailyCheckIn() {
+    const today = new Date().toISOString().split('T')[0];
+    const done = localStorage.getItem('lms_dailyCheckin') === today;
+
+    if (done) {
+      // Compute overall streak
+      const allDates = new Set();
+      Object.keys(CONFIG.domains).forEach(d => {
+        Object.keys(CONFIG.domains[d]?.categories || {}).forEach(cat => {
+          store.getDomainData(d, cat, 90).forEach(e => {
+            if (e.timestamp) allDates.add(e.timestamp.split('T')[0]);
+          });
+        });
+      });
+      let streak = 0;
+      const cur = new Date();
+      while (streak <= 90) {
+        if (!allDates.has(cur.toISOString().split('T')[0])) break;
+        streak++;
+        cur.setDate(cur.getDate() - 1);
+      }
+      const streakText = streak >= 3 ? `${streak}日連続！` : '';
+      return `<div class="dci-done">
+        <span class="dci-done-check">✅</span>
+        <span class="dci-done-text">今日のチェックイン完了${streakText ? '　' : ''}</span>
+        ${streakText ? `<span class="dci-done-streak">🔥 ${streakText}</span>` : ''}
+      </div>`;
+    }
+
+    const activities = [
+      { key: 'exercise',   icon: '🏃', label: '運動・散歩' },
+      { key: 'medicine',   icon: '💊', label: '薬を飲んだ' },
+      { key: 'contact',    icon: '📞', label: '誰かと話した' },
+      { key: 'learning',   icon: '📖', label: '読書・学習' },
+      { key: 'meditation', icon: '🌿', label: '瞑想・深呼吸' },
+      { key: 'outing',     icon: '🌳', label: '外出した' },
+      { key: 'work',       icon: '💼', label: '仕事・活動' },
+      { key: 'saving',     icon: '💰', label: '家計を確認' }
+    ];
+
+    return `<div class="dci-card" id="dailyCheckinCard">
+      <div class="dci-header">
+        <span class="dci-title">今日の記録（1分でOK）</span>
+        <button class="dci-skip" onclick="Pages.skipDailyCheckIn()">後で</button>
+      </div>
+
+      <div id="dciStep1" class="dci-step">
+        <div class="dci-q">今日の気分・体調は？</div>
+        <div class="dci-mood-row">
+          ${[['😢','1','辛い'],['😕','3','少し辛い'],['😐','5','普通'],['🙂','7','良い'],['😄','9','最高']].map(([e,v,l]) =>
+            `<button class="dci-mood-btn" onclick="Pages.checkinMood(${v})" title="${l}" aria-label="${l}">
+              <span>${e}</span>
+              <span class="dci-mood-label">${l}</span>
+            </button>`
+          ).join('')}
+        </div>
+      </div>
+
+      <div id="dciStep2" class="dci-step" style="display:none">
+        <div class="dci-q">今日やったこと（複数OK）</div>
+        <div class="dci-activities">
+          ${activities.map(a =>
+            `<label class="dci-act-label" id="dciAct_${a.key}">
+              <input type="checkbox" class="dci-act-check" value="${a.key}" onchange="Pages.toggleDciAct(this)" style="display:none">
+              <span class="dci-act-inner">
+                <span class="dci-act-icon">${a.icon}</span>
+                <span class="dci-act-text">${a.label}</span>
+              </span>
+            </label>`
+          ).join('')}
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-top:10px;width:100%" onclick="Pages.checkinActivities()">次へ →</button>
+      </div>
+
+      <div id="dciStep3" class="dci-step" style="display:none">
+        <div class="dci-q">今日ありがたいことは？（省略OK）</div>
+        <input type="text" id="dciGratitude" class="form-input dci-gratitude-input"
+          placeholder="例：天気がよかった、○○さんと話せた"
+          maxlength="100">
+        <button class="btn btn-primary" style="margin-top:10px;width:100%" onclick="Pages.finishDailyCheckIn()">完了する ✓</button>
+      </div>
+    </div>`;
+  },
+
+  checkinMood(val) {
+    Pages._checkinData.mood = val;
+    const step1 = document.getElementById('dciStep1');
+    const step2 = document.getElementById('dciStep2');
+    if (!step1 || !step2) return;
+    const emojiMap = {1:'😢',3:'😕',5:'😐',7:'🙂',9:'😄'};
+    step1.innerHTML = `<div class="dci-step-done">${emojiMap[val] || ''} 気分を記録しました ✓</div>`;
+    step2.style.display = '';
+  },
+
+  checkinActivities() {
+    const checks = [...document.querySelectorAll('.dci-act-check:checked')].map(el => el.value);
+    Pages._checkinData.activities = checks;
+    const step2 = document.getElementById('dciStep2');
+    const step3 = document.getElementById('dciStep3');
+    if (!step2 || !step3) return;
+    const actMap = {exercise:'🏃',medicine:'💊',contact:'📞',learning:'📖',meditation:'🌿',outing:'🌳',work:'💼',saving:'💰'};
+    const doneText = checks.length > 0 ? checks.map(k => actMap[k] || '').join(' ') + ' 記録しました ✓' : '（なし） ✓';
+    step2.innerHTML = `<div class="dci-step-done">${doneText}</div>`;
+    step3.style.display = '';
+    document.getElementById('dciGratitude')?.focus();
+  },
+
+  finishDailyCheckIn() {
+    const today = new Date().toISOString().split('T')[0];
+    const { mood = 5, activities = [] } = Pages._checkinData;
+    const gratitude = document.getElementById('dciGratitude')?.value?.trim() || '';
+
+    // Save mood to consciousness
+    store.addDomainEntry('consciousness', 'observation', { net_value: mood, date: today, source: 'daily_checkin' });
+
+    // Save condition to health
+    store.addDomainEntry('health', 'symptoms', { condition_level: mood, date: today, source: 'daily_checkin' });
+
+    // Save activities to respective domains
+    if (activities.includes('exercise'))   store.addDomainEntry('health', 'activity', { activity_type: 'walk', source: 'checkin', date: today });
+    if (activities.includes('medicine'))   store.addDomainEntry('health', 'symptoms', { medications_taken: true, date: today, source: 'checkin' });
+    if (activities.includes('contact'))    store.addDomainEntry('relationship', 'interactions', { type: 'call', date: today, source: 'checkin' });
+    if (activities.includes('learning'))   store.addDomainEntry('time', 'learning', { minutes: 30, date: today, source: 'checkin' });
+    if (activities.includes('meditation')) store.addDomainEntry('consciousness', 'entries', { type: 'meditation', date: today, source: 'checkin' });
+    if (activities.includes('outing'))     store.addDomainEntry('health', 'activity', { activity_type: 'outing', date: today, source: 'checkin' });
+    if (activities.includes('work'))       store.addDomainEntry('work', 'tasks', { status: 'done', date: today, source: 'checkin' });
+    if (activities.includes('saving'))     store.addDomainEntry('assets', 'budget', { type: 'check', date: today, source: 'checkin' });
+
+    // Save gratitude if provided
+    if (gratitude) {
+      store.addDomainEntry('consciousness', 'gratitude', { text: gratitude, date: today, source: 'checkin' });
+      let gList = [];
+      try { gList = JSON.parse(localStorage.getItem('lms_gratitude') || '[]'); } catch(e) {}
+      gList.unshift({ date: today, text: gratitude, timestamp: new Date().toISOString() });
+      try { localStorage.setItem('lms_gratitude', JSON.stringify(gList.slice(0, 200))); } catch(e) {}
+    }
+
+    // Mark today done
+    localStorage.setItem('lms_dailyCheckin', today);
+    Pages._checkinData = {};
+
+    // Show completion in-place
+    const card = document.getElementById('dailyCheckinCard');
+    if (card) {
+      card.className = 'dci-done-card';
+      card.innerHTML = `<div class="dci-complete">
+        <div class="dci-complete-icon">🌟</div>
+        <div class="dci-complete-text">チェックイン完了！</div>
+        <div class="dci-complete-sub">今日も記録できました。また明日お会いしましょう。</div>
+      </div>`;
+    }
+
+    // Check achievements
+    const { newlyUnlocked } = Pages.checkAchievements();
+    newlyUnlocked.forEach(b => Components.showToast(`🏅 実績解除：${b.title}`, 'success'));
+  },
+
+  skipDailyCheckIn() {
+    // Snooze until end of day (not full dismiss — check-in resets at midnight)
+    const card = document.getElementById('dailyCheckinCard');
+    if (card) card.style.display = 'none';
+  },
+
+  // Toggle activity selection styling
+  toggleDciAct(el) {
+    const label = el.closest('.dci-act-label');
+    if (label) label.classList.toggle('selected', el.checked);
   },
 
   // ─── Cross-domain holistic insight (rule-based correlation across domains) ───
