@@ -287,6 +287,7 @@ var App = class App {
       setTimeout(() => {
         Pages.initTrendChart(domain);
         Pages.initRadarChart();
+        if (domain === 'health') Pages.initBPTrendChart();
       }, 150);
     }
   }

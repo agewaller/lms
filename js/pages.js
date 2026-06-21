@@ -184,11 +184,12 @@ var Pages = {
       }
     }
 
-    // Health: morning vitals + SOS button + medication reminder + doctor report shortcut
+    // Health: morning vitals + SOS button + medication reminder + BP trend + doctor report shortcut
     if (domain === 'health') {
       html += this.renderMorningVitalsCard();
       html += this.renderSOSWidget();
       html += this.renderMedicationReminder();
+      html += this.renderBPTrendCard();
       html += `<div class="doctor-report-banner">
         <div class="drb-text">
           <strong>かかりつけ医への受診準備</strong>
@@ -2399,6 +2400,56 @@ var Pages = {
             grid: { color: gridColor },
             pointLabels: { font: { size: 11 }, color: tickColor }
           }
+        }
+      }
+    });
+  },
+
+  // ─── Blood pressure trend chart (health domain home, ≥3 BP readings) ───
+  renderBPTrendCard() {
+    const bp = store.getDomainData('health', 'vitals', 30).filter(v => v.bp_systolic && v.bp_diastolic);
+    if (bp.length < 3) return '';
+    return `<div class="bp-trend-card">
+      <div class="bp-trend-header">
+        <h3>血圧の推移（直近30日）</h3>
+        <span class="bp-trend-ref">目安：130/80 mmHg 以下</span>
+      </div>
+      <canvas id="bpTrendChart" height="110"></canvas>
+    </div>`;
+  },
+
+  initBPTrendChart() {
+    const canvas = document.getElementById('bpTrendChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    const bp = store.getDomainData('health', 'vitals', 30)
+      .filter(v => v.bp_systolic && v.bp_diastolic && v.timestamp)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      .slice(-14);
+    if (bp.length < 3) { canvas.closest('.bp-trend-card')?.remove(); return; }
+
+    const labels = bp.map(v => {
+      const d = new Date(v.timestamp);
+      return `${d.getMonth()+1}/${d.getDate()}`;
+    });
+    if (canvas._chart) canvas._chart.destroy();
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
+    const tickColor = isDark ? '#94a3b8' : '#64748b';
+    canvas._chart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: '上（mmHg）', data: bp.map(v => v.bp_systolic), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.08)', tension: 0.3, pointRadius: 3, spanGaps: true },
+          { label: '下（mmHg）', data: bp.map(v => v.bp_diastolic), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.08)', tension: 0.3, pointRadius: 3, spanGaps: true }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, color: tickColor, boxWidth: 12, padding: 8 } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 }, color: tickColor } },
+          y: { min: 50, max: 200, ticks: { font: { size: 10 }, stepSize: 30, color: tickColor }, grid: { color: gridColor } }
         }
       }
     });
