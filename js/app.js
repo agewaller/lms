@@ -1294,12 +1294,17 @@ var App = class App {
       // Fallback: show in a textarea
       const modal = document.createElement('div');
       modal.className = 'modal-overlay';
+      const ta = document.createElement('textarea');
+      ta.className = 'form-input';
+      ta.rows = 10;
+      ta.readOnly = true;
+      ta.value = text; // safe: textContent via .value, not innerHTML
       modal.innerHTML = `<div class="modal-content">
         <h3>レジュメをコピー</h3>
-        <textarea class="form-input" rows="10" readonly>${text}</textarea>
         <p>上のテキストをコピーして、求人サイトに貼り付けてください。</p>
         <button class="btn btn-primary" onclick="this.parentElement.parentElement.remove()">閉じる</button>
       </div>`;
+      modal.querySelector('.modal-content').insertBefore(ta, modal.querySelector('p'));
       document.body.appendChild(modal);
     });
   }
@@ -1920,35 +1925,36 @@ var App = class App {
       `<div class="user-score-item"><span>${i18n.t(d)}</span><strong>${s}</strong></div>`
     ).join('');
 
+    const esc = Components.escapeHtml;
     const body = `
       <div class="user-detail">
         <div class="user-detail-section">
           <h4>基本情報</h4>
-          <p><strong>お名前:</strong> ${user.displayName || '-'}</p>
-          <p><strong>メール:</strong> ${user.email || '-'}</p>
-          <p><strong>年齢:</strong> ${user.age || '-'}</p>
-          <p><strong>性別:</strong> ${user.gender || '-'}</p>
-          <p><strong>居住地:</strong> ${user.location || '-'}</p>
-          <p><strong>職業:</strong> ${user.occupation || '-'}</p>
+          <p><strong>お名前:</strong> ${esc(user.displayName || '-')}</p>
+          <p><strong>メール:</strong> ${esc(user.email || '-')}</p>
+          <p><strong>年齢:</strong> ${esc(String(user.age || '-'))}</p>
+          <p><strong>性別:</strong> ${esc(user.gender || '-')}</p>
+          <p><strong>居住地:</strong> ${esc(user.location || '-')}</p>
+          <p><strong>職業:</strong> ${esc(user.occupation || '-')}</p>
         </div>
 
         <div class="user-detail-section">
           <h4>健康</h4>
-          <p><strong>持病・症状:</strong> ${user.diseases.length > 0 ? user.diseases.join(', ') : 'なし'}</p>
-          <p><strong>服薬:</strong> ${user.medications || 'なし'}</p>
+          <p><strong>持病・症状:</strong> ${esc(user.diseases?.length > 0 ? user.diseases.join(', ') : 'なし')}</p>
+          <p><strong>服薬:</strong> ${esc(user.medications || 'なし')}</p>
         </div>
 
         <div class="user-detail-section">
           <h4>資産・収入</h4>
-          <p><strong>月収:</strong> ${user.monthlyIncome || '-'}</p>
-          <p><strong>貯蓄:</strong> ${user.savings || '-'}</p>
-          <p><strong>プラン:</strong> ${user.subscription}</p>
+          <p><strong>月収:</strong> ${esc(String(user.monthlyIncome || '-'))}</p>
+          <p><strong>貯蓄:</strong> ${esc(String(user.savings || '-'))}</p>
+          <p><strong>プラン:</strong> ${esc(user.subscription || '-')}</p>
         </div>
 
         <div class="user-detail-section">
           <h4>人生目標・悩み</h4>
-          <p><strong>目標:</strong> ${user.lifeGoals || '-'}</p>
-          <p><strong>悩み:</strong> ${user.concerns || '-'}</p>
+          <p><strong>目標:</strong> ${esc(user.lifeGoals || '-')}</p>
+          <p><strong>悩み:</strong> ${esc(user.concerns || '-')}</p>
         </div>
 
         ${scoreHtml ? `

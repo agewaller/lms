@@ -1963,12 +1963,12 @@ var Pages = {
               <div class="admin-user-info">
                 <div class="admin-user-avatar">${email.charAt(0).toUpperCase()}</div>
                 <div>
-                  <div class="admin-user-email">${email}${isSelf ? ' <span class="you-badge">あなた</span>' : ''}</div>
+                  <div class="admin-user-email">${Components.escapeHtml(email)}${isSelf ? ' <span class="you-badge">あなた</span>' : ''}</div>
                   <div class="admin-user-role">${isOwner ? 'オーナー（削除不可）' : '管理者'}</div>
                 </div>
               </div>
               ${isOwner ? '<span class="status-badge">オーナー</span>' : `
-                <button class="btn btn-sm btn-danger" onclick="app.removeAdminEmail('${email}')">削除</button>
+                <button class="btn btn-sm btn-danger" data-email="${Components.escapeHtml(email)}" onclick="app.removeAdminEmail(this.dataset.email)">削除</button>
               `}
             </div>`;
           }).join('')}
