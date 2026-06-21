@@ -706,6 +706,17 @@ var App = class App {
     this.renderApp();
   }
 
+  logBreathing() {
+    store.addDomainEntry('consciousness', 'practices', {
+      practice_type: 'breathwork',
+      duration_minutes: 1,
+      quality: 8,
+      notes: '深呼吸エクササイズ（4サイクル）'
+    });
+    Components.showToast('呼吸法を記録しました ✓', 'success');
+    Pages.resetBreathing();
+  }
+
   // ─── Stock Analysis (Assets domain) ───
   // Uses the VM Hands-on prompt (assets_stock) configured by admin.
   // The prompt is loaded via AIEngine.buildSystemPrompt which maps

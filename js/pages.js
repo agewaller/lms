@@ -148,6 +148,7 @@ var Pages = {
     // Consciousness domain: daily intention + gratitude journal + 7-layer visualization + transcript input
     if (domain === 'consciousness') {
       html += this.renderDailyIntention();
+      html += this.renderBreathingExercise();
       html += this.renderQuickLayerPick();
       html += this.renderGratitudeWidget();
       html += this.renderConsciousnessLayers();
@@ -2820,6 +2821,97 @@ var Pages = {
         }
       }
     });
+  },
+
+  // ─── Breathing exercise (consciousness domain home) ───
+  renderBreathingExercise() {
+    return `<div class="breath-card" id="breathCard">
+      <div class="breath-idle">
+        <div class="breath-idle-icon">🫁</div>
+        <div class="breath-idle-text">
+          <strong>深呼吸で心を整える</strong>
+          <span>1分間の呼吸法で気持ちが落ち着きます</span>
+        </div>
+        <button class="btn btn-secondary breath-start-btn" onclick="Pages.startBreathing()">始める</button>
+      </div>
+      <div class="breath-active" style="display:none">
+        <div class="breath-phase-label" id="breathPhaseLabel">準備してください</div>
+        <div class="breath-circle-wrap">
+          <div class="breath-circle" id="breathCircle"></div>
+        </div>
+        <div class="breath-cycle-count" id="breathCycleCount">1 / 4 サイクル</div>
+        <button class="btn btn-ghost breath-stop-btn" onclick="Pages.stopBreathing()">やめる</button>
+      </div>
+      <div class="breath-done" style="display:none">
+        <div class="breath-done-icon">✅</div>
+        <div class="breath-done-text">
+          <strong>お疲れ様でした</strong>
+          <span>気持ちが整いましたか？</span>
+        </div>
+        <button class="btn btn-primary" onclick="app.logBreathing()">記録する</button>
+        <button class="btn btn-ghost" onclick="Pages.resetBreathing()">もう一度</button>
+      </div>
+    </div>`;
+  },
+
+  startBreathing() {
+    const card = document.getElementById('breathCard');
+    if (!card) return;
+    card.querySelector('.breath-idle').style.display = 'none';
+    card.querySelector('.breath-done').style.display = 'none';
+    card.querySelector('.breath-active').style.display = '';
+    this._breathCycle = 0;
+    this._breathTimer = null;
+    this._runBreathCycle();
+  },
+
+  _runBreathCycle() {
+    const totalCycles = 4;
+    if (this._breathCycle >= totalCycles) { this._finishBreathing(); return; }
+    this._breathCycle++;
+    const cycleEl = document.getElementById('breathCycleCount');
+    if (cycleEl) cycleEl.textContent = `${this._breathCycle} / ${totalCycles} サイクル`;
+    const phases = [
+      { label: '吸って…', duration: 4000, expand: true },
+      { label: 'ためて…', duration: 2000, expand: null },
+      { label: 'はいて…', duration: 6000, expand: false }
+    ];
+    let idx = 0;
+    const runPhase = () => {
+      if (idx >= phases.length) { this._runBreathCycle(); return; }
+      const phase = phases[idx++];
+      const labelEl = document.getElementById('breathPhaseLabel');
+      const circle = document.getElementById('breathCircle');
+      if (!labelEl || !circle) return;
+      labelEl.textContent = phase.label;
+      if (phase.expand === true)  circle.classList.add('expand');
+      if (phase.expand === false) circle.classList.remove('expand');
+      this._breathTimer = setTimeout(runPhase, phase.duration);
+    };
+    runPhase();
+  },
+
+  stopBreathing() {
+    clearTimeout(this._breathTimer);
+    this.resetBreathing();
+  },
+
+  _finishBreathing() {
+    const card = document.getElementById('breathCard');
+    if (!card) return;
+    card.querySelector('.breath-active').style.display = 'none';
+    card.querySelector('.breath-done').style.display = '';
+  },
+
+  resetBreathing() {
+    clearTimeout(this._breathTimer);
+    const card = document.getElementById('breathCard');
+    if (!card) return;
+    card.querySelector('.breath-active').style.display = 'none';
+    card.querySelector('.breath-done').style.display = 'none';
+    card.querySelector('.breath-idle').style.display = '';
+    const circle = document.getElementById('breathCircle');
+    if (circle) circle.classList.remove('expand');
   },
 
   // ─── Mood trend chart (consciousness domain home, ≥3 entries with mood_level) ───

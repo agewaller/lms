@@ -2979,6 +2979,42 @@ html[data-theme="dark"] .ht-cell.level-3     { background: #10b981; }
 .mood-trend-header h3 { margin: 0; font-size: 15px; }
 .mood-trend-ref { font-size: 12px; color: var(--text-muted); }
 
+/* ─── Breathing Exercise Card ─── */
+.breath-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.breath-idle { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.breath-idle-icon { font-size: 1.8rem; flex-shrink: 0; }
+.breath-idle-text { flex: 1; min-width: 140px; }
+.breath-idle-text strong { display: block; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.breath-idle-text span { font-size: 12px; color: var(--text-secondary); }
+.breath-start-btn { flex-shrink: 0; }
+.breath-active { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 8px 0; }
+.breath-phase-label { font-size: 18px; font-weight: 600; color: #6C63FF; letter-spacing: 0.04em; }
+.breath-circle-wrap { width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; }
+.breath-circle {
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  background: rgba(108,99,255,0.2);
+  border: 3px solid #6C63FF;
+  transition: width 4s ease-in-out, height 4s ease-in-out, background 4s ease-in-out;
+}
+.breath-circle.expand {
+  width: 96px; height: 96px;
+  background: rgba(108,99,255,0.35);
+}
+.breath-cycle-count { font-size: 12px; color: var(--text-muted); }
+.breath-stop-btn { font-size: 12px; color: var(--text-muted); }
+.breath-done { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.breath-done-icon { font-size: 1.8rem; flex-shrink: 0; }
+.breath-done-text { flex: 1; min-width: 140px; }
+.breath-done-text strong { display: block; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.breath-done-text span { font-size: 12px; color: var(--text-secondary); }
+
 /* ─── Theme Toggle ─── */
 .theme-toggle-row {
   display: flex;
