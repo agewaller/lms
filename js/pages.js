@@ -199,6 +199,7 @@ var Pages = {
       html += this.renderSOSWidget();
       html += this.renderMedicationReminder();
       html += this.renderBPTrendCard();
+      html += this.renderSleepTrendCard();
       html += `<div class="doctor-report-banner">
         <div class="drb-text">
           <strong>かかりつけ医への受診準備</strong>
@@ -2756,6 +2757,65 @@ var Pages = {
         scales: {
           x: { grid: { display: false }, ticks: { font: { size: 10 }, color: tickColor } },
           y: { min: 50, max: 200, ticks: { font: { size: 10 }, stepSize: 30, color: tickColor }, grid: { color: gridColor } }
+        }
+      }
+    });
+  },
+
+  // ─── Sleep quality trend chart (health domain home, ≥3 sleep readings) ───
+  renderSleepTrendCard() {
+    const sleep = store.getDomainData('health', 'sleepData', 30).filter(e => e.quality);
+    if (sleep.length < 3) return '';
+    return `<div class="sleep-trend-card">
+      <div class="sleep-trend-header">
+        <h3>睡眠の質の推移（直近30日）</h3>
+        <span class="sleep-trend-ref">目安：7点以上で良眠</span>
+      </div>
+      <canvas id="sleepTrendChart" height="110"></canvas>
+    </div>`;
+  },
+
+  initSleepTrendChart() {
+    const canvas = document.getElementById('sleepTrendChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    const sleep = store.getDomainData('health', 'sleepData', 30)
+      .filter(e => e.quality && e.timestamp)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      .slice(-14);
+    if (sleep.length < 3) { canvas.closest('.sleep-trend-card')?.remove(); return; }
+
+    const labels = sleep.map(e => {
+      const d = new Date(e.timestamp);
+      return `${d.getMonth()+1}/${d.getDate()}`;
+    });
+    if (canvas._chart) canvas._chart.destroy();
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
+    const tickColor = isDark ? '#94a3b8' : '#64748b';
+    const qualities = sleep.map(e => e.quality);
+    const avg = (qualities.reduce((s, v) => s + v, 0) / qualities.length).toFixed(1);
+    canvas._chart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: `睡眠の質（平均 ${avg}点）`,
+          data: qualities,
+          borderColor: '#6C63FF',
+          backgroundColor: 'rgba(108,99,255,0.08)',
+          tension: 0.35,
+          pointRadius: 4,
+          pointBackgroundColor: qualities.map(q => q >= 7 ? '#10b981' : q >= 5 ? '#f59e0b' : '#ef4444'),
+          fill: true,
+          spanGaps: true
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, color: tickColor, boxWidth: 12, padding: 8 } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 }, color: tickColor } },
+          y: { min: 0, max: 10, ticks: { font: { size: 10 }, stepSize: 2, color: tickColor }, grid: { color: gridColor } }
         }
       }
     });

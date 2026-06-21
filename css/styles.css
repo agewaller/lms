@@ -2955,6 +2955,18 @@ html[data-theme="dark"] .ht-cell.level-3     { background: #10b981; }
 .bp-trend-header h3 { margin: 0; font-size: 15px; }
 .bp-trend-ref { font-size: 12px; color: var(--text-muted); }
 
+/* ─── Sleep Trend Card ─── */
+.sleep-trend-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.sleep-trend-header { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.sleep-trend-header h3 { margin: 0; font-size: 15px; }
+.sleep-trend-ref { font-size: 12px; color: var(--text-muted); }
+
 /* ─── Theme Toggle ─── */
 .theme-toggle-row {
   display: flex;
