@@ -169,6 +169,7 @@ var Pages = {
 
     // Work domain: Ikigai + Resume + side biz diagnosis + time marketplace link
     if (domain === 'work') {
+      html += this.renderDailyPlanCard();
       if (typeof WorkFeatures !== 'undefined') {
         html += WorkFeatures.renderIkigaiDiscover();
         html += WorkFeatures.renderSideBizDiagnosis();
@@ -963,6 +964,52 @@ var Pages = {
   },
 
   // ─── Resume Widget (Contribution domain) ───
+  // ─── Daily plan card (work domain, morning only 5am-12pm) ───
+  renderDailyPlanCard() {
+    const hour = new Date().getHours();
+    if (hour < 5 || hour >= 12) return '';
+    const today = new Date().toISOString().split('T')[0];
+    const lsKey = 'lms_dailyPlan_' + today;
+    const existing = localStorage.getItem(lsKey);
+    if (existing) {
+      let tasks = [];
+      try { tasks = JSON.parse(existing); } catch(e) {}
+      if (tasks.length === 0) return '';
+      const esc = Components.escapeHtml;
+      return `<div class="daily-plan-card daily-plan-done">
+        <div class="dp-done-header">📋 今日の計画</div>
+        <ul class="dp-done-list">
+          ${tasks.map(t => `<li>${esc(t)}</li>`).join('')}
+        </ul>
+      </div>`;
+    }
+    return `<div class="daily-plan-card" id="dailyPlanCard">
+      <div class="dp-header">
+        <span class="dp-icon">📋</span>
+        <div class="dp-title-block">
+          <strong>今日の計画</strong>
+          <span>今日やることを1〜3つ書いてみましょう</span>
+        </div>
+        <button class="dp-close" onclick="Pages.dismissDailyPlan('${today}')">&times;</button>
+      </div>
+      <div class="dp-inputs">
+        <input type="text" id="dp1" class="form-input dp-input" placeholder="やること 1" maxlength="60"
+          onkeydown="if(event.key==='Enter')document.getElementById('dp2')?.focus()">
+        <input type="text" id="dp2" class="form-input dp-input" placeholder="やること 2（任意）" maxlength="60"
+          onkeydown="if(event.key==='Enter')document.getElementById('dp3')?.focus()">
+        <input type="text" id="dp3" class="form-input dp-input" placeholder="やること 3（任意）" maxlength="60"
+          onkeydown="if(event.key==='Enter')app.saveDailyPlan('${today}')">
+      </div>
+      <button class="btn btn-primary dp-save" onclick="app.saveDailyPlan('${today}')">計画する</button>
+    </div>`;
+  },
+
+  dismissDailyPlan(today) {
+    try { localStorage.setItem('lms_dailyPlan_' + today, '[]'); } catch(e) {}
+    const card = document.getElementById('dailyPlanCard');
+    if (card) card.remove();
+  },
+
   renderResumeWidget() {
     const resume = store.get('userResume') || {};
     const hasResume = resume.name || resume.summary;

@@ -719,6 +719,19 @@ var App = class App {
     this.renderApp();
   }
 
+  saveDailyPlan(today) {
+    const tasks = [
+      (document.getElementById('dp1')?.value || '').trim(),
+      (document.getElementById('dp2')?.value || '').trim(),
+      (document.getElementById('dp3')?.value || '').trim()
+    ].filter(Boolean);
+    if (tasks.length === 0) { Components.showToast('少なくとも1つ入力してください', 'error'); return; }
+    try { localStorage.setItem('lms_dailyPlan_' + today, JSON.stringify(tasks)); } catch(e) {}
+    tasks.forEach(title => store.addDomainEntry('work', 'tasks', { title, status: 'todo', source: 'daily_plan' }));
+    Components.showToast(`今日の計画を${tasks.length}件登録しました`, 'success');
+    this.renderApp();
+  }
+
   saveEveningReview(today) {
     const selected = [...document.querySelectorAll('.er-cat.selected')].map(b => b.dataset.key);
     const starsEl = document.querySelector('.er-stars');
