@@ -364,24 +364,23 @@ var Pages = {
     </div>`;
   },
 
-  // ─── Today's Contact Suggestion (Relationship domain) ───
+  // ─── Today's Contact Suggestions (Relationship domain) ───
   renderTodayContactSuggestion() {
     const contacts = store.get('relationship_contacts') || [];
     if (contacts.length === 0) return '';
 
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
-
-    // Skip if user already logged an interaction today
-    const todayInteractions = store.getDomainData('relationship', 'interactions', 1)
-      .filter(e => (e.timestamp || '').startsWith(todayStr));
-    if (todayInteractions.length > 0) return '';
-
-    // Find best candidate: birthday soon OR most overdue
     const interactions = store.get('relationship_interactions') || [];
     const now = Date.now();
 
-    const candidates = contacts.map(c => {
+    const contactedToday = new Set(
+      store.getDomainData('relationship', 'interactions', 1)
+        .filter(e => (e.timestamp || '').startsWith(todayStr))
+        .map(e => e.person)
+    );
+
+    const scored = contacts.map(c => {
       const last = interactions
         .filter(i => i.person === c.name)
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
@@ -389,50 +388,54 @@ var Pages = {
       const idealDays = { 1: 1, 2: 7, 3: 14, 4: 30, 5: 90 }[parseInt(c.distance)] || 30;
       const overdueDays = Math.max(0, daysSince - idealDays);
 
-      // Check upcoming birthday (within 7 days)
-      let birthdaySoon = false;
+      let birthdayDays = Infinity;
       if (c.birthday) {
         const bd = new Date(c.birthday);
         const next = new Date(today.getFullYear(), bd.getMonth(), bd.getDate());
         if (next < today) next.setFullYear(next.getFullYear() + 1);
-        birthdaySoon = (next - today) / 86400000 <= 7;
+        birthdayDays = (next - today) / 86400000;
       }
+      const birthdaySoon = birthdayDays <= 7;
 
-      return { ...c, daysSince, overdueDays, birthdaySoon };
+      // Score: birthday within 3d = 10000 pts, overdue most = high pts
+      const score = (birthdayDays <= 3 ? 10000 : birthdaySoon ? 5000 : 0) + overdueDays * 10 + (daysSince >= 999 ? 500 : 0);
+      return { ...c, daysSince, overdueDays, birthdaySoon, birthdayDays, score };
     });
 
-    // Priority: birthday first, then most overdue
-    const suggested = candidates
-      .sort((a, b) => {
-        if (a.birthdaySoon !== b.birthdaySoon) return a.birthdaySoon ? -1 : 1;
-        return b.overdueDays - a.overdueDays;
-      })
-      .filter(c => c.overdueDays > 0 || c.birthdaySoon)[0];
+    const top3 = scored
+      .filter(c => c.overdueDays > 0 || c.birthdaySoon || c.daysSince >= 999)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
 
-    if (!suggested) return '';
+    if (top3.length === 0) return '';
 
     const esc = Components.escapeHtml;
-    let reason = '';
-    if (suggested.birthdaySoon) {
-      reason = '🎂 もうすぐお誕生日です';
-    } else if (suggested.daysSince >= 999) {
-      reason = 'まだ連絡を記録していません';
-    } else {
-      reason = `最後の連絡から${suggested.daysSince}日経っています`;
-    }
+    const rows = top3.map(c => {
+      const done = contactedToday.has(c.name);
+      let badge = '';
+      if (c.birthdayDays <= 1) badge = '<span class="csl-badge birthday">今日誕生日🎂</span>';
+      else if (c.birthdaySoon) badge = `<span class="csl-badge birthday">誕生日まで${Math.ceil(c.birthdayDays)}日🎂</span>`;
+      else if (c.daysSince >= 999) badge = '<span class="csl-badge overdue">未記録</span>';
+      else badge = `<span class="csl-badge overdue">${c.daysSince}日ぶり</span>`;
 
-    return `<div class="contact-suggestion-card">
-      <div class="csc-left">
-        <div class="csc-avatar">${esc((suggested.name || '？').substring(0, 2))}</div>
-        <div class="csc-info">
-          <div class="csc-name">${esc(suggested.name)}</div>
-          <div class="csc-reason">${reason}</div>
+      return `<div class="csl-row${done ? ' done' : ''}">
+        <div class="csl-avatar">${esc((c.name || '？').substring(0, 2))}</div>
+        <div class="csl-info">
+          <span class="csl-name">${esc(c.name)}</span>
+          ${badge}
         </div>
-      </div>
-      <div class="csc-actions">
-        <button class="btn btn-sm btn-primary" onclick="app.quickContactLog('${esc(suggested.name)}')">連絡した ✓</button>
-        ${suggested.phone ? `<a href="tel:${esc(suggested.phone)}" class="btn btn-sm btn-secondary">📞 電話</a>` : ''}
-      </div>
+        <div class="csl-actions">
+          ${done
+            ? '<span class="csl-done-mark">✓ 済</span>'
+            : `<button class="btn btn-xs btn-primary" onclick="app.quickContactLog('${esc(c.name)}')">連絡した</button>`}
+          ${c.phone && !done ? `<a href="tel:${esc(c.phone)}" class="btn btn-xs btn-secondary">📞</a>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="contact-suggestion-list">
+      <div class="csl-header">今日連絡したい方</div>
+      ${rows}
     </div>`;
   },
 
