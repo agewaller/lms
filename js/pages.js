@@ -2186,7 +2186,39 @@ var Pages = {
   // ─── Medication reminder (health domain only) ───
   renderMedicationReminder() {
     const meds = store.get('health_medications') || [];
-    if (meds.length === 0) return '';
+    if (meds.length === 0) {
+      // Show compact setup prompt so users know the feature exists
+      const today = new Date().toISOString().split('T')[0];
+      const dismissed = localStorage.getItem('lms_medSetup_dismissed');
+      if (dismissed) return '';
+      return `<div class="med-setup-prompt">
+        <div class="med-setup-header">
+          <span class="med-icon">💊</span>
+          <div>
+            <strong>お薬を登録すると服薬チェックができます</strong>
+            <span class="med-setup-sub">血圧の薬・睡眠薬・サプリなど何でも</span>
+          </div>
+          <button class="med-setup-close" onclick="localStorage.setItem('lms_medSetup_dismissed','1');this.closest('.med-setup-prompt').remove()">×</button>
+        </div>
+        <div class="med-quick-add" id="medQuickAdd" style="display:none">
+          <input type="text" id="mqMedName" class="form-input" placeholder="薬の名前（例：降圧剤、アムロジピン）" maxlength="30">
+          <select id="mqTiming" class="form-input">
+            <option value="morning">朝</option>
+            <option value="noon">昼</option>
+            <option value="evening">夕方</option>
+            <option value="bedtime">就寝前</option>
+          </select>
+          <div class="med-quick-btns">
+            <button class="btn btn-sm btn-primary" onclick="Pages.saveQuickMed()">追加する</button>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('medQuickAdd').style.display='none'">閉じる</button>
+          </div>
+        </div>
+        <div class="med-setup-actions">
+          <button class="btn btn-sm btn-primary" onclick="document.getElementById('medQuickAdd').style.display='block';this.style.display='none'">今すぐ登録</button>
+          <button class="btn btn-sm btn-secondary" onclick="app.navigate('record')">詳細設定 →</button>
+        </div>
+      </div>`;
+    }
 
     const today = new Date().toISOString().split('T')[0];
     const symptoms = store.get('health_symptoms') || [];
@@ -2254,6 +2286,15 @@ var Pages = {
       <button class="btn btn-sm btn-primary" onclick="app.logMedicationTaken()">飲みました ✓</button>
       ${heatmapHtml}
     </div>`;
+  },
+
+  saveQuickMed() {
+    const name = document.getElementById('mqMedName')?.value?.trim();
+    const timing = document.getElementById('mqTiming')?.value || 'morning';
+    if (!name) { Components.showToast('薬の名前を入力してください', 'error'); return; }
+    store.addDomainEntry('health', 'medications', { name, timing, dosage: '' });
+    Components.showToast(`「${name}」を登録しました`, 'success');
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Today's Priorities (cross-domain actionable items) ───
