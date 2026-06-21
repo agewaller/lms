@@ -241,8 +241,10 @@ var Pages = {
       </div>`;
     }
 
-    // Evening reflection prompt
-    const reflectionHtml = isEvening ? `
+    // Evening reflection prompt (skip if already reflected today)
+    let reflected = false;
+    try { reflected = !!localStorage.getItem('lms_intention_reflected_' + today); } catch (e) {}
+    const reflectionHtml = (isEvening && !reflected) ? `
       <div class="di-reflect">
         <span class="di-reflect-label">今日「${esc(intention)}」を体現できましたか？</span>
         <div class="di-reflect-btns">
@@ -250,7 +252,7 @@ var Pages = {
           <button class="btn btn-xs btn-secondary" onclick="app.logIntentionReflection('partly')">まあまあ</button>
           <button class="btn btn-xs btn-secondary" onclick="app.logIntentionReflection('no')">難しかった</button>
         </div>
-      </div>` : '';
+      </div>` : (isEvening && reflected) ? `<div class="di-reflect-done">今日の振り返り完了 ✓</div>` : '';
 
     return `<div class="daily-intention-card set">
       <div class="di-header">

@@ -2727,8 +2727,10 @@ var App = class App {
     let intention = '';
     try { intention = localStorage.getItem('lms_intention_' + today) || ''; } catch (e) {}
     store.addDomainEntry('consciousness', 'entries', { type: 'intention_reflection', intention, result });
+    try { localStorage.setItem('lms_intention_reflected_' + today, '1'); } catch (e) {}
     const msg = result === 'yes' ? 'すばらしい！今日の誓いを全うしました' : result === 'partly' ? '大丈夫。少しずつ積み重ねていきましょう' : '明日また新しい誓いを立てましょう';
     Components.showToast(msg, 'success');
+    this.renderApp();
   }
 
   quickExpenseEntry() {

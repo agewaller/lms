@@ -1657,6 +1657,7 @@ body.is-admin .admin-only { display: flex; }
 .di-reflect { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(108,99,255,0.15); }
 .di-reflect-label { font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 8px; }
 .di-reflect-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.di-reflect-done { margin-top: 12px; font-size: 13px; color: var(--success, #10b981); font-weight: 600; }
 
 /* ─── Gratitude Journal Widget ─── */
 .gratitude-widget {
