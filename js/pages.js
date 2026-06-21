@@ -68,16 +68,21 @@ var Pages = {
     html += this.getDomainStats(domain);
     html += `</div></div>`;
 
-    // All domain scores overview (mini)
+    // All domain scores overview (mini + radar chart)
     html += `<div class="all-domains-overview">
       <h3>${i18n.t('holistic_analysis')}</h3>
-      <div class="domain-scores-grid">
-        ${Object.keys(CONFIG.domains).map(d => {
-          const s = store.get('domainScores')?.[d] || 0;
-          return `<div class="mini-score ${d === domain ? 'current' : ''}" onclick="app.switchDomain('${d}')">
-            ${Components.scoreGauge(s, 70, i18n.t(d))}
-          </div>`;
-        }).join('')}
+      <div class="ado-body">
+        <div class="domain-scores-grid">
+          ${Object.keys(CONFIG.domains).map(d => {
+            const s = store.get('domainScores')?.[d] || 0;
+            return `<div class="mini-score ${d === domain ? 'current' : ''}" onclick="app.switchDomain('${d}')">
+              ${Components.scoreGauge(s, 70, i18n.t(d))}
+            </div>`;
+          }).join('')}
+        </div>
+        <div class="radar-chart-wrap">
+          <canvas id="domainRadarChart" width="200" height="200"></canvas>
+        </div>
       </div>
     </div>`;
 
@@ -1363,9 +1368,22 @@ var Pages = {
     );
 
     if (takenToday) {
+      // Calculate medication adherence streak
+      const symptoms = store.get('health_symptoms') || [];
+      const medDates = new Set(symptoms.filter(e => e.medications_taken && e.timestamp).map(e => e.timestamp.split('T')[0]));
+      let medStreak = 0;
+      const cur = new Date();
+      while (medStreak < 90) {
+        const k = cur.toISOString().split('T')[0];
+        if (!medDates.has(k)) break;
+        medStreak++;
+        cur.setDate(cur.getDate() - 1);
+      }
+      const streakText = medStreak >= 2 ? `<span class="streak-badge">${medStreak}日連続</span>` : '';
       return `<div class="med-reminder med-done">
         <span class="med-check">✓</span>
-        <span>今日の薬の記録 完了</span>
+        <span>今日のお薬 完了</span>
+        ${streakText}
       </div>`;
     }
 
@@ -1492,9 +1510,14 @@ var Pages = {
     }
     if (domain === 'assets') {
       const exps = todayEntries.filter(e => e._cat === 'expenses' && e.amount);
+      const incs = todayEntries.filter(e => e._cat === 'income' && e.amount);
       if (exps.length > 0) {
         const total = exps.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
         summaryLines.push(`出費 ¥${total.toLocaleString()}`);
+      }
+      if (incs.length > 0) {
+        const total = incs.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+        summaryLines.push(`収入 ¥${total.toLocaleString()}`);
       }
     }
     if (promptReply) summaryLines.push('問いかけ ✓');
@@ -2267,6 +2290,64 @@ var Pages = {
     });
   },
 
+  // ─── Radar chart: 6-domain life balance ───
+  initRadarChart() {
+    const canvas = document.getElementById('domainRadarChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const scores = store.get('domainScores') || {};
+    const domainKeys = Object.keys(CONFIG.domains);
+    const labels = domainKeys.map(d => i18n.t(d));
+    const data = domainKeys.map(d => scores[d] || 0);
+
+    // Skip if all zeros (no data yet)
+    if (data.every(v => v === 0)) {
+      canvas.closest('.radar-chart-wrap')?.remove();
+      return;
+    }
+
+    if (canvas._chart) canvas._chart.destroy();
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)';
+    const tickColor = isDark ? '#94a3b8' : '#64748b';
+    const fillColor = 'rgba(108,99,255,0.18)';
+    const lineColor = '#6C63FF';
+
+    canvas._chart = new Chart(canvas, {
+      type: 'radar',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: fillColor,
+          borderColor: lineColor,
+          borderWidth: 2,
+          pointBackgroundColor: lineColor,
+          pointRadius: 3
+        }]
+      },
+      options: {
+        responsive: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          r: {
+            min: 0,
+            max: 100,
+            ticks: {
+              stepSize: 25,
+              font: { size: 9 },
+              color: tickColor,
+              backdropColor: 'transparent'
+            },
+            grid: { color: gridColor },
+            pointLabels: { font: { size: 11 }, color: tickColor }
+          }
+        }
+      }
+    });
+  },
+
   // ═══════════════════════════════════════════════════════════
   //  DOCTOR VISIT REPORT (健康 → かかりつけ医へのレポート)
   // ═══════════════════════════════════════════════════════════
@@ -2513,7 +2594,8 @@ var Pages = {
             </div>
           </div>
           <div class="data-actions">
-            <button class="btn btn-sm btn-secondary" onclick="app.exportDomainData('${domain}')">このデータを書き出す</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.exportDomainCSV('${domain}')">CSVで保存</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.exportDomainData('${domain}')">JSONで保存</button>
             <button class="btn btn-sm btn-secondary" onclick="app.clearDataFilter()">フィルタをクリア</button>
           </div>
         </div>

@@ -1292,9 +1292,11 @@ body.is-admin .admin-only { display: flex; }
 
 .all-domains-overview { margin-bottom: 32px; }
 .all-domains-overview h3 { margin-bottom: 16px; }
-.domain-scores-grid { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.ado-body { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.domain-scores-grid { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; flex: 1; }
 .mini-score { cursor: pointer; opacity: 0.7; transition: all var(--transition); }
 .mini-score:hover, .mini-score.current { opacity: 1; transform: scale(1.05); }
+.radar-chart-wrap { flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 
 /* Score Gauge */
 .score-gauge { position: relative; display: inline-flex; align-items: center; justify-content: center; }

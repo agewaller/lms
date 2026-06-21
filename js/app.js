@@ -282,9 +282,12 @@ var App = class App {
       }, 100);
     }
 
-    // Initialize trend chart on home page
+    // Initialize trend chart and radar chart on home page
     if (page === 'home') {
-      setTimeout(() => Pages.initTrendChart(domain), 150);
+      setTimeout(() => {
+        Pages.initTrendChart(domain);
+        Pages.initRadarChart();
+      }, 150);
     }
   }
 
