@@ -144,6 +144,9 @@ var Pages = {
       </div>`;
     }
 
+    // Cross-domain correlation insights (appears on every domain home when enough data)
+    html += this.renderCrossDomainInsights();
+
     // ─── Domain-specific widgets ───
 
     // Consciousness domain: daily intention + gratitude journal + 7-layer visualization + transcript input
@@ -6860,6 +6863,133 @@ var Pages = {
     return `<div class="work-weekly-stats-card">
       <div class="wws-header">今週の仕事サマリー</div>
       <div class="wws-grid">${statCells}</div>
+    </div>`;
+  },
+
+  // ─── Cross-Domain Correlation Insights ───
+  // Shows on every domain home when user has 7+ days of data across 2+ domains
+  renderCrossDomainInsights() {
+    const today = new Date();
+    const daysArr = [];
+    const dayData = {};
+
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      daysArr.push(key);
+      dayData[key] = {};
+    }
+
+    // Steps from localStorage (health domain)
+    daysArr.forEach(day => {
+      try {
+        const s = parseInt(localStorage.getItem('lms_steps_' + day) || '0', 10);
+        if (s >= 500) dayData[day].steps = s;
+      } catch(e) {}
+    });
+
+    // Mood level from consciousness entries (1-10)
+    store.getDomainData('consciousness', 'entries', 30).forEach(e => {
+      const day = (e.timestamp || '').split('T')[0];
+      if (dayData[day] && e.mood_level) {
+        dayData[day].mood = Math.max(dayData[day].mood || 0, Number(e.mood_level));
+      }
+    });
+
+    // Sleep quality from health (0-10 scale)
+    store.getDomainData('health', 'sleepData', 30).forEach(e => {
+      const day = (e.timestamp || '').split('T')[0];
+      if (dayData[day] && e.quality) dayData[day].sleepQ = Number(e.quality);
+    });
+
+    // Relationship interactions count per day
+    store.getDomainData('relationship', 'interactions', 30).forEach(e => {
+      const day = (e.timestamp || '').split('T')[0];
+      if (dayData[day]) dayData[day].contacts = (dayData[day].contacts || 0) + 1;
+    });
+
+    // Work day satisfaction rating
+    store.getDomainData('work', 'reflections', 30).forEach(e => {
+      const day = (e.timestamp || '').split('T')[0];
+      if (dayData[day] && e.day_rating) dayData[day].workRating = Number(e.day_rating);
+    });
+
+    const getPairs = (keyA, keyB) => daysArr
+      .map(d => ({ a: dayData[d][keyA], b: dayData[d][keyB] }))
+      .filter(p => p.a !== undefined && p.b !== undefined);
+
+    const getMedian = arr => {
+      const sorted = [...arr].sort((a, b) => a - b);
+      return sorted[Math.floor(sorted.length / 2)];
+    };
+
+    const calcCorr = pairs => {
+      if (pairs.length < 7) return null;
+      const medA = getMedian(pairs.map(p => p.a));
+      const medB = getMedian(pairs.map(p => p.b));
+      const aligned = pairs.filter(p => (p.a >= medA) === (p.b >= medB)).length;
+      return aligned / pairs.length;
+    };
+
+    const insights = [];
+
+    const smCorr = calcCorr(getPairs('steps', 'mood'));
+    if (smCorr !== null && smCorr >= 0.62) {
+      insights.push({ icon: '◆', color: '#10b981', text: 'よく歩く日は気持ちの充実度も高い傾向があります。歩くことが心の安定につながっているようです。', conf: smCorr });
+    }
+
+    const sqmCorr = calcCorr(getPairs('sleepQ', 'mood'));
+    if (sqmCorr !== null && sqmCorr >= 0.60) {
+      insights.push({ icon: '◈', color: '#8b5cf6', text: '睡眠の質が高い日は心の充実度も高い傾向があります。よい眠りが心の余裕を生んでいます。', conf: sqmCorr });
+    }
+
+    const cmCorr = calcCorr(getPairs('contacts', 'mood'));
+    if (cmCorr !== null && cmCorr >= 0.62) {
+      insights.push({ icon: '◇', color: '#ef4444', text: '人と交流した日は気持ちの充実度が高い傾向があります。つながりが心の栄養源になっています。', conf: cmCorr });
+    }
+
+    const swCorr = calcCorr(getPairs('sleepQ', 'workRating'));
+    if (swCorr !== null && swCorr >= 0.60) {
+      insights.push({ icon: '▲', color: '#3b82f6', text: 'よく眠れた日は活動の満足度も高い傾向があります。睡眠が一日の質を左右しています。', conf: swCorr });
+    }
+
+    if (insights.length === 0) return '';
+
+    // Require data from at least 2 different domains
+    const activeDomains = new Set();
+    daysArr.forEach(d => {
+      if (dayData[d].steps !== undefined || dayData[d].sleepQ !== undefined) activeDomains.add('health');
+      if (dayData[d].mood !== undefined) activeDomains.add('consciousness');
+      if (dayData[d].contacts !== undefined) activeDomains.add('relationship');
+      if (dayData[d].workRating !== undefined) activeDomains.add('work');
+    });
+    if (activeDomains.size < 2) return '';
+
+    const daysWithData = daysArr.filter(d => Object.keys(dayData[d]).length > 0).length;
+    if (daysWithData < 7) return '';
+
+    const top = [...insights].sort((a, b) => b.conf - a.conf).slice(0, 3);
+
+    return `<div class="cdi-card">
+      <div class="cdi-header">
+        <div class="cdi-title">あなたのパターン</div>
+        <div class="cdi-sub">記録から見えてきたつながり</div>
+      </div>
+      <div class="cdi-list">
+        ${top.map(ins => `
+          <div class="cdi-item" style="border-left-color:${ins.color}">
+            <div class="cdi-icon" style="color:${ins.color}">${ins.icon}</div>
+            <div class="cdi-body">
+              <div class="cdi-text">${ins.text}</div>
+              <div class="cdi-conf">
+                <div class="cdi-bar"><div class="cdi-fill" style="width:${Math.round(ins.conf*100)}%;background:${ins.color}"></div></div>
+                <span class="cdi-pct">${Math.round(ins.conf*100)}%一致</span>
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="cdi-foot">過去30日間のデータ（${daysWithData}日分）から算出</div>
     </div>`;
   },
 
