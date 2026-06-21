@@ -823,6 +823,16 @@ var Pages = {
         <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">${i18n.t('data_import')}</button>
       </div>
 
+      <!-- Share App -->
+      <div class="settings-section">
+        <h3>友人・家族に教える</h3>
+        <p style="color:var(--text-secondary);font-size:15px;margin-bottom:16px">このアプリが役立てば、大切な方にも教えてあげましょう。</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          ${navigator.share ? `<button class="btn btn-primary" onclick="app.shareApp()">📤 友人に教える</button>` : ''}
+          <button class="btn btn-secondary" onclick="app.copyShareLink()">🔗 リンクをコピー</button>
+        </div>
+      </div>
+
       <!-- Time Marketplace Settings (Time domain) -->
       ${domain === 'time' && typeof TimeMarketplace !== 'undefined' ? TimeMarketplace.renderSettings() : ''}
 
@@ -1183,9 +1193,23 @@ var Pages = {
         ${streakBadge}
       </div>`;
     }
-    const quickBtn = domain === 'health'
-      ? `<button class="btn btn-sm btn-primary" onclick="app.openQuickCheckin()">今日の体調を記録</button>`
-      : `<button class="btn btn-sm btn-primary" onclick="app.navigate('record')">記録する</button>`;
+    if (domain === 'health') {
+      return `<div class="checkin-nudge checkin-nudge-health">
+        <div class="checkin-nudge-top">
+          <span class="checkin-nudge-text">今日の体調は？${streak >= 2 ? '　' : ''}</span>
+          ${streakBadge}
+        </div>
+        <div class="mood-picker">
+          ${[['😢','1','とても辛い'],['😕','3','少し辛い'],['😐','5','普通'],['🙂','7','良い'],['😄','9','とても良い']].map(([emoji, val, label]) =>
+            `<button class="mood-btn" title="${Components.escapeHtml(label)}" onclick="app.quickMoodCheckin(${val})" aria-label="${Components.escapeHtml(label)}">
+              <span class="mood-emoji">${emoji}</span>
+              <span class="mood-label">${Components.escapeHtml(label)}</span>
+            </button>`
+          ).join('')}
+        </div>
+      </div>`;
+    }
+    const quickBtn = `<button class="btn btn-sm btn-primary" onclick="app.navigate('record')">記録する</button>`;
     return `<div class="checkin-nudge">
       <span class="checkin-nudge-text">今日はまだ記録していません${streak >= 2 ? '　' : ''}</span>
       <span style="display:flex;align-items:center;gap:8px;">

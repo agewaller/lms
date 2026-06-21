@@ -2410,6 +2410,38 @@ var App = class App {
     setTimeout(() => this.renderApp(), 100);
   }
 
+  // One-tap mood check-in from health home emoji picker
+  quickMoodCheckin(level) {
+    store.addDomainEntry('health', 'symptoms', {
+      condition_level: level,
+      fatigue_level: Math.max(1, 11 - level),
+      notes: ''
+    });
+    Components.showToast('今日の体調を記録しました', 'success');
+    setTimeout(() => this.renderApp(), 100);
+  }
+
+  shareApp() {
+    if (navigator.share) {
+      navigator.share({
+        title: 'LMS - 65歳からの人生管理アプリ',
+        text: '健康・時間・お金・仕事・関係・心の6つを一緒に管理できる無料アプリです。使いやすくておすすめ！',
+        url: 'https://agewaller.github.io/lms/'
+      }).catch(() => {});
+    }
+  }
+
+  copyShareLink() {
+    const url = 'https://agewaller.github.io/lms/';
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url)
+        .then(() => Components.showToast('リンクをコピーしました', 'success'))
+        .catch(() => Components.showToast('コピーに失敗しました', 'error'));
+    } else {
+      Components.showToast(url, 'info');
+    }
+  }
+
   openModal(title, bodyHtml) {
     const overlay = document.getElementById('modal-overlay');
     const titleEl = document.getElementById('modal-title');

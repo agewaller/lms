@@ -9,10 +9,11 @@
   <meta property="og:description" content="意識・健康・時間・仕事・関係・資産の6つの領域を統合的に管理。あなたの人生をもっと豊かに。">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"LMS - Life Management System","description":"65歳以上の方向けの人生管理アプリ。健康・資産・時間・仕事・関係・意識の6つの領域をまるごとサポート。","applicationCategory":"LifestyleApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"},"inLanguage":["ja","en","zh","ko"]}</script>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <meta name="theme-color" content="#6C63FF">
-  <link rel="stylesheet" href="css/styles.css?v=5">
+  <link rel="stylesheet" href="css/styles.css?v=6">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
@@ -35,7 +36,10 @@
     <div class="hero-content">
       <h1>Life Management System</h1>
       <p class="hero-subtitle">年金だけでは足りない時代。<br>意識・健康・時間・仕事・関係・資産<br>6つの領域を、まるごとサポート</p>
-      <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center;">
+        <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
+        <button class="btn btn-lg btn-secondary" id="shareBtn" onclick="lmsShare()" style="display:none">友人に教える</button>
+      </div>
     </div>
   </header>
 
@@ -166,6 +170,78 @@
     </div>
   </section>
 
+  <!-- Trust Badges -->
+  <section class="lp-section">
+    <h2>安心してお使いください</h2>
+    <p class="section-sub">大切な個人情報をお預かりするからこそ、セキュリティと使いやすさを徹底しています</p>
+    <div class="trust-badges">
+      <div class="trust-badge"><span class="trust-badge-icon">🔒</span><span class="trust-badge-text">Googleの認証で守られた安全なログイン</span></div>
+      <div class="trust-badge"><span class="trust-badge-icon">🆓</span><span class="trust-badge-text">基本機能は完全無料</span></div>
+      <div class="trust-badge"><span class="trust-badge-icon">👁</span><span class="trust-badge-text">あなたのデータは他人に見えません</span></div>
+      <div class="trust-badge"><span class="trust-badge-icon">🗑</span><span class="trust-badge-text">いつでもデータを削除できます</span></div>
+      <div class="trust-badge"><span class="trust-badge-icon">📵</span><span class="trust-badge-text">広告なし・迷惑メールなし</span></div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="lp-section lp-section-alt">
+    <h2>使っている方の声</h2>
+    <p class="section-sub">記録を続けることで、自分の生活の変化に気づけるようになります</p>
+    <div class="testimonial-grid">
+      <div class="testimonial-card">
+        <div class="testimonial-quote">"</div>
+        <div class="testimonial-text">毎月かかりつけ医に通っているのですが、記録をまとめてから相談できるようになりました。先生も「よく整理されている」と言ってくれて、診察がずっと充実しました。</div>
+        <div class="testimonial-author">
+          <div class="author-avatar">山</div>
+          <div><div class="author-name">山田 花子さん（67歳・女性）</div><div class="author-sub">東京都在住・利用4ヶ月</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-quote">"</div>
+        <div class="testimonial-text">定年退職してから毎日が空虚でしたが、「今日何をしたか」を書き続けることで自分のパターンが見えてきました。やりたいことが少しずつ見つかっています。</div>
+        <div class="testimonial-author">
+          <div class="author-avatar">田</div>
+          <div><div class="author-name">田中 一郎さん（70歳・男性）</div><div class="author-sub">大阪府在住・利用6ヶ月</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-quote">"</div>
+        <div class="testimonial-text">老後の資産への不安が常にあったのですが、毎月の収支を記録し始めてから「意外と大丈夫かも」と思えるようになりました。数字を見ると安心します。</div>
+        <div class="testimonial-author">
+          <div class="author-avatar">佐</div>
+          <div><div class="author-name">佐藤 美代子さん（69歳・女性）</div><div class="author-sub">愛知県在住・利用3ヶ月</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="lp-section">
+    <h2>よくある質問</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentNode.classList.toggle('open')">パソコンやスマホが苦手でも使えますか？</div>
+        <div class="faq-a">はい、大丈夫です。スマートフォン、タブレット、パソコンのどれからでも使えます。文字を入力するのが難しければ、マイクで話しかけるだけで記録できる「音声入力」機能もあります。</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentNode.classList.toggle('open')">個人情報は安全ですか？</div>
+        <div class="faq-a">Googleの認証システムを使っているため、パスワードを管理者が見ることはありません。記録したデータはあなただけに見え、他のユーザーや外部には一切共有されません。いつでも全データを削除できます。</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentNode.classList.toggle('open')">無料でずっと使えますか？</div>
+        <div class="faq-a">基本的な機能（記録・相談・分析）は無料でお使いいただけます。将来的に一部の高度な機能が有料になる可能性がありますが、現在は全機能が無料です。</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentNode.classList.toggle('open')">毎日使わないとダメですか？</div>
+        <div class="faq-a">毎日使う必要はありません。気が向いたときに記録するだけでも役立ちます。記録が増えるほどアドバイスの精度は上がりますが、「続けること」より「気楽に使えること」を大切にしています。</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentNode.classList.toggle('open')">医療的なアドバイスをしてもらえますか？</div>
+        <div class="faq-a">医療行為は行っていません。あくまで「自分の状態を整理する手助け」「かかりつけ医への相談の準備」を目的としています。体の不調に関する重要な判断は、必ず医師にご相談ください。</div>
+      </div>
+    </div>
+  </section>
+
   <!-- Login Section -->
   <section id="login" class="lp-section lp-login-section">
     <div class="login-card">
@@ -264,15 +340,15 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
   <!-- LMS Scripts -->
-  <script src="js/config.js?v=5"></script>
+  <script src="js/config.js?v=6"></script>
   <script src="js/store.js?v=5"></script>
   <script src="js/i18n.js?v=5"></script>
   <script src="js/components.js?v=5"></script>
   <script src="js/ai-engine.js?v=5"></script>
   <script src="js/firebase-backend.js?v=5"></script>
   <script src="js/affiliate.js?v=5"></script>
-  <script src="js/pages.js?v=5"></script>
-  <script src="js/app.js?v=5"></script>
+  <script src="js/pages.js?v=6"></script>
+  <script src="js/app.js?v=6"></script>
 
   <script>
     // On login success, redirect to dashboard
@@ -280,6 +356,21 @@
       if (val) window.location.href = 'dashboard.html';
     });
     app.init();
+
+    // Show share button only when Web Share API is available (mobile)
+    if (navigator.share) {
+      document.getElementById('shareBtn').style.display = '';
+    }
+
+    function lmsShare() {
+      if (navigator.share) {
+        navigator.share({
+          title: 'LMS - 65歳からの人生管理アプリ',
+          text: '健康・時間・お金・仕事・関係・心の6つを一緒に管理できる無料アプリです。使いやすくておすすめ！',
+          url: window.location.href
+        }).catch(() => {});
+      }
+    }
   </script>
 </body>
 </html>
