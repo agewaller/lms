@@ -957,10 +957,9 @@ var Pages = {
     return `<div class="pain-location-selector" id="painLocationSelector">
       <label>体のどこが痛みますか？（複数選択可）</label>
       <div class="pain-parts-grid">
-        ${parts.map(p => `<button type="button" class="pain-part-btn" data-part="${p.id}"
+        ${parts.map(p => `<button type="button" class="pain-part-btn" data-label="${p.label}"
           onclick="this.classList.toggle('selected')">${p.label}</button>`).join('')}
       </div>
-      <input type="hidden" id="pain_location_hidden" name="pain_location">
     </div>`;
   },
 

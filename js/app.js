@@ -451,8 +451,8 @@ var App = class App {
     // Capture pain location selections (health symptoms only)
     if (domain === 'health' && category === 'symptoms') {
       const selectedParts = Array.from(document.querySelectorAll('.pain-part-btn.selected'))
-        .map(b => b.dataset.part);
-      if (selectedParts.length > 0) data.pain_location = selectedParts;
+        .map(b => b.dataset.label);
+      if (selectedParts.length > 0) data.pain_location = selectedParts.join('・');
       document.querySelectorAll('.pain-part-btn').forEach(b => b.classList.remove('selected'));
     }
 
