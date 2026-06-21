@@ -1776,6 +1776,15 @@ body.is-admin .admin-only { display: flex; }
   background: rgba(16,185,129,0.08); border-radius: var(--radius-sm);
   color: var(--success, #059669); font-size: 14px; font-weight: 600;
 }
+.ht-heatmap { margin-top: 14px; }
+.ht-heatmap-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+.ht-heatmap-grid { display: flex; gap: 3px; flex-wrap: wrap; }
+.ht-cell { width: 12px; height: 12px; border-radius: 2px; display: inline-block; cursor: default; }
+.ht-cell.level-0 { background: var(--border); }
+.ht-cell.level-1 { background: #bbf7d0; }
+.ht-cell.level-2 { background: #4ade80; }
+.ht-cell.level-3 { background: #16a34a; }
+.ht-heatmap-legend { display: flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 11px; color: var(--text-muted); }
 
 /* ─── Monthly Budget Summary ─── */
 .budget-summary-card {

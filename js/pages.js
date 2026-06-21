@@ -550,6 +550,31 @@ var Pages = {
       { key: 'rest', label: 'ゆっくり休む' }
     ];
 
+    // 28-day habit heatmap: check both localStorage (today) and Firestore habit entries
+    const firestoreHabitDates = new Set(
+      (store.getDomainData('time', 'habits', 28) || [])
+        .filter(e => e.completed_habits && e.completed_habits.length >= 5 && e.timestamp)
+        .map(e => e.timestamp.split('T')[0])
+    );
+    // Also check localStorage for each of the last 28 days
+    const heatmapDays = [];
+    for (let i = 27; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      const label = `${d.getMonth()+1}/${d.getDate()}`;
+      let level = 0;
+      if (key === today) {
+        level = completedSet.size >= 5 ? 3 : completedSet.size >= 3 ? 2 : completedSet.size >= 1 ? 1 : 0;
+      } else {
+        const lsKey = 'lms_habits_' + key;
+        let saved = [];
+        try { saved = JSON.parse(localStorage.getItem(lsKey) || '[]'); } catch (e) {}
+        const count = saved.length || (firestoreHabitDates.has(key) ? 5 : 0);
+        level = count >= 5 ? 3 : count >= 3 ? 2 : count >= 1 ? 1 : 0;
+      }
+      heatmapDays.push({ key, label, level });
+    }
+
     return `<div class="habit-tracker-card">
       <div class="ht-header">
         <span class="ht-title">今日の習慣チェック</span>
@@ -566,6 +591,18 @@ var Pages = {
         }).join('')}
       </div>
       ${completedSet.size === defaultHabits.length ? '<div class="ht-complete">今日の習慣をすべて達成しました！素晴らしい！</div>' : ''}
+      <div class="ht-heatmap" title="過去28日間の習慣達成記録">
+        <div class="ht-heatmap-label">過去28日</div>
+        <div class="ht-heatmap-grid">
+          ${heatmapDays.map(d => `<div class="ht-cell level-${d.level}" title="${d.label}"></div>`).join('')}
+        </div>
+        <div class="ht-heatmap-legend">
+          <span class="ht-cell level-0" style="display:inline-block"></span>なし
+          <span class="ht-cell level-1" style="display:inline-block"></span>少し
+          <span class="ht-cell level-2" style="display:inline-block"></span>半分
+          <span class="ht-cell level-3" style="display:inline-block"></span>全達成
+        </div>
+      </div>
     </div>`;
   },
 
