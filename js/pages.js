@@ -202,6 +202,7 @@ var Pages = {
 
     // Health: morning vitals + SOS button + medication reminder + BP trend + doctor report shortcut
     if (domain === 'health') {
+      html += this.renderBPAlertCard();
       html += this.renderMorningVitalsCard();
       html += this.renderSOSWidget();
       html += this.renderMedicationReminder();
@@ -3018,6 +3019,68 @@ var Pages = {
         }
       }
     });
+  },
+
+  // ─── Blood pressure alert card (health domain, appears when BP is elevated) ───
+  renderBPAlertCard() {
+    const vitals = store.getDomainData('health', 'vitals', 14)
+      .filter(v => v.bp_systolic && v.bp_diastolic && v.timestamp)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    if (vitals.length < 2) return '';
+
+    // Check most recent reading for hypertensive crisis (systolic ≥180 or diastolic ≥110)
+    const latest = vitals[0];
+    if (latest.bp_systolic >= 180 || latest.bp_diastolic >= 110) {
+      return `<div class="bp-alert-card bp-crisis">
+        <div class="bpa-icon">🚨</div>
+        <div class="bpa-body">
+          <strong>血圧が非常に高い値です（${latest.bp_systolic}/${latest.bp_diastolic} mmHg）</strong>
+          <span>すぐに安静にし、症状がある場合は救急に連絡してください</span>
+        </div>
+        <div class="bpa-actions">
+          <a href="tel:119" class="btn btn-sm btn-danger">119番</a>
+          <button class="btn btn-sm btn-secondary" onclick="app.navigate('doctor_report')">レポート確認</button>
+        </div>
+      </div>`;
+    }
+
+    // Check 7-day average (need ≥3 readings)
+    const recent7 = vitals.filter(v => {
+      const d = new Date(v.timestamp);
+      return (Date.now() - d.getTime()) <= 7 * 86400000;
+    }).slice(0, 7);
+    if (recent7.length < 3) return '';
+
+    const avgS = recent7.reduce((s, v) => s + v.bp_systolic, 0) / recent7.length;
+    const avgD = recent7.reduce((s, v) => s + v.bp_diastolic, 0) / recent7.length;
+
+    // Grade 1 hypertension (130-139 / 80-89) — inform but don't alarm
+    const isElevated  = avgS >= 130 || avgD >= 80;
+    const isHighHigh  = avgS >= 140 || avgD >= 90;
+
+    if (!isElevated) return '';
+
+    const msgTitle = isHighHigh
+      ? `血圧が高めが続いています（平均 ${Math.round(avgS)}/${Math.round(avgD)} mmHg）`
+      : `血圧が若干高めです（平均 ${Math.round(avgS)}/${Math.round(avgD)} mmHg）`;
+    const msgBody = isHighHigh
+      ? 'かかりつけ医にご相談されることをお勧めします。塩分を控えめにし、十分な水分補給と安静を心がけてください。'
+      : '目安は130/80 mmHg以下です。記録を続け、必要に応じてかかりつけ医にご相談ください。';
+
+    const dismissKey = `lms_bpAlert_${new Date().toISOString().split('T')[0]}`;
+    if (localStorage.getItem(dismissKey)) return '';
+
+    return `<div class="bp-alert-card${isHighHigh ? ' bp-high' : ' bp-elevated'}">
+      <div class="bpa-icon">${isHighHigh ? '⚠️' : 'ℹ️'}</div>
+      <div class="bpa-body">
+        <strong>${msgTitle}</strong>
+        <span>${msgBody}</span>
+      </div>
+      <div class="bpa-actions">
+        <button class="btn btn-sm btn-secondary" onclick="app.navigate('doctor_report')">レポートを作成</button>
+        <button class="btn btn-sm btn-ghost" onclick="localStorage.setItem('${dismissKey}','1');this.closest('.bp-alert-card').remove()">閉じる</button>
+      </div>
+    </div>`;
   },
 
   // ─── Weight trend chart (health domain home, ≥3 weight readings) ───
