@@ -174,6 +174,7 @@ var Pages = {
     if (domain === 'work') {
       html += this.renderDailyPlanCard();
       html += this.renderTaskCompletionCard();
+      html += this.renderWorkDayCloseCard();
       if (typeof WorkFeatures !== 'undefined') {
         html += WorkFeatures.renderIkigaiDiscover();
         html += WorkFeatures.renderSideBizDiagnosis();
@@ -1247,6 +1248,72 @@ var Pages = {
   dismissDailyPlan(today) {
     try { localStorage.setItem('lms_dailyPlan_' + today, '[]'); } catch(e) {}
     const card = document.getElementById('dailyPlanCard');
+    if (card) card.remove();
+  },
+
+  // ─── Work day close card (5pm-10pm, after plan exists) ───
+  renderWorkDayCloseCard() {
+    const hour = new Date().getHours();
+    if (hour < 17 || hour >= 22) return '';
+
+    const today = new Date().toISOString().split('T')[0];
+    const lsKey = 'lms_workClose_' + today;
+    if (localStorage.getItem(lsKey)) return ''; // already done today
+
+    const tasks = store.getDomainData('work', 'tasks', 1).filter(e => e.timestamp?.startsWith(today));
+    const done = tasks.filter(t => t.status === 'done').length;
+    const total = tasks.length;
+    if (total === 0) return ''; // no plan was made today
+
+    const esc = Components.escapeHtml;
+    return `<div class="work-close-card" id="workCloseCard">
+      <div class="wc-header">
+        <span class="wc-icon">🌇</span>
+        <div class="wc-title-wrap">
+          <span class="wc-title">今日の仕事を振り返る</span>
+          <span class="wc-sub">完了 ${done}/${total}件</span>
+        </div>
+      </div>
+      <div class="wc-body">
+        <div class="wc-rating">
+          <span class="wc-rating-label">今日の充実度は？</span>
+          <div class="wc-stars">
+            ${[1,2,3,4,5].map(n =>
+              `<button class="wc-star" data-val="${n}" onclick="Pages.selectWorkCloseStar(${n}, this)">☆</button>`
+            ).join('')}
+          </div>
+        </div>
+        <div class="wc-tmr">
+          <label class="wc-tmr-label">明日の最優先は？</label>
+          <input type="text" id="wcTomorrow" class="form-input" placeholder="例：企画書を完成させる" maxlength="40">
+        </div>
+      </div>
+      <div class="wc-actions">
+        <button class="btn btn-primary" onclick="Pages.saveWorkDayClose('${today}')">振り返りを保存</button>
+        <button class="btn btn-ghost" onclick="localStorage.setItem('lms_workClose_${today}','skip');this.closest('.work-close-card').remove()">後で</button>
+      </div>
+    </div>`;
+  },
+
+  selectWorkCloseStar(n, btn) {
+    document.querySelectorAll('.wc-star').forEach((s, i) => {
+      s.textContent = i < n ? '★' : '☆';
+      s.classList.toggle('active', i < n);
+    });
+    this._wcStars = n;
+  },
+
+  saveWorkDayClose(today) {
+    const rating = this._wcStars || 0;
+    const tomorrow = document.getElementById('wcTomorrow')?.value?.trim() || '';
+    store.addDomainEntry('work', 'reflections', {
+      day_rating: rating,
+      tomorrow_priority: tomorrow,
+      notes: `充実度${rating}/5 • 明日: ${tomorrow}`
+    });
+    try { localStorage.setItem('lms_workClose_' + today, '1'); } catch(e) {}
+    Components.showToast('振り返りを保存しました', 'success');
+    const card = document.getElementById('workCloseCard');
     if (card) card.remove();
   },
 
