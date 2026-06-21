@@ -177,6 +177,7 @@ var Pages = {
 
     // Relationship domain: Isolation score + today contacts + social graph + birthdays
     if (domain === 'relationship') {
+      html += this.renderConnectionActivity();
       if (typeof RelationshipFeatures !== 'undefined') html += RelationshipFeatures.renderDashboard();
       html += this.renderTodayContactSuggestion();
       html += this.renderSocialGraph();
@@ -2972,6 +2973,56 @@ var Pages = {
         }
       }
     });
+  },
+
+  // ─── Social connection activity heatmap (relationship domain home) ───
+  renderConnectionActivity() {
+    const interactions = store.getDomainData('relationship', 'interactions', 28);
+    if (interactions.length === 0) return '';
+
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    // Build a set of dates with interactions (last 28 days)
+    const activeDays = new Set(interactions.filter(e => e.timestamp).map(e => e.timestamp.split('T')[0]));
+
+    // Compute connection streak (consecutive days ending today or yesterday)
+    let streak = 0;
+    const cur = new Date(today);
+    if (!activeDays.has(todayStr)) cur.setDate(cur.getDate() - 1);
+    while (streak <= 28) {
+      if (!activeDays.has(cur.toISOString().split('T')[0])) break;
+      streak++;
+      cur.setDate(cur.getDate() - 1);
+    }
+
+    // Week summary (Mon–today)
+    const weekAgo = new Date(today); weekAgo.setDate(today.getDate() - 6);
+    const weekPeople = new Set(
+      interactions.filter(e => e.timestamp && e.timestamp >= weekAgo.toISOString().split('T')[0] && e.person)
+        .map(e => e.person)
+    );
+
+    // 28-cell heatmap
+    const cells = [];
+    for (let i = 27; i >= 0; i--) {
+      const d = new Date(today); d.setDate(today.getDate() - i);
+      const ds = d.toISOString().split('T')[0];
+      const active = activeDays.has(ds);
+      const isToday = ds === todayStr;
+      cells.push(`<div class="ca-cell${active ? ' ca-active' : ''}${isToday ? ' ca-today' : ''}" title="${ds}"></div>`);
+    }
+
+    const streakBadge = streak >= 3 ? `<span class="ca-streak">${streak}日連続 🔥</span>` : '';
+
+    return `<div class="connection-activity-card">
+      <div class="ca-header">
+        <span class="ca-title">つながり活動（直近28日）</span>
+        ${streakBadge}
+      </div>
+      <div class="ca-grid">${cells.join('')}</div>
+      <div class="ca-footer">今週 <strong>${weekPeople.size}人</strong> と交流しました</div>
+    </div>`;
   },
 
   // ─── Budget trend chart (assets domain home, ≥2 months with data) ───

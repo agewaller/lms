@@ -2979,6 +2979,25 @@ html[data-theme="dark"] .ht-cell.level-3     { background: #10b981; }
 .mood-trend-header h3 { margin: 0; font-size: 15px; }
 .mood-trend-ref { font-size: 12px; color: var(--text-muted); }
 
+/* ─── Connection Activity Heatmap ─── */
+.connection-activity-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.ca-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.ca-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.ca-streak { font-size: 12px; font-weight: 700; color: #ef4444; }
+.ca-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 8px; }
+.ca-cell { height: 14px; border-radius: 3px; background: var(--bg-tertiary); }
+.ca-cell.ca-active { background: #ef4444; opacity: 0.75; }
+.ca-cell.ca-active.ca-today { opacity: 1; outline: 2px solid #ef4444; outline-offset: 1px; }
+.ca-cell.ca-today:not(.ca-active) { outline: 2px solid var(--border); outline-offset: 1px; }
+.ca-footer { font-size: 12px; color: var(--text-secondary); }
+.ca-footer strong { color: var(--text-primary); }
+
 /* ─── Budget Trend Chart ─── */
 .budget-trend-card {
   background: var(--bg-secondary);
