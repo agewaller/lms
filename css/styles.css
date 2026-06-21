@@ -1827,6 +1827,36 @@ body.is-admin .admin-only { display: flex; }
 .onb-icon { font-size: 26px; line-height: 1; }
 .onb-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
 
+/* ─── Streak badge ─── */
+.streak-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+/* ─── First-entry prompt (empty home state) ─── */
+.first-entry-prompt {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  margin: 8px 0 16px;
+}
+.fep-icon { font-size: 36px; flex-shrink: 0; }
+.fep-text { flex: 1; font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
+.fep-text strong { color: var(--text-primary); font-size: 15px; }
+@media (max-width: 600px) {
+  .first-entry-prompt { flex-direction: column; text-align: center; }
+}
+
 /* ─── Daily check-in nudge ─── */
 .checkin-nudge {
   display: flex;

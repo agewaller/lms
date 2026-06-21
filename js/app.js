@@ -444,7 +444,7 @@ var App = class App {
       store.set('recommendations', [...recs, ...existing].slice(0, 50));
 
       this.renderApp();
-      Components.showToast(i18n.t('saved'), 'success');
+      Components.showToast('分析が完了しました。アクションページをご確認ください', 'success');
     } catch (e) {
       Components.showToast(e.message, 'error');
     }

@@ -80,8 +80,14 @@ var Pages = {
     allRecent.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     if (allRecent.length === 0) {
-      html += Components.emptyState(domainConfig?.icon || '📭', i18n.t('no_data'),
-        `${i18n.t('record')} → ${i18n.t('save')}`);
+      html += `<div class="first-entry-prompt">
+        <div class="fep-icon">${domainConfig?.icon || '●'}</div>
+        <div class="fep-text">
+          <strong>まだ記録がありません</strong><br>
+          <span>「記録する」から今日の状態を入力してみましょう。<br>記録が増えると、あなたに合ったアドバイスが届きます。</span>
+        </div>
+        <button class="btn btn-primary" onclick="app.navigate('record')">今すぐ記録する →</button>
+      </div>`;
     } else {
       allRecent.slice(0, 10).forEach(entry => {
         html += Components.recordItem(entry, domain);
@@ -592,7 +598,7 @@ var Pages = {
     // Action items (todos)
     if (actions.length > 0) {
       html += `<div class="action-items">
-        <h3>📋 Action Items</h3>
+        <h3>📋 アクション項目</h3>
         ${actions.map((a, i) => `
           <div class="action-item ${a.done ? 'done' : ''}">
             <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${a.text}</label>
@@ -830,24 +836,51 @@ var Pages = {
 
   // ─── Daily check-in nudge ───
   renderCheckinNudge(domain) {
-    const today = new Date().toISOString().split('T')[0];
     const domainConfig = CONFIG.domains[domain];
     const categories = Object.keys(domainConfig?.categories || {});
+
+    // Compute a Set of all date strings (YYYY-MM-DD) that have at least one entry
+    const datesWithEntry = new Set();
+    const today = new Date().toISOString().split('T')[0];
     let todayCount = 0;
     categories.forEach(cat => {
-      store.getDomainData(domain, cat, 3).forEach(entry => {
-        if (entry.timestamp && entry.timestamp.startsWith(today)) todayCount++;
+      store.getDomainData(domain, cat, 90).forEach(entry => {
+        if (!entry.timestamp) return;
+        const d = entry.timestamp.split('T')[0];
+        datesWithEntry.add(d);
+        if (d === today) todayCount++;
       });
     });
+
+    // Count consecutive days ending today (or yesterday if today not done yet)
+    let streak = 0;
+    const check = new Date();
+    if (!datesWithEntry.has(today)) check.setDate(check.getDate() - 1);
+    while (true) {
+      const key = check.toISOString().split('T')[0];
+      if (!datesWithEntry.has(key)) break;
+      streak++;
+      check.setDate(check.getDate() - 1);
+      if (streak > 90) break;
+    }
+
+    const streakBadge = streak >= 2
+      ? `<span class="streak-badge">${streak}日連続</span>`
+      : '';
+
     if (todayCount > 0) {
       return `<div class="checkin-done">
         <span class="checkin-check">✓</span>
-        <span>今日の記録 ${todayCount}件完了</span>
+        <span>今日の記録 ${todayCount}件完了${streak >= 2 ? '　' : ''}</span>
+        ${streakBadge}
       </div>`;
     }
     return `<div class="checkin-nudge">
-      <span class="checkin-nudge-text">今日はまだ記録していません</span>
-      <button class="btn btn-sm btn-primary" onclick="app.navigate('record')">記録する</button>
+      <span class="checkin-nudge-text">今日はまだ記録していません${streak >= 2 ? '　' : ''}</span>
+      <span style="display:flex;align-items:center;gap:8px;">
+        ${streakBadge}
+        <button class="btn btn-sm btn-primary" onclick="app.navigate('record')">記録する</button>
+      </span>
     </div>`;
   },
 
