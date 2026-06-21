@@ -96,6 +96,9 @@ var Pages = {
 
     html += `</div></div>`;
 
+    // 14-day trend chart
+    html += this.renderTrendChartContainer(domain);
+
     // Recommendations
     const recs = (store.get('recommendations') || []).filter(r => r.domain === domain || !r.domain);
     if (recs.length > 0) {
@@ -903,6 +906,89 @@ var Pages = {
       <div class="pc-bar"><div class="pc-fill" style="width:${pct}%"></div></div>
       ${pct < 60 ? '<p class="pc-hint">プロフィールを充実させると、より的確なアドバイスが届きます</p>' : ''}
     </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  TREND CHART (14日間のトレンド)
+  // ═══════════════════════════════════════════════════════════
+
+  renderTrendChartContainer(domain) {
+    const categories = Object.keys(CONFIG.domains[domain]?.categories || {});
+    let totalEntries = 0;
+    categories.forEach(cat => { totalEntries += store.getDomainData(domain, cat, 30).length; });
+    if (totalEntries < 3) return '';
+
+    const label = domain === 'health' ? '体調スコア（10段階）' : '記録件数';
+    return `<div class="trend-chart-card">
+      <h3>14日間のトレンド</h3>
+      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:12px;">${label}</p>
+      <canvas id="domainTrendChart" height="120"></canvas>
+    </div>`;
+  },
+
+  initTrendChart(domain) {
+    const canvas = document.getElementById('domainTrendChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const color = CONFIG.domains[domain]?.color || '#6C63FF';
+    const categories = Object.keys(CONFIG.domains[domain]?.categories || {});
+
+    // Build 14-day label/data arrays
+    const days = 14;
+    const labels = [];
+    const values = [];
+
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateKey = d.toISOString().split('T')[0];
+      labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+
+      if (domain === 'health') {
+        const dayEntries = store.getDomainData('health', 'symptoms', days + 1)
+          .filter(e => e.timestamp?.startsWith(dateKey));
+        const levels = dayEntries.map(e => e.condition_level).filter(v => v != null);
+        values.push(levels.length > 0 ? Math.round(levels.reduce((a, b) => a + b, 0) / levels.length * 10) / 10 : null);
+      } else {
+        let count = 0;
+        categories.forEach(cat => {
+          count += store.getDomainData(domain, cat, days + 1)
+            .filter(e => e.timestamp?.startsWith(dateKey)).length;
+        });
+        values.push(count || null);
+      }
+    }
+
+    // Destroy previous chart if exists
+    if (canvas._chart) { canvas._chart.destroy(); }
+
+    canvas._chart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: color + '99',
+          borderColor: color,
+          borderWidth: 1,
+          borderRadius: 4,
+          spanGaps: true
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+          y: {
+            min: 0,
+            max: domain === 'health' ? 10 : undefined,
+            ticks: { font: { size: 10 }, stepSize: domain === 'health' ? 2 : 1 },
+            grid: { color: 'rgba(0,0,0,0.05)' }
+          }
+        }
+      }
+    });
   },
 
   // ═══════════════════════════════════════════════════════════

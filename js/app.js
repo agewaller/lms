@@ -229,6 +229,11 @@ var App = class App {
         if (typeof AssetsFeatures !== 'undefined') AssetsFeatures.calculateNISA();
       }, 100);
     }
+
+    // Initialize trend chart on home page
+    if (page === 'home') {
+      setTimeout(() => Pages.initTrendChart(domain), 150);
+    }
   }
 
   updateSidebar() {
