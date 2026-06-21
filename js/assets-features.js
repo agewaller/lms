@@ -290,17 +290,21 @@ var AssetsFeatures = {
       });
 
       try {
-        const result = await AIEngine.analyze('assets', 'daily', {
-          text: `ユーザーが証券口座または銀行のアプリの画面キャプチャをアップロードしました。
-画像の内容を読み取り、以下を分析してください：
+        const base64 = dataUrl.split(',')[1];
+        const result = await AIEngine.analyze('assets', 'image_analysis', {
+          text: `証券口座または銀行のアプリの画面キャプチャを分析してください。
+以下を読み取り、わかりやすく教えてください：
 1. 表示されている資産の種類と金額
 2. ポートフォリオの構成（何にいくら投資しているか）
 3. 損益の状況
 4. 改善の提案（分散投資、リバランスなど）
 5. 注意すべき点
 
-65歳女性のユーザーにわかりやすい言葉で説明してください。
-※画像の内容をテキストとして読み取れない場合は、ユーザーに手入力をお願いしてください。`
+65歳以上の方にわかりやすい言葉で説明してください。
+※画像の内容を読み取れない場合は、手入力をお願いしてください。`
+        }, {
+          imageBase64: base64,
+          imageMimeType: file.type || 'image/jpeg'
         });
 
         if (resultEl) {

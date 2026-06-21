@@ -20,13 +20,13 @@ var AIEngine = {
       let result;
       switch (modelConfig.provider) {
         case 'anthropic':
-          result = await this.callAnthropic(model, systemPrompt, userMessage, modelConfig.maxTokens);
+          result = await this.callAnthropic(model, systemPrompt, userMessage, modelConfig.maxTokens, options);
           break;
         case 'openai':
-          result = await this.callOpenAI(model, systemPrompt, userMessage, modelConfig.maxTokens);
+          result = await this.callOpenAI(model, systemPrompt, userMessage, modelConfig.maxTokens, options);
           break;
         case 'google':
-          result = await this.callGemini(model, systemPrompt, userMessage, modelConfig.maxTokens);
+          result = await this.callGemini(model, systemPrompt, userMessage, modelConfig.maxTokens, options);
           break;
         default:
           throw new Error('Unknown provider: ' + modelConfig.provider);
@@ -139,7 +139,7 @@ var AIEngine = {
 
   // ─── API Calls ───
 
-  async callAnthropic(model, system, userMsg, maxTokens) {
+  async callAnthropic(model, system, userMsg, maxTokens, options = {}) {
     const apiKey = this.getApiKey('anthropic');
     if (!apiKey) throw new Error('Anthropic APIキーが設定されていません。管理者にご連絡ください。');
 
@@ -181,7 +181,13 @@ var AIEngine = {
           model: this.MODEL_MAP[model] || model,
           max_tokens: maxTokens,
           system: system,
-          messages: [{ role: 'user', content: userMsg }]
+          messages: [{ role: 'user', content: options.imageBase64
+            ? [
+                { type: 'image', source: { type: 'base64', media_type: options.imageMimeType || 'image/jpeg', data: options.imageBase64 } },
+                { type: 'text', text: userMsg }
+              ]
+            : userMsg
+          }]
         })
       });
     } catch (e) {
@@ -205,7 +211,7 @@ var AIEngine = {
     return data.content?.[0]?.text || '';
   },
 
-  async callOpenAI(model, system, userMsg, maxTokens) {
+  async callOpenAI(model, system, userMsg, maxTokens, options = {}) {
     const apiKey = this.getApiKey('openai');
     if (!apiKey) throw new Error('OpenAI API key not set');
 
@@ -220,7 +226,13 @@ var AIEngine = {
         max_tokens: maxTokens,
         messages: [
           { role: 'system', content: system },
-          { role: 'user', content: userMsg }
+          { role: 'user', content: options.imageBase64
+            ? [
+                { type: 'text', text: userMsg },
+                { type: 'image_url', image_url: { url: `data:${options.imageMimeType || 'image/jpeg'};base64,${options.imageBase64}` } }
+              ]
+            : userMsg
+          }
         ]
       })
     });
@@ -233,7 +245,7 @@ var AIEngine = {
     return data.choices?.[0]?.message?.content || '';
   },
 
-  async callGemini(model, system, userMsg, maxTokens) {
+  async callGemini(model, system, userMsg, maxTokens, options = {}) {
     const apiKey = this.getApiKey('google');
     if (!apiKey) throw new Error('Google API key not set');
 
@@ -244,7 +256,13 @@ var AIEngine = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         system_instruction: { parts: [{ text: system }] },
-        contents: [{ parts: [{ text: userMsg }] }],
+        contents: [{ parts: options.imageBase64
+          ? [
+              { inline_data: { mime_type: options.imageMimeType || 'image/jpeg', data: options.imageBase64 } },
+              { text: userMsg }
+            ]
+          : [{ text: userMsg }]
+        }],
         generationConfig: { maxOutputTokens: maxTokens }
       })
     });
