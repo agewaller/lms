@@ -211,6 +211,73 @@ var AIEngine = {
     return data.content?.[0]?.text || '';
   },
 
+  // ─── Anthropic streaming (SSE) ───
+  async callAnthropicStream(model, system, userMsg, maxTokens, options = {}, onChunk) {
+    const apiKey = this.getApiKey('anthropic');
+    if (!apiKey) throw new Error('Anthropic APIキーが設定されていません。管理者にご連絡ください。');
+
+    const endpoint = CONFIG.endpoints.anthropic;
+    const isDirect = !endpoint || endpoint === 'direct' || endpoint.includes('your-account');
+    const url = isDirect ? 'https://api.anthropic.com/v1/messages' : endpoint;
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    };
+    if (isDirect) headers['anthropic-dangerous-direct-browser-access'] = 'true';
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model: this.MODEL_MAP[model] || model,
+        max_tokens: maxTokens,
+        stream: true,
+        system,
+        messages: [{ role: 'user', content: options.imageBase64
+          ? [
+              { type: 'image', source: { type: 'base64', media_type: options.imageMimeType || 'image/jpeg', data: options.imageBase64 } },
+              { type: 'text', text: userMsg }
+            ]
+          : userMsg
+        }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('Claude APIエラー (HTTP ' + res.status + '): ' + err);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const evt = JSON.parse(data);
+          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+            fullText += evt.delta.text;
+            onChunk(evt.delta.text, fullText);
+          }
+        } catch (_) {}
+      }
+    }
+
+    return fullText;
+  },
+
   async callOpenAI(model, system, userMsg, maxTokens, options = {}) {
     const apiKey = this.getApiKey('openai');
     if (!apiKey) throw new Error('OpenAI API key not set');

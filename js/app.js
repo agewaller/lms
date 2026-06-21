@@ -466,27 +466,75 @@ var App = class App {
     const text = input.value.trim();
     input.value = '';
 
-    // Show user message immediately
     const container = document.getElementById('chatContainer');
+    const ts = new Date().toISOString();
+
+    // Save user message and append immediately
+    const history = store.get('conversationHistory') || [];
+    const userMsg = { role: 'user', content: text, timestamp: ts, domain };
+    history.push(userMsg);
+    store.set('conversationHistory', history);
+
     if (container) {
-      container.innerHTML += Components.chatMessage({
-        role: 'user', content: text, timestamp: new Date().toISOString()
-      });
-      container.innerHTML += Components.loading(i18n.t('analyzing'));
+      if (container.querySelector('.empty-state')) container.innerHTML = '';
+      container.innerHTML += Components.chatMessage(userMsg);
+    }
+
+    // Create a placeholder element for the streaming assistant response
+    const streamId = 'stream-' + Date.now();
+    if (container) {
+      container.insertAdjacentHTML('beforeend',
+        `<div class="chat-msg chat-ai" id="${streamId}">
+          <div class="chat-icon">◈</div>
+          <div class="chat-content" id="${streamId}-c">${Components.loading('')}</div>
+        </div>`
+      );
       container.scrollTop = container.scrollHeight;
     }
 
     try {
-      const response = await AIEngine.chat(domain, text);
+      const model = store.get('selectedModel') || 'claude-sonnet-4-6';
+      const modelConfig = CONFIG.aiModels[model];
+      const systemPrompt = AIEngine.buildSystemPrompt(domain, 'daily');
+      const userMessage = AIEngine.buildUserMessage(domain, { text });
 
-      // Re-render to show full history
-      this.renderApp();
-    } catch (e) {
-      if (container) {
-        container.innerHTML += Components.chatMessage({
-          role: 'assistant', content: '⚠️ ' + e.message, timestamp: new Date().toISOString()
-        });
+      let fullResponse = '';
+      const contentEl = () => document.getElementById(streamId + '-c');
+
+      const onChunk = (_delta, full) => {
+        fullResponse = full;
+        const el = contentEl();
+        if (el) {
+          el.innerHTML = Components.formatMarkdown(full) + '<span class="stream-cursor">▋</span>';
+          if (container) container.scrollTop = container.scrollHeight;
+        }
+      };
+
+      if (modelConfig?.provider === 'anthropic') {
+        fullResponse = await AIEngine.callAnthropicStream(
+          model, systemPrompt, userMessage, modelConfig.maxTokens, {}, onChunk
+        );
+      } else {
+        fullResponse = await AIEngine.analyze(domain, 'daily', { text });
+        onChunk(fullResponse, fullResponse);
       }
+
+      // Finalize: remove cursor
+      const el = contentEl();
+      if (el) el.innerHTML = Components.formatMarkdown(fullResponse);
+
+      // Save assistant message to history
+      const updated = store.get('conversationHistory') || [];
+      updated.push({ role: 'assistant', content: fullResponse, timestamp: new Date().toISOString(), domain });
+      store.set('conversationHistory', updated);
+
+    } catch (e) {
+      const msgEl = document.getElementById(streamId);
+      if (msgEl) msgEl.outerHTML = Components.chatMessage({
+        role: 'assistant',
+        content: '申し訳ありません。エラーが発生しました: ' + Components.escapeHtml(e.message || ''),
+        timestamp: new Date().toISOString()
+      });
     }
   }
 

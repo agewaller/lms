@@ -1258,6 +1258,8 @@ body.is-admin .admin-only { display: flex; }
 .chat-time { font-size: 13px; color: var(--text-muted); align-self: flex-end; }
 .chat-input-bar { display: flex; gap: 10px; }
 .chat-input-bar .form-input { flex: 1; }
+.stream-cursor { animation: blink 0.8s step-end infinite; opacity: 1; }
+@keyframes blink { 50% { opacity: 0; } }
 
 /* ─── Settings Page ─── */
 .settings-section {
