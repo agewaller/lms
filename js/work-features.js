@@ -209,7 +209,7 @@ var WorkFeatures = {
           const typeLabel = a.provision === 'paid' ? '💰 有償' : a.provision === 'volunteer' ? '🤝 ボランティア' : '📝 記録';
           return `<div class="activity-item">
             <span class="ai-type">${typeLabel}</span>
-            <span class="ai-title">${a.title || a.description || ''}</span>
+            <span class="ai-title">${Components.escapeHtml(a.title || a.description || '')}</span>
             <span class="ai-time">${new Date(a.timestamp).toLocaleDateString('ja-JP')}</span>
           </div>`;
         }).join('')}
