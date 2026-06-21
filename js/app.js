@@ -772,6 +772,17 @@ var App = class App {
     Pages.resetBreathing();
   }
 
+  logMeditation(minutes) {
+    store.addDomainEntry('consciousness', 'practices', {
+      practice_type: 'meditation',
+      duration_minutes: Number(minutes) || 10,
+      quality: 8,
+      notes: `瞑想タイマー（${minutes}分）`
+    });
+    Components.showToast(`瞑想 ${minutes}分を記録しました ✓`, 'success');
+    Pages.resetMeditation();
+  }
+
   // ─── Stock Analysis (Assets domain) ───
   // Uses the VM Hands-on prompt (assets_stock) configured by admin.
   // The prompt is loaded via AIEngine.buildSystemPrompt which maps

@@ -150,6 +150,7 @@ var Pages = {
     if (domain === 'consciousness') {
       html += this.renderDailyIntention();
       html += this.renderBreathingExercise();
+      html += this.renderMeditationTimer();
       html += this.renderPracticeHistory();
       html += this.renderQuickLayerPick();
       html += this.renderGratitudeWidget();
@@ -3275,6 +3276,106 @@ var Pages = {
         }
       }
     });
+  },
+
+  // ─── Meditation countdown timer (consciousness domain home) ───
+  renderMeditationTimer() {
+    return `<div class="meditation-card" id="meditCard">
+      <div class="mdt-idle">
+        <div class="mdt-header">
+          <span class="mdt-icon">🧘</span>
+          <div class="mdt-intro">
+            <strong>瞑想タイマー</strong>
+            <span>静かな時間を確保しましょう</span>
+          </div>
+        </div>
+        <div class="mdt-durations">
+          <button class="mdt-dur-btn" onclick="Pages.startMeditation(5)">5分</button>
+          <button class="mdt-dur-btn" onclick="Pages.startMeditation(10)">10分</button>
+          <button class="mdt-dur-btn" onclick="Pages.startMeditation(15)">15分</button>
+          <button class="mdt-dur-btn" onclick="Pages.startMeditation(20)">20分</button>
+        </div>
+      </div>
+      <div class="mdt-active" style="display:none">
+        <div class="mdt-ring" id="mdtRing">
+          <div class="mdt-time" id="mdtTime">--:--</div>
+        </div>
+        <div class="mdt-phase">静かに目を閉じてください</div>
+        <div class="mdt-controls">
+          <button class="btn btn-ghost btn-sm" onclick="Pages.pauseMeditation()" id="mdtPauseBtn">一時停止</button>
+          <button class="btn btn-ghost btn-sm" onclick="Pages.stopMeditation()">終わる</button>
+        </div>
+      </div>
+      <div class="mdt-done" style="display:none">
+        <div class="mdt-done-icon">🙏</div>
+        <div class="mdt-done-text">
+          <strong>お疲れ様でした</strong>
+          <span>心が整いましたか？</span>
+        </div>
+        <div class="mdt-done-btns">
+          <button class="btn btn-primary" onclick="app.logMeditation(Pages._mdtDuration)">記録する</button>
+          <button class="btn btn-ghost" onclick="Pages.resetMeditation()">もう一度</button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  startMeditation(minutes) {
+    this._mdtDuration = minutes;
+    this._mdtRemaining = minutes * 60;
+    this._mdtPaused = false;
+    clearTimeout(this._mdtTimer);
+    const card = document.getElementById('meditCard');
+    if (!card) return;
+    card.querySelector('.mdt-idle').style.display = 'none';
+    card.querySelector('.mdt-done').style.display = 'none';
+    card.querySelector('.mdt-active').style.display = '';
+    this._runMeditationTick();
+  },
+
+  _runMeditationTick() {
+    if (this._mdtPaused) return;
+    if (this._mdtRemaining <= 0) { this._finishMeditation(); return; }
+    const total = this._mdtDuration * 60;
+    const pct = ((total - this._mdtRemaining) / total * 100).toFixed(1);
+    const ring = document.getElementById('mdtRing');
+    const timeEl = document.getElementById('mdtTime');
+    if (!ring || !timeEl) return;
+    ring.style.setProperty('--progress', pct + '%');
+    const m = Math.floor(this._mdtRemaining / 60);
+    const s = this._mdtRemaining % 60;
+    timeEl.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    this._mdtRemaining--;
+    this._mdtTimer = setTimeout(() => this._runMeditationTick(), 1000);
+  },
+
+  pauseMeditation() {
+    this._mdtPaused = !this._mdtPaused;
+    const btn = document.getElementById('mdtPauseBtn');
+    if (btn) btn.textContent = this._mdtPaused ? '再開する' : '一時停止';
+    if (!this._mdtPaused) this._runMeditationTick();
+  },
+
+  stopMeditation() {
+    clearTimeout(this._mdtTimer);
+    this.resetMeditation();
+  },
+
+  _finishMeditation() {
+    clearTimeout(this._mdtTimer);
+    const card = document.getElementById('meditCard');
+    if (!card) return;
+    card.querySelector('.mdt-active').style.display = 'none';
+    card.querySelector('.mdt-done').style.display = '';
+  },
+
+  resetMeditation() {
+    clearTimeout(this._mdtTimer);
+    const card = document.getElementById('meditCard');
+    if (!card) return;
+    card.querySelector('.mdt-active').style.display = 'none';
+    card.querySelector('.mdt-done').style.display = 'none';
+    card.querySelector('.mdt-idle').style.display = '';
   },
 
   // ─── Monthly health comparison card (this month vs last month) ───

@@ -3767,3 +3767,96 @@ html[data-theme="dark"] .cscr-sug-item { border-top-color: rgba(255,255,255,0.07
 .mhc-up { color: #10b981; font-weight: 700; }
 .mhc-down { color: #ef4444; font-weight: 700; }
 .mhc-flat { color: var(--text-secondary); }
+
+/* ─── Meditation Timer Card (consciousness) ─── */
+.meditation-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.mdt-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.mdt-icon { font-size: 1.8rem; flex-shrink: 0; }
+.mdt-intro { display: flex; flex-direction: column; gap: 2px; }
+.mdt-intro strong { font-size: 0.95rem; color: var(--text-primary); }
+.mdt-intro span { font-size: 0.8rem; color: var(--text-secondary); }
+.mdt-durations {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mdt-dur-btn {
+  flex: 1;
+  min-width: 60px;
+  padding: 10px 8px;
+  border: 2px solid var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: center;
+}
+.mdt-dur-btn:hover { border-color: #6C63FF; background: rgba(108,99,255,0.06); }
+/* Active state of timer */
+.mdt-active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 0;
+}
+.mdt-ring {
+  --progress: 0%;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: conic-gradient(#6C63FF var(--progress), var(--bg-tertiary) 0%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.mdt-ring::before {
+  content: '';
+  position: absolute;
+  width: 94px;
+  height: 94px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+}
+.mdt-time {
+  position: relative;
+  z-index: 1;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+.mdt-phase {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.mdt-controls { display: flex; gap: 10px; }
+/* Done state */
+.mdt-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  text-align: center;
+}
+.mdt-done-icon { font-size: 2.5rem; }
+.mdt-done-text { display: flex; flex-direction: column; gap: 4px; }
+.mdt-done-text strong { font-size: 1rem; color: var(--text-primary); }
+.mdt-done-text span { font-size: 0.85rem; color: var(--text-secondary); }
+.mdt-done-btns { display: flex; gap: 10px; }
