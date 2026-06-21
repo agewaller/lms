@@ -53,6 +53,7 @@ var Pages = {
       ${this.renderDomainInsight(domain)}
       ${this.renderCrossDomainInsights(domain)}
       ${this.renderReengagementNudge()}
+      ${this.renderAchievementBadges()}
       ${this.renderFamilyShareCard(domain)}
       ${this.renderWeeklySummary()}
       ${this.renderNotificationPrompt()}`;
@@ -2256,6 +2257,135 @@ var Pages = {
   },
 
   // ─── Family share card (drives organic growth via LINE/SNS) ───
+  // ─── Achievement milestone system ───
+  _achievementDefs: [
+    { id: 'first_entry',      icon: '🌱', title: 'はじめの一歩',   desc: '最初の記録を入力しました' },
+    { id: 'streak_3',         icon: '🔥', title: '3日連続',        desc: '3日連続で記録しました' },
+    { id: 'streak_7',         icon: '✨', title: '7日連続',        desc: '1週間、毎日記録しました！' },
+    { id: 'streak_30',        icon: '🌟', title: '30日連続',       desc: '1ヵ月間、毎日記録しました！' },
+    { id: 'all_6_domains',    icon: '🎯', title: '6領域制覇',      desc: '6つすべての領域に記録があります' },
+    { id: 'entries_100',      icon: '💯', title: '100件達成',      desc: '合計100件の記録を達成しました' },
+    { id: 'medication_7',     icon: '💊', title: 'お薬習慣',       desc: '7日連続でお薬を記録しました' },
+    { id: 'contacts_10',      icon: '👥', title: 'つながり達人',   desc: '10人以上と交流を記録しました' },
+    { id: 'checkin_14',       icon: '☀️', title: '朝の習慣',      desc: '14日間、朝のチェックインを完了しました' },
+    { id: 'breath_5',         icon: '🫁', title: '呼吸の達人',     desc: '呼吸法を5回記録しました' }
+  ],
+
+  checkAchievements() {
+    const unlocked = new Set(JSON.parse(localStorage.getItem('lms_achievements') || '[]'));
+    const newlyUnlocked = [];
+
+    // Collect all-domain entries
+    let totalEntries = 0;
+    const domainsWithData = new Set();
+    Object.keys(CONFIG.domains).forEach(d => {
+      Object.keys(CONFIG.domains[d]?.categories || {}).forEach(cat => {
+        const data = store.getDomainData(d, cat, 365);
+        totalEntries += data.length;
+        if (data.length > 0) domainsWithData.add(d);
+      });
+    });
+
+    // Overall streak
+    const allDates = new Set();
+    Object.keys(CONFIG.domains).forEach(d => {
+      Object.keys(CONFIG.domains[d]?.categories || {}).forEach(cat => {
+        store.getDomainData(d, cat, 90).forEach(e => { if (e.timestamp) allDates.add(e.timestamp.split('T')[0]); });
+      });
+    });
+    const todayKey = new Date().toISOString().split('T')[0];
+    let streak = 0;
+    const cur = new Date();
+    if (!allDates.has(todayKey)) cur.setDate(cur.getDate() - 1);
+    while (streak <= 90) {
+      if (!allDates.has(cur.toISOString().split('T')[0])) break;
+      streak++;
+      cur.setDate(cur.getDate() - 1);
+    }
+
+    // Medication streak
+    const medDates = new Set(
+      store.getDomainData('health', 'symptoms', 30)
+        .filter(e => e.medications_taken && e.timestamp)
+        .map(e => e.timestamp.split('T')[0])
+    );
+    let medStreak = 0;
+    const mc = new Date();
+    while (medStreak <= 30) {
+      if (!medDates.has(mc.toISOString().split('T')[0])) break;
+      medStreak++;
+      mc.setDate(mc.getDate() - 1);
+    }
+
+    // Unique contacts
+    const uniqueContacts = new Set(
+      store.getDomainData('relationship', 'interactions', 365)
+        .map(e => e.person).filter(Boolean)
+    );
+
+    // Checkin count
+    let checkinCount = 0;
+    for (let i = 0; i < 90; i++) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      if (localStorage.getItem('lms_checkin_' + d.toISOString().split('T')[0])) checkinCount++;
+    }
+
+    // Breathing count
+    const breathCount = store.getDomainData('consciousness', 'practices', 365)
+      .filter(e => e.practice_type === 'breathwork').length;
+
+    const checks = {
+      first_entry:   totalEntries >= 1,
+      streak_3:      streak >= 3,
+      streak_7:      streak >= 7,
+      streak_30:     streak >= 30,
+      all_6_domains: domainsWithData.size >= 6,
+      entries_100:   totalEntries >= 100,
+      medication_7:  medStreak >= 7,
+      contacts_10:   uniqueContacts.size >= 10,
+      checkin_14:    checkinCount >= 14,
+      breath_5:      breathCount >= 5
+    };
+
+    this._achievementDefs.forEach(def => {
+      if (checks[def.id] && !unlocked.has(def.id)) {
+        unlocked.add(def.id);
+        newlyUnlocked.push(def);
+      }
+    });
+
+    localStorage.setItem('lms_achievements', JSON.stringify([...unlocked]));
+    return { unlocked: [...unlocked], newlyUnlocked };
+  },
+
+  renderAchievementBadges() {
+    const unlocked = new Set(JSON.parse(localStorage.getItem('lms_achievements') || '[]'));
+    if (unlocked.size === 0) return '';
+    const defs = this._achievementDefs;
+    const badges = defs.filter(d => unlocked.has(d.id));
+    return `<div class="achievement-badges">
+      <div class="ab-header">
+        <span class="ab-title">実績 <strong>${badges.length}</strong>/<span style="opacity:.6">${defs.length}</span></span>
+      </div>
+      <div class="ab-list">
+        ${badges.map(b => `<div class="ab-badge" title="${b.title}：${b.desc}">${b.icon}</div>`).join('')}
+        ${defs.filter(d => !unlocked.has(d.id)).map(() => `<div class="ab-badge ab-locked">🔒</div>`).join('')}
+      </div>
+    </div>`;
+  },
+
+  showNewAchievement(def) {
+    const existing = document.getElementById('achievementToast');
+    if (existing) existing.remove();
+    const el = document.createElement('div');
+    el.id = 'achievementToast';
+    el.className = 'achievement-toast';
+    el.innerHTML = `<div class="at-icon">${def.icon}</div><div class="at-body"><strong>${def.title}</strong><span>${def.desc}</span></div>`;
+    document.body.appendChild(el);
+    setTimeout(() => el.classList.add('at-show'), 50);
+    setTimeout(() => { el.classList.remove('at-show'); setTimeout(() => el.remove(), 400); }, 4000);
+  },
+
   renderFamilyShareCard(domain) {
     // Only health & consciousness domains get the family share card
     if (!['health', 'consciousness', 'relationship'].includes(domain)) return '';

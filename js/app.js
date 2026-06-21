@@ -295,6 +295,16 @@ var App = class App {
         if (domain === 'consciousness') Pages.initMoodTrendChart();
         if (domain === 'assets') Pages.initBudgetTrendChart();
         if (domain === 'time') Pages.initTimeAllocationChart();
+
+        // Check and display newly unlocked achievements
+        const { newlyUnlocked } = Pages.checkAchievements();
+        if (newlyUnlocked.length > 0) {
+          let delay = 1000;
+          newlyUnlocked.forEach(def => {
+            setTimeout(() => Pages.showNewAchievement(def), delay);
+            delay += 4500;
+          });
+        }
       }, 150);
     }
   }
