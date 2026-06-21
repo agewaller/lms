@@ -240,6 +240,10 @@ var App = class App {
     document.querySelectorAll('.domain-nav').forEach(el => {
       el.classList.toggle('active', el.dataset.domain === domain);
     });
+    // Update mobile bottom nav active state
+    document.querySelectorAll('.mbn-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.domain === domain);
+    });
 
     // Update sidebar user info
     this.updateSidebar();

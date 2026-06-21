@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="LMS">
   <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="css/styles.css?v=90">
+  <link rel="stylesheet" href="css/styles.css?v=91">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -114,6 +114,34 @@
   <!-- Sidebar Overlay (mobile) -->
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="app.toggleSidebar()"></div>
 
+  <!-- Mobile Bottom Navigation (6 life domains, shown only on small screens) -->
+  <nav class="mobile-bottom-nav" id="mobileBottomNav">
+    <a class="mbn-item" data-domain="consciousness" onclick="app.switchDomain('consciousness')">
+      <span class="mbn-num" style="background:#6C63FF">一</span>
+      <span class="mbn-label">意識</span>
+    </a>
+    <a class="mbn-item" data-domain="health" onclick="app.switchDomain('health')">
+      <span class="mbn-num" style="background:#10b981">二</span>
+      <span class="mbn-label">健康</span>
+    </a>
+    <a class="mbn-item" data-domain="time" onclick="app.switchDomain('time')">
+      <span class="mbn-num" style="background:#f59e0b">三</span>
+      <span class="mbn-label">時間</span>
+    </a>
+    <a class="mbn-item" data-domain="work" onclick="app.switchDomain('work')">
+      <span class="mbn-num" style="background:#3b82f6">四</span>
+      <span class="mbn-label">仕事</span>
+    </a>
+    <a class="mbn-item" data-domain="relationship" onclick="app.switchDomain('relationship')">
+      <span class="mbn-num" style="background:#ef4444">五</span>
+      <span class="mbn-label">関係</span>
+    </a>
+    <a class="mbn-item" data-domain="assets" onclick="app.switchDomain('assets')">
+      <span class="mbn-num" style="background:#d97706">六</span>
+      <span class="mbn-label">資産</span>
+    </a>
+  </nav>
+
   <!-- Modal -->
   <div class="modal-overlay" id="modal-overlay">
     <div class="modal">
@@ -149,7 +177,7 @@
   <script src="js/work-features.js?v=6"></script>
   <script src="js/relationship-features.js?v=5"></script>
   <script src="js/pages.js?v=87"></script>
-  <script src="js/app.js?v=30"></script>
+  <script src="js/app.js?v=31"></script>
 
   <script>
     // Load saved configs
