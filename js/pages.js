@@ -191,6 +191,7 @@ var Pages = {
       }
       html += this.renderWorkGoalProgress();
       html += this.renderResumeWidget();
+      html += this.renderVolunteerTracker();
     }
 
     // Relationship domain: Isolation score + today contacts + social graph + birthdays
@@ -6864,6 +6865,72 @@ var Pages = {
       <div class="wws-header">今週の仕事サマリー</div>
       <div class="wws-grid">${statCells}</div>
     </div>`;
+  },
+
+  // ─── Volunteer / Community Contribution Tracker (work domain) ───
+  renderVolunteerTracker() {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const entries = store.getDomainData('work', 'volunteer', 60);
+    const thisMonth = entries.filter(e => e.timestamp && new Date(e.timestamp) >= monthStart);
+
+    const totalHours = thisMonth.reduce((s, e) => s + (parseFloat(e.hours) || 0), 0);
+    const types = [...new Set(thisMonth.map(e => e.type).filter(Boolean))];
+
+    const typeLabels = {
+      community: '地域活動',
+      volunteer: 'ボランティア',
+      mentor: '指導・伝達',
+      hobby: '趣味グループ',
+      npo: 'NPO・市民活動',
+      other: 'その他'
+    };
+
+    const msg = totalHours === 0
+      ? 'まだ記録がありません。地域や社会とのつながりを記録しましょう。'
+      : totalHours < 5
+        ? `今月 ${totalHours % 1 === 0 ? totalHours : totalHours.toFixed(1)} 時間。社会とつながる時間は宝物です。`
+        : totalHours < 15
+          ? `今月 ${totalHours.toFixed(1)} 時間の活動、素晴らしいです！`
+          : `今月 ${totalHours.toFixed(1)} 時間！あなたの力が地域を支えています。`;
+
+    return `<div class="vol-tracker-card">
+      <div class="vol-header">
+        <div>
+          <div class="vol-title">地域・社会への貢献</div>
+          <div class="vol-sub">${msg}</div>
+        </div>
+        ${totalHours > 0 ? `<div class="vol-total">${totalHours % 1 === 0 ? totalHours : totalHours.toFixed(1)}<span>h</span></div>` : ''}
+      </div>
+      ${types.length > 0 ? `<div class="vol-types">${types.map(t => `<span class="vol-badge">${typeLabels[t] || Components.escapeHtml(t)}</span>`).join('')}</div>` : ''}
+      <div class="vol-form">
+        <select id="volType" class="form-input form-input-sm">
+          ${Object.entries(typeLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+        </select>
+        <input type="number" id="volHours" class="form-input form-input-sm" placeholder="時間" min="0.5" max="24" step="0.5" style="width:90px;">
+        <button class="btn btn-primary btn-sm" onclick="Pages.logVolunteer()">記録</button>
+      </div>
+      ${thisMonth.length > 0 ? `<div class="vol-recent">
+        ${thisMonth.slice(0, 3).map(e => `
+          <div class="vol-entry">
+            <span class="vol-entry-type">${typeLabels[e.type] || Components.escapeHtml(e.type || '')}</span>
+            <span class="vol-entry-hours">${parseFloat(e.hours || 0).toFixed(1)}h</span>
+            <span class="vol-entry-date">${(e.timestamp || '').split('T')[0]}</span>
+          </div>`).join('')}
+      </div>` : ''}
+    </div>`;
+  },
+
+  logVolunteer() {
+    const type = document.getElementById('volType')?.value;
+    const hours = parseFloat(document.getElementById('volHours')?.value);
+    if (!type || isNaN(hours) || hours <= 0) {
+      Components.showToast('活動の種類と時間を入力してください', 'error');
+      return;
+    }
+    store.addDomainEntry('work', 'volunteer', { type, hours, timestamp: new Date().toISOString() });
+    Components.showToast('記録しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Cross-Domain Correlation Insights ───
