@@ -2369,6 +2369,14 @@ body.is-admin .admin-only { display: flex; }
   margin-bottom: 10px;
 }
 .dp-done .dp-question { color: var(--text-muted); font-weight: 400; }
+.dp-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.dp-input-row .dp-reply-input { margin-bottom: 0; flex: 1; min-width: 0; }
+.dp-voice { flex-shrink: 0; align-self: flex-end; }
 .dp-reply-input {
   width: 100%;
   resize: vertical;

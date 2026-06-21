@@ -1653,7 +1653,10 @@ var Pages = {
     return `<div class="daily-prompt-card">
       <div class="dp-label">今日の問いかけ</div>
       <div class="dp-question">${Components.escapeHtml(q)}</div>
-      <textarea id="dpReply_${domain}" class="form-input dp-reply-input" rows="3" placeholder="思ったことをそのまま書いてください。正解はありません"></textarea>
+      <div class="dp-input-row">
+        <textarea id="dpReply_${domain}" class="form-input dp-reply-input" rows="3" placeholder="思ったことをそのまま書いてください。正解はありません"></textarea>
+        <button class="btn btn-voice dp-voice" id="voiceBtn_dpReply_${domain}" onclick="app.startVoiceInput('dpReply_${domain}')" title="音声入力">🎤</button>
+      </div>
       <div class="dp-actions">
         <button class="btn btn-sm btn-primary" onclick="Pages.savePromptReply('${domain}', '${qEsc}')">書き留める</button>
         <button class="btn btn-sm btn-secondary" onclick="app.replyToPrompt('${qEsc}')">相談する →</button>
