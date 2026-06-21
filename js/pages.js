@@ -148,6 +148,7 @@ var Pages = {
 
     // Consciousness domain: daily intention + gratitude journal + 7-layer visualization + transcript input
     if (domain === 'consciousness') {
+      html += this.renderDailyZenQuestion();
       html += this.renderDailyIntention();
       html += this.renderMicroJournal();
       html += this.renderBreathingExercise();
@@ -250,6 +251,68 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Daily Zen Question Card (consciousness domain, rotates by layer) ───
+  renderDailyZenQuestion() {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    if (localStorage.getItem('lms_zenq_dismissed') === todayStr) return '';
+
+    const layerQs = [
+      { name: '計測', color: '#E74C3C', q: '今日、数字や成果で表せる「達成」は何でしたか？' },
+      { name: '関係', color: '#E67E22', q: '今日、誰かとの「つながり」で気づいたことはありましたか？' },
+      { name: '現場', color: '#F1C40F', q: '今日、五感で一番印象に残った瞬間はどこですか？' },
+      { name: '心身', color: '#27AE60', q: '今日の体の状態を一言で表すとすれば、何という言葉になりますか？' },
+      { name: '構想', color: '#2980B9', q: '最近、「これが自分の大切にしたいこと」と気づいたことはありますか？' },
+      { name: '可能性', color: '#8E44AD', q: 'いつもと違う選択をするとしたら、今日何を変えてみますか？' },
+      { name: '統合', color: '#9B59B6', q: '今日、誰かを（または自分を）そのまま受け入れられましたか？' },
+      { name: '空',   color: '#1ABC9C', q: '今、手放してもよいと思える「こだわり」はありますか？' }
+    ];
+
+    const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+    const layer = layerQs[dayOfYear % layerQs.length];
+
+    const ansKey = `lms_zenq_answer_${todayStr}`;
+    let savedAnswer = '';
+    try { savedAnswer = localStorage.getItem(ansKey) || ''; } catch (e) {}
+    const esc = Components.escapeHtml;
+
+    if (savedAnswer) {
+      return `<div class="zen-q-card zen-q-answered" style="border-left-color:${layer.color}">
+        <div class="zenq-layer" style="color:${layer.color}">${layer.name}レイヤー</div>
+        <div class="zenq-q">${layer.q}</div>
+        <div class="zenq-answer">${esc(savedAnswer)}</div>
+        <button class="zenq-dismiss" onclick="Pages.dismissZenQuestion('${todayStr}')">閉じる</button>
+      </div>`;
+    }
+
+    return `<div class="zen-q-card" style="border-left-color:${layer.color}">
+      <div class="zenq-layer" style="color:${layer.color}">${layer.name}レイヤーの問い</div>
+      <div class="zenq-q">${layer.q}</div>
+      <div class="zenq-input-row">
+        <input type="text" id="zenqInput" class="form-input" placeholder="思ったことを一言…" maxlength="80">
+        <button class="btn btn-sm btn-primary" onclick="Pages.saveZenAnswer('${esc(todayStr)}', '${esc(ansKey)}')">記録</button>
+      </div>
+      <button class="zenq-skip" onclick="Pages.dismissZenQuestion('${todayStr}')">スキップ</button>
+    </div>`;
+  },
+
+  saveZenAnswer(todayStr, ansKey) {
+    const input = document.getElementById('zenqInput');
+    if (!input || !input.value.trim()) return;
+    try { localStorage.setItem(ansKey, input.value.trim()); } catch (e) {}
+    store.addDomainEntry('consciousness', 'entries', {
+      text: input.value.trim(), entry_type: 'zen_question', timestamp: new Date().toISOString()
+    });
+    Components.showToast('記録しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  dismissZenQuestion(todayStr) {
+    try { localStorage.setItem('lms_zenq_dismissed', todayStr); } catch (e) {}
+    const card = document.querySelector('.zen-q-card');
+    if (card) card.remove();
   },
 
   // ─── Daily Intention (Consciousness domain) ───
@@ -4267,12 +4330,20 @@ var Pages = {
 
   // ─── Weekly consciousness heatmap (consciousness domain, ≥3 obs this week) ───
   renderWeeklyConsciousnessTrend() {
-    const obs7 = store.getDomainData('consciousness', 'observation', 7)
-      .filter(e => Object.keys(e).some(k => k.startsWith('layer_') && Number(e[k]) > 0));
-    if (obs7.length < 3) return '';
+    const layerDefs = [
+      { key: 'layer_1',  name: '計測',   color: '#E74C3C' },
+      { key: 'layer_2',  name: '関係',   color: '#E67E22' },
+      { key: 'layer_3',  name: '現場',   color: '#F1C40F' },
+      { key: 'layer_35', name: '心身',   color: '#27AE60' },
+      { key: 'layer_4',  name: '構想',   color: '#2980B9' },
+      { key: 'layer_5',  name: '可能性', color: '#8E44AD' },
+      { key: 'layer_6',  name: '統合',   color: '#9B59B6' },
+      { key: 'layer_7',  name: '空',     color: '#1ABC9C' }
+    ];
 
-    const layerNames = ['肉体', '感情', '思考', '役割', '世界観', '知性', '悟り'];
-    const layerColors = ['#10b981', '#3b82f6', '#6C63FF', '#f59e0b', '#ef4444', '#8b5cf6', '#0ea5e9'];
+    const obs7 = store.getDomainData('consciousness', 'observation', 7)
+      .filter(e => layerDefs.some(l => Number(e[l.key]) > 0));
+    if (obs7.length < 3) return '';
 
     const now = new Date();
     const days = Array.from({ length: 7 }, (_, i) => {
@@ -4287,22 +4358,22 @@ var Pages = {
     obs7.forEach(e => {
       const d = (e.timestamp || '').split('T')[0];
       if (!dayMap[d]) dayMap[d] = {};
-      for (let i = 1; i <= 7; i++) {
-        const v = Number(e[`layer_${i}`] || 0);
-        if (v > 0) dayMap[d][i] = Math.max(dayMap[d][i] || 0, v);
-      }
+      layerDefs.forEach(l => {
+        const v = Number(e[l.key] || 0);
+        if (v > 0) dayMap[d][l.key] = Math.max(dayMap[d][l.key] || 0, v);
+      });
     });
 
     const totals = {};
     obs7.forEach(e => {
-      for (let i = 1; i <= 7; i++) {
-        const v = Number(e[`layer_${i}`] || 0);
-        if (v > 0) totals[i] = (totals[i] || 0) + v;
-      }
+      layerDefs.forEach(l => {
+        const v = Number(e[l.key] || 0);
+        if (v > 0) totals[l.key] = (totals[l.key] || 0) + v;
+      });
     });
-    const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
-    const topLayer = sorted[0];
-    const bottomLayer = sorted[sorted.length - 1];
+    const sortedKeys = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+    const topDef = layerDefs.find(l => l.key === sortedKeys[0]?.[0]);
+    const bottomDef = layerDefs.find(l => l.key === sortedKeys[sortedKeys.length - 1]?.[0]);
 
     const dayHeader = `<div class="cwt-day-headers">
       <div class="cwt-layer-spacer"></div>
@@ -4312,24 +4383,22 @@ var Pages = {
       }).join('')}
     </div>`;
 
-    const layerRows = layerNames.map((name, idx) => {
-      const num = idx + 1;
-      const color = layerColors[idx];
+    const layerRows = layerDefs.map(l => {
       const cells = days.map(d => {
-        const val = dayMap[d]?.[num] || 0;
+        const val = dayMap[d]?.[l.key] || 0;
         if (!val) return `<div class="cwt-cell"></div>`;
-        const opacity = (0.3 + (val / 10) * 0.7).toFixed(2);
-        return `<div class="cwt-cell cwt-cell-on" style="background:${color};opacity:${opacity}" title="${name}: ${val}"></div>`;
+        const opacity = (0.3 + (val / 100) * 0.7).toFixed(2);
+        return `<div class="cwt-cell cwt-cell-on" style="background:${l.color};opacity:${opacity}" title="${l.name}: ${val}"></div>`;
       }).join('');
       return `<div class="cwt-layer-row">
-        <div class="cwt-layer-label">${name}</div>
+        <div class="cwt-layer-label">${l.name}</div>
         ${cells}
       </div>`;
     }).join('');
 
-    const insight = topLayer
-      ? `<div class="cwt-insight">最も活発: <strong style="color:${layerColors[topLayer[0]-1]}">${layerNames[topLayer[0]-1]}</strong>` +
-        (bottomLayer && bottomLayer[0] !== topLayer[0] ? ` / 伸びしろ: <strong>${layerNames[bottomLayer[0]-1]}</strong>` : '') +
+    const insight = topDef
+      ? `<div class="cwt-insight">今週最も活発: <strong style="color:${topDef.color}">${topDef.name}</strong>` +
+        (bottomDef && bottomDef.key !== topDef.key ? ` / 伸びしろ: <strong>${bottomDef.name}</strong>` : '') +
         `</div>`
       : '';
 

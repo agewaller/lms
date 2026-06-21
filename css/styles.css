@@ -5025,3 +5025,55 @@ html[data-theme="dark"] .twc-badge { color: #fbbf24; }
   padding: 8px 10px;
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
+
+/* ─── Daily Zen Question Card ─── */
+.zen-q-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid #6C63FF;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.zen-q-answered {
+  background: linear-gradient(135deg, rgba(108,99,255,0.05) 0%, var(--bg-secondary) 100%);
+}
+.zenq-layer {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  color: #6C63FF;
+}
+.zenq-q {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.zenq-answer {
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.zenq-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.zenq-input-row .form-input { flex: 1; }
+.zenq-dismiss, .zenq-skip {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: underline;
+}
