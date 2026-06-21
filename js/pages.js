@@ -249,6 +249,7 @@ var Pages = {
       html += this.renderMedicationReminder();
       html += this.renderDoctorAppointments();
       html += this.renderBPTrendCard();
+      html += this.renderGlucoseTracker();
       html += this.renderSleepTrendCard();
       html += this.renderWeightTrendCard();
       html += this.renderMonthlyHealthComparison();
@@ -7262,6 +7263,154 @@ var Pages = {
       </div>
       <div class="cdi-foot">過去30日間のデータ（${daysWithData}日分）から算出</div>
     </div>`;
+  },
+
+  // ─── Blood Glucose Tracker (health domain) ───
+  renderGlucoseTracker() {
+    const records = store.getDomainData('health', 'glucose', 30)
+      .filter(r => r.value && r.timestamp)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    // Gate: show if user has any glucose records OR has diabetes in profile
+    const profile = store.get('userProfile') || {};
+    const hasDiabetes = Array.isArray(profile.diseases) &&
+      profile.diseases.some(d => d.includes('diabet') || d === 'diabetes' || d === 'diabetes_2');
+    const showSetup = records.length === 0;
+
+    // Only show the setup prompt if dismissed or no diabetes flag
+    const dismissedKey = 'lms_glucoseSetupDismissed';
+    if (showSetup && !hasDiabetes) {
+      if (localStorage.getItem(dismissedKey)) return '';
+      // Show compact setup nudge — not everyone needs this
+      return `<div class="glucose-setup">
+        <div class="glc-setup-body">
+          <strong>血糖値の管理が必要な方へ</strong>
+          <span>食前・食後の血糖値を記録すると、生活習慣との関係が見えてきます</span>
+        </div>
+        <div class="glc-setup-btns">
+          <button class="btn btn-sm btn-primary" onclick="Pages.showGlucoseForm()">記録を始める</button>
+          <button class="btn btn-sm btn-ghost" onclick="localStorage.setItem('${dismissedKey}','1');this.closest('.glucose-setup').remove()">不要</button>
+        </div>
+      </div>`;
+    }
+    if (showSetup) {
+      // Diabetes patient but no records yet
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const todayRecords = records.filter(r => r.timestamp.startsWith(today));
+    const recent7 = records.slice(0, 14); // last 14 entries
+
+    // Reference ranges (mg/dL)
+    // Fasting: <100 normal, 100-125 pre-diabetic, ≥126 diabetic
+    // Post-meal (2h): <140 normal, 140-199 pre-diabetic, ≥200 diabetic
+    const getStatus = (val, timing) => {
+      const isFasting = timing === 'fasting' || timing === 'morning';
+      if (isFasting) {
+        if (val < 100) return { label: '正常', color: '#10b981' };
+        if (val < 126) return { label: '境界域', color: '#f59e0b' };
+        return { label: '高め', color: '#ef4444' };
+      } else {
+        if (val < 140) return { label: '正常', color: '#10b981' };
+        if (val < 200) return { label: '境界域', color: '#f59e0b' };
+        return { label: '高め', color: '#ef4444' };
+      }
+    };
+
+    const timingLabels = {
+      fasting: '空腹時', morning: '起床後', before_breakfast: '朝食前',
+      after_breakfast: '朝食後2h', before_lunch: '昼食前', after_lunch: '昼食後2h',
+      before_dinner: '夕食前', after_dinner: '夕食後2h', bedtime: '就寝前'
+    };
+
+    const latestEntry = records[0];
+    const latestStatus = latestEntry ? getStatus(latestEntry.value, latestEntry.timing) : null;
+
+    // 7-day average
+    const avg7 = recent7.length > 0
+      ? Math.round(recent7.reduce((s, r) => s + Number(r.value), 0) / recent7.length)
+      : null;
+
+    const showFormKey = 'lms_glucoseFormOpen';
+    const formOpen = sessionStorage.getItem(showFormKey) === '1';
+
+    return `<div class="glucose-card">
+      <div class="glc-header">
+        <div class="glc-title">血糖値の記録</div>
+        <button class="btn btn-sm btn-secondary" onclick="Pages.toggleGlucoseForm()">記録する</button>
+      </div>
+
+      ${latestEntry ? `<div class="glc-latest">
+        <div class="glc-latest-val" style="color:${latestStatus?.color}">${latestEntry.value}</div>
+        <div class="glc-latest-unit">mg/dL</div>
+        <div class="glc-latest-info">
+          <div class="glc-latest-timing">${timingLabels[latestEntry.timing] || latestEntry.timing || ''}</div>
+          <div class="glc-latest-status" style="background:${latestStatus?.color}20;color:${latestStatus?.color}">${latestStatus?.label}</div>
+        </div>
+        ${avg7 !== null ? `<div class="glc-avg">直近平均 <strong>${avg7}</strong> mg/dL</div>` : ''}
+      </div>` : `<div class="glc-empty">血糖値の記録はまだありません</div>`}
+
+      <div id="glucoseForm" style="${formOpen ? '' : 'display:none'}">
+        <div class="glc-form">
+          <select id="glcTiming" class="form-input glc-select">
+            ${Object.entries(timingLabels).map(([k, v]) => `<option value="${k}"${k === 'fasting' ? ' selected' : ''}>${v}</option>`).join('')}
+          </select>
+          <div class="glc-input-row">
+            <input type="number" id="glcValue" class="form-input glc-input" placeholder="例: 105" min="50" max="600">
+            <span class="glc-unit">mg/dL</span>
+          </div>
+          <input type="text" id="glcNote" class="form-input glc-note" placeholder="メモ（任意）" maxlength="30">
+          <button class="btn btn-primary glc-save" onclick="Pages.saveGlucose()">保存</button>
+        </div>
+      </div>
+
+      ${records.length > 1 ? `<div class="glc-history">
+        ${records.slice(0, 5).map(r => {
+          const st = getStatus(r.value, r.timing);
+          const d = new Date(r.timestamp).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+          return `<div class="glc-hist-row">
+            <span class="glc-hist-date">${d}</span>
+            <span class="glc-hist-timing">${timingLabels[r.timing] || r.timing || ''}</span>
+            <span class="glc-hist-val" style="color:${st.color}">${r.value}</span>
+            <span class="glc-hist-dot" style="background:${st.color}"></span>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+
+      <div class="glc-ref">目安: 空腹時 &lt;100・食後2h &lt;140 (正常値 mg/dL)</div>
+    </div>`;
+  },
+
+  toggleGlucoseForm() {
+    const form = document.getElementById('glucoseForm');
+    if (!form) return;
+    const isOpen = form.style.display !== 'none';
+    form.style.display = isOpen ? 'none' : '';
+    if (!isOpen) sessionStorage.setItem('lms_glucoseFormOpen', '1');
+    else sessionStorage.removeItem('lms_glucoseFormOpen');
+  },
+
+  showGlucoseForm() {
+    sessionStorage.setItem('lms_glucoseFormOpen', '1');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  saveGlucose() {
+    const timing = document.getElementById('glcTiming')?.value;
+    const valEl = document.getElementById('glcValue');
+    const noteEl = document.getElementById('glcNote');
+    const value = parseInt(valEl?.value || '0', 10);
+    if (!value || value < 50 || value > 600) {
+      Components.showToast('正しい血糖値を入力してください（50〜600 mg/dL）', 'error');
+      return;
+    }
+    store.addDomainEntry('health', 'glucose', {
+      value, timing, notes: noteEl?.value?.trim() || '',
+      timestamp: new Date().toISOString()
+    });
+    sessionStorage.removeItem('lms_glucoseFormOpen');
+    Components.showToast('血糖値を記録しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Emergency Health Info Card (printable wallet card) ───

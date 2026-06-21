@@ -6158,3 +6158,119 @@ html[data-theme="dark"] .wsg-bar-bg { background: rgba(255,255,255,0.1); }
   text-align: center;
   opacity: 0.7;
 }
+
+/* ─── Blood Glucose Tracker ─── */
+.glucose-setup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(245, 158, 11, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+.glc-setup-body { flex: 1; }
+.glc-setup-body strong { display: block; font-size: 0.85rem; color: var(--text-primary); margin-bottom: 3px; }
+.glc-setup-body span { font-size: 0.77rem; color: var(--text-secondary); line-height: 1.5; }
+.glc-setup-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.glucose-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.glc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.glc-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.glc-latest {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--bg-tertiary);
+}
+.glc-latest-val {
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1;
+}
+.glc-latest-unit {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  align-self: flex-end;
+  margin-bottom: 4px;
+}
+.glc-latest-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.glc-latest-timing { font-size: 0.78rem; color: var(--text-secondary); }
+.glc-latest-status {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  width: fit-content;
+}
+.glc-avg {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  text-align: right;
+  white-space: nowrap;
+}
+.glc-empty {
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+.glc-form {
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.glc-select, .glc-note { font-size: 0.84rem; }
+.glc-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.glc-input {
+  font-size: 1rem;
+  font-weight: 700;
+  width: 120px;
+  text-align: center;
+}
+.glc-unit { font-size: 0.8rem; color: var(--text-secondary); white-space: nowrap; }
+.glc-save { align-self: flex-start; font-size: 0.84rem; }
+.glc-history { margin-bottom: 10px; }
+.glc-hist-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--bg-tertiary);
+  font-size: 0.81rem;
+}
+.glc-hist-row:last-child { border-bottom: none; }
+.glc-hist-date { color: var(--text-secondary); min-width: 50px; }
+.glc-hist-timing { flex: 1; color: var(--text-secondary); font-size: 0.74rem; }
+.glc-hist-val { font-weight: 700; min-width: 36px; text-align: right; }
+.glc-hist-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.glc-ref {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  opacity: 0.7;
+}
