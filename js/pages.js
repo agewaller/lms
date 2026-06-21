@@ -150,6 +150,7 @@ var Pages = {
     if (domain === 'consciousness') {
       html += this.renderDailyIntention();
       html += this.renderBreathingExercise();
+      html += this.renderPracticeHistory();
       html += this.renderQuickLayerPick();
       html += this.renderGratitudeWidget();
       html += this.renderConsciousnessLayers();
@@ -3364,6 +3365,58 @@ var Pages = {
     card.querySelector('.breath-idle').style.display = '';
     const circle = document.getElementById('breathCircle');
     if (circle) circle.classList.remove('expand');
+  },
+
+  // ─── Practice history summary (consciousness domain home) ───
+  renderPracticeHistory() {
+    const practices = store.getDomainData('consciousness', 'practices', 30);
+    if (practices.length === 0) return '';
+    const esc = Components.escapeHtml;
+    const weekAgo = new Date(Date.now() - 7 * 86400000);
+    const thisWeek = practices.filter(p => new Date(p.timestamp) >= weekAgo);
+    const totalMins = practices.reduce((s, p) => s + (p.duration_minutes || 0), 0);
+
+    const typeLabels = { breathwork:'深呼吸', meditation:'瞑想', yoga:'ヨガ', journaling:'日記', mindfulness:'マインドフル', gratitude:'感謝', other:'その他' };
+    const typeIcons  = { breathwork:'🫁', meditation:'🧘', yoga:'🌿', journaling:'📖', mindfulness:'✨', gratitude:'💛', other:'🌸' };
+
+    const typeCounts = {};
+    practices.forEach(p => {
+      const t = p.practice_type || 'other';
+      typeCounts[t] = (typeCounts[t] || 0) + 1;
+    });
+
+    const typePills = Object.entries(typeCounts)
+      .sort((a, b) => b[1] - a[1]).slice(0, 4)
+      .map(([type, count]) => `<div class="ph-pill">
+        <span class="ph-pill-icon">${typeIcons[type] || '🌸'}</span>
+        <span class="ph-pill-label">${esc(typeLabels[type] || type)}</span>
+        <span class="ph-pill-count">${count}回</span>
+      </div>`).join('');
+
+    const recent = [...practices].reverse().slice(0, 5);
+    const sessionItems = recent.map(p => {
+      const d = new Date(p.timestamp);
+      const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+      const type = p.practice_type || 'other';
+      const mins = p.duration_minutes ? `${p.duration_minutes}分` : '';
+      return `<div class="ph-session">
+        <span class="ph-session-icon">${typeIcons[type] || '🌸'}</span>
+        <span class="ph-session-label">${esc(typeLabels[type] || type)}</span>
+        <span class="ph-session-meta">${dateStr}${mins ? ' · ' + mins : ''}</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="practice-history-card">
+      <div class="ph-header">
+        <h4>最近の実践</h4>
+        <div class="ph-stats">
+          <span><strong>${thisWeek.length}</strong>回 今週</span>
+          ${totalMins > 0 ? `<span><strong>${totalMins}</strong>分 累計</span>` : ''}
+        </div>
+      </div>
+      <div class="ph-pills">${typePills}</div>
+      <div class="ph-sessions">${sessionItems}</div>
+    </div>`;
   },
 
   // ─── 7-layer trend chart (consciousness domain home, ≥3 observations) ───
