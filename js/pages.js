@@ -1175,10 +1175,16 @@ var Pages = {
 
       <!-- Data Export/Import -->
       <div class="settings-section">
-        <h3>💾 ${i18n.t('data_export')} / ${i18n.t('data_import')}</h3>
-        <button class="btn btn-secondary" onclick="app.exportData()">${i18n.t('data_export')}</button>
-        <input type="file" id="importFile" accept=".json" onchange="app.importData(event)" style="display:none">
-        <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">${i18n.t('data_import')}</button>
+        <h3>💾 データのバックアップ・復元</h3>
+        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:12px">記録データをファイルに保存したり、別の端末に移行できます。</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-secondary" onclick="app.exportData()">全データをJSON形式で保存</button>
+          <button class="btn btn-secondary" onclick="app.exportDomainCSV('${domain}')">CSVで保存（${Components.escapeHtml(i18n.t(domain))}）</button>
+        </div>
+        <div style="margin-top:10px">
+          <input type="file" id="importFile" accept=".json" onchange="app.importData(event)" style="display:none">
+          <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">バックアップから復元（JSON）</button>
+        </div>
       </div>
 
       <!-- Share App -->
@@ -1236,6 +1242,15 @@ var Pages = {
       <!-- Logout -->
       <div class="settings-section">
         <button class="btn btn-danger" onclick="app.logout()">🚪 ${i18n.t('logout')}</button>
+      </div>
+
+      <!-- Account Deletion (GDPR / 個人情報削除) -->
+      <div class="settings-section settings-danger-zone">
+        <h3>アカウントとデータの削除</h3>
+        <p style="font-size:14px;color:var(--text-secondary);margin-bottom:14px">
+          アカウントを削除すると、すべての記録・プロフィール・設定が完全に消去されます。<br>この操作は取り消せません。
+        </p>
+        <button class="btn btn-danger-outline" onclick="app.confirmDeleteAccount()">データとアカウントを削除する</button>
       </div>
     </div>`;
 

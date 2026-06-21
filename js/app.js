@@ -1672,6 +1672,101 @@ var App = class App {
     reader.readAsText(file);
   }
 
+  // ─── CSV Export (domain-specific, BOM for Excel) ───
+  exportDomainCSV(domain) {
+    const domainConfig = CONFIG.domains[domain];
+    if (!domainConfig) return;
+    const categories = Object.keys(domainConfig.categories || {});
+    const catLabels = {};
+    categories.forEach(cat => {
+      catLabels[cat] = domainConfig.categories[cat]?.label || cat;
+    });
+
+    const rows = [['日付', '時刻', '種類', '内容', 'スコア', '金額', 'メモ']];
+    categories.forEach(cat => {
+      const entries = store.get(`${domain}_${cat}`) || [];
+      entries.forEach(e => {
+        const ts = e.timestamp || '';
+        const date = ts.split('T')[0] || '';
+        const time = ts.includes('T') ? ts.split('T')[1]?.slice(0, 5) : '';
+        const type = catLabels[cat];
+        const content = e.content || e.description || e.title || e.person || '';
+        const score = e.condition_level ?? e.net_value ?? e.quality ?? '';
+        const amount = e.amount ?? '';
+        const notes = e.notes || '';
+        rows.push([date, time, type, content, score, amount, notes]);
+      });
+    });
+
+    rows.sort((a, b) => (a[0] + a[1]).localeCompare(b[0] + b[1]));
+    const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lms-${domain}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ─── Account Deletion (GDPR) ───
+  confirmDeleteAccount() {
+    this.openModal('アカウントとデータの削除', `
+      <p style="color:var(--danger);font-weight:600;margin-bottom:12px">この操作は取り消せません</p>
+      <p style="color:var(--text-secondary);font-size:15px;margin-bottom:16px;line-height:1.6">
+        以下のすべてのデータが完全に削除されます：<br>
+        ・意識・健康・時間・仕事・関係・資産の全記録<br>
+        ・プロフィール情報・設定<br>
+        ・アカウント（ログイン情報）
+      </p>
+      <button class="btn btn-secondary" style="width:100%;margin-bottom:10px" onclick="app.exportData()">先にデータをバックアップする</button>
+      <button class="btn btn-danger" style="width:100%" onclick="app.deleteAccount()">すべて削除してアカウントを消す</button>
+    `);
+  }
+
+  async deleteAccount() {
+    const user = store.get('user');
+    if (!user?.uid) { this.closeModal(); return; }
+    this.closeModal();
+    Components.showToast('データを削除しています…', 'info');
+
+    try {
+      const uid = user.uid;
+      if (FirebaseBackend.db) {
+        const allKeys = [];
+        Object.keys(CONFIG.domains).forEach(domain => {
+          Object.keys(CONFIG.domains[domain]?.categories || {}).forEach(cat => {
+            allKeys.push(`${domain}_${cat}`);
+          });
+        });
+        ['analysisHistory', 'conversationHistory', 'recommendations', 'actionItems'].forEach(k => allKeys.push(k));
+
+        await Promise.all(allKeys.map(async key => {
+          try {
+            const snap = await FirebaseBackend.db.collection('users').doc(uid).collection(key).get();
+            await Promise.all(snap.docs.map(d => d.ref.delete()));
+          } catch (e) {}
+        }));
+
+        try { await FirebaseBackend.db.collection('users').doc(uid).delete(); } catch (e) {}
+      }
+
+      if (FirebaseBackend.auth?.currentUser) {
+        await FirebaseBackend.auth.currentUser.delete();
+      }
+
+      store.clearAll();
+      window.location.href = 'index.html';
+
+    } catch (e) {
+      if (e.code === 'auth/requires-recent-login') {
+        Components.showToast('セキュリティのため、一度ログアウトして再度ログインした後にもう一度お試しください。', 'error');
+      } else {
+        Components.showToast('削除中にエラーが発生しました。しばらく後に再試行してください。', 'error');
+      }
+    }
+  }
+
   // ─── Admin Methods (未病ダイアリー準拠: tabbed) ───
 
   setAdminTab(tab) {

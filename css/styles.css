@@ -176,6 +176,8 @@ p { margin-bottom: 12px; }
 
 .btn-success { background: var(--success); color: #fff; }
 .btn-danger { background: var(--danger); color: #fff; }
+.btn-danger-outline { background: transparent; color: var(--danger); border: 1.5px solid var(--danger); }
+.btn-danger-outline:hover { background: var(--danger); color: #fff; }
 .btn-warning { background: var(--warning); color: #fff; }
 
 .btn-sm { padding: 6px 14px; font-size: 0.8rem; }
@@ -1526,6 +1528,11 @@ body.is-admin .admin-only { display: flex; }
   padding: 24px; margin-bottom: 16px; box-shadow: var(--shadow);
 }
 .settings-section h3 { margin-bottom: 16px; font-size: 20px; }
+.settings-danger-zone {
+  border: 1px solid rgba(239,68,68,0.3);
+  background: rgba(239,68,68,0.04);
+}
+.settings-danger-zone h3 { color: var(--danger); }
 
 /* ─── Accessibility bar (text size + theme at the top of settings) ─── */
 .settings-access-bar {
