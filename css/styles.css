@@ -4603,3 +4603,95 @@ html[data-theme="dark"] .rr-bar-bg { background: rgba(255,255,255,0.1); }
   display: inline-flex;
   align-items: center;
 }
+
+/* ─── Weekly Health Summary Card ─── */
+.weekly-health-card {
+  background: linear-gradient(135deg, rgba(16,185,129,0.08) 0%, var(--bg-secondary) 100%);
+  border: 1px solid rgba(16,185,129,0.22);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.wh-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.wh-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.wh-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.wh-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.wh-metric {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+.wh-metric-label {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.wh-metric-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.wh-unit {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-left: 2px;
+}
+.wh-metric-diff {
+  font-size: 0.75rem;
+  margin-top: 3px;
+}
+.wh-record-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-color);
+  margin-bottom: 8px;
+}
+.wh-record-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.wh-stars {
+  color: #f59e0b;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+.wh-record-count {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+.wh-insight {
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  background: rgba(16,185,129,0.07);
+  border-left: 3px solid #10b981;
+  padding: 8px 10px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  line-height: 1.5;
+}

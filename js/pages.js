@@ -216,6 +216,7 @@ var Pages = {
 
     // Health: morning vitals + SOS button + medication reminder + BP trend + doctor report shortcut
     if (domain === 'health') {
+      html += this.renderWeeklyHealthSummary();
       html += this.renderProfileCompletionBanner();
       html += this.renderBPAlertCard();
       html += this.renderMorningVitalsCard();
@@ -3801,6 +3802,127 @@ var Pages = {
     card.querySelector('.mdt-active').style.display = 'none';
     card.querySelector('.mdt-done').style.display = 'none';
     card.querySelector('.mdt-idle').style.display = '';
+  },
+
+  // ─── Weekly health summary (health domain, shows after ≥3 days of data) ───
+  renderWeeklyHealthSummary() {
+    const today = new Date();
+    const weekKey = `${today.getFullYear()}-W${this._weekNumber(today)}`;
+    if (localStorage.getItem('lms_weeklyHealthDismissed') === weekKey) return '';
+
+    const vitals7  = store.getDomainData('health', 'vitals',    7);
+    const vitals14 = store.getDomainData('health', 'vitals',   14);
+    const sleep7   = store.getDomainData('health', 'sleepData', 7);
+    const sleep14  = store.getDomainData('health', 'sleepData',14);
+    const syms7    = store.getDomainData('health', 'symptoms',  7);
+
+    const cutoff7 = new Date(); cutoff7.setDate(today.getDate() - 7);
+
+    // Helper: average a numeric field over a filtered subset
+    const avg = (arr, field) => {
+      const vals = arr.map(e => Number(e[field])).filter(v => !isNaN(v) && v > 0);
+      return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null;
+    };
+    const avgThis = (arr, field) => avg(arr.filter(e => new Date(e.timestamp) >= cutoff7), field);
+    const avgPrev = (arr, field) => avg(arr.filter(e => new Date(e.timestamp) < cutoff7), field);
+
+    // Key metrics
+    const bpSysThis = avgThis(vitals7, 'bp_systolic');
+    const bpSysPrev = avgPrev(vitals14, 'bp_systolic');
+    const bpDiasThis = avgThis(vitals7, 'bp_diastolic');
+
+    const weightThis = avgThis(vitals7, 'weight');
+    const weightPrev = avgPrev(vitals14, 'weight');
+
+    const sleepHrsThis = avgThis(sleep7, 'duration');
+    const sleepHrsPrev = avgPrev(sleep14, 'duration');
+    const sleepQltyThis = avgThis(sleep7, 'quality');
+
+    // Steps from localStorage (daily keys)
+    let totalSteps7 = 0, stepDays = 0;
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const k = 'lms_steps_' + d.toISOString().split('T')[0];
+      try {
+        const s = parseInt(localStorage.getItem(k) || '0', 10);
+        if (s > 0) { totalSteps7 += s; stepDays++; }
+      } catch (e) {}
+    }
+    const avgStepsThis = stepDays > 0 ? Math.round(totalSteps7 / stepDays) : null;
+
+    // Recording days (unique dates in vitals + symptoms + sleep this week)
+    const recDates = new Set();
+    [...vitals7, ...syms7, ...sleep7].forEach(e => {
+      if (e.timestamp && new Date(e.timestamp) >= cutoff7) recDates.add(e.timestamp.split('T')[0]);
+    });
+    const recordedDays = recDates.size;
+    if (recordedDays < 3) return ''; // not enough data
+
+    const fmt1 = n => (n !== null && !isNaN(n)) ? n.toFixed(1) : null;
+    const fmtDiff = (cur, prev, unit, higherIsBetter) => {
+      if (cur === null || prev === null) return '';
+      const diff = cur - prev;
+      if (Math.abs(diff) < 0.1) return `<span style="color:var(--text-secondary)">先週と同じ</span>`;
+      const up = diff > 0;
+      const good = higherIsBetter ? up : !up;
+      const color = good ? '#10b981' : '#ef4444';
+      const arrow = up ? '↑' : '↓';
+      return `<span style="color:${color}">${arrow}${Math.abs(diff).toFixed(1)}${unit}</span>`;
+    };
+
+    const rows = [];
+
+    if (bpSysThis !== null) {
+      const bpDiff = bpSysPrev !== null
+        ? (Math.abs(bpSysThis - bpSysPrev) < 2 ? `<span style="color:var(--text-secondary)">先週と同じ</span>` : (bpSysThis < bpSysPrev ? `<span style="color:#10b981">↓${(bpSysPrev - bpSysThis).toFixed(0)}</span>` : `<span style="color:#ef4444">↑${(bpSysThis - bpSysPrev).toFixed(0)}</span>`))
+        : '';
+      const bpStr = `${Math.round(bpSysThis)}/${bpDiasThis ? Math.round(bpDiasThis) : '?'}`;
+      rows.push({ label: '平均血圧', value: bpStr, unit: 'mmHg', diff: bpDiff });
+    }
+    if (sleepHrsThis !== null) {
+      rows.push({ label: '平均睡眠', value: fmt1(sleepHrsThis), unit: '時間', diff: fmtDiff(sleepHrsThis, sleepHrsPrev, 'h', true) });
+    }
+    if (weightThis !== null) {
+      rows.push({ label: '平均体重', value: fmt1(weightThis), unit: 'kg', diff: fmtDiff(weightThis, weightPrev, 'kg', false) });
+    }
+    if (avgStepsThis !== null) {
+      rows.push({ label: '平均歩数', value: avgStepsThis.toLocaleString('ja-JP'), unit: '歩', diff: '' });
+    }
+
+    if (rows.length === 0) return '';
+
+    // Insight message
+    let insight = '';
+    if (sleepQltyThis !== null && sleepHrsPrev !== null) {
+      if (sleepHrsThis > sleepHrsPrev + 0.3) insight = '睡眠時間が先週より増えています。このまま続けましょう。';
+      else if (sleepHrsThis < sleepHrsPrev - 0.3) insight = '睡眠時間が先週より減っています。就寝時間を少し早めてみましょう。';
+    }
+    if (!insight && bpSysThis !== null) {
+      if (bpSysThis > 140) insight = '血圧がやや高めです。塩分と水分に気をつけ、かかりつけ医にご相談ください。';
+      else if (bpSysThis < 120 && bpSysPrev !== null && bpSysThis < bpSysPrev - 3) insight = '血圧が先週より下がっています。良い傾向です。';
+    }
+
+    const stars = recordedDays >= 6 ? '★★★★★' : recordedDays >= 5 ? '★★★★☆' : recordedDays >= 4 ? '★★★☆☆' : '★★☆☆☆';
+
+    return `<div class="weekly-health-card" id="weeklyHealthCard">
+      <div class="wh-header">
+        <span class="wh-title">今週の健康まとめ</span>
+        <button class="wh-close" onclick="localStorage.setItem('lms_weeklyHealthDismissed','${weekKey}');document.getElementById('weeklyHealthCard').remove()">&times;</button>
+      </div>
+      <div class="wh-grid">
+        ${rows.map(r => `<div class="wh-metric">
+          <div class="wh-metric-label">${r.label}</div>
+          <div class="wh-metric-value">${r.value}<span class="wh-unit">${r.unit}</span></div>
+          ${r.diff ? `<div class="wh-metric-diff">${r.diff}</div>` : ''}
+        </div>`).join('')}
+      </div>
+      <div class="wh-record-row">
+        <span class="wh-record-label">記録日数</span>
+        <span class="wh-stars">${stars}</span>
+        <span class="wh-record-count">${recordedDays} / 7日</span>
+      </div>
+      ${insight ? `<div class="wh-insight">${Components.escapeHtml(insight)}</div>` : ''}
+    </div>`;
   },
 
   // ─── Monthly health comparison card (this month vs last month) ───
