@@ -289,6 +289,7 @@ var App = class App {
       setTimeout(() => {
         Pages.initTrendChart(domain);
         Pages.initRadarChart();
+        Pages.initDailyBalanceRadarChart();
         if (domain === 'health') Pages.initBPTrendChart();
         if (domain === 'health') Pages.initSleepTrendChart();
         if (domain === 'health') Pages.initWeightTrendChart();

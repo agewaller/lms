@@ -144,6 +144,9 @@ var Pages = {
       </div>`;
     }
 
+    // Today's balance radar (appears on every domain home when 2+ domains have today's data)
+    html += this.renderDailyBalanceRadar();
+
     // Cross-domain correlation insights (appears on every domain home when enough data)
     html += this.renderCrossDomainInsights();
 
@@ -6865,6 +6868,123 @@ var Pages = {
       <div class="wws-header">今週の仕事サマリー</div>
       <div class="wws-grid">${statCells}</div>
     </div>`;
+  },
+
+  // ─── Today's Balance Radar — 6-domain score across all life areas ───
+  _calcDailyScores(today) {
+    const scores = {};
+
+    // Health: steps (max 5) + last night's sleep quality (max 5)
+    const steps = parseInt(localStorage.getItem('lms_steps_' + today) || '0', 10);
+    let h = Math.min(5, steps / 1600);
+    const yest = new Date(today); yest.setDate(yest.getDate() - 1);
+    const yKey = yest.toISOString().split('T')[0];
+    const sl = store.getDomainData('health', 'sleepData', 2).find(e => (e.timestamp || '').startsWith(yKey));
+    if (sl && sl.quality) h += Number(sl.quality) / 2;
+    scores.health = Math.min(10, h);
+
+    // Consciousness: mood_level (0-10) + bonus for breathing/meditation
+    const consToday = store.getDomainData('consciousness', 'entries', 3).filter(e => (e.timestamp || '').startsWith(today));
+    const moodE = consToday.find(e => e.mood_level);
+    let c = moodE ? Number(moodE.mood_level) : 0;
+    if (consToday.some(e => e.entry_type === 'breathing' || e.entry_type === 'meditation')) c = Math.min(10, c + 2);
+    scores.consciousness = c;
+
+    // Time: time log entries + completed habits
+    const tLogs = store.getDomainData('time', 'entries', 3).filter(e => (e.timestamp || '').startsWith(today));
+    const tHab = store.getDomainData('time', 'habits', 3).filter(e => (e.timestamp || '').startsWith(today) && e.done);
+    scores.time = Math.min(10, tLogs.length * 2 + tHab.length * 1.5);
+
+    // Work: completed tasks + day rating
+    const wDone = store.getDomainData('work', 'tasks', 3).filter(e => (e.timestamp || '').startsWith(today) && e.status === 'done');
+    const wRef = store.getDomainData('work', 'reflections', 3).find(e => (e.timestamp || '').startsWith(today));
+    scores.work = Math.min(10, wDone.length * 2 + (wRef ? Number(wRef.day_rating || 0) : 0));
+
+    // Relationship: interactions logged today
+    const rels = store.getDomainData('relationship', 'interactions', 3).filter(e => (e.timestamp || '').startsWith(today));
+    scores.relationship = Math.min(10, rels.length * 3.5);
+
+    // Assets: any financial entry today
+    const aCats = Object.keys((CONFIG.domains.assets || {}).categories || {});
+    let aCount = 0;
+    aCats.forEach(cat => { aCount += store.getDomainData('assets', cat, 3).filter(e => (e.timestamp || '').startsWith(today)).length; });
+    scores.assets = Math.min(10, aCount * 5);
+
+    return scores;
+  },
+
+  renderDailyBalanceRadar() {
+    const today = new Date().toISOString().split('T')[0];
+    const s = this._calcDailyScores(today);
+    const vals = [s.health, s.consciousness, s.time, s.work, s.relationship, s.assets];
+    const active = vals.filter(v => v > 0).length;
+    if (active < 2) return '';
+
+    const labels = ['健康', '意識', '時間', '仕事', '関係', '資産'];
+    const colors = ['#10b981','#6C63FF','#f59e0b','#3b82f6','#ef4444','#d97706'];
+    const avg = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
+
+    return `<div class="dbr-card">
+      <div class="dbr-head">
+        <div class="dbr-title">今日のバランス</div>
+        <div class="dbr-avg">総合 <strong>${avg}</strong><small>/10</small></div>
+      </div>
+      <canvas id="dbrCanvas" height="180"
+        data-vals="${vals.join(',')}"
+        data-colors="${colors.join(',')}"
+        style="max-width:100%;display:block;margin:0 auto"></canvas>
+      <div class="dbr-bars">
+        ${labels.map((l, i) => `
+          <div class="dbr-bar-row">
+            <div class="dbr-bar-label" style="color:${colors[i]}">${l}</div>
+            <div class="dbr-bar-track">
+              <div class="dbr-bar-fill" style="width:${vals[i]*10}%;background:${colors[i]}"></div>
+            </div>
+            <div class="dbr-bar-val">${vals[i].toFixed(1)}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  },
+
+  initDailyBalanceRadarChart() {
+    const canvas = document.getElementById('dbrCanvas');
+    if (!canvas || typeof Chart === 'undefined') return;
+    const vals = (canvas.dataset.vals || '').split(',').map(Number);
+    const colors = (canvas.dataset.colors || '').split(',');
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridC = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)';
+    const tickC = isDark ? '#94a3b8' : '#64748b';
+    if (canvas._chart) canvas._chart.destroy();
+    canvas._chart = new Chart(canvas, {
+      type: 'radar',
+      data: {
+        labels: ['健康','意識','時間','仕事','関係','資産'],
+        datasets: [{
+          data: vals,
+          backgroundColor: 'rgba(108,99,255,0.12)',
+          borderColor: '#6C63FF',
+          borderWidth: 2,
+          pointBackgroundColor: colors,
+          pointBorderColor: '#fff',
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            min: 0, max: 10,
+            ticks: { stepSize: 2, color: tickC, font: { size: 9 }, backdropColor: 'transparent' },
+            grid: { color: gridC },
+            pointLabels: { color: tickC, font: { size: 11, weight: '600' } },
+            angleLines: { color: gridC }
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
   },
 
   // ─── Volunteer / Community Contribution Tracker (work domain) ───
