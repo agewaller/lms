@@ -530,6 +530,7 @@ var Pages = {
         ${Object.entries(categories).map(([key, cat], i) => `
           <div class="category-form ${i === 0 ? 'active' : ''}" data-category="${key}">
             <h3>${cat.icon} ${i18n.t(cat.label)}</h3>
+            ${domain === 'health' && key === 'symptoms' ? this.renderPainLocationSelector() : ''}
             ${Components.dataEntryForm(domain, key)}
           </div>
         `).join('')}
@@ -661,7 +662,10 @@ var Pages = {
     const suggestions = suggestionsByDomain[domain] || [];
 
     let html = `<div class="page-ask-ai">
-      <h2>${i18n.t(domain)} - 相談する</h2>
+      <div class="chat-header">
+        <h2>${i18n.t(domain)} - 相談する</h2>
+        ${history.length > 0 ? `<button class="btn btn-sm btn-secondary" onclick="app.clearChat('${domain}')">新しい会話</button>` : ''}
+      </div>
 
       <div class="chat-container" id="chatContainer">
         ${history.length === 0 ?
@@ -930,6 +934,33 @@ var Pages = {
         </select>
       </div>
       <button class="btn btn-primary" onclick="app.saveResume()">${i18n.t('save')}</button>
+    </div>`;
+  },
+
+  // ─── Pain Location Selector (health symptoms only) ───
+  renderPainLocationSelector() {
+    const parts = [
+      { id: 'head',        label: '頭' },
+      { id: 'neck',        label: '首・肩' },
+      { id: 'chest',       label: '胸' },
+      { id: 'stomach',     label: 'お腹' },
+      { id: 'back_upper',  label: '背中（上）' },
+      { id: 'back_lower',  label: '腰' },
+      { id: 'arm_right',   label: '右腕・手' },
+      { id: 'arm_left',    label: '左腕・手' },
+      { id: 'leg_right',   label: '右脚・足' },
+      { id: 'leg_left',    label: '左脚・足' },
+      { id: 'knee_right',  label: '右ひざ' },
+      { id: 'knee_left',   label: '左ひざ' }
+    ];
+
+    return `<div class="pain-location-selector" id="painLocationSelector">
+      <label>体のどこが痛みますか？（複数選択可）</label>
+      <div class="pain-parts-grid">
+        ${parts.map(p => `<button type="button" class="pain-part-btn" data-part="${p.id}"
+          onclick="this.classList.toggle('selected')">${p.label}</button>`).join('')}
+      </div>
+      <input type="hidden" id="pain_location_hidden" name="pain_location">
     </div>`;
   },
 

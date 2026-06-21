@@ -448,6 +448,14 @@ var App = class App {
       data[cb.name] = cb.checked;
     });
 
+    // Capture pain location selections (health symptoms only)
+    if (domain === 'health' && category === 'symptoms') {
+      const selectedParts = Array.from(document.querySelectorAll('.pain-part-btn.selected'))
+        .map(b => b.dataset.part);
+      if (selectedParts.length > 0) data.pain_location = selectedParts;
+      document.querySelectorAll('.pain-part-btn').forEach(b => b.classList.remove('selected'));
+    }
+
     store.addDomainEntry(domain, category, data);
     Components.showToast(i18n.t('saved'), 'success');
     form.reset();
@@ -511,6 +519,16 @@ var App = class App {
         input.focus();
       }
     }, 100);
+  }
+
+  // ─── Clear conversation for a domain ───
+  clearChat(domain) {
+    Components.confirmModal('この会話の履歴をすべて消去しますか？', () => {
+      const history = store.get('conversationHistory') || [];
+      const filtered = history.filter(m => m.domain !== domain);
+      store.set('conversationHistory', filtered);
+      this.renderApp();
+    }, '消去する', true);
   }
 
   // ─── AI Chat ───

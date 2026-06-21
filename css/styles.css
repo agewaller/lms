@@ -1332,6 +1332,13 @@ body.is-admin .admin-only { display: flex; }
 .action-domain { padding: 2px 8px; border-radius: 10px; font-size: 0.73rem; color: #fff; }
 
 /* ─── Ask AI (Chat) Page ─── */
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.chat-header h2 { margin: 0; }
 .chat-container {
   background: var(--bg); border-radius: var(--radius);
   padding: 20px; min-height: 400px; max-height: 60vh;
@@ -2209,6 +2216,46 @@ html[data-theme="dark"] .form-select,
 html[data-theme="dark"] .form-textarea {
   background: var(--bg-tertiary) !important;
   color: var(--text-primary) !important;
+}
+
+/* ─── Pain Location Selector ─── */
+.pain-location-selector {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.pain-location-selector label {
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  display: block;
+}
+.pain-parts-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pain-part-btn {
+  padding: 8px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.87rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.pain-part-btn:hover { border-color: var(--danger); color: var(--danger); }
+.pain-part-btn.selected {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-weight: 600;
 }
 
 /* ─── Today's Priorities ─── */
