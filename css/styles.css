@@ -5272,6 +5272,94 @@ html[data-theme="dark"] .wsg-bar-bg { background: rgba(255,255,255,0.1); }
   margin-top: 4px;
 }
 
+/* ─── Medical Expense Tracker (医療費控除) ─── */
+.med-exp-card {
+  background: linear-gradient(135deg, rgba(16,185,129,0.07) 0%, rgba(59,130,246,0.05) 100%);
+  border: 1px solid rgba(16,185,129,0.2);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.med-exp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.med-exp-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.med-exp-sub {
+  font-size: 0.73rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.med-exp-total {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #10b981;
+  white-space: nowrap;
+}
+.med-exp-progress { margin-bottom: 14px; }
+.med-exp-bar {
+  height: 7px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.med-exp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #3b82f6);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+  min-width: 2px;
+}
+.med-exp-msg {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.med-exp-msg.eligible {
+  color: #10b981;
+  font-weight: 600;
+}
+.med-exp-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.med-exp-form .form-input-sm {
+  padding: 7px 10px;
+  font-size: 0.84rem;
+  flex: 1;
+  min-width: 0;
+}
+.med-exp-recent {
+  border-top: 1px solid rgba(16,185,129,0.12);
+  padding-top: 10px;
+}
+.med-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  padding: 4px 0;
+}
+.med-entry-type { flex: 1; color: var(--text-primary); }
+.med-entry-amt { font-weight: 600; color: #10b981; white-space: nowrap; }
+.med-entry-date { font-size: 0.71rem; color: var(--text-secondary); }
+.med-exp-hint {
+  font-size: 0.77rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
 /* ─── Daily Balance Radar Card ─── */
 .dbr-card {
   background: var(--bg-secondary);

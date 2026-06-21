@@ -218,6 +218,7 @@ var Pages = {
       html += this.renderMonthlyBudgetSummary();
       html += this.renderBudgetTrendChart();
       html += this.renderSavingsGoals();
+      html += this.renderMedicalExpenseTracker();
       if (typeof AssetsFeatures !== 'undefined') {
         html += AssetsFeatures.renderNISASimulator();
         html += AssetsFeatures.renderAIAdvisor();
@@ -6868,6 +6869,80 @@ var Pages = {
       <div class="wws-header">今週の仕事サマリー</div>
       <div class="wws-grid">${statCells}</div>
     </div>`;
+  },
+
+  // ─── Medical Expense Tracker (assets domain) ─ 医療費控除 support ───
+  renderMedicalExpenseTracker() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const yearStart = new Date(year, 0, 1);
+    const entries = store.getDomainData('assets', 'medical', 365)
+      .filter(e => e.timestamp && new Date(e.timestamp) >= yearStart)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    const total = entries.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const threshold = 100000;
+    const pct = Math.min(100, Math.round(total / threshold * 100));
+    const eligible = Math.max(0, total - threshold);
+    const fmt = n => '¥' + n.toLocaleString();
+
+    const progressMsg = pct >= 100
+      ? `${fmt(eligible)} の医療費控除が申請できます`
+      : `控除まであと ${fmt(threshold - total)}（年間合計 ${fmt(threshold)} を超えると申請可）`;
+
+    const typeLabels = {
+      hospital: '病院・クリニック',
+      pharmacy: '薬局・薬代',
+      dental: '歯科',
+      nursing: '介護・施術',
+      transport: '通院交通費',
+      other: 'その他'
+    };
+
+    return `<div class="med-exp-card">
+      <div class="med-exp-header">
+        <div>
+          <div class="med-exp-title">医療費の記録（${year}年）</div>
+          <div class="med-exp-sub">確定申告・医療費控除の管理</div>
+        </div>
+        <div class="med-exp-total" style="${total > 0 ? '' : 'opacity:0.3'}">${fmt(total)}</div>
+      </div>
+      <div class="med-exp-progress">
+        <div class="med-exp-bar">
+          <div class="med-exp-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="med-exp-msg${pct >= 100 ? ' eligible' : ''}">${progressMsg}</div>
+      </div>
+      <div class="med-exp-form">
+        <select id="medType" class="form-input form-input-sm">
+          ${Object.entries(typeLabels).map(([k,v]) => `<option value="${k}">${v}</option>`).join('')}
+        </select>
+        <input type="number" id="medAmount" class="form-input form-input-sm"
+          placeholder="金額 (円)" min="0" step="100" style="width:120px;">
+        <button class="btn btn-primary btn-sm" onclick="Pages.logMedicalExpense()">記録</button>
+      </div>
+      ${entries.length > 0 ? `<div class="med-exp-recent">
+        ${entries.slice(0, 4).map(e => `
+          <div class="med-entry">
+            <span class="med-entry-type">${typeLabels[e.type] || Components.escapeHtml(e.type || '')}</span>
+            <span class="med-entry-amt">${fmt(Number(e.amount || 0))}</span>
+            <span class="med-entry-date">${(e.timestamp || '').slice(5, 10).replace('-', '/')}</span>
+          </div>`).join('')}
+      </div>`
+      : `<p class="med-exp-hint">今年の医療費を記録しておくと、確定申告の際に一覧として活用できます。通院交通費も対象です。</p>`}
+    </div>`;
+  },
+
+  logMedicalExpense() {
+    const type = document.getElementById('medType')?.value;
+    const amount = Number(document.getElementById('medAmount')?.value);
+    if (!type || isNaN(amount) || amount <= 0) {
+      Components.showToast('種類と金額を入力してください', 'error');
+      return;
+    }
+    store.addDomainEntry('assets', 'medical', { type, amount, timestamp: new Date().toISOString() });
+    Components.showToast('記録しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Today's Balance Radar — 6-domain score across all life areas ───
