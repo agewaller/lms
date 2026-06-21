@@ -185,7 +185,7 @@ var TimeMarketplace = {
 
       <div class="form-group">
         <label>提供できるスキル・サービス（カンマ区切り）</label>
-        <input type="text" id="mpSkills" class="form-input" value="${(s.skills || []).map(sk => sk.name).join(', ')}" placeholder="例：健康相談, 料理教室, 英会話, 書道">
+        <input type="text" id="mpSkills" class="form-input" value="${Components.escapeHtml((s.skills || []).map(sk => sk.name).join(', '))}" placeholder="例：健康相談, 料理教室, 英会話, 書道">
       </div>
 
       <div class="form-group">

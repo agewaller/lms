@@ -1978,20 +1978,21 @@ var Pages = {
           if (u.location) meta.push(u.location);
           const metaText = meta.join(' · ');
 
-          return `<div class="admin-user-item clickable" onclick="app.showUserDetail('${u.uid}')">
+          const esc = Components.escapeHtml;
+          return `<div class="admin-user-item clickable" data-uid="${esc(u.uid || '')}" onclick="app.showUserDetail(this.dataset.uid)">
             <div class="admin-user-info">
-              <div class="admin-user-avatar">${initial}</div>
+              <div class="admin-user-avatar">${esc(initial)}</div>
               <div>
-                <div class="admin-user-email">${u.displayName || u.email || '不明'}</div>
+                <div class="admin-user-email">${esc(u.displayName || u.email || '不明')}</div>
                 <div class="admin-user-role">
-                  ${u.email ? u.email + '<br>' : ''}${metaText || 'プロフィール未設定'}
+                  ${u.email ? esc(u.email) + '<br>' : ''}${esc(metaText || 'プロフィール未設定')}
                   ${u.lastActive ? ' · 最終: ' + new Date(u.lastActive).toLocaleDateString('ja-JP') : ''}
                 </div>
               </div>
             </div>
             <div class="admin-user-stats">
               ${diseaseCount > 0 ? `<span class="stat-chip">持病${diseaseCount}</span>` : ''}
-              ${u.subscription && u.subscription !== 'free' ? `<span class="stat-chip">${u.subscription}</span>` : ''}
+              ${u.subscription && u.subscription !== 'free' ? `<span class="stat-chip">${esc(u.subscription)}</span>` : ''}
               ${adminEmails.includes(u.email) ? '<span class="status-badge">管理者</span>' : ''}
             </div>
           </div>`;
