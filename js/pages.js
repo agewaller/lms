@@ -187,6 +187,7 @@ var Pages = {
     // (Stock analysis widget is rendered at the top of the page.)
     if (domain === 'assets') {
       html += this.renderMonthlyBudgetSummary();
+      html += this.renderBudgetTrendChart();
       if (typeof AssetsFeatures !== 'undefined') {
         html += AssetsFeatures.renderNISASimulator();
         html += AssetsFeatures.renderAIAdvisor();
@@ -2968,6 +2969,62 @@ var Pages = {
         scales: {
           x: { grid: { display: false }, ticks: { font: { size: 10 }, color: tickColor } },
           y: { min: 0, max: 10, ticks: { font: { size: 10 }, stepSize: 2, color: tickColor }, grid: { color: gridColor } }
+        }
+      }
+    });
+  },
+
+  // ─── Budget trend chart (assets domain home, ≥2 months with data) ───
+  renderBudgetTrendChart() {
+    const income   = store.getDomainData('assets', 'income',   180);
+    const expenses = store.getDomainData('assets', 'expenses', 180);
+    const allEntries = [...income.map(e => ({...e, _type:'income'})), ...expenses.map(e => ({...e, _type:'expense'}))];
+    const monthSet = new Set(allEntries.filter(e => e.timestamp).map(e => e.timestamp.slice(0,7)));
+    if (monthSet.size < 2) return '';
+    return `<div class="budget-trend-card">
+      <div class="budget-trend-header">
+        <h3>収支の推移（直近6ヵ月）</h3>
+      </div>
+      <canvas id="budgetTrendChart" height="130"></canvas>
+    </div>`;
+  },
+
+  initBudgetTrendChart() {
+    const canvas = document.getElementById('budgetTrendChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    const now = new Date();
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+    }
+    const incomeData   = store.getDomainData('assets', 'income',   180);
+    const expensesData = store.getDomainData('assets', 'expenses', 180);
+    const sumByMonth = (data) => months.map(m => data.filter(e => (e.timestamp||'').startsWith(m)).reduce((s,e) => s+(Number(e.amount)||0), 0));
+    const incTotals = sumByMonth(incomeData);
+    const expTotals = sumByMonth(expensesData);
+    const hasData = incTotals.some(v=>v>0) || expTotals.some(v=>v>0);
+    if (!hasData) { canvas.closest('.budget-trend-card')?.remove(); return; }
+    if (canvas._chart) canvas._chart.destroy();
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
+    const tickColor = isDark ? '#94a3b8' : '#64748b';
+    const labels = months.map(m => { const [y,mo] = m.split('-'); return `${Number(mo)}月`; });
+    canvas._chart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: '収入', data: incTotals, backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 4 },
+          { label: '支出', data: expTotals, backgroundColor: 'rgba(239,68,68,0.65)', borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, color: tickColor, boxWidth: 12, padding: 8 } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 }, color: tickColor } },
+          y: { beginAtZero: true, ticks: { font: { size: 10 }, color: tickColor, callback: v => v >= 10000 ? `¥${Math.round(v/10000)}万` : `¥${v.toLocaleString()}` }, grid: { color: gridColor } }
         }
       }
     });

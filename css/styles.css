@@ -2979,6 +2979,17 @@ html[data-theme="dark"] .ht-cell.level-3     { background: #10b981; }
 .mood-trend-header h3 { margin: 0; font-size: 15px; }
 .mood-trend-ref { font-size: 12px; color: var(--text-muted); }
 
+/* ─── Budget Trend Chart ─── */
+.budget-trend-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.budget-trend-header { margin-bottom: 10px; }
+.budget-trend-header h3 { margin: 0; font-size: 15px; }
+
 /* ─── Breathing Exercise Card ─── */
 .breath-card {
   background: var(--bg-secondary);
