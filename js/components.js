@@ -46,7 +46,7 @@ var Components = {
         <span class="rec-priority">${i18n.t(rec.priority || 'medium')}</span>
       </div>
       <div class="rec-body">${this.formatMarkdown(rec.text || '')}</div>
-      ${rec.action ? `<button class="btn btn-sm btn-primary" onclick="app.executeAction('${rec.actionType}','${rec.actionData || ''}')">${rec.action}</button>` : ''}
+      ${rec.action ? `<button class="btn btn-sm btn-primary" data-action-type="${this.escapeHtml(rec.actionType || '')}" data-action-data="${this.escapeHtml(rec.actionData || '')}" onclick="app.executeAction(this.dataset.actionType,this.dataset.actionData)">${this.escapeHtml(rec.action)}</button>` : ''}
     </div>`;
   },
 
