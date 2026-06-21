@@ -254,6 +254,7 @@ var Pages = {
       html += this.renderWaterTracker();
       html += this.renderExerciseLog();
       html += this.renderOutingLog();
+      html += this.renderMealLogger();
       html += this.renderStepCounter();
       html += this.renderWeeklyStepGoal();
       html += this.renderSOSWidget();
@@ -7480,27 +7481,18 @@ var Pages = {
   // ─── Work Weekly Stats Card (work domain) ───
   renderWorkWeeklyStats() {
     const tasks = store.getDomainData('work', 'tasks', 7);
-    const completions = store.getDomainData('work', 'completions', 7);
     const reflections = store.getDomainData('work', 'reviews', 7);
 
-    if (tasks.length === 0 && completions.length === 0 && reflections.length === 0) return '';
+    if (tasks.length === 0 && reflections.length === 0) return '';
 
     const allDates = [
-      ...tasks.map(e => (e.timestamp || '').split('T')[0]),
-      ...completions.map(e => (e.timestamp || '').split('T')[0]),
-      ...reflections.map(e => (e.timestamp || '').split('T')[0])
+      ...tasks.map(e => (e.timestamp || e.date || '').split('T')[0]),
+      ...reflections.map(e => (e.timestamp || e.date || '').split('T')[0])
     ].filter(Boolean);
     const activeDays = new Set(allDates).size;
 
-    const totalCompleted = completions.reduce((s, e) => {
-      if (Array.isArray(e.completed)) return s + e.completed.length;
-      return s + (e.completed ? 1 : 0);
-    }, 0);
-
-    const totalPlanned = tasks.reduce((s, e) => {
-      if (Array.isArray(e.tasks)) return s + e.tasks.length;
-      return s + (e.tasks ? 1 : 0);
-    }, 0);
+    const totalCompleted = tasks.filter(t => t.status === 'done').length;
+    const totalPlanned = tasks.length;
 
     const avgRating = reflections.length > 0
       ? (reflections.reduce((s, e) => s + (parseFloat(e.day_rating) || 0), 0) / reflections.length).toFixed(1)
@@ -10107,6 +10099,110 @@ var Pages = {
       const { newlyUnlocked } = this.checkAchievements();
       newlyUnlocked.forEach(b => Components.showToast(`🏅 実績解除：${b.title}`, 'success'));
     }
+  },
+
+  // ─── Meal Logger (health domain) ───
+  renderMealLogger() {
+    const today = new Date().toISOString().split('T')[0];
+    const recent = store.getDomainData('health', 'meals', 7)
+      .sort((a, b) => new Date(b.timestamp || b.date || 0) - new Date(a.timestamp || a.date || 0));
+    const todayMeals = recent.filter(m => (m.date || '').startsWith(today));
+
+    const mealTypes = [
+      { key: 'breakfast', label: '朝食' },
+      { key: 'lunch',     label: '昼食' },
+      { key: 'dinner',    label: '夕食' },
+      { key: 'snack',     label: '間食' },
+    ];
+    const mealTypeLabel = k => mealTypes.find(t => t.key === k)?.label || k || '';
+    const companionLabel = k => ({ alone: '一人', family: '家族と', friend: '友人と', other: 'その他' })[k] || '';
+
+    const formOpen = sessionStorage.getItem('lms_mealFormOpen') === '1';
+
+    // Decide which next meal to suggest
+    const hour = new Date().getHours();
+    const nextMeal = hour < 10 ? 'breakfast' : hour < 14 ? 'lunch' : hour < 19 ? 'dinner' : 'snack';
+
+    return `<div class="meal-card">
+      <div class="meal-header">
+        <div class="meal-title">今日の食事</div>
+        <button class="btn btn-sm btn-secondary" onclick="Pages.toggleMealForm()">記録する</button>
+      </div>
+
+      ${todayMeals.length > 0
+        ? `<div class="meal-today">
+            ${todayMeals.map(m => `<div class="meal-item">
+              <span class="meal-type-tag">${mealTypeLabel(m.meal_type)}</span>
+              <span class="meal-content">${Components.escapeHtml(m.content || '')}</span>
+              ${m.companion && m.companion !== 'alone' ? `<span class="meal-companion">${companionLabel(m.companion)}</span>` : ''}
+            </div>`).join('')}
+          </div>`
+        : `<div class="meal-empty">今日の食事はまだ記録されていません</div>`
+      }
+
+      <div id="mealForm" style="${formOpen ? '' : 'display:none'}">
+        <div class="meal-form">
+          <div class="meal-form-row">
+            <select id="mealType" class="form-input meal-select">
+              ${mealTypes.map(t => `<option value="${t.key}"${t.key === nextMeal ? ' selected' : ''}>${t.label}</option>`).join('')}
+            </select>
+          </div>
+          <textarea id="mealContent" class="form-input meal-textarea"
+            placeholder="食べたもの（例：ご飯、味噌汁、焼き魚、ほうれん草のおひたし）" rows="2" maxlength="120"></textarea>
+          <div class="meal-form-row meal-companion-row">
+            <label class="meal-form-label">一緒に食べた人</label>
+            <select id="mealCompanion" class="form-input meal-select">
+              <option value="alone">一人で</option>
+              <option value="family">家族と</option>
+              <option value="friend">友人と</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+          <button class="btn btn-primary meal-save-btn" onclick="Pages.saveMeal()">記録する</button>
+        </div>
+      </div>
+
+      ${recent.length > 3 ? `<div class="meal-history">
+        ${recent.slice(0, 5).filter(m => !(m.date || '').startsWith(today)).slice(0, 3).map(m => {
+          const d = new Date(m.timestamp || m.date || 0).toLocaleDateString('ja-JP', { month:'short', day:'numeric' });
+          return `<div class="meal-hist-row">
+            <span class="meal-hist-date">${d}</span>
+            <span class="meal-type-tag meal-type-sm">${mealTypeLabel(m.meal_type)}</span>
+            <span class="meal-hist-content">${Components.escapeHtml((m.content || '').slice(0, 20))}${(m.content||'').length > 20 ? '…' : ''}</span>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+    </div>`;
+  },
+
+  toggleMealForm() {
+    const form = document.getElementById('mealForm');
+    if (!form) return;
+    const open = form.style.display !== 'none';
+    form.style.display = open ? 'none' : '';
+    if (!open) sessionStorage.setItem('lms_mealFormOpen', '1');
+    else sessionStorage.removeItem('lms_mealFormOpen');
+  },
+
+  saveMeal() {
+    const mealType  = document.getElementById('mealType')?.value || 'meal';
+    const content   = document.getElementById('mealContent')?.value?.trim() || '';
+    const companion = document.getElementById('mealCompanion')?.value || 'alone';
+    const today     = new Date().toISOString().split('T')[0];
+    if (!content) {
+      Components.showToast('食べたものを入力してください', 'error');
+      return;
+    }
+    store.addDomainEntry('health', 'meals', {
+      meal_type: mealType,
+      content,
+      companion,
+      date: today,
+      timestamp: new Date().toISOString()
+    });
+    sessionStorage.removeItem('lms_mealFormOpen');
+    Components.showToast('食事を記録しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   saveOutingLog() {

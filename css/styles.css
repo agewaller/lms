@@ -6391,6 +6391,87 @@ html[data-theme="dark"] .wsg-bar-bg { background: rgba(255,255,255,0.1); }
 }
 .bt-save-btn { align-self: flex-start; font-size: 0.84rem; }
 
+/* ─── Meal Logger ─── */
+.meal-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.meal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.meal-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.meal-today { display: flex; flex-direction: column; gap: 6px; }
+.meal-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid #10b981;
+}
+.meal-type-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #d1fae5;
+  color: #065f46;
+  border-radius: 10px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+.meal-type-sm { font-size: 0.68rem; padding: 1px 5px; }
+.meal-content { font-size: 0.85rem; color: var(--text-primary); flex: 1; }
+.meal-companion {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.meal-empty {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  padding: 6px 0 10px;
+}
+.meal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+}
+.meal-form-row { display: flex; flex-direction: column; gap: 4px; }
+.meal-companion-row { flex-direction: row; align-items: center; gap: 10px; }
+.meal-form-label { font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; }
+.meal-select { font-size: 0.84rem; }
+.meal-textarea { font-size: 0.88rem; resize: vertical; min-height: 52px; }
+.meal-save-btn { align-self: flex-start; font-size: 0.84rem; }
+.meal-history {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.meal-hist-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+.meal-hist-date { color: var(--text-secondary); min-width: 55px; }
+.meal-hist-content { color: var(--text-primary); }
+
 /* ─── Bill Payment Reminder ─── */
 .bill-card {
   background: var(--bg-secondary);
