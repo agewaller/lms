@@ -2341,10 +2341,6 @@ body.is-admin .admin-only { display: flex; }
   border-radius: var(--radius);
   padding: 14px 16px;
   margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
 }
 .dp-label {
   font-size: 0.73rem;
@@ -2352,16 +2348,64 @@ body.is-admin .admin-only { display: flex; }
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  white-space: nowrap;
+  margin-bottom: 6px;
+}
+.dp-done-badge {
+  font-size: 0.68rem;
+  background: #10b981;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: 8px;
+  vertical-align: middle;
+  text-transform: none;
+  letter-spacing: 0;
 }
 .dp-question {
-  flex: 1;
   font-size: 14px;
   color: var(--text-primary);
   line-height: 1.5;
-  min-width: 180px;
+  font-weight: 500;
+  margin-bottom: 10px;
 }
-.dp-btn { white-space: nowrap; }
+.dp-done .dp-question { color: var(--text-muted); font-weight: 400; }
+.dp-reply-input {
+  width: 100%;
+  resize: vertical;
+  min-height: 80px;
+  margin-bottom: 8px;
+}
+.dp-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.dp-reply {
+  margin-top: 8px;
+  padding: 10px 14px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  border-left: 3px solid var(--accent);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ─── Notification Permission Prompt ─── */
+.notif-prompt-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.npc-icon { font-size: 1.8rem; line-height: 1; flex-shrink: 0; }
+.npc-body { flex: 1; }
+.npc-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
+.npc-desc { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 10px; }
+.npc-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.npc-time { width: auto !important; padding: 6px 10px !important; font-size: 0.88rem !important; }
+.btn-text { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; padding: 4px 8px; }
 
 /* ─── Weekly Summary Card ─── */
 .weekly-summary-card {

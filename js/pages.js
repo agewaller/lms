@@ -43,7 +43,8 @@ var Pages = {
       ${this.renderTodayPriorities(domain)}
       ${this.renderCheckinNudge(domain)}
       ${this.renderDailyPrompt(domain)}
-      ${this.renderWeeklySummary()}`;
+      ${this.renderWeeklySummary()}
+      ${this.renderNotificationPrompt()}`;
 
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
@@ -1529,15 +1530,91 @@ var Pages = {
     const prompts = (CONFIG.dailyPrompts || {})[domain];
     if (!prompts || prompts.length === 0) return '';
 
-    // Pick question based on day-of-year so it rotates but is stable within a day
     const doy = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
     const q = prompts[doy % prompts.length];
+    const today = new Date().toISOString().split('T')[0];
+    const savedReply = localStorage.getItem(`lms_promptReply_${domain}_${today}`);
 
+    if (savedReply) {
+      return `<div class="daily-prompt-card dp-done">
+        <div class="dp-label">今日の問いかけ <span class="dp-done-badge">✓ 記録済み</span></div>
+        <div class="dp-question">${Components.escapeHtml(q)}</div>
+        <div class="dp-reply">${Components.escapeHtml(savedReply)}</div>
+      </div>`;
+    }
+
+    const qEsc = Components.escapeHtml(q).replace(/'/g, '&#39;');
     return `<div class="daily-prompt-card">
       <div class="dp-label">今日の問いかけ</div>
       <div class="dp-question">${Components.escapeHtml(q)}</div>
-      <button class="btn btn-sm btn-primary dp-btn" onclick="app.replyToPrompt('${Components.escapeHtml(q).replace(/'/g, '&#39;')}')">答える</button>
+      <textarea id="dpReply_${domain}" class="form-input dp-reply-input" rows="3" placeholder="思ったことをそのまま書いてください。正解はありません"></textarea>
+      <div class="dp-actions">
+        <button class="btn btn-sm btn-primary" onclick="Pages.savePromptReply('${domain}', '${qEsc}')">書き留める</button>
+        <button class="btn btn-sm btn-secondary" onclick="app.replyToPrompt('${qEsc}')">相談する →</button>
+      </div>
     </div>`;
+  },
+
+  savePromptReply(domain, question) {
+    const el = document.getElementById('dpReply_' + domain);
+    if (!el || !el.value.trim()) {
+      Components.showToast('回答を入力してください', 'error');
+      return;
+    }
+    const text = el.value.trim();
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem(`lms_promptReply_${domain}_${today}`, text);
+
+    const catMap = {
+      consciousness: ['entries',      { reflection: text, prompt_question: question }],
+      health:        ['symptoms',     { notes: text, prompt_question: question }],
+      time:          ['entries',      { activity: '問いかけへの回答', notes: text, prompt_question: question }],
+      work:          ['reviews',      { achievements: text, period: today, prompt_question: question }],
+      relationship:  ['interactions', { person: '（日記）', type: 'other', notes: text, prompt_question: question }],
+      assets:        ['overview',     { notes: text, prompt_question: question }]
+    };
+    const entry = catMap[domain];
+    if (entry) store.addDomainEntry(domain, entry[0], entry[1]);
+    Components.showToast('記録しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Notification permission prompt (shown once until granted or dismissed) ───
+  renderNotificationPrompt() {
+    if (!('Notification' in window)) return '';
+    if (Notification.permission === 'granted') return '';
+    const dismissed = localStorage.getItem('lms_notifPromptDismissed');
+    if (dismissed && Date.now() - parseInt(dismissed) < 7 * 86400000) return '';
+
+    const times = ['06:00','07:00','08:00','09:00','10:00','20:00','21:00','22:00'];
+    return `<div class="notif-prompt-card">
+      <div class="npc-icon">🔔</div>
+      <div class="npc-body">
+        <div class="npc-title">毎日のリマインダーを設定しませんか？</div>
+        <div class="npc-desc">同じ時間にお知らせが届くと、記録の習慣が続きやすくなります</div>
+        <div class="npc-actions">
+          <select id="notifTimeSelect" class="form-input npc-time">
+            ${times.map(t => `<option value="${t}"${t === '08:00' ? ' selected' : ''}>${t}</option>`).join('')}
+          </select>
+          <button class="btn btn-sm btn-primary" onclick="Pages.enableNotification()">設定する</button>
+          <button class="btn btn-sm btn-text" onclick="Pages.dismissNotifPrompt()">後で</button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  enableNotification() {
+    const sel = document.getElementById('notifTimeSelect');
+    const time = sel ? sel.value : '08:00';
+    if (typeof app !== 'undefined') {
+      app.enableDailyReminder(time).then(ok => { if (ok) this.dismissNotifPrompt(); });
+    }
+  },
+
+  dismissNotifPrompt() {
+    localStorage.setItem('lms_notifPromptDismissed', Date.now().toString());
+    const card = document.querySelector('.notif-prompt-card');
+    if (card) card.remove();
   },
 
   // ─── Weekly Summary (shown once per week, first login of each week) ───
