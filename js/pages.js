@@ -406,8 +406,9 @@ var Pages = {
     try { saved = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch (e) {}
     const hasSaved = saved.length > 0;
 
-    // Recent entries from Firestore
-    const recentEntries = store.getDomainData('consciousness', 'appreciation', 7);
+    // Recent entries from Firestore (gratitude saved to entries with source='appreciation')
+    const recentEntries = store.getDomainData('consciousness', 'entries', 7)
+      .filter(e => e.source === 'appreciation' || e.gratitude || e.items);
     const todayEntry = recentEntries.find(e => (e.timestamp || '').startsWith(today));
 
     if (todayEntry || hasSaved) {
@@ -3410,9 +3411,9 @@ var Pages = {
     // learning_100min: ≥100 min in time.learning this month
     const now100 = new Date();
     const monthStart = new Date(now100.getFullYear(), now100.getMonth(), 1).toISOString().slice(0,10);
-    const learningMin = store.getDomainData('time', 'learning', 90)
-      .filter(e => e.date >= monthStart)
-      .reduce((sum, e) => sum + (Number(e.minutes) || 0), 0);
+    const learningMin = store.getDomainData('time', 'entries', 90)
+      .filter(e => e.category === 'learning' && (e.date || '') >= monthStart)
+      .reduce((sum, e) => sum + (Number(e.duration) || Number(e.minutes) || 0), 0);
 
     // wisdom_fav: any favorited wisdom quote
     let wisdomFav = false;
@@ -7421,7 +7422,8 @@ var Pages = {
 
   // ─── Gratitude Streak (consciousness domain) ───
   renderGratitudeStreak() {
-    const entries = store.getDomainData('consciousness', 'appreciation', 60);
+    const entries = store.getDomainData('consciousness', 'entries', 60)
+      .filter(e => e.source === 'appreciation' || e.gratitude || e.items);
     if (entries.length < 2) return '';
 
     const today = new Date();
@@ -7478,7 +7480,7 @@ var Pages = {
   renderWorkWeeklyStats() {
     const tasks = store.getDomainData('work', 'tasks', 7);
     const completions = store.getDomainData('work', 'completions', 7);
-    const reflections = store.getDomainData('work', 'reflections', 7);
+    const reflections = store.getDomainData('work', 'reviews', 7);
 
     if (tasks.length === 0 && completions.length === 0 && reflections.length === 0) return '';
 
@@ -7526,7 +7528,7 @@ var Pages = {
     const now = new Date();
     const year = now.getFullYear();
     const yearStart = new Date(year, 0, 1);
-    const entries = store.getDomainData('assets', 'medical', 365)
+    const entries = store.getDomainData('assets', 'expenses', 365).filter(e => e.category === 'health')
       .filter(e => e.timestamp && new Date(e.timestamp) >= yearStart)
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
@@ -7622,7 +7624,7 @@ var Pages = {
 
     // Work: completed tasks + day rating
     const wDone = store.getDomainData('work', 'tasks', 3).filter(e => (e.timestamp || '').startsWith(today) && e.status === 'done');
-    const wRef = store.getDomainData('work', 'reflections', 3).find(e => (e.timestamp || '').startsWith(today));
+    const wRef = store.getDomainData('work', 'reviews', 3).find(e => (e.timestamp || '').startsWith(today));
     scores.work = Math.min(10, wDone.length * 2 + (wRef ? Number(wRef.day_rating || 0) : 0));
 
     // Relationship: interactions logged today
@@ -7716,7 +7718,7 @@ var Pages = {
   renderVolunteerTracker() {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const entries = store.getDomainData('work', 'volunteer', 60);
+    const entries = store.getDomainData('work', 'tasks', 60).filter(e => e.notes && e.notes.includes('ボランティア'));
     const thisMonth = entries.filter(e => e.timestamp && new Date(e.timestamp) >= monthStart);
 
     const totalHours = thisMonth.reduce((s, e) => s + (parseFloat(e.hours) || 0), 0);
@@ -7822,7 +7824,7 @@ var Pages = {
     });
 
     // Work day satisfaction rating
-    store.getDomainData('work', 'reflections', 30).forEach(e => {
+    store.getDomainData('work', 'reviews', 30).forEach(e => {
       const day = (e.timestamp || '').split('T')[0];
       if (dayData[day] && e.day_rating) dayData[day].workRating = Number(e.day_rating);
     });
@@ -7908,7 +7910,7 @@ var Pages = {
   // ─── Daily Learning Log (time domain) ───
   renderLearningLog() {
     const today = new Date().toISOString().split('T')[0];
-    const records = store.getDomainData('time', 'learning', 30)
+    const records = store.getDomainData('time', 'entries', 30).filter(r => r.category === 'learning')
       .filter(r => r.timestamp)
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
@@ -8606,8 +8608,8 @@ var Pages = {
 
   // ─── Blood Glucose Tracker (health domain) ───
   renderGlucoseTracker() {
-    const records = store.getDomainData('health', 'glucose', 30)
-      .filter(r => r.value && r.timestamp)
+    const records = store.getDomainData('health', 'vitals', 30)
+      .filter(r => r.glucose_value && r.timestamp)
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     // Gate: show if user has any glucose records OR has diabetes in profile
@@ -8663,11 +8665,11 @@ var Pages = {
     };
 
     const latestEntry = records[0];
-    const latestStatus = latestEntry ? getStatus(latestEntry.value, latestEntry.timing) : null;
+    const latestStatus = latestEntry ? getStatus(latestEntry.glucose_value, latestEntry.timing) : null;
 
     // 7-day average
     const avg7 = recent7.length > 0
-      ? Math.round(recent7.reduce((s, r) => s + Number(r.value), 0) / recent7.length)
+      ? Math.round(recent7.reduce((s, r) => s + Number(r.glucose_value), 0) / recent7.length)
       : null;
 
     const showFormKey = 'lms_glucoseFormOpen';
@@ -8680,7 +8682,7 @@ var Pages = {
       </div>
 
       ${latestEntry ? `<div class="glc-latest">
-        <div class="glc-latest-val" style="color:${latestStatus?.color}">${latestEntry.value}</div>
+        <div class="glc-latest-val" style="color:${latestStatus?.color}">${latestEntry.glucose_value}</div>
         <div class="glc-latest-unit">mg/dL</div>
         <div class="glc-latest-info">
           <div class="glc-latest-timing">${timingLabels[latestEntry.timing] || latestEntry.timing || ''}</div>
@@ -8705,12 +8707,12 @@ var Pages = {
 
       ${records.length > 1 ? `<div class="glc-history">
         ${records.slice(0, 5).map(r => {
-          const st = getStatus(r.value, r.timing);
+          const st = getStatus(r.glucose_value, r.timing);
           const d = new Date(r.timestamp).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
           return `<div class="glc-hist-row">
             <span class="glc-hist-date">${d}</span>
             <span class="glc-hist-timing">${timingLabels[r.timing] || r.timing || ''}</span>
-            <span class="glc-hist-val" style="color:${st.color}">${r.value}</span>
+            <span class="glc-hist-val" style="color:${st.color}">${r.glucose_value}</span>
             <span class="glc-hist-dot" style="background:${st.color}"></span>
           </div>`;
         }).join('')}
