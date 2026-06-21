@@ -21,6 +21,7 @@ var App = class App {
       this.renderApp();
       this.startInboxPolling();
       setTimeout(() => this.checkFirstRun(), 1200);
+      setTimeout(() => this.runScheduledPrompts(), 5000);
     }
 
     // Listen for auth changes
@@ -31,6 +32,7 @@ var App = class App {
         this.renderApp();
         this.startInboxPolling();
         setTimeout(() => this.checkFirstRun(), 1200);
+        setTimeout(() => this.runScheduledPrompts(), 5000);
       } else {
         this.stopInboxPolling();
       }
@@ -54,6 +56,36 @@ var App = class App {
     if (this._inboxPollTimer) {
       clearInterval(this._inboxPollTimer);
       this._inboxPollTimer = null;
+    }
+  }
+
+  // ─── Scheduled prompt runner: fires once per day on app load ───
+  async runScheduledPrompts() {
+    const today = new Date().toISOString().split('T')[0];
+    const lastRun = localStorage.getItem('lms_lastScheduledRun');
+    if (lastRun === today) return;
+
+    // Need some data before running
+    const domain = store.get('currentDomain') || 'health';
+    const categories = Object.keys(CONFIG.domains[domain]?.categories || {});
+    let entryCount = 0;
+    categories.forEach(cat => { entryCount += store.getDomainData(domain, cat, 7).length; });
+    if (entryCount < 2) return;
+
+    // Find active daily prompt for current domain
+    const prompts = store.get('customPrompts') || {};
+    const allPrompts = { ...CONFIG.prompts, ...prompts };
+    const dailyKey = `${domain}_daily`;
+    const promptObj = allPrompts[dailyKey] || allPrompts['universal_daily'];
+    if (!promptObj || promptObj.active === false) return;
+
+    try {
+      await AIEngine.analyze(domain, dailyKey.replace(`${domain}_`, '') || 'daily', {});
+      localStorage.setItem('lms_lastScheduledRun', today);
+      Components.showToast('今日の分析が完了しました。ホームをご確認ください。', 'info');
+      if (store.get('currentPage') === 'home') this.renderApp();
+    } catch (e) {
+      console.warn('Scheduled prompt error:', e);
     }
   }
 
