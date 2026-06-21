@@ -1277,7 +1277,7 @@ var Pages = {
   // ─── Profile completion progress bar ───
   renderProfileCompletion(profile) {
     const p = profile || {};
-    const keyFields = ['displayName', 'age', 'gender', 'location', 'diseases', 'lifeGoals', 'concerns'];
+    const keyFields = ['displayName', 'age', 'gender', 'location', 'diseases', 'lifeGoals', 'concerns', 'emergencyContact'];
     const filled = keyFields.filter(k => {
       const v = p[k];
       return v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && v.length === 0);
