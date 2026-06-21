@@ -1,0 +1,36 @@
+{
+  "name": "LMS - 人生管理システム",
+  "short_name": "LMS",
+  "description": "65歳からの人生管理。意識・健康・時間・仕事・関係・資産を一つのアプリで",
+  "start_url": "/lms/dashboard.html",
+  "scope": "/lms/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#6C63FF",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "健康を記録",
+      "short_name": "記録",
+      "description": "今日の体調を記録する",
+      "url": "/lms/dashboard.html?domain=health&page=record",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "ホームに戻る",
+      "short_name": "ホーム",
+      "description": "ダッシュボードを開く",
+      "url": "/lms/dashboard.html",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    }
+  ]
+}
