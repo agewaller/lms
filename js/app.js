@@ -314,6 +314,44 @@ var App = class App {
     document.body.classList.toggle('is-admin', isAdmin);
   }
 
+  // ─── Voice Input (Web Speech API) ───
+  startVoiceInput(targetId) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      Components.showToast('このブラウザは音声入力に対応していません', 'error');
+      return;
+    }
+    const btn = document.getElementById('voiceBtn_' + targetId);
+    if (this._recognition) {
+      this._recognition.stop();
+      this._recognition = null;
+      if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
+      return;
+    }
+    const rec = new SpeechRecognition();
+    rec.lang = 'ja-JP';
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    this._recognition = rec;
+    if (btn) { btn.classList.add('recording'); btn.textContent = '⏹'; }
+    rec.onresult = (e) => {
+      const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+      const el = document.getElementById(targetId);
+      if (el) el.value = transcript;
+    };
+    rec.onend = () => {
+      this._recognition = null;
+      if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
+    };
+    rec.onerror = (e) => {
+      this._recognition = null;
+      if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤'; }
+      if (e.error !== 'aborted') Components.showToast('音声認識エラー: ' + e.error, 'error');
+    };
+    rec.start();
+    Components.showToast('話しかけてください...', 'info');
+  }
+
   // ─── Quick Input ───
   async quickInput() {
     const input = document.getElementById('quickInput');
