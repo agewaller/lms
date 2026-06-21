@@ -245,6 +245,7 @@ var Pages = {
       html += this.renderStepCounter();
       html += this.renderWeeklyStepGoal();
       html += this.renderSOSWidget();
+      html += this.renderEmergencyInfoCard();
       html += this.renderMedicationReminder();
       html += this.renderDoctorAppointments();
       html += this.renderBPTrendCard();
@@ -7261,6 +7262,108 @@ var Pages = {
       </div>
       <div class="cdi-foot">過去30日間のデータ（${daysWithData}日分）から算出</div>
     </div>`;
+  },
+
+  // ─── Emergency Health Info Card (printable wallet card) ───
+  renderEmergencyInfoCard() {
+    const profile = store.get('userProfile') || {};
+    const hasAnyInfo = profile.bloodType || profile.allergies || profile.primaryDoctor ||
+                       profile.emergencyContact || profile.emergencyPhone;
+
+    // Dismiss if user chose not to set it up
+    const dismissedKey = 'lms_emergencyCardDismissed';
+    if (!hasAnyInfo) {
+      if (localStorage.getItem(dismissedKey)) return '';
+      return `<div class="eic-setup">
+        <div class="eic-setup-icon">🪪</div>
+        <div class="eic-setup-body">
+          <strong>緊急時の医療情報を登録しましょう</strong>
+          <span>血液型・アレルギー・緊急連絡先を入力しておくと、もしものときに役立ちます</span>
+        </div>
+        <div class="eic-setup-btns">
+          <button class="btn btn-sm btn-primary" onclick="app.navigate('settings')">入力する</button>
+          <button class="btn btn-sm btn-ghost" onclick="localStorage.setItem('${dismissedKey}','1');this.closest('.eic-setup').remove()">後で</button>
+        </div>
+      </div>`;
+    }
+
+    const bloodLabels = { A: 'A型', B: 'B型', O: 'O型', AB: 'AB型', unknown: '不明' };
+    const bloodDisplay = bloodLabels[profile.bloodType] || profile.bloodType || '未登録';
+
+    const meds = (store.get('health_medications') || []).map(m => m.name).filter(Boolean).slice(0, 4);
+    const medsDisplay = meds.length > 0 ? meds.join('、') : (profile.medications || '');
+
+    const rows = [
+      { label: '血液型', val: bloodDisplay, important: !!profile.bloodType },
+      { label: 'アレルギー', val: profile.allergies || '', important: !!profile.allergies },
+      { label: '服薬中の薬', val: medsDisplay, important: medsDisplay.length > 0 },
+      { label: 'かかりつけ医', val: profile.primaryDoctor || '', important: false },
+      { label: '緊急連絡先', val: profile.emergencyContact
+        ? `${profile.emergencyContact}${profile.emergencyPhone ? ' (' + profile.emergencyPhone + ')' : ''}`
+        : '', important: !!profile.emergencyContact }
+    ].filter(r => r.val);
+
+    return `<div class="eic-card">
+      <div class="eic-header">
+        <div class="eic-title">緊急医療情報カード</div>
+        <div class="eic-actions">
+          <button class="btn btn-sm btn-secondary" onclick="Pages.printEmergencyCard()">印刷</button>
+          <button class="btn btn-sm btn-ghost" onclick="app.navigate('settings')">編集</button>
+        </div>
+      </div>
+      <div class="eic-name">${Components.escapeHtml(profile.displayName || profile.name || '')}</div>
+      <div class="eic-rows" id="eicRows">
+        ${rows.map(r => `
+          <div class="eic-row ${r.important ? 'eic-row-important' : ''}">
+            <div class="eic-row-label">${r.label}</div>
+            <div class="eic-row-val">${Components.escapeHtml(r.val)}</div>
+          </div>`).join('')}
+      </div>
+      <div class="eic-hint">この情報を印刷して財布や手帳に入れておくと、緊急時に役立ちます</div>
+    </div>`;
+  },
+
+  printEmergencyCard() {
+    const profile = store.get('userProfile') || {};
+    const bloodLabels = { A: 'A型', B: 'B型', O: 'O型', AB: 'AB型', unknown: '不明' };
+    const meds = (store.get('health_medications') || []).map(m => m.name).filter(Boolean).slice(0, 4);
+    const medsDisplay = meds.length > 0 ? meds.join('、') : (profile.medications || '');
+    const rows = [
+      { label: '血液型', val: bloodLabels[profile.bloodType] || '' },
+      { label: 'アレルギー', val: profile.allergies || '' },
+      { label: '服薬中の薬', val: medsDisplay },
+      { label: 'かかりつけ医', val: profile.primaryDoctor || '' },
+      { label: '緊急連絡先', val: profile.emergencyContact
+        ? `${profile.emergencyContact}${profile.emergencyPhone ? '　' + profile.emergencyPhone : ''}` : '' }
+    ].filter(r => r.val);
+
+    const name = profile.displayName || profile.name || '';
+    const printHtml = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+      <title>緊急医療情報カード</title>
+      <style>
+        body { font-family: 'Noto Sans JP', sans-serif; margin: 20px; font-size: 14px; }
+        .card { border: 2px solid #333; border-radius: 8px; padding: 16px; max-width: 320px; }
+        h2 { margin: 0 0 8px; font-size: 16px; color: #ef4444; }
+        .name { font-size: 18px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid #ccc; padding-bottom: 8px; }
+        .row { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px solid #eee; }
+        .label { font-weight: bold; min-width: 90px; color: #555; font-size: 12px; }
+        .val { flex: 1; }
+        .blood { font-size: 20px; font-weight: 900; color: #ef4444; }
+        .foot { margin-top: 10px; font-size: 11px; color: #888; }
+      </style></head><body>
+      <div class="card">
+        <h2>緊急医療情報</h2>
+        ${name ? `<div class="name">${Components.escapeHtml(name)}</div>` : ''}
+        ${rows.map(r => `<div class="row">
+          <div class="label">${r.label}</div>
+          <div class="val ${r.label === '血液型' ? 'blood' : ''}">${Components.escapeHtml(r.val)}</div>
+        </div>`).join('')}
+        <div class="foot">LMS - Life Management System</div>
+      </div>
+      <script>window.onload = function() { window.print(); }<\/script>
+      </body></html>`;
+    const w = window.open('', '_blank', 'width=400,height=500');
+    if (w) { w.document.write(printHtml); w.document.close(); }
   },
 
   // ─── Doctor Appointment Tracker (health domain) ───
