@@ -257,7 +257,7 @@ var Components = {
     const summary = Object.entries(entry)
       .filter(([k]) => !['id','timestamp','domain','category','_synced'].includes(k))
       .slice(0, 3)
-      .map(([k, v]) => `${i18n.t(k)}: ${v}`)
+      .map(([k, v]) => `${this.escapeHtml(i18n.t(k) || k)}: ${this.escapeHtml(String(v ?? ''))}`)
       .join(' | ');
     return `<div class="record-item" style="border-left-color:${color}">
       <div class="record-header">
@@ -266,5 +266,75 @@ var Components = {
       </div>
       <div class="record-summary">${summary}</div>
     </div>`;
+  },
+
+  // ─── HTML escape (XSS prevention) ───
+  // Required before ANY user-supplied string goes into innerHTML.
+  escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
+
+  // ─── Modal-based confirm (replaces browser confirm()) ───
+  // Mobile-safe: iOS Safari / Chrome Android block / silently ignore confirm().
+  confirm(message, onConfirm, onCancel) {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl  = document.getElementById('modal-body');
+    if (!overlay) { if (onConfirm) onConfirm(); return; }
+    if (titleEl) titleEl.textContent = '確認';
+    if (bodyEl) bodyEl.innerHTML = `
+      <p style="margin-bottom:20px">${this.escapeHtml(message)}</p>
+      <div class="form-actions">
+        <button class="btn btn-danger"    id="_confirmYes">はい</button>
+        <button class="btn btn-secondary" id="_confirmNo">キャンセル</button>
+      </div>`;
+    overlay.classList.add('active');
+    document.getElementById('_confirmYes').onclick = () => {
+      overlay.classList.remove('active');
+      if (onConfirm) onConfirm();
+    };
+    document.getElementById('_confirmNo').onclick = () => {
+      overlay.classList.remove('active');
+      if (onCancel) onCancel();
+    };
+  },
+
+  // ─── Modal-based prompt (replaces browser prompt()) ───
+  prompt(message, onSubmit, placeholder) {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl  = document.getElementById('modal-body');
+    if (!overlay) { const v = window.prompt(message, ''); if (onSubmit) onSubmit(v); return; }
+    if (titleEl) titleEl.textContent = message;
+    if (bodyEl) bodyEl.innerHTML = `
+      <div class="form-group">
+        <input type="text" id="_promptInput" class="form-input"
+          placeholder="${this.escapeHtml(placeholder || '')}">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary"   id="_promptOk">OK</button>
+        <button class="btn btn-secondary" id="_promptCancel">キャンセル</button>
+      </div>`;
+    overlay.classList.add('active');
+    const input = document.getElementById('_promptInput');
+    if (input) {
+      input.focus();
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') { const ok = document.getElementById('_promptOk'); if (ok) ok.click(); }
+      };
+    }
+    document.getElementById('_promptOk').onclick = () => {
+      overlay.classList.remove('active');
+      if (onSubmit) onSubmit(input ? input.value : '');
+    };
+    document.getElementById('_promptCancel').onclick = () => {
+      overlay.classList.remove('active');
+    };
   }
 };

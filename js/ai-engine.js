@@ -4,9 +4,23 @@
    ============================================================ */
 var AIEngine = {
 
+  // Maps CONFIG model IDs to provider API IDs.
+  // Update values here when Anthropic/OpenAI/Google rotate model IDs.
+  MODEL_MAP: {
+    'claude-sonnet-5':   'claude-sonnet-5-20251101',
+    'claude-opus-4-8':   'claude-opus-4-8-20251101',
+    'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+    'claude-sonnet-4-6': 'claude-sonnet-5-20251101',  // legacy alias → current
+    'claude-opus-4-6':   'claude-opus-4-8-20251101',  // legacy alias → current
+    'gpt-4o':            'gpt-4o-2024-11-20',
+    'gpt-4o-mini':       'gpt-4o-mini-2024-07-18',
+    'gemini-pro':        'gemini-2.0-flash',
+    'gemini-flash':      'gemini-2.0-flash'
+  },
+
   // ─── Main analysis entry point ───
   async analyze(domain, promptType, userData, options = {}) {
-    const model = options.model || store.get('selectedModel') || 'claude-sonnet-4-6';
+    const model = options.model || store.get('selectedModel') || 'claude-sonnet-5';
     const modelConfig = CONFIG.aiModels[model];
     if (!modelConfig) throw new Error('Unknown model: ' + model);
 
@@ -134,6 +148,7 @@ var AIEngine = {
     const apiKey = this.getApiKey('anthropic');
     if (!apiKey) throw new Error('Anthropic APIキーが設定されていません。管理者にご連絡ください。');
 
+    const apiModel = this.MODEL_MAP[model] || model;
     const endpoint = CONFIG.endpoints.anthropic;
 
     // ─── Direct browser mode (no proxy) ───
@@ -161,7 +176,7 @@ var AIEngine = {
     }
 
     console.log('[LMS] Calling Anthropic', isDirect ? '(direct)' : 'via proxy:', url);
-    console.log('[LMS] Model:', model, 'Max tokens:', maxTokens);
+    console.log('[LMS] Model:', apiModel, 'Max tokens:', maxTokens);
 
     let res;
     try {
@@ -169,7 +184,7 @@ var AIEngine = {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model,
+          model: apiModel,
           max_tokens: maxTokens,
           system: system,
           messages: [{ role: 'user', content: userMsg }]
@@ -200,6 +215,7 @@ var AIEngine = {
     const apiKey = this.getApiKey('openai');
     if (!apiKey) throw new Error('OpenAI API key not set');
 
+    const apiModel = this.MODEL_MAP[model] || model;
     const res = await fetch(CONFIG.endpoints.openai, {
       method: 'POST',
       headers: {
@@ -207,7 +223,7 @@ var AIEngine = {
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: model,
+        model: apiModel,
         max_tokens: maxTokens,
         messages: [
           { role: 'system', content: system },
@@ -228,7 +244,8 @@ var AIEngine = {
     const apiKey = this.getApiKey('google');
     if (!apiKey) throw new Error('Google API key not set');
 
-    const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
+    const apiModel = this.MODEL_MAP[model] || model;
+    const url = `${CONFIG.endpoints.google}/${apiModel}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
