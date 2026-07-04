@@ -287,7 +287,7 @@ var Pages = {
       html += `<div class="graph-ring ring-${level}" style="--ring-color: ${levels[level].color}">
         <div class="ring-label">${levels[level].description}（${people.length}人）</div>
         <div class="ring-people">
-          ${people.slice(0, 8).map(p => `<span class="ring-person" title="${p.name}">${(p.name || '').substring(0, 3)}</span>`).join('')}
+          ${people.slice(0, 8).map(p => { const n = Components.escapeHtml(p.name || ''); const s = Components.escapeHtml((p.name || '').substring(0, 3)); return `<span class="ring-person" title="${n}">${s}</span>`; }).join('')}
           ${people.length > 8 ? `<span class="ring-more">+${people.length - 8}</span>` : ''}
         </div>
       </div>`;
@@ -323,9 +323,9 @@ var Pages = {
       const dateStr = c.nextBirthday.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
       const label = c.daysUntil === 0 ? '今日！' : `あと${c.daysUntil}日`;
       html += `<div class="birthday-item ${c.daysUntil <= 3 ? 'birthday-soon' : ''}">
-        <span class="birthday-name">${c.name}</span>
-        <span class="birthday-date">${dateStr}（${label}）</span>
-        <span class="birthday-distance">${CONFIG.domains.relationship.distanceLevels[c.distance]?.description || ''}</span>
+        <span class="birthday-name">${Components.escapeHtml(c.name)}</span>
+        <span class="birthday-date">${Components.escapeHtml(dateStr)}（${Components.escapeHtml(label)}）</span>
+        <span class="birthday-distance">${Components.escapeHtml(CONFIG.domains.relationship.distanceLevels[c.distance]?.description || '')}</span>
       </div>`;
     });
 
@@ -366,9 +366,9 @@ var Pages = {
     return `<div class="resume-widget">
       <h3>📄 レジュメ</h3>
       <div class="resume-summary">
-        <p><strong>${resume.name || ''}</strong></p>
-        <p>${resume.summary || ''}</p>
-        <p>スキル: ${(resume.skills || []).join(', ')}</p>
+        <p><strong>${Components.escapeHtml(resume.name || '')}</strong></p>
+        <p>${Components.escapeHtml(resume.summary || '')}</p>
+        <p>スキル: ${Components.escapeHtml((resume.skills || []).join(', '))}</p>
       </div>
       <div class="resume-actions">
         <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')">編集</button>
@@ -960,17 +960,18 @@ var Pages = {
 
           html += `<div class="data-entry-card">
             <div class="data-entry-header">
-              <span class="data-entry-cat">${catLabel}</span>
+              <span class="data-entry-cat">${Components.escapeHtml(catLabel)}</span>
               <span class="data-entry-time">${new Date(entry.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
               <div class="data-entry-actions">
-                <button class="btn-icon-sm" onclick="app.editDataEntry('${domain}','${entry._category}','${entry.id}')" title="編集">編集</button>
-                <button class="btn-icon-sm" onclick="app.deleteDataEntry('${domain}','${entry._category}','${entry.id}')" title="削除">削除</button>
+                <button class="btn-icon-sm" onclick="app.editDataEntry('${Components.escapeHtml(domain)}','${Components.escapeHtml(entry._category)}','${Components.escapeHtml(entry.id)}')" title="編集">編集</button>
+                <button class="btn-icon-sm" onclick="app.deleteDataEntry('${Components.escapeHtml(domain)}','${Components.escapeHtml(entry._category)}','${Components.escapeHtml(entry.id)}')" title="削除">削除</button>
               </div>
             </div>
             <div class="data-entry-fields">
               ${fields.map(([k, v]) => {
-                const label = i18n.t(k) || k;
-                const val = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
+                const label = Components.escapeHtml(i18n.t(k) || k);
+                const raw = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
+                const val = Components.escapeHtml(raw);
                 return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${val}</span></div>`;
               }).join('')}
             </div>
@@ -1813,13 +1814,13 @@ var Pages = {
           if (u.location) meta.push(u.location);
           const metaText = meta.join(' · ');
 
-          return `<div class="admin-user-item clickable" onclick="app.showUserDetail('${u.uid}')">
+          return `<div class="admin-user-item clickable" onclick="app.showUserDetail('${Components.escapeHtml(u.uid)}')">
             <div class="admin-user-info">
-              <div class="admin-user-avatar">${initial}</div>
+              <div class="admin-user-avatar">${Components.escapeHtml(initial)}</div>
               <div>
-                <div class="admin-user-email">${u.displayName || u.email || '不明'}</div>
+                <div class="admin-user-email">${Components.escapeHtml(u.displayName || u.email || '不明')}</div>
                 <div class="admin-user-role">
-                  ${u.email ? u.email + '<br>' : ''}${metaText || 'プロフィール未設定'}
+                  ${u.email ? Components.escapeHtml(u.email) + '<br>' : ''}${Components.escapeHtml(metaText || 'プロフィール未設定')}
                   ${u.lastActive ? ' · 最終: ' + new Date(u.lastActive).toLocaleDateString('ja-JP') : ''}
                 </div>
               </div>
