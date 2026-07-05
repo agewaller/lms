@@ -36,6 +36,18 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>`;
 
+    // Daily check-in nudge (shown when no record logged for today in this domain)
+    if (typeof app !== 'undefined' && app._noRecordToday && app._noRecordToday()) {
+      html += `<div class="checkin-nudge" onclick="app.navigate('record')">
+        <div class="cn-dot" style="background:${color}"></div>
+        <div class="cn-text">
+          <strong>今日まだ記録がありません</strong>
+          <span>1分でできます — 今日の ${i18n.t(domain)} を記録しましょう</span>
+        </div>
+        <div class="cn-arrow">→</div>
+      </div>`;
+    }
+
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
       html += this.renderStockAnalysisWidget();
@@ -1916,6 +1928,102 @@ var Pages = {
           <button class="btn btn-secondary" onclick="app.exportData()">データを書き出す</button>
           <button class="btn btn-danger" onclick="app.deleteAllData()">すべてのデータを削除</button>
         </div>
+      </div>
+    </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  ONBOARDING WIZARD (first-time setup, 3 steps)
+  // ═══════════════════════════════════════════════════════════
+  renderOnboarding() {
+    const step = store.get('_onboardingStep') || 1;
+    const domains = CONFIG.domains;
+
+    const domainIcons = {
+      consciousness: '一',
+      health: '二',
+      time: '三',
+      work: '四',
+      relationship: '五',
+      assets: '六'
+    };
+
+    let stepHtml = '';
+
+    if (step === 1) {
+      stepHtml = `
+        <div class="onboard-step" id="onboard-step-1">
+          <div class="onboard-icon">◈</div>
+          <h2>LMSへようこそ</h2>
+          <p class="onboard-lead">意識・健康・時間・仕事・関係・資産の6つの領域を、まるごとサポートします。<br>まず、あなたのことを少し教えてください。</p>
+          <div class="onboard-form">
+            <div class="form-group">
+              <label>お名前（ニックネームでも）</label>
+              <input type="text" id="ob-name" class="form-input" placeholder="例：田中 花子">
+            </div>
+            <div class="form-group">
+              <label>年齢</label>
+              <input type="number" id="ob-age" class="form-input" placeholder="例：68" min="0" max="120">
+            </div>
+            <div class="form-group">
+              <label>今、一番気になっていること</label>
+              <select id="ob-concern" class="form-input">
+                <option value="">選択してください</option>
+                <option value="health">健康・病気のこと</option>
+                <option value="relationship">家族・友人との関係</option>
+                <option value="assets">お金・資産のこと</option>
+                <option value="work">仕事・生きがいのこと</option>
+                <option value="time">時間の使い方・趣味</option>
+                <option value="consciousness">心・精神的なこと</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-lg onboard-next" onclick="app.onboardingNext(1)">次へ　→</button>
+        </div>`;
+    } else if (step === 2) {
+      const concern = store.get('_onboardingConcern') || 'health';
+      stepHtml = `
+        <div class="onboard-step" id="onboard-step-2">
+          <div class="onboard-progress">2 / 3</div>
+          <h2>どこから始めますか？</h2>
+          <p class="onboard-lead">どの領域でも、いつでも変更できます。</p>
+          <div class="onboard-domains">
+            ${Object.entries(domains).map(([id, d]) => `
+              <label class="onboard-domain-card ${concern === id ? 'recommended' : ''}">
+                <input type="radio" name="ob-domain" value="${id}" ${concern === id ? 'checked' : ''}>
+                <div class="odc-num" style="background:${d.color}">${domainIcons[id]}</div>
+                <div class="odc-info">
+                  <div class="odc-name">${i18n.t(id)}</div>
+                  <div class="odc-desc">${d.description || ''}</div>
+                </div>
+                ${concern === id ? '<div class="odc-badge">おすすめ</div>' : ''}
+              </label>
+            `).join('')}
+          </div>
+          <button class="btn btn-primary btn-lg onboard-next" onclick="app.onboardingNext(2)">次へ　→</button>
+          <button class="btn btn-secondary" style="margin-top:8px" onclick="app.onboardingBack()">← 戻る</button>
+        </div>`;
+    } else if (step === 3) {
+      const domain = store.get('_onboardingDomain') || 'health';
+      const d = domains[domain];
+      stepHtml = `
+        <div class="onboard-step" id="onboard-step-3">
+          <div class="onboard-progress">3 / 3</div>
+          <div class="onboard-icon" style="background:${d.color};color:#fff;width:56px;height:56px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px">${domainIcons[domain]}</div>
+          <h2>最初の記録をしましょう</h2>
+          <p class="onboard-lead">今日の ${i18n.t(domain)} について、一言だけ教えてください。<br>どんなことでも大丈夫です。</p>
+          <div class="form-group">
+            <textarea id="ob-first-entry" class="form-input" rows="4"
+              placeholder="例：今日は朝から体が重く感じた。昨日の夜は7時間眠れた。"></textarea>
+          </div>
+          <button class="btn btn-primary btn-lg onboard-next" onclick="app.onboardingFinish()">記録して始める</button>
+          <button class="btn btn-secondary" style="margin-top:8px" onclick="app.onboardingSkip()">スキップしてホームへ</button>
+        </div>`;
+    }
+
+    return `<div class="onboarding-overlay" id="onboarding-overlay">
+      <div class="onboarding-modal">
+        ${stepHtml}
       </div>
     </div>`;
   }
