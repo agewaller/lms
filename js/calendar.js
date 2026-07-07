@@ -141,8 +141,8 @@ var CalendarIntegration = {
           new Date(e.start).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
         html += `<div class="calendar-event">
           <span class="event-time">${time}</span>
-          <span class="event-title">${e.summary}</span>
-          ${e.location ? `<span class="event-location">${e.location}</span>` : ''}
+          <span class="event-title">${Components.escapeHtml(e.summary)}</span>
+          ${e.location ? `<span class="event-location">${Components.escapeHtml(e.location)}</span>` : ''}
         </div>`;
       });
     }

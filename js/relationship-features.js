@@ -143,12 +143,12 @@ var RelationshipFeatures = {
       html += `<div class="contact-suggest birthday-suggest">
         <div class="cs-icon">🎂</div>
         <div class="cs-info">
-          <div class="cs-name">${c.name}さん</div>
-          <div class="cs-reason">お誕生日が${dateStr}です！おめでとうのメッセージを送りましょう</div>
+          <div class="cs-name">${Components.escapeHtml(c.name)}さん</div>
+          <div class="cs-reason">お誕生日が${Components.escapeHtml(dateStr)}です！おめでとうのメッセージを送りましょう</div>
         </div>
         <div class="cs-actions">
-          ${c.phone ? `<a href="tel:${c.phone}" class="btn btn-sm btn-primary">📞 電話</a>` : ''}
-          <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContact('${c.name}','message')">💬 連絡済み</button>
+          ${c.phone ? `<a href="tel:${Components.escapeHtml(c.phone)}" class="btn btn-sm btn-primary">📞 電話</a>` : ''}
+          <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContactById('${Components.escapeHtml(c.id || '')}','message')">💬 連絡済み</button>
         </div>
       </div>`;
     });
@@ -162,12 +162,12 @@ var RelationshipFeatures = {
       html += `<div class="contact-suggest ${d.urgency >= 5 ? 'urgent' : ''}">
         <div class="cs-icon">${d.urgency >= 5 ? '⚠️' : '💭'}</div>
         <div class="cs-info">
-          <div class="cs-name">${d.name}さん <span class="cs-dist">${distLabel}</span></div>
-          <div class="cs-reason">${d.daysSince}日間ご連絡していません${suggestion ? '。' + suggestion : ''}</div>
+          <div class="cs-name">${Components.escapeHtml(d.name)}さん <span class="cs-dist">${Components.escapeHtml(distLabel)}</span></div>
+          <div class="cs-reason">${Components.escapeHtml(String(d.daysSince))}日間ご連絡していません${suggestion ? '。' + Components.escapeHtml(suggestion) : ''}</div>
         </div>
         <div class="cs-actions">
-          ${contact?.phone ? `<a href="tel:${contact.phone}" class="btn btn-sm btn-primary">📞 電話</a>` : ''}
-          <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContact('${d.name}','call')">📝 連絡済み</button>
+          ${contact?.phone ? `<a href="tel:${Components.escapeHtml(contact.phone)}" class="btn btn-sm btn-primary">📞 電話</a>` : ''}
+          <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContactById('${Components.escapeHtml(contact?.id || '')}','call')">📝 連絡済み</button>
         </div>
       </div>`;
     });
@@ -192,8 +192,17 @@ var RelationshipFeatures = {
       quality: 3,
       notes: '（ワンタッチ記録）'
     });
-    Components.showToast(`${name}さんへの連絡を記録しました`, 'success');
+    Components.showToast(`${Components.escapeHtml(name)}さんへの連絡を記録しました`, 'success');
     if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ID経由でlogContact（onclick属性に名前を埋め込まないためのブリッジ）
+  logContactById(id, type) {
+    const contacts = store.get('relationship_contacts') || [];
+    const contact = id ? contacts.find(c => c.id === id) : null;
+    const name = contact?.name || '';
+    if (!name) return;
+    this.logContact(name, type);
   },
 
   // ═══════════════════════════════════════════════════════════

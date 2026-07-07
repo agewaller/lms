@@ -78,7 +78,7 @@ var Components = {
     switch (f.type) {
       case 'slider':
         return `<div class="slider-field">
-          <input type="range" name="${name}" min="${f.min||0}" max="${f.max||10}" value="${Math.floor((f.min||0 + f.max||10)/2)}" oninput="this.nextElementSibling.textContent=this.value">
+          <input type="range" name="${name}" min="${f.min||0}" max="${f.max||10}" value="${Math.floor(((f.min||0) + (f.max||10))/2)}" oninput="this.nextElementSibling.textContent=this.value">
           <span class="slider-val">${Math.floor(((f.min||0) + (f.max||10))/2)}</span>
         </div>`;
       case 'number':
@@ -118,7 +118,9 @@ var Components = {
   // ─── Markdown Formatter ───
   formatMarkdown(text) {
     if (!text) return '';
-    return text
+    // Escape HTML first so user/AI content can't inject tags
+    let safe = this.escapeHtml(text);
+    return safe
       .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -249,6 +251,54 @@ var Components = {
     </div>`;
   },
 
+  // ─── Inline Confirm Modal (replaces confirm()) ───
+  // Usage: Components.confirm('削除しますか？', () => doDelete(), 'danger')
+  confirm(message, onConfirm, variant) {
+    const id = '_lmsConfirm' + Date.now();
+    window[id] = () => { delete window[id]; app.closeModal(); onConfirm(); };
+    const btnClass = variant === 'danger' ? 'btn-danger' : 'btn-primary';
+    const label = variant === 'danger' ? '削除する' : '確認';
+    app.openModal('確認', `
+      <p style="margin-bottom:20px;line-height:1.6">${this.escapeHtml(message)}</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn ${btnClass}" onclick="${id}()">${label}</button>
+      </div>`);
+  },
+
+  // ─── Inline Input Modal (replaces prompt()) ───
+  // Usage: Components.prompt('キー名を入力', '', (val) => doSomething(val))
+  promptInput(message, placeholder, onConfirm) {
+    const id = '_lmsPrompt' + Date.now();
+    const inputId = id + 'Input';
+    window[id] = () => {
+      const val = document.getElementById(inputId)?.value?.trim();
+      delete window[id];
+      app.closeModal();
+      if (val) onConfirm(val);
+    };
+    app.openModal('入力', `
+      <p style="margin-bottom:12px">${this.escapeHtml(message)}</p>
+      <input type="text" id="${inputId}" class="form-input" placeholder="${this.escapeHtml(placeholder || '')}"
+        style="margin-bottom:16px" onkeydown="if(event.key==='Enter')${id}()">
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn btn-primary" onclick="${id}()">確認</button>
+      </div>`);
+    setTimeout(() => document.getElementById(inputId)?.focus(), 50);
+  },
+
+  // ─── HTML Escape ───
+  escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
   // ─── Record List Item ───
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';
@@ -257,7 +307,7 @@ var Components = {
     const summary = Object.entries(entry)
       .filter(([k]) => !['id','timestamp','domain','category','_synced'].includes(k))
       .slice(0, 3)
-      .map(([k, v]) => `${i18n.t(k)}: ${v}`)
+      .map(([k, v]) => `${this.escapeHtml(i18n.t(k))}: ${this.escapeHtml(String(v))}`)
       .join(' | ');
     return `<div class="record-item" style="border-left-color:${color}">
       <div class="record-header">

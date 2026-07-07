@@ -150,8 +150,8 @@ var App = class App {
 
   async logout() {
     await FirebaseBackend.signOut();
-    // Redirect to appropriate landing page
-    if (this.entryDomain) {
+    const validDomains = Object.keys(CONFIG.domains);
+    if (this.entryDomain && validDomains.includes(this.entryDomain)) {
       window.location.href = this.entryDomain + '.html';
     } else {
       window.location.href = 'index.html';
@@ -179,7 +179,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -302,7 +302,7 @@ var App = class App {
 
       input.value = '';
     } catch (e) {
-      if (responseEl) responseEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (responseEl) responseEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message)}</div>`;
     }
   }
 
@@ -381,9 +381,11 @@ var App = class App {
 
     try {
       await AIEngine.analyze(domain, 'daily', { text });
-      Components.showToast(i18n.t('ai_analysis') + ' ✓', 'success');
+      Components.showToast('保存・分析が完了しました ✓', 'success');
       this.renderApp();
     } catch (e) {
+      // Restore text so user doesn't lose their entry
+      if (textarea) textarea.value = text;
       Components.showToast(e.message, 'error');
     }
   }
@@ -533,7 +535,9 @@ var App = class App {
       } else if (file.name.endsWith('.vcf')) {
         contacts = this.parseVCardContacts(content);
       } else if (file.name.endsWith('.json')) {
-        try { contacts = JSON.parse(content); } catch (err) { /* ignore */ }
+        try { contacts = JSON.parse(content); } catch (err) {
+          Components.showToast('JSONの読み込みに失敗しました: ' + err.message, 'error');
+        }
       }
 
       if (contacts.length > 0) {
@@ -741,21 +745,21 @@ var App = class App {
   }
 
   deleteDataEntry(domain, category, id) {
-    if (!confirm('この記録を削除しますか？')) return;
-    const key = `${domain}_${category}`;
-    const entries = (store.get(key) || []).filter(e => e.id !== id);
-    store.set(key, entries);
+    Components.confirm('この記録を削除しますか？', () => {
+      const key = `${domain}_${category}`;
+      const entries = (store.get(key) || []).filter(e => e.id !== id);
+      store.set(key, entries);
 
-    // Also delete from Firestore if connected
-    if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.db) {
-      const uid = store.get('user')?.uid;
-      if (uid) {
-        FirebaseBackend.db.collection('users').doc(uid).collection(key).doc(id).delete().catch(e => console.warn(e));
+      if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.db) {
+        const uid = store.get('user')?.uid;
+        if (uid) {
+          FirebaseBackend.db.collection('users').doc(uid).collection(key).doc(id).delete().catch(e => console.warn(e));
+        }
       }
-    }
 
-    Components.showToast('削除しました', 'info');
-    this.renderApp();
+      Components.showToast('削除しました', 'info');
+      this.renderApp();
+    }, 'danger');
   }
 
   exportDomainData(domain) {
@@ -824,10 +828,11 @@ var App = class App {
   }
 
   fitbitDisconnect() {
-    if (!confirm('Fitbit接続を解除しますか？')) return;
-    if (typeof fitbit !== 'undefined') fitbit.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    Components.confirm('Fitbit接続を解除しますか？', () => {
+      if (typeof fitbit !== 'undefined') fitbit.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    });
   }
 
   async fitbitImportToday() {
@@ -874,10 +879,11 @@ var App = class App {
   }
 
   gcalDisconnect() {
-    if (!confirm('Googleカレンダー接続を解除しますか？')) return;
-    if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    Components.confirm('Googleカレンダー接続を解除しますか？', () => {
+      if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    });
   }
 
   async gcalSync() {
@@ -909,10 +915,11 @@ var App = class App {
   }
 
   outlookDisconnect() {
-    if (!confirm('Outlook接続を解除しますか？')) return;
-    if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    Components.confirm('Outlook接続を解除しますか？', () => {
+      if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    });
   }
 
   async outlookSync() {
@@ -944,10 +951,11 @@ var App = class App {
   }
 
   gmailDisconnect() {
-    if (!confirm('Gmail接続を解除しますか？')) return;
-    if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    Components.confirm('Gmail接続を解除しますか？', () => {
+      if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    });
   }
 
   async gmailImportContacts() {
@@ -1141,7 +1149,7 @@ var App = class App {
       textarea.value = '';
       Components.showToast('分析が完了しました', 'success');
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message)}</div>`;
     }
   }
 
@@ -1387,7 +1395,7 @@ var App = class App {
 
     // Save to Firestore if available
     if (Object.keys(keys).length > 0) {
-      FirebaseBackend.saveApiKeys({ ...AIEngine.getApiKey, ...keys });
+      FirebaseBackend.saveApiKeys(keys);
     }
 
     Components.showToast(i18n.t('saved'), 'success');
@@ -1479,31 +1487,32 @@ var App = class App {
   }
 
   deletePrompt(key) {
-    if (!confirm('このプロンプトを削除しますか？')) return;
-    delete CONFIG.prompts[key];
-    const custom = store.get('customPrompts') || {};
-    delete custom[key];
-    store.set('customPrompts', custom);
-    Components.showToast('削除しました', 'info');
-    this.renderApp();
+    Components.confirm('このプロンプトを削除しますか？', () => {
+      delete CONFIG.prompts[key];
+      const custom = store.get('customPrompts') || {};
+      delete custom[key];
+      store.set('customPrompts', custom);
+      Components.showToast('削除しました', 'info');
+      this.renderApp();
+    }, 'danger');
   }
 
   addNewPrompt() {
-    const key = prompt('プロンプトのキー名を入力（例: work_custom）');
-    if (!key) return;
-    if (CONFIG.prompts[key]) {
-      Components.showToast('そのキーは既に存在します', 'error');
-      return;
-    }
-    CONFIG.prompts[key] = {
-      name: '新しいプロンプト',
-      domain: 'universal',
-      description: '',
-      schedule: 'manual',
-      active: true,
-      prompt: ''
-    };
-    this.renderApp();
+    Components.promptInput('プロンプトのキー名を入力', 'work_custom', key => {
+      if (CONFIG.prompts[key]) {
+        Components.showToast('そのキーは既に存在します', 'error');
+        return;
+      }
+      CONFIG.prompts[key] = {
+        name: '新しいプロンプト',
+        domain: 'universal',
+        description: '',
+        schedule: 'manual',
+        active: true,
+        prompt: ''
+      };
+      this.renderApp();
+    });
   }
 
   selectModel(modelId) {
@@ -1519,18 +1528,19 @@ var App = class App {
       const result = await AIEngine.analyze(null, 'text_analysis', { text: 'テスト' });
       if (resultEl) resultEl.innerHTML = '<div class="toast toast-success" style="position:static;opacity:1;margin-top:10px;">✓ 接続成功</div>';
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = '<div class="toast toast-error" style="position:static;opacity:1;margin-top:10px;">✗ ' + e.message + '</div>';
+      if (resultEl) resultEl.innerHTML = '<div class="toast toast-error" style="position:static;opacity:1;margin-top:10px;">✗ ' + Components.escapeHtml(e.message) + '</div>';
     }
   }
 
   clearApiKeys() {
-    if (!confirm('すべてのAPIキーを削除しますか？')) return;
-    ['anthropic', 'openai', 'google'].forEach(p => {
-      localStorage.removeItem('lms_apikey_' + p);
-    });
-    store.state._apiKeys = {};
-    Components.showToast('削除しました', 'info');
-    this.renderApp();
+    Components.confirm('すべてのAPIキーを削除しますか？', () => {
+      ['anthropic', 'openai', 'google'].forEach(p => {
+        localStorage.removeItem('lms_apikey_' + p);
+      });
+      store.state._apiKeys = {};
+      Components.showToast('削除しました', 'info');
+      this.renderApp();
+    }, 'danger');
   }
 
   saveAffiliateConfig() {
@@ -1559,9 +1569,10 @@ var App = class App {
   }
 
   clearFirebaseConfig() {
-    if (!confirm('Firebase設定を削除しますか？')) return;
-    localStorage.removeItem('lms_firebaseConfig');
-    Components.showToast('削除しました（再読み込みが必要です）', 'info');
+    Components.confirm('Firebase設定を削除しますか？', () => {
+      localStorage.removeItem('lms_firebaseConfig');
+      Components.showToast('削除しました（再読み込みが必要です）', 'info');
+    }, 'danger');
   }
 
   saveWorkerUrl() {
@@ -1648,38 +1659,36 @@ var App = class App {
   }
 
   // ─── Admin User Management ───
-  async addAdminEmail() {
-    const email = prompt('管理者として追加するメールアドレスを入力してください');
-    if (!email || !email.trim()) return;
+  addAdminEmail() {
+    Components.promptInput('管理者として追加するメールアドレスを入力してください', 'admin@example.com', async email => {
+      const trimmed = email.trim().toLowerCase();
+      if (!/^[^@]+@[^@]+\.[^@]+$/.test(trimmed)) {
+        Components.showToast('有効なメールアドレスを入力してください', 'error');
+        return;
+      }
 
-    const trimmed = email.trim().toLowerCase();
-    if (!/^[^@]+@[^@]+\.[^@]+$/.test(trimmed)) {
-      Components.showToast('有効なメールアドレスを入力してください', 'error');
-      return;
-    }
+      const list = store.get('adminEmails') || ['agewaller@gmail.com'];
+      if (list.includes(trimmed)) {
+        Components.showToast('すでに管理者です', 'info');
+        return;
+      }
 
-    const list = store.get('adminEmails') || ['agewaller@gmail.com'];
-    if (list.includes(trimmed)) {
-      Components.showToast('すでに管理者です', 'info');
-      return;
-    }
+      list.push(trimmed);
+      store.set('adminEmails', list);
 
-    list.push(trimmed);
-    store.set('adminEmails', list);
+      if (FirebaseBackend.db) {
+        await FirebaseBackend.db.collection('admin').doc('config').set(
+          {
+            adminEmails: list,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          },
+          { merge: true }
+        ).catch(e => console.warn(e));
+      }
 
-    // Sync to Firestore admin/config
-    if (FirebaseBackend.db) {
-      await FirebaseBackend.db.collection('admin').doc('config').set(
-        {
-          adminEmails: list,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        },
-        { merge: true }
-      ).catch(e => console.warn(e));
-    }
-
-    Components.showToast(`${trimmed} を管理者に追加しました`, 'success');
-    this.renderApp();
+      Components.showToast(`${trimmed} を管理者に追加しました`, 'success');
+      this.renderApp();
+    });
   }
 
   async removeAdminEmail(email) {
@@ -1687,24 +1696,25 @@ var App = class App {
       Components.showToast('オーナーアカウントは削除できません', 'error');
       return;
     }
-    if (!confirm(`${email} を管理者から外しますか？`)) return;
+    Components.confirm(`${email} を管理者から外しますか？`, async () => {
+      const list = (store.get('adminEmails') || ['agewaller@gmail.com']).filter(e => e !== email);
+      store.set('adminEmails', list);
 
-    const list = (store.get('adminEmails') || ['agewaller@gmail.com']).filter(e => e !== email);
-    store.set('adminEmails', list);
+      if (FirebaseBackend.db) {
+        await FirebaseBackend.db.collection('admin').doc('config').set(
+          {
+            adminEmails: list,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          },
+          { merge: true }
+        ).catch(e => console.warn(e));
+      }
 
-    if (FirebaseBackend.db) {
-      await FirebaseBackend.db.collection('admin').doc('config').set(
-        {
-          adminEmails: list,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        },
-        { merge: true }
-      ).catch(e => console.warn(e));
-    }
-
-    Components.showToast('管理者から削除しました', 'info');
-    this.renderApp();
+      Components.showToast('管理者から削除しました', 'info');
+      this.renderApp();
+    }, 'danger');
   }
+
 
   async loadAllUsers() {
     if (!FirebaseBackend.db) {
@@ -1829,9 +1839,13 @@ var App = class App {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-      const count = typeof withings !== 'undefined' ? withings.parseCSV(e.target.result) : 0;
-      Components.showToast(`Withingsから${count}件のデータを取り込みました`, 'success');
-      this.renderApp();
+      try {
+        const count = typeof withings !== 'undefined' ? withings.parseCSV(e.target.result) : 0;
+        Components.showToast(`Withingsから${count}件のデータを取り込みました`, 'success');
+        this.renderApp();
+      } catch (err) {
+        Components.showToast('Withingsファイルの読み込みに失敗しました: ' + err.message, 'error');
+      }
     };
     reader.readAsText(file);
   }
@@ -1842,9 +1856,13 @@ var App = class App {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-      const count = typeof muse !== 'undefined' ? muse.parseCSV(e.target.result) : 0;
-      Components.showToast(`Museから${count}件のセッションを取り込みました`, 'success');
-      this.renderApp();
+      try {
+        const count = typeof muse !== 'undefined' ? muse.parseCSV(e.target.result) : 0;
+        Components.showToast(`Museから${count}件のセッションを取り込みました`, 'success');
+        this.renderApp();
+      } catch (err) {
+        Components.showToast('Museファイルの読み込みに失敗しました: ' + err.message, 'error');
+      }
     };
     reader.readAsText(file);
   }
@@ -1908,25 +1926,27 @@ var App = class App {
   }
 
   generateDemoData() {
-    if (!confirm('デモデータを生成しますか？既存データに追加されます。')) return;
-    // Generate sample entries for each domain
-    const today = new Date();
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      store.addDomainEntry('health', 'symptoms', { condition_level: 5 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
-      store.addDomainEntry('health', 'sleepData', { quality: 6 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
-    }
-    Components.showToast('デモデータを生成しました', 'success');
-    this.renderApp();
+    Components.confirm('デモデータを生成しますか？既存データに追加されます。', () => {
+      const today = new Date();
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        store.addDomainEntry('health', 'symptoms', { condition_level: 5 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
+        store.addDomainEntry('health', 'sleepData', { quality: 6 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
+      }
+      Components.showToast('デモデータを生成しました', 'success');
+      this.renderApp();
+    });
   }
 
   deleteAllData() {
-    if (!confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
-    if (!confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
-    store.clearAll();
-    Components.showToast('すべてのデータを削除しました', 'info');
-    window.location.reload();
+    Components.confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。', () => {
+      Components.confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？', () => {
+        store.clearAll();
+        Components.showToast('すべてのデータを削除しました', 'info');
+        window.location.reload();
+      }, 'danger');
+    }, 'danger');
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───
