@@ -192,7 +192,7 @@ var WorkFeatures = {
         </div>`;
       }
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message)}</div>`;
     }
   },
 
@@ -315,7 +315,7 @@ var WorkFeatures = {
         </div>`;
       }
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message)}</div>`;
     }
   },
 
@@ -457,7 +457,7 @@ AIが怖くない方にも、まったくの初心者にも伝わるよう、や
         </div>`;
       }
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message)}</div>`;
     }
   },
 
