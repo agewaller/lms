@@ -29,6 +29,14 @@ var FirebaseBackend = {
 
       // Listen for auth state changes
       this.auth.onAuthStateChanged(user => this.handleAuthChange(user));
+
+      // Capture result from signInWithRedirect (mobile Google auth)
+      this.auth.getRedirectResult().catch(e => {
+        if (e.code !== 'auth/no-auth-event') {
+          console.error('Redirect auth error:', e);
+        }
+      });
+
       this.initialized = true;
     } catch (e) {
       console.error('Firebase init error:', e);
@@ -76,7 +84,14 @@ var FirebaseBackend = {
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     try {
-      await this.auth.signInWithPopup(provider);
+      // signInWithPopup is blocked in WebViews / many mobile browsers.
+      // Fall back to redirect on mobile so auth always works.
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile) {
+        await this.auth.signInWithRedirect(provider);
+      } else {
+        await this.auth.signInWithPopup(provider);
+      }
     } catch (e) {
       console.error('Google sign-in error:', e);
       Components.showToast(i18n.t('error') + ': ' + e.message, 'error');

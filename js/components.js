@@ -3,6 +3,16 @@
    ============================================================ */
 var Components = {
 
+  // ─── XSS-safe HTML escaping ───
+  escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
+
   // ─── Score Gauge (circular) ───
   scoreGauge(score, size = 120, label = '') {
     const pct = Math.max(0, Math.min(100, score));
@@ -132,6 +142,23 @@ var Components = {
       .replace(/\n/g, '<br>');
   },
 
+  // ─── Confirm Dialog (replaces confirm() which is blocked on iOS/Android) ───
+  showConfirm(message, onConfirm, confirmLabel = 'OK') {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    if (!overlay || !bodyEl) return;
+    if (titleEl) titleEl.textContent = '確認';
+    bodyEl.innerHTML = `<p style="margin-bottom:20px">${Components.escapeHtml(message)}</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-secondary" id="_confirm-cancel">キャンセル</button>
+        <button class="btn btn-danger" id="_confirm-ok">${Components.escapeHtml(confirmLabel)}</button>
+      </div>`;
+    overlay.classList.add('active');
+    document.getElementById('_confirm-cancel').onclick = () => overlay.classList.remove('active');
+    document.getElementById('_confirm-ok').onclick = () => { overlay.classList.remove('active'); onConfirm(); };
+  },
+
   // ─── Toast Notification (未病ダイアリー方式) ───
   showToast(message, type = 'info') {
     const container = document.getElementById('toast-container') || document.body;
@@ -257,7 +284,7 @@ var Components = {
     const summary = Object.entries(entry)
       .filter(([k]) => !['id','timestamp','domain','category','_synced'].includes(k))
       .slice(0, 3)
-      .map(([k, v]) => `${i18n.t(k)}: ${v}`)
+      .map(([k, v]) => `${Components.escapeHtml(i18n.t(k))}: ${Components.escapeHtml(String(v ?? ''))}`)
       .join(' | ');
     return `<div class="record-item" style="border-left-color:${color}">
       <div class="record-header">
