@@ -46,16 +46,21 @@ var AffiliateEngine = {
   productCard(product) {
     const links = (product.stores || []).map(s => {
       const url = this.generateLink(s.store, s.url, product.id);
-      return `<a href="${url}" target="_blank" rel="noopener" class="affiliate-link"
-        onclick="AffiliateEngine.trackClick('${s.store}','${product.id}','${product.domain || ''}')">${s.store}</a>`;
+      // Sanitize href — reject javascript: URIs
+      const safeUrl = /^https?:\/\//i.test(url) ? url : '#';
+      const storeName = Components.escapeHtml(s.store || '');
+      const productId = Components.escapeHtml(String(product.id || ''));
+      const productDomain = Components.escapeHtml(product.domain || '');
+      return `<a href="${Components.escapeHtml(safeUrl)}" target="_blank" rel="noopener" class="affiliate-link"
+        onclick="AffiliateEngine.trackClick('${storeName}','${productId}','${productDomain}')">${storeName}</a>`;
     }).join('');
 
     return `<div class="product-card">
-      ${product.image ? `<img src="${product.image}" alt="${product.name}" class="product-img">` : ''}
+      ${product.image && /^https?:\/\//i.test(product.image) ? `<img src="${Components.escapeHtml(product.image)}" alt="${Components.escapeHtml(product.name || '')}" class="product-img">` : ''}
       <div class="product-info">
-        <h4>${product.name}</h4>
-        <p>${product.description || ''}</p>
-        ${product.price ? `<div class="product-price">${product.price}</div>` : ''}
+        <h4>${Components.escapeHtml(product.name || '')}</h4>
+        <p>${Components.escapeHtml(product.description || '')}</p>
+        ${product.price ? `<div class="product-price">${Components.escapeHtml(String(product.price))}</div>` : ''}
         <div class="product-links">${links}</div>
       </div>
     </div>`;
@@ -165,8 +170,8 @@ var PayPalManager = {
     }
 
     return `<div class="subscription-status active">
-      <p>${i18n.t('subscription')}: ${CONFIG.paypal.plans[sub.plan]?.name || sub.plan}</p>
-      <p>ID: ${sub.paypalId}</p>
+      <p>${i18n.t('subscription')}: ${Components.escapeHtml(CONFIG.paypal.plans[sub.plan]?.name || sub.plan || '')}</p>
+      <p>ID: ${Components.escapeHtml(sub.paypalId || '')}</p>
     </div>`;
   }
 };
