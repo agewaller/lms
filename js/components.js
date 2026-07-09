@@ -50,9 +50,13 @@ var Components = {
   // ─── Recommendation Card ───
   recommendationCard(rec) {
     const priorityClass = rec.priority === 'high' ? 'priority-high' : rec.priority === 'medium' ? 'priority-med' : 'priority-low';
+    const domainCfg = CONFIG.domains[rec.domain];
+    const badgeColor = domainCfg?.color || '#6C63FF';
+    const badgeIcon = domainCfg?.icon || '◎';
+    const badgeLabel = rec.domain === 'all' ? '総合分析' : i18n.t(rec.domain);
     return `<div class="recommendation-card ${priorityClass}">
       <div class="rec-header">
-        <span class="rec-domain-badge" style="background:${CONFIG.domains[rec.domain]?.color || '#666'}">${CONFIG.domains[rec.domain]?.icon || ''} ${i18n.t(rec.domain)}</span>
+        <span class="rec-domain-badge" style="background:${badgeColor}">${badgeIcon} ${this.escapeHtml(badgeLabel)}</span>
         <span class="rec-priority">${i18n.t(rec.priority || 'medium')}</span>
       </div>
       <div class="rec-body">${this.formatMarkdown(rec.text || '')}</div>

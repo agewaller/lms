@@ -391,6 +391,10 @@ var App = class App {
       Components.showToast(i18n.t('saved'), 'success');
     }
     form.reset();
+
+    // Refresh sidebar scores without full page re-render (preserves category tab state)
+    store.calculateDomainScore(domain);
+    this.updateSidebar();
   }
 
   async saveAndAnalyze(domain, category) {
