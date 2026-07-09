@@ -69,7 +69,7 @@ var WorkFeatures = {
         <button class="btn btn-primary" onclick="WorkFeatures.saveLocation()">設定する</button>
       </div>`;
     } else {
-      html += `<p>「${location}」の近くで見つかるお仕事やボランティアです。</p>`;
+      html += `<p>「${Components.escapeHtml(location)}」の近くで見つかるお仕事やボランティアです。</p>`;
 
       // 検索ボタン
       html += `<button class="btn btn-primary btn-lg" onclick="WorkFeatures.searchOpportunities()" style="margin-bottom:20px;">
@@ -192,7 +192,7 @@ var WorkFeatures = {
         </div>`;
       }
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message)}</div>`;
     }
   },
 
@@ -211,7 +211,7 @@ var WorkFeatures = {
           const typeLabel = a.provision === 'paid' ? '💰 有償' : a.provision === 'volunteer' ? '🤝 ボランティア' : '📝 記録';
           return `<div class="activity-item">
             <span class="ai-type">${typeLabel}</span>
-            <span class="ai-title">${a.title || a.description || ''}</span>
+            <span class="ai-title">${Components.escapeHtml(a.title || a.description || '')}</span>
             <span class="ai-time">${new Date(a.timestamp).toLocaleDateString('ja-JP')}</span>
           </div>`;
         }).join('')}
@@ -315,7 +315,7 @@ var WorkFeatures = {
         </div>`;
       }
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message)}</div>`;
     }
   },
 
