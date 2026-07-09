@@ -381,7 +381,15 @@ var App = class App {
     });
 
     store.addDomainEntry(domain, category, data);
-    Components.showToast(i18n.t('saved'), 'success');
+
+    // Celebrate streak milestones
+    const streak = store.getStreak(domain);
+    const milestones = [3, 7, 14, 30, 60, 100];
+    if (milestones.includes(streak)) {
+      Components.showToast(`🎉 ${streak}日連続記録達成！素晴らしいですね。`, 'success');
+    } else {
+      Components.showToast(i18n.t('saved'), 'success');
+    }
     form.reset();
   }
 

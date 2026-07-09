@@ -117,7 +117,7 @@ var Components = {
   // ─── Chat Message ───
   chatMessage(msg) {
     const cls = msg.role === 'user' ? 'chat-user' : 'chat-ai';
-    const icon = msg.role === 'user' ? 'あ' : 'S';
+    const icon = msg.role === 'user' ? '私' : '◎';
     return `<div class="chat-msg ${cls}">
       <div class="chat-icon">${icon}</div>
       <div class="chat-content">${this.formatMarkdown(msg.content || '')}</div>
