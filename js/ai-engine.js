@@ -207,6 +207,34 @@ var AIEngine = {
     return data.content?.[0]?.text || '';
   },
 
+  // Multi-turn variant: accepts a full messages array instead of a single string.
+  async callAnthropicMessages(model, system, messages, maxTokens) {
+    const apiKey = this.getApiKey('anthropic');
+    if (!apiKey) throw new Error('Anthropic APIキーが設定されていません。管理者にご連絡ください。');
+    const endpoint = CONFIG.endpoints.anthropic;
+    const isDirect = !endpoint || endpoint === 'direct' || endpoint.includes('your-account');
+    const url = isDirect ? 'https://api.anthropic.com/v1/messages' : endpoint;
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    };
+    if (isDirect) headers['anthropic-dangerous-direct-browser-access'] = 'true';
+
+    const apiModel = MODEL_MAP[model] || model;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ model: apiModel, max_tokens: maxTokens, system, messages })
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('Claude APIエラー (HTTP ' + res.status + '): ' + err);
+    }
+    const data = await res.json();
+    return data.content?.[0]?.text || '';
+  },
+
   async callOpenAI(model, system, userMsg, maxTokens) {
     const apiKey = this.getApiKey('openai');
     if (!apiKey) throw new Error('OpenAI API key not set');
@@ -281,28 +309,59 @@ var AIEngine = {
 
   // ─── Conversation (chat) ───
   async chat(domain, userMessage) {
+    const model = store.get('selectedModel') || 'claude-sonnet-4-6';
+    const modelConfig = CONFIG.aiModels[model];
+    if (!modelConfig) throw new Error('Unknown model: ' + model);
+
     const history = store.get('conversationHistory') || [];
 
-    // Add user message
-    history.push({
-      role: 'user',
-      content: userMessage,
-      timestamp: new Date().toISOString(),
-      domain
-    });
+    // Add user message first so history is up-to-date
+    history.push({ role: 'user', content: userMessage, timestamp: new Date().toISOString(), domain });
 
-    // Get AI response
-    const response = await this.analyze(domain, 'daily', { text: userMessage });
+    store.set('isAnalyzing', true);
+    let response;
+    try {
+      // System prompt tuned for conversation (not data reporting)
+      const systemPrompt = this.buildSystemPrompt(domain, 'text_analysis');
 
-    // Add AI response
-    history.push({
-      role: 'assistant',
-      content: response,
-      timestamp: new Date().toISOString(),
-      domain
-    });
+      // Build context header for the first turn or every turn to keep AI grounded
+      const profile = store.get('userProfile') || {};
+      const recentData = this.gatherDomainData(domain, 7);
+      let contextHeader = '';
+      if (profile.age || profile.gender || recentData) {
+        contextHeader = '[ユーザー情報]';
+        if (profile.age) contextHeader += ` ${profile.age}歳`;
+        if (profile.gender) contextHeader += ` ${profile.gender === 'male' ? '男性' : '女性'}`;
+        if (recentData) contextHeader += `\n\n[最近の記録（${i18n.t(domain)}）]\n${recentData}`;
+        contextHeader += '\n\n';
+      }
 
-    store.set('conversationHistory', history);
+      // Build multi-turn messages: last 20 turns (40 messages), oldest first
+      const recentHistory = history.slice(-41, -1); // exclude just-added user msg
+      const apiMessages = recentHistory
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .map((m, idx) => ({
+          role: m.role,
+          // Prepend context only to first user message in the window
+          content: (m.role === 'user' && idx === 0 && contextHeader) ? contextHeader + m.content : m.content
+        }));
+
+      // Current user message (add context if no history yet)
+      const firstMsg = apiMessages.length === 0;
+      apiMessages.push({ role: 'user', content: firstMsg ? contextHeader + userMessage : userMessage });
+
+      if (modelConfig.provider === 'anthropic') {
+        response = await this.callAnthropicMessages(model, systemPrompt, apiMessages, modelConfig.maxTokens);
+      } else {
+        // Fallback to single-turn analyze for non-Anthropic models
+        response = await this.analyze(domain, 'text_analysis', { text: userMessage });
+      }
+    } finally {
+      store.set('isAnalyzing', false);
+    }
+
+    history.push({ role: 'assistant', content: response, timestamp: new Date().toISOString(), domain });
+    store.set('conversationHistory', history.slice(-100));
     return response;
   }
 };

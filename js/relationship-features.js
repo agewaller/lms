@@ -140,15 +140,17 @@ var RelationshipFeatures = {
     birthdayList.forEach(c => {
       const bd = new Date(c.birthday);
       const dateStr = `${bd.getMonth() + 1}月${bd.getDate()}日`;
+      const safeName = Components.escapeHtml(c.name || '');
+      const safePhone = (c.phone || '').replace(/[^0-9+\-() ]/g, '');
       html += `<div class="contact-suggest birthday-suggest">
         <div class="cs-icon">🎂</div>
         <div class="cs-info">
-          <div class="cs-name">${c.name}さん</div>
-          <div class="cs-reason">お誕生日が${dateStr}です！おめでとうのメッセージを送りましょう</div>
+          <div class="cs-name">${safeName}さん</div>
+          <div class="cs-reason">お誕生日が${Components.escapeHtml(dateStr)}です！おめでとうのメッセージを送りましょう</div>
         </div>
         <div class="cs-actions">
-          ${c.phone ? `<a href="tel:${c.phone}" class="btn btn-sm btn-primary">📞 電話</a>` : ''}
-          <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContact('${c.name}','message')">💬 連絡済み</button>
+          ${safePhone ? `<a href="tel:${safePhone}" class="btn btn-sm btn-primary">📞 電話</a>` : ''}
+          <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContact('${safeName}','message')">💬 連絡済み</button>
         </div>
       </div>`;
     });
@@ -156,18 +158,20 @@ var RelationshipFeatures = {
     // 連絡が途絶えている方
     overdueList.forEach(d => {
       const contact = contacts.find(c => c.name === d.name);
-      const distLabel = CONFIG.domains.relationship?.distanceLevels?.[d.distance]?.description || '';
+      const distLabel = Components.escapeHtml(CONFIG.domains.relationship?.distanceLevels?.[d.distance]?.description || '');
       const suggestion = this.getSuggestion(d);
+      const safeName = Components.escapeHtml(d.name || '');
+      const safePhone = (contact?.phone || '').replace(/[^0-9+\-() ]/g, '');
 
       html += `<div class="contact-suggest ${d.urgency >= 5 ? 'urgent' : ''}">
         <div class="cs-icon">${d.urgency >= 5 ? '⚠️' : '💭'}</div>
         <div class="cs-info">
-          <div class="cs-name">${d.name}さん <span class="cs-dist">${distLabel}</span></div>
-          <div class="cs-reason">${d.daysSince}日間ご連絡していません${suggestion ? '。' + suggestion : ''}</div>
+          <div class="cs-name">${safeName}さん <span class="cs-dist">${distLabel}</span></div>
+          <div class="cs-reason">${d.daysSince}日間ご連絡していません${suggestion ? '。' + Components.escapeHtml(suggestion) : ''}</div>
         </div>
         <div class="cs-actions">
-          ${contact?.phone ? `<a href="tel:${contact.phone}" class="btn btn-sm btn-primary">📞 電話</a>` : ''}
-          <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContact('${d.name}','call')">📝 連絡済み</button>
+          ${safePhone ? `<a href="tel:${safePhone}" class="btn btn-sm btn-primary">📞 電話</a>` : ''}
+          <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContact('${safeName}','call')">📝 連絡済み</button>
         </div>
       </div>`;
     });

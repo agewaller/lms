@@ -444,9 +444,9 @@ var AssetsFeatures = {
           <div class="at-order">
             <div class="at-order-info">
               <span class="at-order-type ${p.type}">${p.type === 'buy' ? '買い' : '売り'}</span>
-              <strong>${p.ticker || p.name}</strong>
-              <span>${p.amount?.toLocaleString()}円</span>
-              <span class="at-order-reason">${p.reason || ''}</span>
+              <strong>${Components.escapeHtml(p.ticker || p.name || '')}</strong>
+              <span>${(p.amount || 0).toLocaleString()}円</span>
+              <span class="at-order-reason">${Components.escapeHtml(p.reason || '')}</span>
             </div>
             <div class="at-order-actions">
               <button class="btn btn-sm btn-primary" onclick="AssetsFeatures.approveOrder(${i})">承認</button>
@@ -462,8 +462,8 @@ var AssetsFeatures = {
           history.slice(-10).reverse().map(h => `
             <div class="at-history-item">
               <span class="at-order-type ${h.type}">${h.type === 'buy' ? '買い' : '売り'}</span>
-              <span>${h.ticker || h.name}</span>
-              <span>${h.amount?.toLocaleString()}円</span>
+              <span>${Components.escapeHtml(h.ticker || h.name || '')}</span>
+              <span>${(h.amount || 0).toLocaleString()}円</span>
               <span class="at-history-time">${new Date(h.timestamp).toLocaleString('ja-JP')}</span>
               <span class="at-history-status ${h.status}">${h.status === 'executed' ? '約定' : h.status === 'rejected' ? '却下' : '保留'}</span>
             </div>
