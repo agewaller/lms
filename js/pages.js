@@ -28,13 +28,7 @@ var Pages = {
     const color = domainConfig?.color || '#6C63FF';
 
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
-        <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
-          onkeydown="if(event.key==='Enter')app.quickInput()">
-        <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
-      </div>
-      <div id="quickResponse"></div>`;
+    let html = `<div class="page-home">`;
 
     // Onboarding widget: show only for new users with no data in any domain
     const hasAnyData = Object.keys(CONFIG.domains).some(d =>
@@ -44,7 +38,16 @@ var Pages = {
     );
     if (!hasAnyData && !store.get('onboardingDismissed')) {
       html += this.renderOnboardingWidget();
+    } else {
+      html += this.renderDailyBriefing();
     }
+
+    html += `<div class="quick-input-bar">
+        <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
+          onkeydown="if(event.key==='Enter')app.quickInput()">
+        <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
+      </div>
+      <div id="quickResponse"></div>`;
 
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
@@ -62,14 +65,16 @@ var Pages = {
     html += this.getDomainStats(domain);
     html += `</div></div>`;
 
-    // All domain scores overview (mini)
+    // All domain scores overview (mini) with streaks
     html += `<div class="all-domains-overview">
       <h3>${i18n.t('holistic_analysis')}</h3>
       <div class="domain-scores-grid">
         ${Object.keys(CONFIG.domains).map(d => {
           const s = store.get('domainScores')?.[d] || 0;
+          const streak = store.getStreak(d);
           return `<div class="mini-score ${d === domain ? 'current' : ''}" onclick="app.switchDomain('${d}')">
             ${Components.scoreGauge(s, 70, i18n.t(d))}
+            ${streak >= 3 ? `<div class="mini-streak">🔥${streak}</div>` : ''}
           </div>`;
         }).join('')}
       </div>
@@ -211,6 +216,55 @@ var Pages = {
       <div class="onb-footer">
         <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')">まずプロフィールを設定する</button>
       </div>
+    </div>`;
+  },
+
+  // ─── Daily Briefing Widget ───
+  renderDailyBriefing() {
+    const profile = store.get('userProfile') || {};
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'おはようございます' : hour < 18 ? 'こんにちは' : 'こんばんは';
+    const name = profile.name ? `、${Components.escapeHtml(profile.name)}さん` : '';
+
+    // Check which domains have data recorded today
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const checkedDomains = Object.keys(CONFIG.domains).filter(d =>
+      Object.keys(CONFIG.domains[d].categories || {}).some(cat =>
+        store.getDomainData(d, cat, 1).some(e => (e.timestamp || '').startsWith(todayStr))
+      )
+    );
+    const totalDomains = Object.keys(CONFIG.domains).length;
+    const progress = checkedDomains.length;
+
+    let statusMsg = '';
+    if (progress === 0) {
+      statusMsg = '今日はまだ記録がありません。今日の調子をひと言教えてください。';
+    } else if (progress < 3) {
+      const doneNames = checkedDomains.map(d => i18n.t(d)).join('・');
+      statusMsg = `${doneNames}を記録しました。他の領域も記録してみませんか？`;
+    } else if (progress < totalDomains) {
+      statusMsg = `今日は${progress}つの領域を記録しました。調子がいいですね！`;
+    } else {
+      statusMsg = '今日は全ての領域を記録しました。完璧です！';
+    }
+
+    const domainDots = Object.keys(CONFIG.domains).map(d => {
+      const done = checkedDomains.includes(d);
+      const color = CONFIG.domains[d].color || '#8896A6';
+      const label = i18n.t(d);
+      return `<div class="db-dot-wrap" title="${Components.escapeHtml(label)}">
+        <div class="db-dot ${done ? 'done' : ''}" style="${done ? `background:${color}` : ''}"></div>
+        <div class="db-dot-label">${Components.escapeHtml(label)}</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="daily-briefing">
+      <div class="db-top">
+        <div class="db-greeting">${Components.escapeHtml(greeting)}${name}</div>
+        <div class="db-date">${new Date().toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' })}</div>
+      </div>
+      <div class="db-status">${Components.escapeHtml(statusMsg)}</div>
+      <div class="db-progress">${domainDots}</div>
     </div>`;
   },
 
