@@ -193,6 +193,9 @@ var App = class App {
     // Update sidebar user info
     this.updateSidebar();
 
+    // Apply saved theme preference
+    this.applyTheme();
+
     // Render page content
     mainContent.innerHTML = Pages.render(page, domain);
 
@@ -2064,6 +2067,39 @@ var App = class App {
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();
+  }
+
+  // ─── Theme toggle (dark / light / system) ───
+  toggleTheme() {
+    const root = document.documentElement;
+    const btn = document.getElementById('theme-toggle');
+    const current = store.get('theme') || 'system';
+    let next;
+    if (current === 'system') next = 'dark';
+    else if (current === 'dark') next = 'light';
+    else next = 'system';
+
+    store.set('theme', next);
+    if (next === 'system') {
+      root.removeAttribute('data-theme');
+      if (btn) btn.textContent = '🌙';
+    } else {
+      root.setAttribute('data-theme', next);
+      if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
+    }
+  }
+
+  applyTheme() {
+    const theme = store.get('theme') || 'system';
+    const root = document.documentElement;
+    const btn = document.getElementById('theme-toggle');
+    if (theme === 'system') {
+      root.removeAttribute('data-theme');
+      if (btn) btn.textContent = '🌙';
+    } else {
+      root.setAttribute('data-theme', theme);
+      if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    }
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───

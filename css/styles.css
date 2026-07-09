@@ -59,6 +59,79 @@
   --font-main: 'Noto Sans JP', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* ─── Dark Mode ─── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #0f1117;
+    --bg-secondary: #1a1d27;
+    --bg-tertiary: #252836;
+    --bg-card: #1a1d27;
+    --bg-hover: #2a2d3e;
+    --border: #2e3348;
+    --border-light: #3a3f5c;
+    --accent-bg: rgba(108, 99, 255, 0.12);
+    --accent-border: rgba(108, 99, 255, 0.25);
+    --success-bg: rgba(16, 185, 129, 0.12);
+    --warning-bg: rgba(245, 158, 11, 0.12);
+    --danger-bg: rgba(239, 68, 68, 0.12);
+    --info-bg: rgba(59, 130, 246, 0.12);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --bg: #0f1117;
+    --text: #e2e8f0;
+    --text-light: #94a3b8;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,0.4);
+  }
+}
+:root[data-theme="dark"] {
+  --bg-primary: #0f1117;
+  --bg-secondary: #1a1d27;
+  --bg-tertiary: #252836;
+  --bg-card: #1a1d27;
+  --bg-hover: #2a2d3e;
+  --border: #2e3348;
+  --border-light: #3a3f5c;
+  --accent-bg: rgba(108, 99, 255, 0.12);
+  --accent-border: rgba(108, 99, 255, 0.25);
+  --success-bg: rgba(16, 185, 129, 0.12);
+  --warning-bg: rgba(245, 158, 11, 0.12);
+  --danger-bg: rgba(239, 68, 68, 0.12);
+  --info-bg: rgba(59, 130, 246, 0.12);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --bg: #0f1117;
+  --text: #e2e8f0;
+  --text-light: #94a3b8;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.4);
+}
+:root[data-theme="light"] {
+  --bg-primary: #f8f9fc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f3f4f8;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f1f6;
+  --border: #e4e7ef;
+  --border-light: #d8dce8;
+  --accent-bg: rgba(108, 99, 255, 0.05);
+  --accent-border: rgba(108, 99, 255, 0.15);
+  --success-bg: rgba(16, 185, 129, 0.08);
+  --warning-bg: rgba(245, 158, 11, 0.08);
+  --danger-bg: rgba(239, 68, 68, 0.08);
+  --info-bg: rgba(59, 130, 246, 0.08);
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --bg: #f8f9fc;
+  --text: #1e293b;
+  --text-light: #64748b;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.08);
+}
+
 /* ─── Reset (未病ダイアリー準拠) ─── */
 * { box-sizing: border-box; margin: 0; padding: 0; max-width: 100%; }
 html { scroll-behavior: smooth; font-size: 16px; overflow-x: hidden; }
@@ -143,7 +216,7 @@ p { margin-bottom: 12px; }
   width: 100%;
   padding: 12px 18px;
   border-radius: var(--radius-sm);
-  background: #fff;
+  background: var(--bg-card);
   color: var(--text-primary);
   border: 1px solid var(--border);
   font-size: 14px;
@@ -1258,7 +1331,7 @@ body.is-admin .admin-only { display: flex; }
 .chat-msg { display: flex; gap: 10px; margin-bottom: 16px; }
 .chat-icon { font-size: 24px; flex-shrink: 0; }
 .chat-content { background: var(--bg-card); border-radius: var(--radius-sm); padding: 16px 20px; flex: 1; font-size: 17px; line-height: 1.9; }
-.chat-user .chat-content { background: color-mix(in srgb, var(--primary) 10%, white); }
+.chat-user .chat-content { background: var(--accent-bg); border: 1px solid var(--accent-border); }
 .chat-time { font-size: 13px; color: var(--text-muted); align-self: flex-end; }
 .chat-input-bar { display: flex; gap: 10px; }
 .chat-input-bar .form-input { flex: 1; }
@@ -1434,7 +1507,7 @@ body.is-admin .admin-only { display: flex; }
 .ring-label { font-size: 14px; font-weight: 600; color: var(--ring-color); margin-bottom: 8px; }
 .ring-people { display: flex; flex-wrap: wrap; gap: 8px; }
 .ring-person {
-  background: color-mix(in srgb, var(--ring-color) 15%, white);
+  background: color-mix(in srgb, var(--ring-color) 15%, var(--bg-card));
   color: var(--ring-color); padding: 6px 12px; border-radius: 16px;
   font-size: 14px; font-weight: 500;
 }
@@ -1527,7 +1600,7 @@ body.is-admin .admin-only { display: flex; }
   padding: 40px; text-align: center; cursor: pointer;
   transition: all var(--transition);
 }
-.screenshot-upload-area.dragover { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 5%, white); }
+.screenshot-upload-area.dragover { border-color: var(--primary); background: var(--accent-bg); }
 .upload-icon { font-size: 48px; margin-bottom: 12px; }
 .screenshot-upload-area p { color: var(--text-muted); margin-bottom: 8px; }
 
@@ -1664,7 +1737,7 @@ body.is-admin .admin-only { display: flex; }
   margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 .slot-price { font-weight: 700; color: var(--primary); min-width: 80px; }
-.skill-tag { display: inline-block; padding: 4px 14px; background: color-mix(in srgb, var(--primary) 10%, white); color: var(--primary); border-radius: 14px; font-size: 13px; margin: 2px; }
+.skill-tag { display: inline-block; padding: 4px 14px; background: var(--accent-bg); color: var(--primary); border-radius: 14px; font-size: 13px; margin: 2px; }
 
 /* ─── Resume Widget ─── */
 .resume-widget {
@@ -1844,7 +1917,7 @@ body.is-admin .admin-only { display: flex; }
 
 /* ─── Onboarding Widget ─── */
 .onboarding-widget {
-  background: linear-gradient(135deg, #f0efff 0%, #fff8f0 100%);
+  background: var(--bg-card);
   border: 1px solid var(--accent-border);
   border-radius: var(--radius);
   padding: 20px;
