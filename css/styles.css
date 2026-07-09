@@ -203,7 +203,7 @@ p { margin-bottom: 12px; }
 .btn-danger { background: var(--danger); color: #fff; }
 .btn-warning { background: var(--warning); color: #fff; }
 
-.btn-sm { padding: 6px 14px; font-size: 12px; }
+.btn-sm { padding: 8px 16px; font-size: 13px; min-height: 36px; }
 .btn-lg { padding: 14px 28px; font-size: 16px; }
 .btn-icon { padding: 8px; min-width: 36px; }
 .btn-block { width: 100%; }
