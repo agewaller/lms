@@ -211,7 +211,7 @@ var i18n = {
       home: 'Home', record: 'Record', actions: 'Actions',
       settings: 'Settings', admin: 'Admin', ask_ai: 'Consult',
       lp_hero_consciousness: 'Elevate your consciousness, transform your life',
-      lp_hero_health: 'From prevention to vitality. AI-powered health optimization',
+      lp_hero_health: 'From prevention to vitality. Your personal health advisor',
       lp_hero_time: 'Master your time, master your life',
       lp_hero_work: 'Maximize your work impact and career growth',
       lp_hero_relationship: 'Visualize and deepen your relationships',

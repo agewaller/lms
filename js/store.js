@@ -272,7 +272,11 @@ var Store = class Store {
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // Only clear LMS-prefixed keys. Never use localStorage.clear() —
+    // it would wipe Firebase config and OAuth tokens stored by other scripts.
+    this.persistKeys.forEach(key => {
+      localStorage.removeItem(`lms_${key}`);
+    });
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
