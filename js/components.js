@@ -3,6 +3,16 @@
    ============================================================ */
 var Components = {
 
+  // ─── XSS Prevention ───
+  escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
   // ─── Score Gauge (circular) ───
   scoreGauge(score, size = 120, label = '') {
     const pct = Math.max(0, Math.min(100, score));
@@ -45,8 +55,8 @@ var Components = {
         <span class="rec-domain-badge" style="background:${CONFIG.domains[rec.domain]?.color || '#666'}">${CONFIG.domains[rec.domain]?.icon || ''} ${i18n.t(rec.domain)}</span>
         <span class="rec-priority">${i18n.t(rec.priority || 'medium')}</span>
       </div>
-      <div class="rec-body">${rec.text || ''}</div>
-      ${rec.action ? `<button class="btn btn-sm btn-primary" onclick="app.executeAction('${rec.actionType}','${rec.actionData || ''}')">${rec.action}</button>` : ''}
+      <div class="rec-body">${this.formatMarkdown(rec.text || '')}</div>
+      ${rec.action ? `<button class="btn btn-sm btn-primary" onclick="app.executeAction('${this.escapeHtml(rec.actionType)}','${this.escapeHtml(rec.actionData || '')}')">${this.escapeHtml(rec.action)}</button>` : ''}
     </div>`;
   },
 
@@ -116,9 +126,14 @@ var Components = {
   },
 
   // ─── Markdown Formatter ───
+  // Escapes HTML entities first so user-supplied text can't inject tags,
+  // then applies safe markdown-to-HTML transforms on the escaped content.
   formatMarkdown(text) {
     if (!text) return '';
-    return text
+    // Step 1: escape raw HTML to prevent XSS
+    const safe = this.escapeHtml(text);
+    // Step 2: apply markdown transforms on the now-safe escaped text
+    return safe
       .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -257,7 +272,7 @@ var Components = {
     const summary = Object.entries(entry)
       .filter(([k]) => !['id','timestamp','domain','category','_synced'].includes(k))
       .slice(0, 3)
-      .map(([k, v]) => `${i18n.t(k)}: ${v}`)
+      .map(([k, v]) => `${this.escapeHtml(i18n.t(k) || k)}: ${this.escapeHtml(String(v ?? ''))}`)
       .join(' | ');
     return `<div class="record-item" style="border-left-color:${color}">
       <div class="record-header">

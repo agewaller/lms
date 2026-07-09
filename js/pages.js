@@ -88,6 +88,17 @@ var Pages = {
     });
     allRecent.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
+    // Today nudge: show if there's past data but nothing recorded today
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const hasToday = allRecent.some(e => (e.timestamp || '').startsWith(todayStr));
+    if (!hasToday && allRecent.length > 0) {
+      const color = domainConfig?.color || '#6C63FF';
+      html += `<div class="today-nudge" onclick="app.navigate('record')" style="border-color:${color}">
+        <span class="nudge-label">今日の記録がまだありません</span>
+        <span class="nudge-cta" style="color:${color}">記録する →</span>
+      </div>`;
+    }
+
     if (allRecent.length === 0) {
       html += Components.emptyState(domainConfig?.icon || '📭', i18n.t('no_data'),
         `${i18n.t('record')} → ${i18n.t('save')}`);
@@ -437,10 +448,12 @@ var Pages = {
         const transcripts = store.getDomainData('consciousness', 'transcript', 7);
         const latestObs = obs.length > 0 ? obs[obs.length - 1] : null;
         const nv = latestObs?.net_value || '-';
+        const streak = store.getStreak('consciousness');
         stats.push(Components.statCard('純価値', nv + (nv !== '-' ? '/100' : ''), null, '✨'));
         stats.push(Components.statCard('定点観測', obs.length + i18n.t('items'), null, '👁️'));
         stats.push(Components.statCard('文字起こし', transcripts.length + i18n.t('items'), null, '🎙️'));
         stats.push(Components.statCard(i18n.t('journal'), entries.length + i18n.t('items'), null, '📝'));
+        if (streak > 0) stats.push(Components.statCard('連続記録', streak + '日', null, '🔥'));
         break;
       }
       case 'health': {
@@ -464,9 +477,11 @@ var Pages = {
         const totalMin = logs.reduce((s, e) => s + (e.duration || 0), 0);
         const avgProd = logs.length > 0 ?
           (logs.reduce((s, e) => s + (e.productivity || 0), 0) / logs.length).toFixed(1) : '-';
+        const streak = store.getStreak('time');
         stats.push(Components.statCard(i18n.t('time_log'), Math.round(totalMin / 60) + 'h', null, '⏱️'));
         stats.push(Components.statCard(i18n.t('productivity'), avgProd + '/10', null, '📊'));
         stats.push(Components.statCard(i18n.t('habits'), habits.length + i18n.t('items'), null, '🔄'));
+        if (streak > 0) stats.push(Components.statCard('連続記録', streak + '日', null, '🔥'));
         break;
       }
       case 'work': {
@@ -474,9 +489,11 @@ var Pages = {
         const done = tasks.filter(t => t.status === 'done').length;
         const projects = store.get('work_projects') || [];
         const active = projects.filter(p => p.status === 'active').length;
+        const streak = store.getStreak('work');
         stats.push(Components.statCard(i18n.t('tasks'), `${done}/${tasks.length}`, null, '✅'));
         stats.push(Components.statCard(i18n.t('projects'), active + ' ' + i18n.t('active'), null, '📊'));
         stats.push(Components.statCard(i18n.t('skills'), (store.get('work_skills') || []).length + i18n.t('items'), null, '📚'));
+        if (streak > 0) stats.push(Components.statCard('連続記録', streak + '日', null, '🔥'));
         break;
       }
       case 'relationship': {
@@ -484,10 +501,12 @@ var Pages = {
         const contacts = store.get('relationship_contacts') || [];
         const gifts = store.getDomainData('relationship', 'gifts', 30);
         const close = contacts.filter(c => parseInt(c.distance) <= 2).length;
+        const streak = store.getStreak('relationship');
         stats.push(Components.statCard(i18n.t('contacts'), contacts.length + '人', null, '👤'));
         stats.push(Components.statCard('親しい方', close + '人', null, '💕'));
         stats.push(Components.statCard(i18n.t('interactions'), interactions.length + i18n.t('items'), null, '💬'));
         stats.push(Components.statCard(i18n.t('gifts'), gifts.length + i18n.t('items'), null, '🎁'));
+        if (streak > 0) stats.push(Components.statCard('連続記録', streak + '日', null, '🔥'));
         break;
       }
       case 'assets': {
@@ -497,10 +516,12 @@ var Pages = {
         const expenses = store.getDomainData('assets', 'expenses', 30);
         const totalIncome = income.reduce((s, e) => s + (e.amount || 0), 0);
         const totalExpenses = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+        const streak = store.getStreak('assets');
         stats.push(Components.statCard(i18n.t('stock_investment'), stocks.length + '銘柄', null, '📈'));
         stats.push(Components.statCard(i18n.t('portfolio'), portfolio.length + i18n.t('items'), null, '📊'));
         stats.push(Components.statCard(i18n.t('income'), totalIncome.toLocaleString() + '円', null, '💵'));
         stats.push(Components.statCard(i18n.t('expenses'), totalExpenses.toLocaleString() + '円', null, '🧾'));
+        if (streak > 0) stats.push(Components.statCard('連続記録', streak + '日', null, '🔥'));
         break;
       }
     }
@@ -639,7 +660,7 @@ var Pages = {
         <h3>📋 Action Items</h3>
         ${actions.map((a, i) => `
           <div class="action-item ${a.done ? 'done' : ''}">
-            <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${a.text}</label>
+            <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${Components.escapeHtml(a.text || '')}</label>
             <span class="action-domain" style="background:${CONFIG.domains[a.domain]?.color || '#666'}">${CONFIG.domains[a.domain]?.icon || ''}</span>
           </div>
         `).join('')}
@@ -665,19 +686,34 @@ var Pages = {
       .filter(m => m.domain === domain || !m.domain)
       .slice(-50);
 
+    const starters = {
+      health:        ['最近、体の調子はどうですか？', '今日の睡眠について聞いてみる', '気になる症状を相談する'],
+      consciousness: ['今日、気持ちはどうでしたか？', '最近、喜びを感じた瞬間は？', '心配していることを話してみる'],
+      time:          ['時間の使い方で悩んでいることは？', '今週、やりたいことを整理する', '毎日続けたい習慣を考える'],
+      work:          ['今の仕事で悩んでいることは？', '新しい活動を探してみる', 'スキルを活かせることを一緒に考える'],
+      relationship:  ['大切な人への連絡を相談する', '人間関係で気になることを話す', '久しぶりに連絡したい人を考える'],
+      assets:        ['今の資産状況を整理したい', 'NISAについて教えてほしい', '家計の見直しを一緒に考える'],
+    };
+    const domStarters = starters[domain] || starters.health;
+
     let html = `<div class="page-ask-ai">
-      <h2>${i18n.t(domain)} - 相談する</h2>
+      <h2>${i18n.t(domain)} の相談窓口</h2>
 
       <div class="chat-container" id="chatContainer">
-        ${history.length === 0 ?
-          Components.emptyState('💬', '相談する', i18n.t('quick_input_placeholder')) :
+        ${history.length === 0 ? `
+          <div class="chat-starters">
+            <p class="chat-starters-label">何でも気軽に話しかけてください。</p>
+            <div class="chat-starter-chips">
+              ${domStarters.map(s => `<button class="chip" onclick="document.getElementById('chatInput').value='${Components.escapeHtml(s)}';app.sendChat('${domain}')">${Components.escapeHtml(s)}</button>`).join('')}
+            </div>
+          </div>` :
           history.map(m => Components.chatMessage(m)).join('')
         }
       </div>
 
       <div class="chat-input-bar">
         <textarea id="chatInput" class="form-input" rows="2"
-          placeholder="${i18n.t('quick_input_placeholder')}"
+          placeholder="何でも話しかけてください…"
           onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();app.sendChat('${domain}')}"></textarea>
         <button class="btn btn-primary" onclick="app.sendChat('${domain}')">${i18n.t('send')}</button>
       </div>
@@ -1014,8 +1050,9 @@ var Pages = {
             </div>
             <div class="data-entry-fields">
               ${fields.map(([k, v]) => {
-                const label = i18n.t(k) || k;
-                const val = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
+                const label = Components.escapeHtml(i18n.t(k) || k);
+                const raw = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
+                const val = Components.escapeHtml(raw);
                 return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${val}</span></div>`;
               }).join('')}
             </div>
