@@ -502,6 +502,25 @@ var App = class App {
     }
   }
 
+  // ─── Weekly Report ───
+  async runWeeklyReport(domain) {
+    const outputEl = document.getElementById('weeklyReportOutput');
+    if (outputEl) outputEl.innerHTML = Components.loading('今週の振り返りを作成中です…');
+
+    try {
+      const result = await AIEngine.analyze(domain, 'weekly', {});
+      if (outputEl) {
+        outputEl.innerHTML = `<div class="weekly-report-card">
+          <h3>📊 今週の振り返り — ${i18n.t(domain)}</h3>
+          <div class="analysis-content">${Components.formatMarkdown(result)}</div>
+          <div class="report-footer">${new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+        </div>`;
+      }
+    } catch (e) {
+      if (outputEl) { outputEl.textContent = ''; const d = document.createElement('div'); d.className = 'error-msg'; d.textContent = e.message; outputEl.appendChild(d); }
+    }
+  }
+
   // ─── Action Items ───
   toggleAction(index) {
     const actions = store.get('actionItems') || [];

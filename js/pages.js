@@ -690,7 +690,11 @@ var Pages = {
         <button class="btn btn-secondary btn-lg" onclick="app.generateRecommendations('holistic')">
           6領域の総合分析
         </button>
-      </div>`;
+        <button class="btn btn-outline btn-lg" onclick="app.runWeeklyReport('${domain}')">
+          📊 今週の振り返り
+        </button>
+      </div>
+      <div id="weeklyReportOutput"></div>`;
 
     // Loading state
     if (store.get('isAnalyzing')) {
