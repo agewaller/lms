@@ -259,6 +259,23 @@ var App = class App {
     // and inline style would override the CSS class toggling.
     const isAdmin = FirebaseBackend.isAdmin();
     document.body.classList.toggle('is-admin', isAdmin);
+
+    // Add domain score badges to sidebar links
+    const domainScores = store.get('domainScores') || {};
+    document.querySelectorAll('.domain-nav').forEach(el => {
+      const d = el.dataset.domain;
+      if (!d) return;
+      const score = domainScores[d];
+      if (score == null) return;
+      let badge = el.querySelector('.nav-score');
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'nav-score';
+        el.appendChild(badge);
+      }
+      badge.textContent = score;
+      badge.style.color = score >= 70 ? '#27AE60' : score >= 40 ? '#F39C12' : '#E74C3C';
+    });
   }
 
   // ─── Quick Input ───
@@ -290,12 +307,29 @@ var App = class App {
           html += `<div class="qr-body">${Components.formatMarkdown(parsed.response)}</div>`;
         }
         if (Array.isArray(parsed.actions) && parsed.actions.length > 0) {
-          html += '<div class="qr-actions"><strong>おすすめの行動</strong><ul>';
+          html += '<div class="qr-actions"><strong>今日できること</strong><ul>';
           parsed.actions.forEach(a => {
             const label = typeof a === 'string' ? a : (a.text || JSON.stringify(a));
             html += `<li>${Components.formatMarkdown(label)}</li>`;
           });
           html += '</ul></div>';
+        }
+        // Navigation shortcut: if domain is detected, offer to go record/chat
+        if (Array.isArray(parsed.domains) && parsed.domains.length > 0) {
+          const domainMap = { 健康: 'health', 資産: 'assets', 時間: 'time', 仕事: 'work', 関係: 'relationship', 意識: 'consciousness' };
+          const targetDomain = domainMap[parsed.domains[0]] || null;
+          if (targetDomain && CONFIG.domains[targetDomain]) {
+            const safeDomain = Components.escapeHtml(targetDomain);
+            const domainName = Components.escapeHtml(i18n.t(targetDomain) || targetDomain);
+            html += `<div class="qr-nav">
+              <button class="btn btn-sm btn-primary" onclick="app.switchDomain('${safeDomain}');app.navigate('record')">
+                ${domainName}を記録する
+              </button>
+              <button class="btn btn-sm btn-secondary" onclick="app.switchDomain('${safeDomain}');app.navigate('ask_ai')">
+                続けて相談する
+              </button>
+            </div>`;
+          }
         }
         html += '</div>';
         if (responseEl) responseEl.innerHTML = html;
