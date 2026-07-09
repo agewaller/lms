@@ -134,6 +134,11 @@ var Pages = {
       </div>`;
     }
 
+    // 7-day activity sparkline chart
+    if (allRecent.length > 0) {
+      html += this.renderActivityChart(domain, allRecent);
+    }
+
     // ─── Domain-specific widgets ───
 
     // Consciousness domain: 7-layer visualization + transcript input
@@ -265,6 +270,33 @@ var Pages = {
       </div>
       <div class="db-status">${Components.escapeHtml(statusMsg)}</div>
       <div class="db-progress">${domainDots}</div>
+    </div>`;
+  },
+
+  // ─── 7-day Activity Chart ───
+  renderActivityChart(domain, entries) {
+    const color = CONFIG.domains[domain]?.color || '#6C63FF';
+
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      days.push(d.toISOString().slice(0, 10));
+    }
+    const counts = days.map(date =>
+      entries.filter(e => (e.timestamp || '').startsWith(date)).length
+    );
+    const labels = days.map(date => {
+      const d = new Date(date + 'T00:00:00');
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    });
+
+    // Store data for deferred init (script tags in innerHTML don't execute)
+    window._pendingChart = { labels, counts, color };
+
+    return `<div class="activity-chart-wrap">
+      <h3>直近7日間の記録数</h3>
+      <canvas id="activityChart" height="80" style="max-height:100px"></canvas>
     </div>`;
   },
 

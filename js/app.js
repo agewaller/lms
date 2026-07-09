@@ -199,6 +199,32 @@ var App = class App {
     // Render page content
     mainContent.innerHTML = Pages.render(page, domain);
 
+    // Initialize deferred Chart.js chart (script tags in innerHTML don't execute)
+    if (window._pendingChart && typeof Chart !== 'undefined') {
+      setTimeout(() => {
+        const canvas = document.getElementById('activityChart');
+        if (!canvas) { window._pendingChart = null; return; }
+        const { labels, counts, color } = window._pendingChart;
+        window._pendingChart = null;
+        if (canvas._chartInstance) canvas._chartInstance.destroy();
+        canvas._chartInstance = new Chart(canvas, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{ data: counts, backgroundColor: color + '99', borderColor: color, borderWidth: 2, borderRadius: 6 }]
+          },
+          options: {
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 12 } }, grid: { color: 'rgba(128,128,128,0.1)' } },
+              x: { grid: { display: false }, ticks: { font: { size: 12 } } }
+            },
+            responsive: true, maintainAspectRatio: false
+          }
+        });
+      }, 50);
+    }
+
     // Auto-close sidebar on mobile after navigation
     if (window.innerWidth <= 768) {
       const sidebar = document.getElementById('sidebar');
