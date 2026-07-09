@@ -141,6 +141,7 @@ var RelationshipFeatures = {
       const bd = new Date(c.birthday);
       const dateStr = `${bd.getMonth() + 1}月${bd.getDate()}日`;
       const safeName = Components.escapeHtml(c.name || '');
+      const nameAttr = Components.escapeHtml(JSON.stringify(c.name || ''));
       const safePhone = (c.phone || '').replace(/[^0-9+\-() ]/g, '');
       html += `<div class="contact-suggest birthday-suggest">
         <div class="cs-icon">🎂</div>
@@ -150,7 +151,7 @@ var RelationshipFeatures = {
         </div>
         <div class="cs-actions">
           ${safePhone ? `<a href="tel:${safePhone}" class="btn btn-sm btn-primary">📞 電話</a>` : ''}
-          <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContact('${safeName}','message')">💬 連絡済み</button>
+          <button class="btn btn-sm btn-secondary" data-name="${nameAttr}" data-type="message" onclick="RelationshipFeatures.logContact(JSON.parse(this.dataset.name),this.dataset.type)">💬 連絡済み</button>
         </div>
       </div>`;
     });
@@ -161,6 +162,7 @@ var RelationshipFeatures = {
       const distLabel = Components.escapeHtml(CONFIG.domains.relationship?.distanceLevels?.[d.distance]?.description || '');
       const suggestion = this.getSuggestion(d);
       const safeName = Components.escapeHtml(d.name || '');
+      const nameAttr = Components.escapeHtml(JSON.stringify(d.name || ''));
       const safePhone = (contact?.phone || '').replace(/[^0-9+\-() ]/g, '');
 
       html += `<div class="contact-suggest ${d.urgency >= 5 ? 'urgent' : ''}">
@@ -171,7 +173,7 @@ var RelationshipFeatures = {
         </div>
         <div class="cs-actions">
           ${safePhone ? `<a href="tel:${safePhone}" class="btn btn-sm btn-primary">📞 電話</a>` : ''}
-          <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContact('${safeName}','call')">📝 連絡済み</button>
+          <button class="btn btn-sm btn-secondary" data-name="${nameAttr}" data-type="call" onclick="RelationshipFeatures.logContact(JSON.parse(this.dataset.name),this.dataset.type)">📝 連絡済み</button>
         </div>
       </div>`;
     });

@@ -219,7 +219,7 @@ var AssetsFeatures = {
         </div>`;
       }
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (resultEl) { resultEl.textContent = ''; const d = document.createElement('div'); d.className = 'error-msg'; d.textContent = e.message; resultEl.appendChild(d); }
     }
   },
 
@@ -311,7 +311,7 @@ var AssetsFeatures = {
           </div>`;
         }
       } catch (e) {
-        if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+        if (resultEl) { resultEl.textContent = ''; const d = document.createElement('div'); d.className = 'error-msg'; d.textContent = e.message; resultEl.appendChild(d); }
       }
     };
     reader.readAsDataURL(file);
@@ -443,7 +443,7 @@ var AssetsFeatures = {
         ${pending.map((p, i) => `
           <div class="at-order">
             <div class="at-order-info">
-              <span class="at-order-type ${p.type}">${p.type === 'buy' ? '買い' : '売り'}</span>
+              <span class="at-order-type ${p.type === 'buy' ? 'buy' : 'sell'}">${p.type === 'buy' ? '買い' : '売り'}</span>
               <strong>${Components.escapeHtml(p.ticker || p.name || '')}</strong>
               <span>${(p.amount || 0).toLocaleString()}円</span>
               <span class="at-order-reason">${Components.escapeHtml(p.reason || '')}</span>
@@ -461,11 +461,11 @@ var AssetsFeatures = {
         ${history.length === 0 ? '<p>まだ取引はありません</p>' :
           history.slice(-10).reverse().map(h => `
             <div class="at-history-item">
-              <span class="at-order-type ${h.type}">${h.type === 'buy' ? '買い' : '売り'}</span>
+              <span class="at-order-type ${h.type === 'buy' ? 'buy' : 'sell'}">${h.type === 'buy' ? '買い' : '売り'}</span>
               <span>${Components.escapeHtml(h.ticker || h.name || '')}</span>
               <span>${(h.amount || 0).toLocaleString()}円</span>
               <span class="at-history-time">${new Date(h.timestamp).toLocaleString('ja-JP')}</span>
-              <span class="at-history-status ${h.status}">${h.status === 'executed' ? '約定' : h.status === 'rejected' ? '却下' : '保留'}</span>
+              <span class="at-history-status ${h.status === 'executed' ? 'executed' : h.status === 'rejected' ? 'rejected' : 'pending'}">${h.status === 'executed' ? '約定' : h.status === 'rejected' ? '却下' : '保留'}</span>
             </div>
           `).join('')}
       </div>
