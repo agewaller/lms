@@ -247,6 +247,9 @@ var FirebaseBackend = {
         } catch (e) { /* collection may not exist yet */ }
       }));
 
+      // Recalculate all domain scores with freshly loaded data
+      Object.keys(CONFIG.domains).forEach(d => store.calculateDomainScore(d));
+
       // Load shared collections
       const sharedKeys = ['analysisHistory', 'conversationHistory', 'recommendations', 'actionItems'];
       await Promise.all(sharedKeys.map(async key => {
