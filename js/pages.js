@@ -341,7 +341,7 @@ var Pages = {
       html += `<div class="graph-ring ring-${level}" style="--ring-color: ${levels[level].color}">
         <div class="ring-label">${levels[level].description}（${people.length}人）</div>
         <div class="ring-people">
-          ${people.slice(0, 8).map(p => `<span class="ring-person" title="${p.name}">${(p.name || '').substring(0, 3)}</span>`).join('')}
+          ${people.slice(0, 8).map(p => { const sn = Components.escapeHtml(p.name || ''); return `<span class="ring-person" title="${sn}">${sn.substring(0, 3)}</span>`; }).join('')}
           ${people.length > 8 ? `<span class="ring-more">+${people.length - 8}</span>` : ''}
         </div>
       </div>`;
@@ -377,9 +377,9 @@ var Pages = {
       const dateStr = c.nextBirthday.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
       const label = c.daysUntil === 0 ? '今日！' : `あと${c.daysUntil}日`;
       html += `<div class="birthday-item ${c.daysUntil <= 3 ? 'birthday-soon' : ''}">
-        <span class="birthday-name">${c.name}</span>
-        <span class="birthday-date">${dateStr}（${label}）</span>
-        <span class="birthday-distance">${CONFIG.domains.relationship.distanceLevels[c.distance]?.description || ''}</span>
+        <span class="birthday-name">${Components.escapeHtml(c.name || '')}</span>
+        <span class="birthday-date">${Components.escapeHtml(dateStr)}（${Components.escapeHtml(label)}）</span>
+        <span class="birthday-distance">${Components.escapeHtml(CONFIG.domains.relationship.distanceLevels[c.distance]?.description || '')}</span>
       </div>`;
     });
 
@@ -420,9 +420,9 @@ var Pages = {
     return `<div class="resume-widget">
       <h3>📄 レジュメ</h3>
       <div class="resume-summary">
-        <p><strong>${resume.name || ''}</strong></p>
-        <p>${resume.summary || ''}</p>
-        <p>スキル: ${(resume.skills || []).join(', ')}</p>
+        <p><strong>${Components.escapeHtml(resume.name || '')}</strong></p>
+        <p>${Components.escapeHtml(resume.summary || '')}</p>
+        <p>スキル: ${Components.escapeHtml((resume.skills || []).join(', '))}</p>
       </div>
       <div class="resume-actions">
         <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')">編集</button>
@@ -735,23 +735,24 @@ var Pages = {
     // Helper: render a form field from schema definition
     const renderField = (field, value) => {
       const val = value ?? '';
+      const safeVal = Components.escapeHtml(String(val));
       const id = 'profile_' + field.key;
       switch (field.type) {
         case 'number':
-          return `<input type="number" id="${id}" class="form-input" value="${val}" ${field.step ? `step="${field.step}"` : ''}>`;
+          return `<input type="number" id="${id}" class="form-input" value="${safeVal}" ${field.step ? `step="${field.step}"` : ''}>`;
         case 'text':
-          return `<input type="text" id="${id}" class="form-input" value="${val}">`;
+          return `<input type="text" id="${id}" class="form-input" value="${safeVal}">`;
         case 'date':
-          return `<input type="date" id="${id}" class="form-input" value="${val}">`;
+          return `<input type="date" id="${id}" class="form-input" value="${safeVal}">`;
         case 'textarea':
-          return `<textarea id="${id}" class="form-input" rows="3">${val}</textarea>`;
+          return `<textarea id="${id}" class="form-input" rows="3">${safeVal}</textarea>`;
         case 'select':
           return `<select id="${id}" class="form-input">
             <option value="">選択してください</option>
             ${(field.options || []).map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
           </select>`;
         default:
-          return `<input type="text" id="${id}" class="form-input" value="${val}">`;
+          return `<input type="text" id="${id}" class="form-input" value="${safeVal}">`;
       }
     };
 
@@ -980,7 +981,7 @@ var Pages = {
             <div class="form-group" style="flex:2;">
               <label>検索</label>
               <input type="text" id="dataSearch" class="form-input"
-                value="${filter.search}"
+                value="${Components.escapeHtml(filter.search || '')}"
                 placeholder="記録の中身を検索..."
                 oninput="app.filterDataBrowser('search',this.value)">
             </div>
@@ -1586,23 +1587,27 @@ var Pages = {
     filtered.forEach(([key, p], i) => {
       const schedule = p.schedule || 'manual';
       const scheduleLabel = { daily: '毎日', weekly: '毎週', on_data_update: 'データ更新時', manual: '手動' }[schedule] || schedule;
-      html += `<div class="prompt-item ${p.active === false ? 'inactive' : ''}" data-key="${key}">
+      const safeKey = Components.escapeHtml(key);
+      const safeName = Components.escapeHtml(p.name || key);
+      const safeDesc = Components.escapeHtml(p.description || '');
+      const safePromptBody = Components.escapeHtml(p.prompt || '');
+      html += `<div class="prompt-item ${p.active === false ? 'inactive' : ''}" data-key="${safeKey}">
         <div class="prompt-header">
           <div class="prompt-meta">
             <span class="prompt-num">${i + 1}</span>
-            <span class="prompt-name">${p.name || key}</span>
+            <span class="prompt-name">${safeName}</span>
             <span class="prompt-badge domain">${p.domain ? i18n.t(p.domain) : '共通'}</span>
-            <span class="prompt-badge schedule">${scheduleLabel}</span>
+            <span class="prompt-badge schedule">${Components.escapeHtml(scheduleLabel)}</span>
           </div>
           <div class="prompt-actions">
-            <button class="btn btn-sm btn-secondary" onclick="app.editPrompt('${key}')">編集</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.editPrompt('${safeKey}')">編集</button>
           </div>
         </div>
-        <div class="prompt-desc">${p.description || ''}</div>
-        <div class="prompt-edit" id="edit-${key}" style="display:none;">
+        <div class="prompt-desc">${safeDesc}</div>
+        <div class="prompt-edit" id="edit-${safeKey}" style="display:none;">
           <div class="form-group">
             <label>名前</label>
-            <input type="text" class="form-input" value="${p.name || ''}" data-field="name">
+            <input type="text" class="form-input" value="${safeName}" data-field="name">
           </div>
           <div class="form-group">
             <label>領域</label>
@@ -1622,16 +1627,16 @@ var Pages = {
           </div>
           <div class="form-group">
             <label>説明</label>
-            <input type="text" class="form-input" value="${p.description || ''}" data-field="description">
+            <input type="text" class="form-input" value="${safeDesc}" data-field="description">
           </div>
           <div class="form-group">
             <label>プロンプト本文</label>
-            <textarea class="form-input prompt-textarea" rows="16" data-field="prompt">${p.prompt || ''}</textarea>
+            <textarea class="form-input prompt-textarea" rows="16" data-field="prompt">${safePromptBody}</textarea>
           </div>
           <div class="form-actions">
-            <button class="btn btn-primary" onclick="app.savePrompt('${key}')">保存</button>
-            <button class="btn btn-secondary" onclick="app.cancelPromptEdit('${key}')">キャンセル</button>
-            <button class="btn btn-danger" onclick="app.deletePrompt('${key}')">削除</button>
+            <button class="btn btn-primary" onclick="app.savePrompt('${safeKey}')">保存</button>
+            <button class="btn btn-secondary" onclick="app.cancelPromptEdit('${safeKey}')">キャンセル</button>
+            <button class="btn btn-danger" onclick="app.deletePrompt('${safeKey}')">削除</button>
           </div>
         </div>
       </div>`;
@@ -1796,16 +1801,17 @@ var Pages = {
           ${adminEmails.map(email => {
             const isOwner = email === 'agewaller@gmail.com';
             const isSelf = currentUser?.email === email;
+            const safeEmail = Components.escapeHtml(email);
             return `<div class="admin-user-item">
               <div class="admin-user-info">
-                <div class="admin-user-avatar">${email.charAt(0).toUpperCase()}</div>
+                <div class="admin-user-avatar">${safeEmail.charAt(0).toUpperCase()}</div>
                 <div>
-                  <div class="admin-user-email">${email}${isSelf ? ' <span class="you-badge">あなた</span>' : ''}</div>
+                  <div class="admin-user-email">${safeEmail}${isSelf ? ' <span class="you-badge">あなた</span>' : ''}</div>
                   <div class="admin-user-role">${isOwner ? 'オーナー（削除不可）' : '管理者'}</div>
                 </div>
               </div>
               ${isOwner ? '<span class="status-badge">オーナー</span>' : `
-                <button class="btn btn-sm btn-danger" onclick="app.removeAdminEmail('${email}')">削除</button>
+                <button class="btn btn-sm btn-danger" onclick="app.removeAdminEmail('${safeEmail}')">削除</button>
               `}
             </div>`;
           }).join('')}
@@ -1895,20 +1901,23 @@ var Pages = {
           if (u.location) meta.push(u.location);
           const metaText = meta.join(' · ');
 
-          return `<div class="admin-user-item clickable" onclick="app.showUserDetail('${u.uid}')">
+          const safeName = Components.escapeHtml(u.displayName || u.email || '不明');
+          const safeEmail = Components.escapeHtml(u.email || '');
+          const safeMeta = Components.escapeHtml(metaText);
+          return `<div class="admin-user-item clickable" onclick="app.showUserDetail('${Components.escapeHtml(u.uid || '')}')">
             <div class="admin-user-info">
               <div class="admin-user-avatar">${initial}</div>
               <div>
-                <div class="admin-user-email">${u.displayName || u.email || '不明'}</div>
+                <div class="admin-user-email">${safeName}</div>
                 <div class="admin-user-role">
-                  ${u.email ? u.email + '<br>' : ''}${metaText || 'プロフィール未設定'}
+                  ${safeEmail ? safeEmail + '<br>' : ''}${safeMeta || 'プロフィール未設定'}
                   ${u.lastActive ? ' · 最終: ' + new Date(u.lastActive).toLocaleDateString('ja-JP') : ''}
                 </div>
               </div>
             </div>
             <div class="admin-user-stats">
               ${diseaseCount > 0 ? `<span class="stat-chip">持病${diseaseCount}</span>` : ''}
-              ${u.subscription && u.subscription !== 'free' ? `<span class="stat-chip">${u.subscription}</span>` : ''}
+              ${u.subscription && u.subscription !== 'free' ? `<span class="stat-chip">${Components.escapeHtml(u.subscription)}</span>` : ''}
               ${adminEmails.includes(u.email) ? '<span class="status-badge">管理者</span>' : ''}
             </div>
           </div>`;
@@ -1983,7 +1992,7 @@ var Pages = {
       <div class="card-body">
         <div class="admin-user-item">
           <div>
-            <strong>${user?.email || '未ログイン'}</strong>
+            <strong>${Components.escapeHtml(user?.email || '未ログイン')}</strong>
             <span class="status-badge">オーナー</span>
           </div>
         </div>

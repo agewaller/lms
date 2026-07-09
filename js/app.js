@@ -237,8 +237,13 @@ var App = class App {
 
     if (nameEl) nameEl.textContent = user?.displayName || user?.email || 'ゲスト';
     if (avatarEl) {
-      if (user?.photoURL) {
-        avatarEl.innerHTML = `<img src="${user.photoURL}" alt="">`;
+      const photoURL = user?.photoURL || '';
+      if (photoURL && photoURL.startsWith('https://')) {
+        const img = document.createElement('img');
+        img.src = photoURL;
+        img.alt = '';
+        avatarEl.innerHTML = '';
+        avatarEl.appendChild(img);
       } else {
         avatarEl.textContent = (user?.displayName || user?.email || '?').charAt(0).toUpperCase();
       }
@@ -502,7 +507,7 @@ var App = class App {
 
       if (resultEl) {
         resultEl.innerHTML = `<div class="stock-result">
-          <h3>${ticker} の分析結果</h3>
+          <h3>${Components.escapeHtml(ticker)} の分析結果</h3>
           <div class="analysis-content">${Components.formatMarkdown(result)}</div>
           <div class="disclaimer">${i18n.t('disclaimer_assets')}</div>
         </div>`;
@@ -512,7 +517,7 @@ var App = class App {
       if (resultEl) {
         resultEl.innerHTML = `<div class="error-msg">
           <strong>分析できませんでした</strong><br>
-          ${e.message || 'もう一度お試しください'}
+          ${Components.escapeHtml(e.message || 'もう一度お試しください')}
         </div>`;
       }
     }
@@ -1146,7 +1151,7 @@ var App = class App {
       textarea.value = '';
       Components.showToast('分析が完了しました', 'success');
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message || '')}</div>`;
     }
   }
 
