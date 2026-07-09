@@ -242,31 +242,109 @@ var Store = class Store {
 
   calculateDomainScore(domain) {
     const scores = { ...this.state.domainScores };
-    let score = 50; // default
+    let score = 50;
 
-    if (domain === 'health') {
-      const recent = this.getDomainData('health', 'symptoms', 7);
-      if (recent.length > 0) {
-        const levels = recent.map(s => s.condition_level).filter(v => v != null);
-        if (levels.length > 0) {
-          score = Math.round((levels.reduce((a, b) => a + b, 0) / levels.length) * 10);
+    switch (domain) {
+      case 'health': {
+        const symptoms = this.getDomainData('health', 'symptoms', 7);
+        const sleep = this.getDomainData('health', 'sleepData', 7);
+        let parts = 0, total = 0;
+        if (symptoms.length > 0) {
+          const levels = symptoms.map(s => s.condition_level).filter(v => v != null);
+          if (levels.length > 0) { total += (levels.reduce((a, b) => a + b, 0) / levels.length) * 10; parts++; }
         }
+        if (sleep.length > 0) {
+          const quals = sleep.map(s => s.quality).filter(v => v != null);
+          if (quals.length > 0) { total += (quals.reduce((a, b) => a + b, 0) / quals.length) * 10; parts++; }
+        }
+        if (parts > 0) score = Math.round(total / parts);
+        break;
       }
-    } else {
-      // Generic: based on recent entry count (activity level)
-      const allKeys = Object.keys(this.state).filter(k => k.startsWith(domain + '_'));
-      let totalRecent = 0;
-      allKeys.forEach(k => {
-        if (Array.isArray(this.state[k])) {
-          totalRecent += this.getDomainData(domain, k.replace(domain + '_', ''), 7).length;
+      case 'consciousness': {
+        const obs = this.getDomainData('consciousness', 'observation', 7);
+        if (obs.length > 0) {
+          const last = obs[obs.length - 1];
+          const nv = last.net_value != null ? last.net_value : 50;
+          score = Math.min(100, Math.max(0, Math.round(nv)));
+        } else {
+          score = Math.min(100, 20 + obs.length * 8);
         }
-      });
-      score = Math.min(100, 30 + totalRecent * 5);
+        break;
+      }
+      case 'relationship': {
+        const contacts = this.state.relationship_contacts || [];
+        const interactions = this.getDomainData('relationship', 'interactions', 30);
+        const close = contacts.filter(c => parseInt(c.distance) <= 2).length;
+        if (contacts.length === 0) { score = 30; break; }
+        const interactionRatio = Math.min(1, interactions.length / Math.max(1, close * 2));
+        score = Math.min(100, Math.round(40 + close * 5 + interactionRatio * 30));
+        break;
+      }
+      case 'assets': {
+        const stocks = this.state.assets_stocks || [];
+        const income = this.getDomainData('assets', 'income', 30);
+        const expenses = this.getDomainData('assets', 'expenses', 30);
+        const totalIncome = income.reduce((s, e) => s + (e.amount || 0), 0);
+        const totalExpenses = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+        let base = 40;
+        if (stocks.length > 0) base += 15;
+        if (totalIncome > 0 && totalExpenses > 0) {
+          const ratio = totalIncome / totalExpenses;
+          base += Math.min(45, Math.round(ratio * 20));
+        } else if (totalIncome > 0) {
+          base += 20;
+        }
+        score = Math.min(100, base);
+        break;
+      }
+      default: {
+        const allKeys = Object.keys(this.state).filter(k => k.startsWith(domain + '_'));
+        let totalRecent = 0;
+        allKeys.forEach(k => {
+          if (Array.isArray(this.state[k])) {
+            totalRecent += this.getDomainData(domain, k.replace(domain + '_', ''), 7).length;
+          }
+        });
+        score = Math.min(100, 30 + totalRecent * 5);
+      }
     }
 
     scores[domain] = score;
     this.set('domainScores', scores);
     return score;
+  }
+
+  // ─── Daily Streak ───
+
+  getStreak(domain) {
+    const categories = Object.keys((typeof CONFIG !== 'undefined' && CONFIG.domains?.[domain]?.categories) || {});
+    if (categories.length === 0) return 0;
+
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < 365; i++) {
+      const day = new Date(today);
+      day.setDate(today.getDate() - i);
+      const next = new Date(day);
+      next.setDate(day.getDate() + 1);
+
+      const hasEntry = categories.some(cat => {
+        const entries = this.state[`${domain}_${cat}`] || [];
+        return entries.some(e => {
+          const ts = new Date(e.timestamp);
+          return ts >= day && ts < next;
+        });
+      });
+
+      if (hasEntry) {
+        streak++;
+      } else if (i > 0) {
+        break;
+      }
+    }
+    return streak;
   }
 
   // ─── Clear ───

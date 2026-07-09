@@ -1797,3 +1797,38 @@ body.is-admin .admin-only { display: flex; }
   .sim-cards { grid-template-columns: 1fr; }
   .top-bar-title { font-size: 13px; }
 }
+
+/* ─── Onboarding Widget ─── */
+.onboarding-widget {
+  background: linear-gradient(135deg, #f0efff 0%, #fff8f0 100%);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.onb-header { position: relative; margin-bottom: 16px; }
+.onb-header h3 { font-size: 16px; margin-bottom: 6px; }
+.onb-header p { font-size: 14px; color: var(--text-secondary); margin-bottom: 0; }
+.onb-dismiss {
+  position: absolute; top: 0; right: 0;
+  font-size: 12px; color: var(--text-muted);
+  background: none; border: none; cursor: pointer; padding: 4px 8px;
+}
+.onb-dismiss:hover { color: var(--text-secondary); }
+.onb-steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.onb-step {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.onb-step:hover { transform: translateX(4px); box-shadow: var(--shadow-lg); }
+.onb-step-icon { font-size: 22px; font-weight: 700; min-width: 28px; text-align: center; }
+.onb-step-body { flex: 1; }
+.onb-step-label { font-weight: 600; font-size: 15px; }
+.onb-step-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.onb-step-arrow { color: var(--text-muted); font-size: 18px; }
+.onb-footer { text-align: center; }
+.btn-ghost { background: none; border: none; color: var(--text-muted); font-size: 13px; cursor: pointer; }

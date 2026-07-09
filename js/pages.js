@@ -36,6 +36,16 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>`;
 
+    // Onboarding widget: show only for new users with no data in any domain
+    const hasAnyData = Object.keys(CONFIG.domains).some(d =>
+      Object.keys(CONFIG.domains[d].categories || {}).some(cat =>
+        store.getDomainData(d, cat, 365).length > 0
+      )
+    );
+    if (!hasAnyData && !store.get('onboardingDismissed')) {
+      html += this.renderOnboardingWidget();
+    }
+
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
       html += this.renderStockAnalysisWidget();
@@ -104,7 +114,7 @@ var Pages = {
       html += `<div class="analysis-section">
         <h3>分析結果</h3>
         <div class="analysis-content">${Components.formatMarkdown(latest.response)}</div>
-        <div class="analysis-meta">${latest.model} | ${new Date(latest.timestamp).toLocaleString()}</div>
+        <div class="analysis-meta">${new Date(latest.timestamp).toLocaleString('ja-JP')}</div>
       </div>`;
     }
 
@@ -158,6 +168,39 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Onboarding Widget (新規ユーザー向け) ───
+  renderOnboardingWidget() {
+    const steps = [
+      { domain: 'health',       icon: '二', label: '健康を記録する',     desc: '体調・睡眠・食事を記録', color: '#10b981' },
+      { domain: 'relationship', icon: '五', label: '大切な人を登録する', desc: '連絡先と距離感を設定',   color: '#ef4444' },
+      { domain: 'assets',       icon: '六', label: '資産を把握する',     desc: 'NISAや収支を整理',      color: '#d97706' },
+      { domain: 'work',         icon: '四', label: 'できることを探す',   desc: '活動・副業の診断',       color: '#3b82f6' },
+    ];
+
+    return `<div class="onboarding-widget">
+      <div class="onb-header">
+        <h3>はじめまして。まず、どこから始めますか？</h3>
+        <p>6つの領域のうち、気になるところから試してみてください。いつでも変えられます。</p>
+        <button class="btn btn-sm btn-ghost onb-dismiss" onclick="store.set('onboardingDismissed',true);app.renderApp()">後で</button>
+      </div>
+      <div class="onb-steps">
+        ${steps.map(s => `
+          <div class="onb-step" onclick="app.switchDomain('${s.domain}');app.navigate('record')" style="border-left:4px solid ${s.color}">
+            <div class="onb-step-icon" style="color:${s.color}">${s.icon}</div>
+            <div class="onb-step-body">
+              <div class="onb-step-label">${s.label}</div>
+              <div class="onb-step-desc">${s.desc}</div>
+            </div>
+            <div class="onb-step-arrow">→</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="onb-footer">
+        <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')">まずプロフィールを設定する</button>
+      </div>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
@@ -408,9 +451,11 @@ var Pages = {
           (symptoms.reduce((s, e) => s + (e.condition_level || 0), 0) / symptoms.length).toFixed(1) : '-';
         const avgSleep = sleep.length > 0 ?
           (sleep.reduce((s, e) => s + (e.quality || 0), 0) / sleep.length).toFixed(1) : '-';
+        const streak = store.getStreak('health');
         stats.push(Components.statCard(i18n.t('condition_level'), avgCondition + '/10', null, '🤒'));
         stats.push(Components.statCard(i18n.t('sleep_quality'), avgSleep + '/10', null, '😴'));
         stats.push(Components.statCard(i18n.t('activity'), activity.length + i18n.t('items'), null, '🏃'));
+        if (streak > 0) stats.push(Components.statCard('連続記録', streak + '日', null, '🔥'));
         break;
       }
       case 'time': {
