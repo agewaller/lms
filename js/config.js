@@ -24,9 +24,9 @@ var CONFIG = {
 
   // ─── AI Models ───
   aiModels: {
-    'claude-sonnet-4-6':  { name: 'Claude Sonnet 4.6', provider: 'anthropic', maxTokens: 4096 },
-    'claude-opus-4-6':    { name: 'Claude Opus 4.6',   provider: 'anthropic', maxTokens: 4096 },
-    'claude-haiku-4-5':   { name: 'Claude Haiku 4.5',  provider: 'anthropic', maxTokens: 4096 },
+    'claude-sonnet-4-6':  { name: 'Claude Sonnet 4.6', provider: 'anthropic', maxTokens: 8192 },
+    'claude-opus-4-6':    { name: 'Claude Opus 4.6',   provider: 'anthropic', maxTokens: 8192 },
+    'claude-haiku-4-5':   { name: 'Claude Haiku 4.5',  provider: 'anthropic', maxTokens: 8192 },
     'gpt-4o':             { name: 'GPT-4o',            provider: 'openai',    maxTokens: 4096 },
     'gemini-pro':         { name: 'Gemini Pro',        provider: 'google',    maxTokens: 4096 }
   },
@@ -910,6 +910,39 @@ H) ニュース素材（直近5〜15件）：価値影響（FCF/ROIC）/株価�
         'other_unspecified'
       ]
     }
+  },
+
+  // ─── 疾患名（日本語ラベル） ───
+  diseaseLabelMap: {
+    mecfs: 'ME/CFS（慢性疲労症候群）', fibromyalgia: '線維筋痛症', long_covid: 'ロングCOVID', pots: 'POTS（起立性頻脈症候群）', migraine: '片頭痛',
+    parkinson: 'パーキンソン病', alzheimer: 'アルツハイマー病', als: 'ALS（筋萎縮性側索硬化症）', multiple_sclerosis: '多発性硬化症', epilepsy: 'てんかん',
+    peripheral_neuropathy: '末梢神経障害', dystonia: 'ジストニア', huntington: 'ハンチントン病',
+    depression: 'うつ病', bipolar: '双極性障害', anxiety: '不安障害', panic: 'パニック障害', ptsd: 'PTSD',
+    ocd: '強迫性障害（OCD）', adhd: 'ADHD', autism: '自閉スペクトラム症', schizophrenia: '統合失調症', eating_disorder: '摂食障害',
+    insomnia: '不眠症', burnout: 'バーンアウト', dementia_behavior: '認知症行動障害',
+    rheumatoid_arthritis: '関節リウマチ', sle: '全身性エリテマトーデス（SLE）', sjogren: 'シェーグレン症候群', scleroderma: '強皮症', behcet: 'ベーチェット病',
+    vasculitis: '血管炎', allergy: 'アレルギー', asthma: '気管支喘息', eczema: 'アトピー性皮膚炎', hay_fever: '花粉症',
+    immunodeficiency: '免疫不全', hashimoto: '橋本甲状腺炎', graves: 'バセドウ病',
+    diabetes_type1: '1型糖尿病', diabetes_type2: '2型糖尿病', thyroid_hypo: '甲状腺機能低下症', thyroid_hyper: '甲状腺機能亢進症',
+    adrenal_insufficiency: '副腎不全', cushing: 'クッシング症候群', pcos: '多嚢胞性卵巣症候群（PCOS）', metabolic_syndrome: 'メタボリックシンドローム',
+    obesity: '肥満症', gout: '痛風', osteoporosis: '骨粗鬆症', dyslipidemia: '脂質異常症',
+    hypertension: '高血圧', heart_failure: '心不全', arrhythmia: '不整脈', coronary_artery: '冠動脈疾患', stroke: '脳卒中',
+    pots_cv: 'POTS（循環器）', varicose: '下肢静脈瘤', dvt: '深部静脈血栓症', pulmonary_hypertension: '肺動脈性高血圧', valvular: '弁膜症', cardiomyopathy: '心筋症',
+    copd: 'COPD（慢性閉塞性肺疾患）', asthma_resp: '喘息', sleep_apnea: '睡眠時無呼吸症候群', pneumonia: '肺炎', bronchitis: '気管支炎',
+    pulmonary_fibrosis: '肺線維症', tuberculosis: '結核', lung_cancer: '肺がん', allergic_rhinitis: 'アレルギー性鼻炎',
+    ibs: '過敏性腸症候群（IBS）', ibd: '炎症性腸疾患', crohn: 'クローン病', ulcerative_colitis: '潰瘍性大腸炎', gerd: '逆流性食道炎',
+    peptic_ulcer: '消化性潰瘍', celiac: 'セリアック病', sibo: '小腸内細菌異常増殖（SIBO）', fatty_liver: '脂肪肝', hepatitis: '肝炎',
+    cirrhosis: '肝硬変', pancreatitis: '膵炎', gallstones: '胆石',
+    osteoarthritis: '変形性関節症', lumbar_disc: '腰椎椎間板ヘルニア', cervical_spondylosis: '頸椎症', scoliosis: '側弯症',
+    rotator_cuff: '腱板損傷', tendinitis: '腱炎', carpal_tunnel: '手根管症候群', hip_arthrosis: '股関節症', knee_arthrosis: '膝関節症',
+    sarcopenia: 'サルコペニア', muscular_dystrophy: '筋ジストロフィー',
+    breast_cancer: '乳がん', lung_cancer_c: '肺がん', colorectal: '大腸がん', gastric: '胃がん', prostate: '前立腺がん',
+    liver_cancer: '肝がん', pancreatic_cancer: '膵臓がん', ovarian: '卵巣がん', uterine: '子宮がん',
+    thyroid_cancer: '甲状腺がん', leukemia: '白血病', lymphoma: 'リンパ腫', multiple_myeloma: '多発性骨髄腫', cancer_general: 'その他のがん',
+    ckd: '慢性腎臓病（CKD）', kidney_stones: '尿路結石', uti: '尿路感染症', bph: '前立腺肥大症', incontinence: '尿失禁',
+    menopause: '更年期障害', endometriosis: '子宮内膜症', uterine_fibroids: '子宮筋腫', erectile_dysfunction: '勃起障害',
+    chronic_pain: '慢性疼痛', chronic_fatigue: '慢性疲労', anemia: '貧血', vertigo: 'めまい・前庭障害', tinnitus: '耳鳴り',
+    glaucoma: '緑内障', cataract: '白内障', macular_degeneration: '加齢黄斑変性', hearing_loss: '難聴', other_unspecified: 'その他'
   },
 
   // ─── 拡張プロファイルスキーマ ───

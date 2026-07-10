@@ -703,7 +703,7 @@ var Pages = {
                 <label class="disease-item">
                   <input type="checkbox" name="disease" value="${d}"
                     ${selectedDiseases.includes(d) ? 'checked' : ''}>
-                  <span>${d}</span>
+                  <span>${(CONFIG.diseaseLabelMap && CONFIG.diseaseLabelMap[d]) || d}</span>
                 </label>
               `).join('')}
             </div>
