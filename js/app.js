@@ -179,7 +179,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', data: 'データを見る', actions: 'アクション', ask_ai: '相談する', settings: '設定', integrations: '連携', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states

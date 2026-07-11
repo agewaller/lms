@@ -148,6 +148,7 @@ var RelationshipFeatures = {
         </div>
         <div class="cs-actions">
           ${c.phone ? `<a href="tel:${c.phone}" class="btn btn-sm btn-primary">📞 電話</a>` : ''}
+          ${!c.phone && c.email ? `<a href="mailto:${c.email}?subject=お誕生日おめでとうございます" class="btn btn-sm btn-primary">✉️ メール</a>` : ''}
           <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContact('${c.name}','message')">💬 連絡済み</button>
         </div>
       </div>`;

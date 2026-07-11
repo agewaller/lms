@@ -499,6 +499,35 @@ select.form-input { appearance: auto; }
 .feature-item h3 { font-size: 20px; margin-bottom: 10px; }
 .feature-item p { font-size: 16px; color: var(--text-light); line-height: 1.9; }
 
+/* Steps (How it works) */
+.steps-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 32px; margin-top: 40px;
+}
+.step-item { text-align: center; }
+.step-num {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-size: 22px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+}
+.step-item h3 { font-size: 18px; margin-bottom: 8px; }
+.step-item p { font-size: 15px; color: var(--text-light); line-height: 1.8; }
+
+/* Persona Cards */
+.persona-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px; margin-top: 40px; text-align: left;
+}
+.persona-item {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 20px 24px; box-shadow: var(--shadow);
+  display: flex; align-items: flex-start; gap: 16px;
+}
+.persona-icon { font-size: 28px; flex-shrink: 0; }
+.persona-item p { font-size: 15px; color: var(--text-light); line-height: 1.7; margin: 0; }
+
 /* Login Section */
 .lp-login-section { display: flex; justify-content: center; padding: 60px 20px; }
 .login-card {
@@ -1584,6 +1613,50 @@ body.is-admin .admin-only { display: flex; }
 .cs-dist { font-size: 13px; color: var(--text-muted); font-weight: 400; }
 .cs-reason { font-size: 14px; color: var(--text-light); margin-top: 2px; }
 .cs-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* ─── Health Widget ─── */
+.health-widget {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow);
+}
+.health-widget h3 { margin-bottom: 20px; }
+.health-trend-section, .health-sleep-section, .health-med-section {
+  margin-bottom: 20px;
+}
+.health-trend-section h4, .health-sleep-section h4, .health-med-section h4 {
+  font-size: 14px; font-weight: 600; color: var(--text-light);
+  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;
+}
+.health-bars {
+  display: flex; align-items: flex-end; gap: 8px; height: 80px;
+}
+.health-bar-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; height: 100%;
+}
+.health-bar-track {
+  flex: 1; width: 100%; background: var(--bg-secondary);
+  border-radius: 4px 4px 0 0; position: relative; overflow: hidden;
+  display: flex; align-items: flex-end;
+}
+.health-bar-fill {
+  width: 100%; border-radius: 4px 4px 0 0; transition: height 0.4s;
+}
+.health-bar-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.health-bar-val { font-size: 11px; font-weight: 600; }
+.sleep-stats { display: flex; gap: 24px; flex-wrap: wrap; }
+.sleep-stat { display: flex; flex-direction: column; }
+.sleep-val { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
+.sleep-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.sleep-note { font-size: 14px; color: var(--text-light); margin-top: 8px; font-style: italic; }
+.med-list { display: flex; flex-direction: column; gap: 8px; }
+.med-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; background: var(--bg); border-radius: var(--radius-sm);
+}
+.med-name { font-weight: 500; flex: 1; }
+.med-dose { font-size: 13px; color: var(--text-muted); }
+.med-time { font-size: 13px; color: var(--accent); font-weight: 500; }
 
 /* ─── Contact Import ─── */
 .contact-import-section {

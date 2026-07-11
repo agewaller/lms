@@ -149,6 +149,11 @@ var Pages = {
       }
     }
 
+    // Health domain: vitals trend + sleep trend + medication reminders
+    if (domain === 'health') {
+      html += this.renderHealthWidget();
+    }
+
     // Domain disclaimers
     if (domain === 'health') {
       html += `<div class="disclaimer">${i18n.t('disclaimer_health')}</div>`;
@@ -331,6 +336,90 @@ var Pages = {
 
     html += `</div></div>`;
     return html;
+  },
+
+  // ─── Health Widget (Health domain) ───
+  renderHealthWidget() {
+    const symptoms = store.getDomainData('health', 'symptoms', 7);
+    const sleep = store.getDomainData('health', 'sleepData', 7);
+    const medications = store.get('health_medications') || [];
+
+    // 7-day condition trend (bar chart using CSS)
+    let condHtml = '';
+    if (symptoms.length > 0) {
+      const days = ['日', '月', '火', '水', '木', '金', '土'];
+      const bars = symptoms.slice(-7).map(e => {
+        const d = new Date(e.timestamp);
+        const level = e.condition_level || 0;
+        const pct = level * 10;
+        const color = level >= 7 ? '#27AE60' : level >= 4 ? '#F39C12' : '#E74C3C';
+        return `<div class="health-bar-item">
+          <div class="health-bar-track">
+            <div class="health-bar-fill" style="height:${pct}%;background:${color}"></div>
+          </div>
+          <div class="health-bar-label">${days[d.getDay()]}</div>
+          <div class="health-bar-val">${level}</div>
+        </div>`;
+      }).join('');
+      condHtml = `<div class="health-trend-section">
+        <h4>体調スコア（7日）</h4>
+        <div class="health-bars">${bars}</div>
+      </div>`;
+    }
+
+    // Sleep quality trend
+    let sleepHtml = '';
+    if (sleep.length > 0) {
+      const avgSleep = (sleep.reduce((s, e) => s + (e.quality || 0), 0) / sleep.length).toFixed(1);
+      const avgHours = sleep.some(e => e.hours) ?
+        (sleep.reduce((s, e) => s + (e.hours || 0), 0) / sleep.filter(e => e.hours).length).toFixed(1) : null;
+      const latest = sleep[sleep.length - 1];
+      const sleepColor = parseFloat(avgSleep) >= 7 ? '#27AE60' : parseFloat(avgSleep) >= 4 ? '#F39C12' : '#E74C3C';
+      sleepHtml = `<div class="health-sleep-section">
+        <h4>睡眠（直近${sleep.length}日）</h4>
+        <div class="sleep-stats">
+          <div class="sleep-stat">
+            <span class="sleep-val" style="color:${sleepColor}">${avgSleep}</span>
+            <span class="sleep-label">平均睡眠スコア /10</span>
+          </div>
+          ${avgHours ? `<div class="sleep-stat">
+            <span class="sleep-val">${avgHours}h</span>
+            <span class="sleep-label">平均睡眠時間</span>
+          </div>` : ''}
+          ${latest?.notes ? `<div class="sleep-note">「${Components.escapeHtml(latest.notes)}」</div>` : ''}
+        </div>
+      </div>`;
+    }
+
+    // Medication reminders
+    let medHtml = '';
+    const todayMeds = medications.filter(m => m.active !== false);
+    if (todayMeds.length > 0) {
+      medHtml = `<div class="health-med-section">
+        <h4>本日のお薬</h4>
+        <div class="med-list">
+          ${todayMeds.slice(0, 6).map(m => `
+            <div class="med-item">
+              <span class="med-name">${Components.escapeHtml(m.name || '')}</span>
+              <span class="med-dose">${Components.escapeHtml(m.dose || '')}</span>
+              <span class="med-time">${Components.escapeHtml(m.timing || '')}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+    }
+
+    if (!condHtml && !sleepHtml && !medHtml) {
+      return `<div class="health-widget">
+        <h3>健康サマリー</h3>
+        ${Components.emptyState('🩺', 'データがありません', '「記録する」から体調・睡眠を記録してみましょう')}
+      </div>`;
+    }
+
+    return `<div class="health-widget">
+      <h3>健康サマリー</h3>
+      ${condHtml}${sleepHtml}${medHtml}
+    </div>`;
   },
 
   // ─── Stock Analysis Widget (Assets domain) ───
