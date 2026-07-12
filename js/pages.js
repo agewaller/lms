@@ -36,6 +36,9 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>`;
 
+    // Daily check-in widget (shown at the very top for every domain)
+    html += this.renderDailyCheckin(domain);
+
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
       html += this.renderStockAnalysisWidget();
@@ -1918,5 +1921,203 @@ var Pages = {
         </div>
       </div>
     </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  ONBOARDING WIZARD (初回ユーザー向け)
+  // ═══════════════════════════════════════════════════════════
+  renderOnboarding() {
+    const step = store.get('onboardingStep') || 0;
+    const steps = [
+      { title: 'LMSへようこそ', icon: '◈' },
+      { title: 'まず大切にしたい領域は？', icon: '🎯' },
+      { title: 'あなたのことを教えてください', icon: '👤' },
+      { title: '準備完了！', icon: '🎉' }
+    ];
+
+    const stepDots = steps.map((s, i) =>
+      `<div class="ob-dot ${i === step ? 'active' : i < step ? 'done' : ''}"></div>`
+    ).join('');
+
+    let body = '';
+
+    if (step === 0) {
+      body = `
+        <div class="ob-hero">
+          <div class="ob-logo">◈</div>
+          <h2>人生の6領域を、<br>まるごとサポートします</h2>
+          <p class="ob-desc">
+            意識・健康・時間・仕事・関係・資産。<br>
+            それぞれを記録して相談するだけで、<br>
+            あなたに最適なアドバイスをお届けします。
+          </p>
+          <p class="ob-note">所要時間：約2分</p>
+        </div>`;
+    } else if (step === 1) {
+      const domains = [
+        { id: 'health', icon: '💚', name: '健康', desc: '体調・お薬・食事の管理' },
+        { id: 'consciousness', icon: '🧠', name: '意識', desc: '心の健康・瞑想・感謝' },
+        { id: 'time', icon: '⏰', name: '時間', desc: '日々の過ごし方・習慣化' },
+        { id: 'relationship', icon: '🤝', name: '関係', desc: '大切な人とのつながり' },
+        { id: 'work', icon: '💼', name: '仕事', desc: '生きがい・経験を活かす' },
+        { id: 'assets', icon: '💰', name: '資産', desc: '安心の資産・年金管理' }
+      ];
+      body = `
+        <p class="ob-desc">いちばん気になる領域を選んでください（後から変更できます）</p>
+        <div class="ob-domain-grid">
+          ${domains.map(d => `
+            <button class="ob-domain-btn" onclick="app.selectOnboardingDomain('${d.id}')">
+              <span class="ob-domain-icon">${d.icon}</span>
+              <span class="ob-domain-name">${d.name}</span>
+              <span class="ob-domain-desc">${d.desc}</span>
+            </button>
+          `).join('')}
+        </div>`;
+    } else if (step === 2) {
+      body = `
+        <p class="ob-desc">あなたに合ったアドバイスのために、基本情報を入力してください</p>
+        <div class="ob-profile-form">
+          <div class="form-group">
+            <label>お名前（ニックネームでOK）</label>
+            <input type="text" id="ob-name" class="form-input" placeholder="例：花子">
+          </div>
+          <div class="form-group">
+            <label>年齢</label>
+            <input type="number" id="ob-age" class="form-input" placeholder="65" min="0" max="120">
+          </div>
+          <div class="form-group">
+            <label>いちばん困っていること（自由に書いてください）</label>
+            <textarea id="ob-concern" class="form-input" rows="3"
+              placeholder="例：最近疲れやすくなった、老後のお金が心配、孤独を感じる..."></textarea>
+          </div>
+        </div>`;
+    } else if (step === 3) {
+      const name = (store.get('userProfile') || {}).name || 'あなた';
+      const domain = store.get('currentDomain') || 'health';
+      const domainNames = { health: '健康', consciousness: '意識', time: '時間', work: '仕事', relationship: '関係', assets: '資産' };
+      body = `
+        <div class="ob-complete">
+          <div class="ob-complete-icon">🎉</div>
+          <h2>準備ができました！</h2>
+          <p>${name}さん、LMSへようこそ。<br>
+          まずは<strong>「${domainNames[domain] || '健康'}」</strong>の記録から始めましょう。</p>
+          <div class="ob-tips">
+            <div class="ob-tip">📝 毎日1回記録するだけで、1週間後に分析が深まります</div>
+            <div class="ob-tip">💬 「相談する」でいつでも質問できます</div>
+            <div class="ob-tip">⚡ 「アクション」で具体的な次の一手がわかります</div>
+          </div>
+        </div>`;
+    }
+
+    const isLastStep = step === steps.length - 1;
+    const btnLabel = step === 1 ? '' : isLastStep ? '始める' : '次へ →';
+
+    return `
+      <div class="ob-overlay" id="obOverlay">
+        <div class="ob-wizard">
+          <div class="ob-step-dots">${stepDots}</div>
+          <div class="ob-body">${body}</div>
+          <div class="ob-footer">
+            ${step > 0 && step < steps.length - 1 ? `<button class="btn btn-ghost" onclick="app.prevOnboardingStep()">← 戻る</button>` : '<span></span>'}
+            ${btnLabel ? `<button class="btn btn-primary ob-next-btn" onclick="app.nextOnboardingStep()">${btnLabel}</button>` : ''}
+            ${step < steps.length - 1 ? `<button class="btn btn-ghost ob-skip" onclick="app.skipOnboarding()">スキップ</button>` : ''}
+          </div>
+        </div>
+      </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  DAILY CHECK-IN WIDGET
+  // ═══════════════════════════════════════════════════════════
+  renderDailyCheckin(domain) {
+    const today = new Date().toISOString().slice(0, 10);
+    const streak = store.get('streak') || { current: 0 };
+    const hour = new Date().getHours();
+
+    // Has user already recorded anything today?
+    const domainConfig = CONFIG.domains[domain] || {};
+    const cats = Object.keys(domainConfig.categories || {});
+    const todayEntries = cats.reduce((acc, cat) => {
+      return acc + store.getDomainData(domain, cat, 1).filter(e =>
+        e.timestamp && e.timestamp.slice(0, 10) === today
+      ).length;
+    }, 0);
+
+    const greetings = [
+      { range: [5, 11], text: 'おはようございます' },
+      { range: [11, 17], text: 'こんにちは' },
+      { range: [17, 21], text: 'お疲れさまです' },
+      { range: [21, 24], text: 'こんばんは' },
+      { range: [0, 5],  text: 'こんばんは' }
+    ];
+    const greeting = (greetings.find(g => hour >= g.range[0] && hour < g.range[1]) || greetings[2]).text;
+    const userName = (store.get('userProfile') || {}).name || '';
+
+    if (todayEntries > 0) {
+      // Already recorded today — show compact streak badge
+      return `
+        <div class="daily-checkin done">
+          <div class="dc-left">
+            <span class="dc-check">✓</span>
+            <span class="dc-label">今日の記録：完了</span>
+          </div>
+          ${streak.current >= 2 ? `<div class="streak-badge">🔥 ${streak.current}日連続</div>` : ''}
+        </div>`;
+    }
+
+    // Domain-specific quick questions
+    const quickQuestions = {
+      health: [
+        { label: '今日の体調', key: 'condition_level', type: 'emoji', options: ['😣', '😟', '😐', '🙂', '😄'], values: [2, 4, 6, 8, 10] },
+        { label: '痛みやつらさ', key: 'pain_level', type: 'emoji', options: ['なし', '少し', '普通', 'つらい', 'とてもつらい'], values: [0, 3, 5, 7, 10] }
+      ],
+      consciousness: [
+        { label: '今の気分', key: 'mood_level', type: 'emoji', options: ['😣', '😟', '😐', '🙂', '😄'], values: [2, 4, 6, 8, 10] }
+      ],
+      time: [
+        { label: '今日の充実度', key: 'fulfillment', type: 'emoji', options: ['😣', '😟', '😐', '🙂', '😄'], values: [2, 4, 6, 8, 10] }
+      ],
+      work: [
+        { label: 'やる気レベル', key: 'motivation', type: 'emoji', options: ['😣', '😟', '😐', '🙂', '😄'], values: [2, 4, 6, 8, 10] }
+      ],
+      relationship: [
+        { label: '誰かと話した？', key: 'talked_to_someone', type: 'bool', options: ['はい', 'いいえ'], values: [1, 0] }
+      ],
+      assets: [
+        { label: '気になること', key: 'concern', type: 'bool', options: ['ある', 'ない'], values: [1, 0] }
+      ]
+    };
+
+    const questions = quickQuestions[domain] || quickQuestions.health;
+
+    return `
+      <div class="daily-checkin">
+        <div class="dc-header">
+          <div class="dc-greeting">${greeting}${userName ? '、' + userName + 'さん' : ''}</div>
+          ${streak.current >= 2 ? `<div class="streak-badge">🔥 ${streak.current}日連続</div>` : ''}
+        </div>
+        <div class="dc-body">
+          <p class="dc-prompt">今日の<strong>${CONFIG.domains[domain]?.icon || ''} ${domain}</strong>の状態を教えてください（10秒）</p>
+          ${questions.map((q, qi) => `
+            <div class="dc-question" data-qi="${qi}">
+              <span class="dc-qlabel">${q.label}</span>
+              <div class="dc-options">
+                ${q.options.map((opt, oi) => `
+                  <button class="dc-opt" data-qi="${qi}" data-value="${q.values[oi]}" data-key="${q.key}"
+                    onclick="app.selectCheckinOption(this, ${qi})">
+                    ${opt}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          `).join('')}
+          <div class="dc-note-wrap">
+            <input type="text" id="dc-notes" class="form-input" placeholder="ひとこと（省略OK）">
+          </div>
+          <button class="btn btn-primary dc-submit" onclick="app.submitDailyCheckin('${domain}')">
+            記録する
+          </button>
+        </div>
+      </div>`;
   }
 };

@@ -196,6 +196,16 @@ var App = class App {
     // Render page content
     mainContent.innerHTML = Pages.render(page, domain);
 
+    // Show onboarding wizard for first-time users (injected after render)
+    if (!store.get('onboardingDone') && store.get('isAuthenticated') && page === 'home') {
+      const existing = document.getElementById('obOverlay');
+      if (!existing) {
+        const div = document.createElement('div');
+        div.innerHTML = Pages.renderOnboarding();
+        document.body.appendChild(div.firstElementChild);
+      }
+    }
+
     // Auto-close sidebar on mobile after navigation
     if (window.innerWidth <= 768) {
       const sidebar = document.getElementById('sidebar');
@@ -1953,6 +1963,98 @@ var App = class App {
   closeModal() {
     const overlay = document.getElementById('modal-overlay');
     if (overlay) overlay.classList.remove('active');
+  }
+
+  // ─── Onboarding Wizard ───
+  _removeOnboarding() {
+    const el = document.getElementById('obOverlay');
+    if (el) el.remove();
+  }
+
+  nextOnboardingStep() {
+    const step = store.get('onboardingStep') || 0;
+
+    // Step 2: save basic profile
+    if (step === 2) {
+      const name = document.getElementById('ob-name')?.value?.trim();
+      const age = document.getElementById('ob-age')?.value;
+      const concern = document.getElementById('ob-concern')?.value?.trim();
+      const profile = store.get('userProfile') || {};
+      if (name) profile.name = name;
+      if (age) profile.age = parseInt(age, 10);
+      if (concern) profile.mainConcern = concern;
+      store.set('userProfile', profile);
+    }
+
+    const nextStep = step + 1;
+    store.set('onboardingStep', nextStep);
+
+    // Last step → complete
+    if (nextStep >= 3) {
+      this._removeOnboarding();
+      store.set('onboardingDone', true);
+      store.set('onboardingStep', 0);
+      this.renderApp();
+      return;
+    }
+
+    this._removeOnboarding();
+    const div = document.createElement('div');
+    div.innerHTML = Pages.renderOnboarding();
+    document.body.appendChild(div.firstElementChild);
+  }
+
+  prevOnboardingStep() {
+    const step = store.get('onboardingStep') || 0;
+    if (step === 0) return;
+    store.set('onboardingStep', step - 1);
+    this._removeOnboarding();
+    const div = document.createElement('div');
+    div.innerHTML = Pages.renderOnboarding();
+    document.body.appendChild(div.firstElementChild);
+  }
+
+  selectOnboardingDomain(domainId) {
+    store.set('currentDomain', domainId);
+    this.nextOnboardingStep();
+  }
+
+  skipOnboarding() {
+    this._removeOnboarding();
+    store.set('onboardingDone', true);
+    store.set('onboardingStep', 0);
+  }
+
+  // ─── Daily Check-In ───
+  selectCheckinOption(btn, qi) {
+    document.querySelectorAll(`.dc-opt[data-qi="${qi}"]`).forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+
+  submitDailyCheckin(domain) {
+    const data = { notes: document.getElementById('dc-notes')?.value?.trim() || '' };
+    let anySelected = false;
+
+    document.querySelectorAll('.dc-opt.selected').forEach(btn => {
+      const key = btn.dataset.key;
+      if (key) {
+        data[key] = Number(btn.dataset.value);
+        anySelected = true;
+      }
+    });
+
+    if (!anySelected) {
+      Components.showToast('項目を選んでから記録してください', 'warning');
+      return;
+    }
+
+    // Determine which category to save to
+    const catMap = { health: 'symptoms', consciousness: 'entries', time: 'entries', work: 'tasks', relationship: 'interactions', assets: 'overview' };
+    const category = catMap[domain] || Object.keys(CONFIG.domains[domain]?.categories || {})[0] || 'entries';
+
+    store.addDomainEntry(domain, category, data);
+    Components.showToast('記録しました！', 'success');
+    this.renderApp();
   }
 };
 

@@ -109,7 +109,15 @@ var Store = class Store {
 
       // Notifications
       notifications: [],
-      unreadCount: 0
+      unreadCount: 0,
+
+      // Onboarding
+      onboardingDone: false,
+      onboardingStep: 0,
+
+      // Streak (consecutive days of activity)
+      streak: { current: 0, longest: 0, lastDate: null },
+      activityDates: []   // ISO date strings of days with at least one entry
     };
 
     this.listeners = new Map();
@@ -182,7 +190,8 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'onboardingDone', 'streak', 'activityDates'
     ];
   }
 
@@ -224,7 +233,45 @@ var Store = class Store {
       this.notify(key, this.state[key]);
       this.saveToStorage(key, this.state[key]);
     }
+    this.updateStreak();
     return entry;
+  }
+
+  // Update consecutive-day streak after any data entry
+  updateStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    const dates = this.state.activityDates || [];
+    if (!dates.includes(today)) {
+      const updated = [...dates, today];
+      this.state.activityDates = updated;
+      this.saveToStorage('activityDates', updated);
+    }
+
+    // Recalculate streak
+    const sorted = [...new Set(this.state.activityDates)].sort();
+    let current = 0;
+    let longest = this.state.streak?.longest || 0;
+    const last = sorted[sorted.length - 1];
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+    // Count consecutive days ending today or yesterday
+    if (last === today || last === yesterdayStr) {
+      let i = sorted.length - 1;
+      let checkDate = new Date(sorted[i]);
+      current = 1;
+      while (i > 0) {
+        const prev = new Date(sorted[i - 1]);
+        const diff = (checkDate - prev) / 86400000;
+        if (diff === 1) { current++; i--; checkDate = prev; }
+        else break;
+      }
+    }
+    longest = Math.max(longest, current);
+    const streak = { current, longest, lastDate: last };
+    this.state.streak = streak;
+    this.saveToStorage('streak', streak);
   }
 
   getDomainData(domain, category, days) {
