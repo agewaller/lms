@@ -20,6 +20,17 @@ var FirebaseBackend = {
       this.auth = firebase.auth();
       this.db = firebase.firestore();
 
+      // Handle result from signInWithRedirect (fires on page load after redirect)
+      this.auth.getRedirectResult().then(result => {
+        if (result && result.user) {
+          console.log('[LMS] Google redirect sign-in completed:', result.user.email);
+        }
+      }).catch(e => {
+        if (e.code !== 'auth/no-auth-event') {
+          console.warn('[LMS] Redirect result error:', e.code, e.message);
+        }
+      });
+
       // Enable offline persistence
       try {
         await this.db.enablePersistence({ synchronizeTabs: true });
@@ -76,7 +87,8 @@ var FirebaseBackend = {
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     try {
-      await this.auth.signInWithPopup(provider);
+      // signInWithRedirect avoids popup blockers on iOS Safari and Android Chrome
+      await this.auth.signInWithRedirect(provider);
     } catch (e) {
       console.error('Google sign-in error:', e);
       Components.showToast(i18n.t('error') + ': ' + e.message, 'error');

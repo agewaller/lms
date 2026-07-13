@@ -272,7 +272,11 @@ var Store = class Store {
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // Only remove user-data keys — never touch lms_firebaseConfig, lms_workerUrl,
+    // lms_oauthClientIds, or lms_apikey_* (those belong to the app config, not the user).
+    this.persistKeys.forEach(key => {
+      localStorage.removeItem(`lms_${key}`);
+    });
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};

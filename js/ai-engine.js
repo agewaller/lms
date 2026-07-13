@@ -2,6 +2,15 @@
    LMS - AI Engine
    Multi-model AI integration (Claude, GPT-4o, Gemini)
    ============================================================ */
+// Maps CONFIG model IDs to real API IDs. Update here when Anthropic/OpenAI rotate IDs.
+var MODEL_MAP = {
+  'claude-opus-4-6':   'claude-opus-4-6-20260201',
+  'claude-sonnet-4-6': 'claude-sonnet-4-6-20260101',
+  'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+  'gpt-4o':            'gpt-4o-2025-12-17',
+  'gemini-pro':        'gemini-2.0-flash'
+};
+
 var AIEngine = {
 
   // ─── Main analysis entry point ───
@@ -169,7 +178,7 @@ var AIEngine = {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model,
+          model: MODEL_MAP[model] || model,
           max_tokens: maxTokens,
           system: system,
           messages: [{ role: 'user', content: userMsg }]
@@ -207,7 +216,7 @@ var AIEngine = {
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: model,
+        model: MODEL_MAP[model] || model,
         max_tokens: maxTokens,
         messages: [
           { role: 'system', content: system },
@@ -228,7 +237,7 @@ var AIEngine = {
     const apiKey = this.getApiKey('google');
     if (!apiKey) throw new Error('Google API key not set');
 
-    const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
+    const url = `${CONFIG.endpoints.google}/${MODEL_MAP[model] || model}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
