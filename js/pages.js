@@ -27,9 +27,31 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    let html = `<div class="page-home">`;
+
+    // ─── Onboarding banner (shown only when user has no records yet) ───
+    const totalEntries = Object.keys(CONFIG.domains).reduce((sum, d) => {
+      const cats = Object.keys(CONFIG.domains[d]?.categories || {});
+      return sum + cats.reduce((s, c) => s + store.getDomainData(d, c, 365).length, 0);
+    }, 0);
+
+    if (totalEntries === 0) {
+      html += this.renderOnboardingBanner();
+    } else {
+      // Streak badge
+      const streak = store.getStreak();
+      if (streak > 0) {
+        const streakMsg = streak >= 7 ? `${streak}日連続！素晴らしいです` :
+                          streak >= 3 ? `${streak}日連続で記録中` : `${streak}日連続`;
+        html += `<div class="streak-banner">
+          <span class="streak-icon">🔥</span>
+          <span class="streak-text">${streakMsg}</span>
+        </div>`;
+      }
+    }
+
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
@@ -255,6 +277,37 @@ var Pages = {
         🧠 意識レイヤー分析を実行
       </button>
       <div id="transcriptResult"></div>
+    </div>`;
+  },
+
+  // ─── Onboarding Banner (shown when user has no entries yet) ───
+  renderOnboardingBanner() {
+    const steps = [
+      { icon: '⚙️', title: 'プロフィールを設定', desc: '年齢・性別・お住まいを登録すると、あなたに合ったアドバイスが届きます', action: `app.navigate('settings')`, label: '設定を開く' },
+      { icon: '✍️', title: '最初の記録をつける', desc: '今日の調子や気になることを一言書くだけで大丈夫です', action: `app.navigate('record')`, label: '記録する' },
+      { icon: '💬', title: '相談してみる', desc: '上のテキスト欄に悩みや質問を入力すると、すぐに答えが返ってきます', action: ``, label: '' }
+    ];
+    return `<div class="onboarding-banner">
+      <div class="onboarding-header">
+        <span class="onboarding-wave">👋</span>
+        <div>
+          <h3>ようこそ！まずは3つのステップから</h3>
+          <p>難しいことは何もありません。一つずつ進めましょう。</p>
+        </div>
+      </div>
+      <div class="onboarding-steps">
+        ${steps.map((s, i) => `
+          <div class="onboarding-step">
+            <div class="onboarding-step-num">${i + 1}</div>
+            <div class="onboarding-step-icon">${s.icon}</div>
+            <div class="onboarding-step-body">
+              <strong>${s.title}</strong>
+              <p>${s.desc}</p>
+              ${s.action ? `<button class="btn btn-sm btn-primary" onclick="${s.action}">${s.label}</button>` : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
     </div>`;
   },
 

@@ -272,7 +272,14 @@ var Store = class Store {
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // Only remove LMS-specific keys — never call localStorage.clear() as it
+    // destroys Firebase config and OAuth tokens stored by other modules.
+    this.persistKeys.forEach(key => {
+      try { localStorage.removeItem(`lms_${key}`); } catch (e) {}
+    });
+    ['anthropic', 'openai', 'google'].forEach(p => {
+      try { localStorage.removeItem(`lms_apikey_${p}`); } catch (e) {}
+    });
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
@@ -282,6 +289,42 @@ var Store = class Store {
     this.state.currentPage = 'login';
     this.state.currentDomain = 'health';
     this.state.subscription = null;
+  }
+
+  // ─── Streak Calculation ───
+  // Returns the number of consecutive days (up to today) that the user has
+  // logged at least one entry in any domain.
+  getStreak() {
+    const allKeys = this.persistKeys.filter(k => {
+      return Object.keys(CONFIG.domains).some(d => k.startsWith(d + '_'));
+    });
+
+    const daySet = new Set();
+    allKeys.forEach(key => {
+      const arr = this.state[key];
+      if (!Array.isArray(arr)) return;
+      arr.forEach(entry => {
+        if (entry.timestamp) {
+          daySet.add(entry.timestamp.slice(0, 10)); // YYYY-MM-DD
+        }
+      });
+    });
+
+    if (daySet.size === 0) return 0;
+
+    let streak = 0;
+    const today = new Date();
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      if (daySet.has(dateStr)) {
+        streak++;
+      } else if (i > 0) {
+        break; // gap found — streak ends
+      }
+    }
+    return streak;
   }
 };
 

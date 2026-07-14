@@ -179,7 +179,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', data: 'データ', actions: 'アクション', ask_ai: '相談する', integrations: '連携', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -413,8 +413,11 @@ var App = class App {
       this.renderApp();
     } catch (e) {
       if (container) {
+        // Remove loading spinner before appending error
+        const spinner = container.querySelector('.loading-container');
+        if (spinner) spinner.remove();
         container.innerHTML += Components.chatMessage({
-          role: 'assistant', content: '⚠️ ' + e.message, timestamp: new Date().toISOString()
+          role: 'assistant', content: '⚠️ ' + Components.escapeHtml(e.message), timestamp: new Date().toISOString()
         });
       }
     }
@@ -562,16 +565,40 @@ var App = class App {
   }
 
   parseCSVContacts(csv) {
+    // RFC 4180-compliant CSV parsing (handles quoted fields with embedded commas)
+    const parseRow = (line) => {
+      const fields = [];
+      let i = 0;
+      while (i < line.length) {
+        if (line[i] === '"') {
+          let val = '';
+          i++; // skip opening quote
+          while (i < line.length) {
+            if (line[i] === '"' && line[i + 1] === '"') { val += '"'; i += 2; }
+            else if (line[i] === '"') { i++; break; }
+            else { val += line[i++]; }
+          }
+          fields.push(val.trim());
+          if (line[i] === ',') i++; // skip comma after closing quote
+        } else {
+          const end = line.indexOf(',', i);
+          if (end === -1) { fields.push(line.slice(i).trim()); break; }
+          fields.push(line.slice(i, end).trim());
+          i = end + 1;
+        }
+      }
+      return fields;
+    };
+
     const lines = csv.split('\n').filter(l => l.trim());
     if (lines.length < 2) return [];
-
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const headers = parseRow(lines[0]);
     return lines.slice(1).map(line => {
-      const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+      const values = parseRow(line);
       const obj = {};
       headers.forEach((h, i) => { obj[h] = values[i] || ''; });
       return obj;
-    });
+    }).filter(obj => Object.values(obj).some(Boolean));
   }
 
   parseVCardContacts(vcf) {
@@ -684,7 +711,14 @@ var App = class App {
     const filter = store.get('dataBrowserFilter') || { category: '', search: '', sort: 'desc' };
     filter[key] = value;
     store.set('dataBrowserFilter', filter);
+    const focusId = document.activeElement?.id;
     this.renderApp();
+    if (focusId) {
+      const el = document.getElementById(focusId);
+      if (el && typeof el.setSelectionRange === 'function') {
+        el.focus(); el.setSelectionRange(el.value.length, el.value.length);
+      }
+    }
   }
 
   clearDataFilter() {
@@ -1385,9 +1419,10 @@ var App = class App {
     if (openai && !openai.includes('•')) { AIEngine.setApiKey('openai', openai); keys.openai = openai; }
     if (google && !google.includes('•')) { AIEngine.setApiKey('google', google); keys.google = google; }
 
-    // Save to Firestore if available
+    // Save to Firestore — merge with current stored keys so unmodified providers aren't dropped
     if (Object.keys(keys).length > 0) {
-      FirebaseBackend.saveApiKeys({ ...AIEngine.getApiKey, ...keys });
+      const existing = store.get('_apiKeys') || {};
+      FirebaseBackend.saveApiKeys({ ...existing, ...keys });
     }
 
     Components.showToast(i18n.t('saved'), 'success');
@@ -1442,7 +1477,14 @@ var App = class App {
     const search = document.getElementById('promptSearch')?.value || '';
     const domain = document.getElementById('promptDomainFilter')?.value || '';
     store.set('adminPromptFilter', { search, domain });
+    const focusId = document.activeElement?.id;
     this.renderApp();
+    if (focusId) {
+      const el = document.getElementById(focusId);
+      if (el && typeof el.setSelectionRange === 'function') {
+        el.focus(); el.setSelectionRange(el.value.length, el.value.length);
+      }
+    }
   }
 
   editPrompt(key) {
@@ -1621,6 +1663,11 @@ var App = class App {
 
   // ─── Direct mode toggle (Plan B - no proxy needed) ───
   useDirectMode() {
+    // Save current proxy URL before switching, so useProxyMode can restore it
+    const current = CONFIG.endpoints.anthropic;
+    if (current && current !== 'direct' && !current.includes('your-account')) {
+      localStorage.setItem('lms_workerUrl_backup', current);
+    }
     CONFIG.endpoints.anthropic = 'direct';
     localStorage.setItem('lms_workerUrl', 'direct');
 
@@ -1756,7 +1803,14 @@ var App = class App {
     const filter = store.get('_userFilter') || { search: '', type: 'all' };
     filter[key] = value;
     store.set('_userFilter', filter);
+    const focusId = document.activeElement?.id;
     this.renderApp();
+    if (focusId) {
+      const el = document.getElementById(focusId);
+      if (el && typeof el.setSelectionRange === 'function') {
+        el.focus(); el.setSelectionRange(el.value.length, el.value.length);
+      }
+    }
   }
 
   clearUserFilter() {

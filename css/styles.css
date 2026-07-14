@@ -1108,6 +1108,46 @@ body.is-admin .admin-only { display: flex; }
 .sub-nav-btn.active { font-weight: 600; }
 
 /* ─── Home Page ─── */
+
+/* Streak banner */
+.streak-banner {
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, #fff8e1, #fffde7);
+  border: 1px solid #ffe082; border-radius: var(--radius);
+  padding: 10px 16px; margin-bottom: 16px;
+  font-size: 14px; font-weight: 500; color: #b45309;
+}
+.streak-icon { font-size: 20px; }
+
+/* Onboarding banner for new users */
+.onboarding-banner {
+  background: linear-gradient(135deg, var(--accent-soft, #f0eeff), #fff);
+  border: 1.5px solid var(--accent); border-radius: var(--radius);
+  padding: 20px; margin-bottom: 20px;
+}
+.onboarding-header {
+  display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px;
+}
+.onboarding-wave { font-size: 32px; flex-shrink: 0; }
+.onboarding-header h3 { margin: 0 0 4px; font-size: 17px; color: var(--text-primary); }
+.onboarding-header p { margin: 0; font-size: 13px; color: var(--text-secondary); }
+.onboarding-steps { display: flex; flex-direction: column; gap: 12px; }
+.onboarding-step {
+  display: flex; align-items: flex-start; gap: 14px;
+  background: var(--bg-primary); border-radius: var(--radius-sm);
+  padding: 14px;
+}
+.onboarding-step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.onboarding-step-icon { font-size: 20px; flex-shrink: 0; }
+.onboarding-step-body { flex: 1; }
+.onboarding-step-body strong { display: block; font-size: 14px; margin-bottom: 4px; }
+.onboarding-step-body p { font-size: 13px; color: var(--text-secondary); margin: 0 0 10px; }
+
 .quick-input-bar { display: flex; gap: 10px; margin-bottom: 20px; }
 .quick-input-bar .form-input { flex: 1; }
 #quickResponse { margin-bottom: 20px; }

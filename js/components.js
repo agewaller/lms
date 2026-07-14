@@ -3,6 +3,18 @@
    ============================================================ */
 var Components = {
 
+  // ─── HTML escaping (XSS prevention) ───
+  // Must be called on ALL user-supplied values before inserting into innerHTML.
+  escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
   // ─── Score Gauge (circular) ───
   scoreGauge(score, size = 120, label = '') {
     const pct = Math.max(0, Math.min(100, score));
@@ -78,7 +90,7 @@ var Components = {
     switch (f.type) {
       case 'slider':
         return `<div class="slider-field">
-          <input type="range" name="${name}" min="${f.min||0}" max="${f.max||10}" value="${Math.floor((f.min||0 + f.max||10)/2)}" oninput="this.nextElementSibling.textContent=this.value">
+          <input type="range" name="${name}" min="${f.min||0}" max="${f.max||10}" value="${Math.floor(((f.min||0) + (f.max||10))/2)}" oninput="this.nextElementSibling.textContent=this.value">
           <span class="slider-val">${Math.floor(((f.min||0) + (f.max||10))/2)}</span>
         </div>`;
       case 'number':
