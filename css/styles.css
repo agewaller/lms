@@ -1585,6 +1585,98 @@ body.is-admin .admin-only { display: flex; }
 .cs-reason { font-size: 14px; color: var(--text-light); margin-top: 2px; }
 .cs-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
+/* ─── Welcome Card ─── */
+.welcome-card {
+  display: flex; align-items: flex-start; gap: 20px;
+  background: linear-gradient(135deg, #f0f4ff 0%, #fff 100%);
+  border-radius: var(--radius); padding: 28px 24px;
+  margin-bottom: 28px; box-shadow: var(--shadow);
+  border-left: 5px solid var(--primary);
+}
+.welcome-icon { font-size: 40px; flex-shrink: 0; line-height: 1; }
+.welcome-body h3 { margin-bottom: 8px; font-size: 20px; }
+.welcome-body > p { color: var(--text-light); margin-bottom: 16px; line-height: 1.7; font-size: 15px; }
+.welcome-steps { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.ws-step {
+  display: flex; align-items: flex-start; gap: 10px;
+  flex: 1; min-width: 160px; background: white;
+  border-radius: var(--radius-sm); padding: 12px 14px;
+  cursor: pointer; transition: box-shadow 0.2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.ws-step:hover { box-shadow: 0 4px 12px rgba(108,99,255,0.15); }
+.ws-num {
+  background: var(--primary); color: white;
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+}
+.ws-text { font-size: 14px; line-height: 1.5; }
+
+/* ─── Contact List ─── */
+.contact-list-section {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 24px; margin-bottom: 32px; box-shadow: var(--shadow);
+}
+.cl-header {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.cl-header h3 { margin: 0; }
+.cl-search { max-width: 200px; padding: 8px 12px !important; font-size: 14px !important; }
+.cl-group { margin-bottom: 12px; }
+.cl-group-header {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 4px 0; margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.cl-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 6px; border-bottom: 1px solid var(--border);
+}
+.cl-item:last-child { border-bottom: none; }
+.cl-item.cl-overdue { background: #FFF9F0; border-radius: var(--radius-sm); }
+.cl-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 15px; flex-shrink: 0;
+}
+.cl-info { flex: 1; min-width: 0; }
+.cl-name { font-weight: 600; font-size: 15px; }
+.cl-meta { font-size: 13px; color: var(--text-muted); }
+.cl-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* ─── Gift Section ─── */
+.gift-section {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 24px; margin-bottom: 32px; box-shadow: var(--shadow);
+}
+.gift-section h3 { margin-bottom: 16px; }
+.gift-reminders {
+  background: #E8F5E9; border-radius: var(--radius-sm);
+  padding: 12px 16px; margin-bottom: 16px;
+}
+.gift-reminder-title { font-size: 12px; font-weight: 700; color: #2E7D32; margin-bottom: 8px; }
+.gift-reminder-item { display: flex; align-items: center; gap: 10px; padding: 3px 0; font-size: 14px; }
+.gift-reminder-days { font-weight: 700; min-width: 56px; color: #555; }
+.gift-reminder-days.soon { color: #E74C3C; }
+.gift-list { }
+.gift-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.gift-item:last-child { border-bottom: none; }
+.gift-direction {
+  font-size: 12px; font-weight: 700; padding: 3px 8px;
+  border-radius: 12px; min-width: 72px; text-align: center; flex-shrink: 0;
+}
+.gift-direction.sent { background: #EDE7F6; color: #6A1B9A; }
+.gift-direction.received { background: #E3F2FD; color: #1565C0; }
+.gift-info { flex: 1; min-width: 0; }
+.gift-person { font-weight: 600; font-size: 14px; }
+.gift-detail { font-size: 13px; color: var(--text-muted); }
+.gift-date { font-size: 13px; color: var(--text-muted); flex-shrink: 0; }
+
 /* ─── Contact Import ─── */
 .contact-import-section {
   background: var(--bg-card); border-radius: var(--radius);
@@ -1776,6 +1868,11 @@ body.is-admin .admin-only { display: flex; }
   .at-stats { flex-direction: column; }
   .contact-suggest { flex-direction: column; align-items: flex-start; gap: 8px; }
   .cs-actions { width: 100%; }
+  .cl-item { flex-wrap: wrap; }
+  .cl-actions { width: 100%; }
+  .welcome-steps { flex-direction: column; }
+  .ws-step { min-width: 0; }
+  .gift-item { flex-wrap: wrap; gap: 8px; }
   .provision-cards { flex-direction: column; }
   .jd-platform-link { flex-direction: column; }
   .booking-slot { flex-direction: column; align-items: flex-start; }

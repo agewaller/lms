@@ -197,10 +197,164 @@ var RelationshipFeatures = {
   },
 
   // ═══════════════════════════════════════════════════════════
+  //  連絡先一覧
+  // ═══════════════════════════════════════════════════════════
+
+  renderContactList() {
+    const contacts = store.get('relationship_contacts') || [];
+    if (contacts.length === 0) return '';
+
+    const interactions = store.get('relationship_interactions') || [];
+    const now = new Date();
+    const levels = CONFIG.domains.relationship.distanceLevels;
+
+    // Ideal contact interval by distance
+    const idealInterval = { 1: 1, 2: 7, 3: 14, 4: 60, 5: 180 };
+
+    const annotated = contacts.map(c => {
+      const last = interactions
+        .filter(i => i.person === c.name || i.person === c.furigana)
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+      const daysSince = last
+        ? Math.floor((now - new Date(last.timestamp)) / (1000 * 60 * 60 * 24))
+        : null;
+      const dist = parseInt(c.distance) || 5;
+      const overdue = daysSince !== null && daysSince > (idealInterval[dist] || 60);
+      return { ...c, daysSince, overdue, dist };
+    }).sort((a, b) => a.dist - b.dist);
+
+    const grouped = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+    annotated.forEach(c => { if (grouped[c.dist]) grouped[c.dist].push(c); });
+
+    let html = `<div class="contact-list-section">
+      <div class="cl-header">
+        <h3>連絡先一覧（${contacts.length}人）</h3>
+        <input type="text" class="form-input cl-search" placeholder="名前で検索..."
+          oninput="RelationshipFeatures.filterContactList(this.value)" id="contactSearch">
+      </div>
+      <div id="contactListBody">`;
+
+    [1, 2, 3, 4, 5].forEach(level => {
+      const people = grouped[level];
+      if (!people || people.length === 0) return;
+      const lc = levels[level];
+      html += `<div class="cl-group">
+        <div class="cl-group-header" style="color:${lc.color}">${lc.description}（${people.length}人）</div>
+        <div class="cl-group-body">`;
+      people.forEach(c => {
+        const nameEsc = Components.escapeHtml(c.name || '');
+        const dayLabel = c.daysSince === null ? 'まだ記録なし' :
+          c.daysSince === 0 ? '今日連絡済み' : `${c.daysSince}日前`;
+        html += `<div class="cl-item ${c.overdue ? 'cl-overdue' : ''}">
+          <div class="cl-avatar" style="background:${lc.color}20;color:${lc.color}">${nameEsc.substring(0, 1)}</div>
+          <div class="cl-info">
+            <div class="cl-name">${nameEsc}</div>
+            <div class="cl-meta">最終連絡：${dayLabel}</div>
+          </div>
+          <div class="cl-actions">
+            ${c.phone ? `<a href="tel:${Components.escapeHtml(c.phone)}" class="btn btn-sm btn-secondary">📞</a>` : ''}
+            <button class="btn btn-sm btn-secondary"
+              onclick="RelationshipFeatures.logContact('${nameEsc.replace(/'/g, "\\'")}','meeting')">✓ 記録</button>
+          </div>
+        </div>`;
+      });
+      html += `</div></div>`;
+    });
+
+    html += `</div></div>`;
+    return html;
+  },
+
+  filterContactList(query) {
+    const body = document.getElementById('contactListBody');
+    if (!body) return;
+    const q = (query || '').toLowerCase();
+    body.querySelectorAll('.cl-item').forEach(item => {
+      const name = item.querySelector('.cl-name')?.textContent?.toLowerCase() || '';
+      item.style.display = name.includes(q) ? '' : 'none';
+    });
+    // Hide empty groups
+    body.querySelectorAll('.cl-group').forEach(g => {
+      const visible = [...g.querySelectorAll('.cl-item')].some(i => i.style.display !== 'none');
+      g.style.display = visible ? '' : 'none';
+    });
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  贈り物の記録
+  // ═══════════════════════════════════════════════════════════
+
+  renderGiftHistory() {
+    const gifts = store.getDomainData('relationship', 'gifts', 90);
+    const contacts = store.get('relationship_contacts') || [];
+
+    // Upcoming birthdays (distance 1-3, within 30 days) with no gift sent yet
+    const today = new Date();
+    const upcoming = contacts
+      .filter(c => c.birthday && parseInt(c.distance) <= 3)
+      .map(c => {
+        const bd = new Date(c.birthday);
+        const next = new Date(today.getFullYear(), bd.getMonth(), bd.getDate());
+        if (next < today) next.setFullYear(next.getFullYear() + 1);
+        return { ...c, daysUntil: Math.ceil((next - today) / (1000 * 60 * 60 * 24)), nextBirthday: next };
+      })
+      .filter(c => c.daysUntil <= 30)
+      .sort((a, b) => a.daysUntil - b.daysUntil);
+
+    if (gifts.length === 0 && upcoming.length === 0) return '';
+
+    const occasionLabels = {
+      birthday: '誕生日', new_year: 'お正月', obon: 'お盆',
+      okaeshi: 'お返し', celebration: 'お祝い',
+      sympathy: 'お見舞い', souvenir: 'お土産', other: 'その他'
+    };
+
+    let html = `<div class="gift-section"><h3>🎁 贈り物の記録</h3>`;
+
+    if (upcoming.length > 0) {
+      html += `<div class="gift-reminders">
+        <div class="gift-reminder-title">近い誕生日（プレゼント候補）</div>`;
+      upcoming.forEach(c => {
+        const dateStr = c.nextBirthday.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
+        html += `<div class="gift-reminder-item">
+          <span class="gift-reminder-days ${c.daysUntil <= 7 ? 'soon' : ''}">あと${c.daysUntil}日</span>
+          <span>${Components.escapeHtml(c.name || '')}さん（${dateStr}）</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    if (gifts.length > 0) {
+      html += `<div class="gift-list">`;
+      gifts.slice(0, 8).forEach(g => {
+        const arrow = g.direction === 'sent' ? '→ 贈った' : '← いただいた';
+        const occ = occasionLabels[g.occasion] || g.occasion || '';
+        html += `<div class="gift-item">
+          <div class="gift-direction ${g.direction}">${arrow}</div>
+          <div class="gift-info">
+            <div class="gift-person">${Components.escapeHtml(g.person || '')}さん</div>
+            <div class="gift-detail">${Components.escapeHtml(g.item || '')}${occ ? '（' + occ + '）' : ''}${g.amount ? ' ' + Number(g.amount).toLocaleString() + '円' : ''}</div>
+          </div>
+          <div class="gift-date">${new Date(g.timestamp).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}</div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    html += `</div>`;
+    return html;
+  },
+
+  // ═══════════════════════════════════════════════════════════
   //  統合表示（ホーム画面用）
   // ═══════════════════════════════════════════════════════════
 
   renderDashboard() {
-    return this.renderIsolationWidget() + this.renderTodayContacts();
+    return (
+      this.renderIsolationWidget() +
+      this.renderTodayContacts() +
+      this.renderContactList() +
+      this.renderGiftHistory()
+    );
   }
 };

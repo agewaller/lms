@@ -27,9 +27,43 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // Welcome card for first-time users (no data yet, not dismissed)
+    const hasAnyData = Object.keys(CONFIG.domains).some(d => {
+      return Object.keys(CONFIG.domains[d].categories || {}).some(cat =>
+        store.getDomainData(d, cat, 365 * 10).length > 0
+      );
+    });
+
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    let html = `<div class="page-home">`;
+
+    if (!hasAnyData && !store.get('welcomeDismissed')) {
+      html += `<div class="welcome-card">
+        <div class="welcome-icon">🌟</div>
+        <div class="welcome-body">
+          <h3>ようこそ、LMSへ</h3>
+          <p>人生の6領域（意識・健康・時間・仕事・関係・資産）を一か所で管理できます。<br>まず、今日の状態を記録してみましょう。</p>
+          <div class="welcome-steps">
+            <div class="ws-step" onclick="app.navigate('record')">
+              <div class="ws-num">1</div>
+              <div class="ws-text"><strong>記録する</strong><br>今日の体調や出来事を入力</div>
+            </div>
+            <div class="ws-step" onclick="app.navigate('settings')">
+              <div class="ws-num">2</div>
+              <div class="ws-text"><strong>設定</strong><br>プロフィールと目標を登録</div>
+            </div>
+            <div class="ws-step" onclick="app.navigate('ask_ai')">
+              <div class="ws-num">3</div>
+              <div class="ws-text"><strong>相談する</strong><br>気になることを話しかける</div>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-secondary" style="margin-top:8px"
+            onclick="store.set('welcomeDismissed',true);app.renderApp()">後で確認する</button>
+        </div>
+      </div>`;
+    }
+
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
