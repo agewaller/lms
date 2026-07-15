@@ -516,3 +516,10 @@ UI が指示と違うという申告があれば、実画面に合わせて手�
 ②AI キー（Anthropic/OpenAI/Gemini）を管理画面 APIキー タブで設定 ③OAuth Client ID を管理画面で設定
 （Google/各サービス連携。全ユーザー共有）④Cloudflare Worker のデプロイ用 `CLOUDFLARE_API_TOKEN` を
 GitHub Secret に＋Worker secrets（AI鍵・`RESEND_API_KEY`）⑤PayPal（課金）⑥GitHub Pages（main push で自動）。
+
+## 利用状況（2026-07-15 オーナー申告・恒久メモ）
+
+**本リポ（LMS）は現在使っていない**（アクティブ運用停止）。
+- オーナーに外部設定（Firebase・AI 鍵・OAuth・Cloudflare 等）を**依頼しないこと**。OWNER-SETUP の作成も不要。
+- 関係性ロジック等の**移植元・参照用**として維持する（bonds 等から参照）。
+- 再開するときは、先に Claude が配線を点検してから OWNER-SETUP を書き起こし、オーナーの手順を最小化する。
