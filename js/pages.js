@@ -797,19 +797,19 @@ var Pages = {
       <p>ここに登録した内容を求人プラットフォームにワンクリックで送信できます。</p>
       <div class="form-group">
         <label>お名前</label>
-        <input type="text" id="resumeName" class="form-input" value="${r.name || ''}" placeholder="山田花子">
+        <input type="text" id="resumeName" class="form-input" value="${Components.escapeHtml(r.name || '')}" placeholder="山田花子">
       </div>
       <div class="form-group">
         <label>職務要約・自己PR</label>
-        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${r.summary || ''}</textarea>
+        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${Components.escapeHtml(r.summary || '')}</textarea>
       </div>
       <div class="form-group">
         <label>スキル・資格（カンマ区切り）</label>
-        <input type="text" id="resumeSkills" class="form-input" value="${(r.skills || []).join(', ')}" placeholder="例：看護師免許, 英検2級, Excel">
+        <input type="text" id="resumeSkills" class="form-input" value="${Components.escapeHtml((r.skills || []).join(', '))}" placeholder="例：看護師免許, 英検2級, Excel">
       </div>
       <div class="form-group">
         <label>職務経歴</label>
-        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${r.history || ''}</textarea>
+        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${Components.escapeHtml(r.history || '')}</textarea>
       </div>
       <div class="form-group">
         <label>希望する働き方</label>
@@ -1508,23 +1508,24 @@ var Pages = {
     filtered.forEach(([key, p], i) => {
       const schedule = p.schedule || 'manual';
       const scheduleLabel = { daily: '毎日', weekly: '毎週', on_data_update: 'データ更新時', manual: '手動' }[schedule] || schedule;
-      html += `<div class="prompt-item ${p.active === false ? 'inactive' : ''}" data-key="${key}">
+      const ek = Components.escapeHtml(key);
+      html += `<div class="prompt-item ${p.active === false ? 'inactive' : ''}" data-key="${ek}">
         <div class="prompt-header">
           <div class="prompt-meta">
             <span class="prompt-num">${i + 1}</span>
-            <span class="prompt-name">${p.name || key}</span>
+            <span class="prompt-name">${Components.escapeHtml(p.name || key)}</span>
             <span class="prompt-badge domain">${p.domain ? i18n.t(p.domain) : '共通'}</span>
             <span class="prompt-badge schedule">${scheduleLabel}</span>
           </div>
           <div class="prompt-actions">
-            <button class="btn btn-sm btn-secondary" onclick="app.editPrompt('${key}')">編集</button>
+            <button class="btn btn-sm btn-secondary" data-key="${ek}" onclick="app.editPrompt(this.dataset.key)">編集</button>
           </div>
         </div>
-        <div class="prompt-desc">${p.description || ''}</div>
-        <div class="prompt-edit" id="edit-${key}" style="display:none;">
+        <div class="prompt-desc">${Components.escapeHtml(p.description || '')}</div>
+        <div class="prompt-edit" id="edit-${ek}" style="display:none;">
           <div class="form-group">
             <label>名前</label>
-            <input type="text" class="form-input" value="${p.name || ''}" data-field="name">
+            <input type="text" class="form-input" value="${Components.escapeHtml(p.name || '')}" data-field="name">
           </div>
           <div class="form-group">
             <label>領域</label>
@@ -1544,16 +1545,16 @@ var Pages = {
           </div>
           <div class="form-group">
             <label>説明</label>
-            <input type="text" class="form-input" value="${p.description || ''}" data-field="description">
+            <input type="text" class="form-input" value="${Components.escapeHtml(p.description || '')}" data-field="description">
           </div>
           <div class="form-group">
             <label>プロンプト本文</label>
-            <textarea class="form-input prompt-textarea" rows="16" data-field="prompt">${p.prompt || ''}</textarea>
+            <textarea class="form-input prompt-textarea" rows="16" data-field="prompt">${Components.escapeHtml(p.prompt || '')}</textarea>
           </div>
           <div class="form-actions">
-            <button class="btn btn-primary" onclick="app.savePrompt('${key}')">保存</button>
-            <button class="btn btn-secondary" onclick="app.cancelPromptEdit('${key}')">キャンセル</button>
-            <button class="btn btn-danger" onclick="app.deletePrompt('${key}')">削除</button>
+            <button class="btn btn-primary" data-key="${ek}" onclick="app.savePrompt(this.dataset.key)">保存</button>
+            <button class="btn btn-secondary" data-key="${ek}" onclick="app.cancelPromptEdit(this.dataset.key)">キャンセル</button>
+            <button class="btn btn-danger" data-key="${ek}" onclick="app.deletePrompt(this.dataset.key)">削除</button>
           </div>
         </div>
       </div>`;
