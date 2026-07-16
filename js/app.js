@@ -264,7 +264,10 @@ var App = class App {
     const text = input.value.trim();
     const domain = store.get('currentDomain');
     const responseEl = document.getElementById('quickResponse');
+    const btn = input.nextElementSibling;
 
+    input.disabled = true;
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
     if (responseEl) responseEl.innerHTML = Components.loading(i18n.t('analyzing'));
 
     try {
@@ -303,6 +306,9 @@ var App = class App {
       input.value = '';
     } catch (e) {
       if (responseEl) responseEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message || '')}</div>`;
+    } finally {
+      input.disabled = false;
+      if (btn) { btn.disabled = false; btn.textContent = i18n.t('send'); }
     }
   }
 
@@ -379,12 +385,16 @@ var App = class App {
     const text = textarea.value.trim();
     this.saveDiary(domain);
 
+    const analyzeBtn = document.querySelector('[onclick*="saveDiaryAndAnalyze"]');
+    if (analyzeBtn) { analyzeBtn.disabled = true; analyzeBtn.textContent = '…'; }
+
     try {
       await AIEngine.analyze(domain, 'daily', { text });
       Components.showToast(i18n.t('ai_analysis') + ' ✓', 'success');
       this.renderApp();
     } catch (e) {
       Components.showToast(e.message, 'error');
+      if (analyzeBtn) { analyzeBtn.disabled = false; analyzeBtn.textContent = i18n.t('save_and_analyze'); }
     }
   }
 
@@ -395,6 +405,10 @@ var App = class App {
 
     const text = input.value.trim();
     input.value = '';
+    input.disabled = true;
+
+    const sendBtn = document.querySelector('[onclick*="sendChat"]');
+    if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = '…'; }
 
     // Show user message immediately
     const container = document.getElementById('chatContainer');
@@ -407,8 +421,7 @@ var App = class App {
     }
 
     try {
-      const response = await AIEngine.chat(domain, text);
-
+      await AIEngine.chat(domain, text);
       // Re-render to show full history
       this.renderApp();
     } catch (e) {
@@ -417,11 +430,16 @@ var App = class App {
           role: 'assistant', content: '⚠️ ' + e.message, timestamp: new Date().toISOString()
         });
       }
+      input.disabled = false;
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = i18n.t('send'); }
     }
   }
 
   // ─── Generate AI Recommendations ───
   async generateRecommendations(domain) {
+    const btn = document.querySelector('[onclick*="generateRecommendations"]');
+    if (btn) { btn.disabled = true; btn.textContent = i18n.t('analyzing') || '分析中…'; }
+
     try {
       const isHolistic = domain === 'holistic';
       const result = await AIEngine.analyze(
@@ -445,6 +463,7 @@ var App = class App {
       Components.showToast(i18n.t('saved'), 'success');
     } catch (e) {
       Components.showToast(e.message, 'error');
+      if (btn) { btn.disabled = false; btn.textContent = i18n.t('analyze') || '分析する'; }
     }
   }
 
