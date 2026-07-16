@@ -197,10 +197,68 @@ var RelationshipFeatures = {
   },
 
   // ═══════════════════════════════════════════════════════════
+  //  今月の交流サマリー
+  // ═══════════════════════════════════════════════════════════
+
+  renderActivitySummary() {
+    const interactions = store.get('relationship_interactions') || [];
+    const contacts = store.get('relationship_contacts') || [];
+
+    if (contacts.length === 0) return '';
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+
+    const thisMonth = interactions.filter(i => new Date(i.timestamp) >= thirtyDaysAgo);
+    const thisWeek = interactions.filter(i => new Date(i.timestamp) >= sevenDaysAgo);
+
+    // Count by type
+    const typeCounts = {};
+    const typeLabels = { call: '電話', message: 'メッセージ', meet: '対面', other: 'その他' };
+    thisMonth.forEach(i => {
+      const t = i.type || 'other';
+      typeCounts[t] = (typeCounts[t] || 0) + 1;
+    });
+
+    // Count unique people this month
+    const uniquePeople = new Set(thisMonth.map(i => i.person)).size;
+
+    // Most contacted this month
+    const personCounts = {};
+    thisMonth.forEach(i => { personCounts[i.person] = (personCounts[i.person] || 0) + 1; });
+    const topPersonEntry = Object.entries(personCounts).sort((a, b) => b[1] - a[1])[0];
+
+    const typeBar = Object.entries(typeCounts).map(([t, n]) => `
+      <span class="act-type-badge">${typeLabels[t] || t} ${n}回</span>`).join('');
+
+    return `<div class="activity-summary-section">
+      <h3>📊 この30日間の交流</h3>
+      <div class="act-stats">
+        <div class="act-stat">
+          <div class="act-stat-val">${thisMonth.length}</div>
+          <div class="act-stat-lbl">交流回数</div>
+        </div>
+        <div class="act-stat">
+          <div class="act-stat-val">${uniquePeople}</div>
+          <div class="act-stat-lbl">交流した人数</div>
+        </div>
+        <div class="act-stat">
+          <div class="act-stat-val">${thisWeek.length}</div>
+          <div class="act-stat-lbl">今週の交流</div>
+        </div>
+      </div>
+      ${typeBar ? `<div class="act-types">${typeBar}</div>` : ''}
+      ${topPersonEntry ? `<p class="act-top">今月最も交流したのは <strong>${Components.escapeHtml(topPersonEntry[0])}</strong>さん（${topPersonEntry[1]}回）</p>` : ''}
+      ${thisMonth.length === 0 ? '<p class="act-empty">今月はまだ交流の記録がありません。「連絡済み」ボタンを押すと自動で記録されます。</p>' : ''}
+    </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════
   //  統合表示（ホーム画面用）
   // ═══════════════════════════════════════════════════════════
 
   renderDashboard() {
-    return this.renderIsolationWidget() + this.renderTodayContacts();
+    return this.renderIsolationWidget() + this.renderTodayContacts() + this.renderActivitySummary();
   }
 };
