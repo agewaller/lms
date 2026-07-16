@@ -1230,7 +1230,7 @@ var App = class App {
       modal.className = 'modal-overlay';
       modal.innerHTML = `<div class="modal-content">
         <h3>レジュメをコピー</h3>
-        <textarea class="form-input" rows="10" readonly>${text}</textarea>
+        <textarea class="form-input" rows="10" readonly>${Components.escapeHtml(text)}</textarea>
         <p>上のテキストをコピーして、求人サイトに貼り付けてください。</p>
         <button class="btn btn-primary" onclick="this.parentElement.parentElement.remove()">閉じる</button>
       </div>`;

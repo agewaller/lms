@@ -76,11 +76,13 @@ var Components = {
   renderField(f) {
     const name = f.key;
     switch (f.type) {
-      case 'slider':
+      case 'slider': {
+        const mid = Math.floor(((f.min||0) + (f.max||10)) / 2);
         return `<div class="slider-field">
-          <input type="range" name="${name}" min="${f.min||0}" max="${f.max||10}" value="${Math.floor((f.min||0 + f.max||10)/2)}" oninput="this.nextElementSibling.textContent=this.value">
-          <span class="slider-val">${Math.floor(((f.min||0) + (f.max||10))/2)}</span>
+          <input type="range" name="${name}" min="${f.min||0}" max="${f.max||10}" value="${mid}" oninput="this.nextElementSibling.textContent=this.value">
+          <span class="slider-val">${mid}</span>
         </div>`;
+      }
       case 'number':
         return `<input type="number" name="${name}" step="${f.step||1}" class="form-input" placeholder="${i18n.t(f.label)}${f.unit ? ' ('+f.unit+')' : ''}">`;
       case 'text':
@@ -116,14 +118,34 @@ var Components = {
   },
 
   // ─── Markdown Formatter ───
+  // HTML-escapes first so that raw HTML in AI responses or user input can't inject tags.
   formatMarkdown(text) {
     if (!text) return '';
-    return text
-      .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    // Preserve code blocks before escaping, then restore after
+    const blocks = [];
+    let s = text.replace(/```([\s\S]*?)```/g, (_, code) => {
+      blocks.push(code);
+      return `\x00CODE${blocks.length - 1}\x00`;
+    });
+    // Escape all HTML in the remaining text
+    s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Restore code blocks (content is also escaped for safety)
+    s = s.replace(/\x00CODE(\d+)\x00/g, (_, i) => {
+      const escaped = blocks[+i]
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return `<pre><code>${escaped}</code></pre>`;
+    });
+    return s
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, url) => {
+        // Only allow http/https URLs in markdown links
+        if (/^https?:\/\//i.test(url)) {
+          return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+        }
+        return label;
+      })
       .replace(/^### (.+)$/gm, '<h4>$1</h4>')
       .replace(/^## (.+)$/gm, '<h3>$1</h3>')
       .replace(/^# (.+)$/gm, '<h2>$1</h2>')

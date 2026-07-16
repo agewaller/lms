@@ -272,7 +272,12 @@ var Store = class Store {
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // Only remove LMS-owned keys — never localStorage.clear() which would
+    // destroy Firebase config, OAuth tokens, and other non-LMS storage.
+    this.persistKeys.forEach(key => localStorage.removeItem(`lms_${key}`));
+    // Also clear cached API keys (stored with different prefix)
+    ['anthropic', 'openai', 'google'].forEach(p => localStorage.removeItem(`lms_apikey_${p}`));
+
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
