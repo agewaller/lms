@@ -287,7 +287,7 @@ var Pages = {
       html += `<div class="graph-ring ring-${level}" style="--ring-color: ${levels[level].color}">
         <div class="ring-label">${levels[level].description}（${people.length}人）</div>
         <div class="ring-people">
-          ${people.slice(0, 8).map(p => `<span class="ring-person" title="${p.name}">${(p.name || '').substring(0, 3)}</span>`).join('')}
+          ${people.slice(0, 8).map(p => `<span class="ring-person" title="${Components.escapeHtml(p.name || '')}">${Components.escapeHtml((p.name || '').substring(0, 3))}</span>`).join('')}
           ${people.length > 8 ? `<span class="ring-more">+${people.length - 8}</span>` : ''}
         </div>
       </div>`;
@@ -323,7 +323,7 @@ var Pages = {
       const dateStr = c.nextBirthday.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
       const label = c.daysUntil === 0 ? '今日！' : `あと${c.daysUntil}日`;
       html += `<div class="birthday-item ${c.daysUntil <= 3 ? 'birthday-soon' : ''}">
-        <span class="birthday-name">${c.name}</span>
+        <span class="birthday-name">${Components.escapeHtml(c.name || '')}</span>
         <span class="birthday-date">${dateStr}（${label}）</span>
         <span class="birthday-distance">${CONFIG.domains.relationship.distanceLevels[c.distance]?.description || ''}</span>
       </div>`;
@@ -366,9 +366,9 @@ var Pages = {
     return `<div class="resume-widget">
       <h3>📄 レジュメ</h3>
       <div class="resume-summary">
-        <p><strong>${resume.name || ''}</strong></p>
-        <p>${resume.summary || ''}</p>
-        <p>スキル: ${(resume.skills || []).join(', ')}</p>
+        <p><strong>${Components.escapeHtml(resume.name || '')}</strong></p>
+        <p>${Components.escapeHtml(resume.summary || '')}</p>
+        <p>スキル: ${Components.escapeHtml((resume.skills || []).join(', '))}</p>
       </div>
       <div class="resume-actions">
         <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')">編集</button>
@@ -963,8 +963,12 @@ var Pages = {
               <span class="data-entry-cat">${catLabel}</span>
               <span class="data-entry-time">${new Date(entry.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
               <div class="data-entry-actions">
-                <button class="btn-icon-sm" onclick="app.editDataEntry('${domain}','${entry._category}','${entry.id}')" title="編集">編集</button>
-                <button class="btn-icon-sm" onclick="app.deleteDataEntry('${domain}','${entry._category}','${entry.id}')" title="削除">削除</button>
+                <button class="btn-icon-sm" title="編集"
+                  data-domain="${Components.escapeHtml(domain)}" data-cat="${Components.escapeHtml(entry._category || '')}" data-id="${Components.escapeHtml(entry.id || '')}"
+                  onclick="app.editDataEntry(this.dataset.domain,this.dataset.cat,this.dataset.id)">編集</button>
+                <button class="btn-icon-sm" title="削除"
+                  data-domain="${Components.escapeHtml(domain)}" data-cat="${Components.escapeHtml(entry._category || '')}" data-id="${Components.escapeHtml(entry.id || '')}"
+                  onclick="app.deleteDataEntry(this.dataset.domain,this.dataset.cat,this.dataset.id)">削除</button>
               </div>
             </div>
             <div class="data-entry-fields">
@@ -1817,9 +1821,9 @@ var Pages = {
             <div class="admin-user-info">
               <div class="admin-user-avatar">${initial}</div>
               <div>
-                <div class="admin-user-email">${u.displayName || u.email || '不明'}</div>
+                <div class="admin-user-email">${Components.escapeHtml(u.displayName || u.email || '不明')}</div>
                 <div class="admin-user-role">
-                  ${u.email ? u.email + '<br>' : ''}${metaText || 'プロフィール未設定'}
+                  ${u.email ? Components.escapeHtml(u.email) + '<br>' : ''}${Components.escapeHtml(metaText || 'プロフィール未設定')}
                   ${u.lastActive ? ' · 最終: ' + new Date(u.lastActive).toLocaleDateString('ja-JP') : ''}
                 </div>
               </div>
