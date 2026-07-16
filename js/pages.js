@@ -1029,8 +1029,8 @@ var Pages = {
             <div class="auto-flow-email">
               <label>あなた専用の受信アドレス</label>
               <div class="ingest-email-box">
-                <code class="ingest-email">${ingestEmail}</code>
-                <button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('${ingestEmail}');Components.showToast('コピーしました','success')">コピー</button>
+                <code class="ingest-email">${Components.escapeHtml(ingestEmail)}</code>
+                <button class="btn btn-sm btn-primary" data-email="${Components.escapeHtml(ingestEmail)}" onclick="navigator.clipboard.writeText(this.dataset.email);Components.showToast('コピーしました','success')">コピー</button>
               </div>
             </div>
 
@@ -1719,16 +1719,17 @@ var Pages = {
           ${adminEmails.map(email => {
             const isOwner = email === 'agewaller@gmail.com';
             const isSelf = currentUser?.email === email;
+            const ee = Components.escapeHtml(email);
             return `<div class="admin-user-item">
               <div class="admin-user-info">
-                <div class="admin-user-avatar">${email.charAt(0).toUpperCase()}</div>
+                <div class="admin-user-avatar">${ee.charAt(0).toUpperCase()}</div>
                 <div>
-                  <div class="admin-user-email">${email}${isSelf ? ' <span class="you-badge">あなた</span>' : ''}</div>
+                  <div class="admin-user-email">${ee}${isSelf ? ' <span class="you-badge">あなた</span>' : ''}</div>
                   <div class="admin-user-role">${isOwner ? 'オーナー（削除不可）' : '管理者'}</div>
                 </div>
               </div>
               ${isOwner ? '<span class="status-badge">オーナー</span>' : `
-                <button class="btn btn-sm btn-danger" onclick="app.removeAdminEmail('${email}')">削除</button>
+                <button class="btn btn-sm btn-danger" data-email="${ee}" onclick="app.removeAdminEmail(this.dataset.email)">削除</button>
               `}
             </div>`;
           }).join('')}

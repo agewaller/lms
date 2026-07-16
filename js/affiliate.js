@@ -44,18 +44,20 @@ var AffiliateEngine = {
 
   // ─── Render product card with affiliate links ───
   productCard(product) {
+    const esc = Components.escapeHtml.bind(Components);
     const links = (product.stores || []).map(s => {
       const url = this.generateLink(s.store, s.url, product.id);
       return `<a href="${url}" target="_blank" rel="noopener" class="affiliate-link"
-        onclick="AffiliateEngine.trackClick('${s.store}','${product.id}','${product.domain || ''}')">${s.store}</a>`;
+        data-store="${esc(s.store)}" data-pid="${esc(product.id)}" data-domain="${esc(product.domain || '')}"
+        onclick="AffiliateEngine.trackClick(this.dataset.store,this.dataset.pid,this.dataset.domain)">${esc(s.store)}</a>`;
     }).join('');
 
     return `<div class="product-card">
-      ${product.image ? `<img src="${product.image}" alt="${product.name}" class="product-img">` : ''}
+      ${product.image ? `<img src="${product.image}" alt="${esc(product.name)}" class="product-img">` : ''}
       <div class="product-info">
-        <h4>${product.name}</h4>
-        <p>${product.description || ''}</p>
-        ${product.price ? `<div class="product-price">${product.price}</div>` : ''}
+        <h4>${esc(product.name)}</h4>
+        <p>${esc(product.description || '')}</p>
+        ${product.price ? `<div class="product-price">${esc(String(product.price))}</div>` : ''}
         <div class="product-links">${links}</div>
       </div>
     </div>`;
