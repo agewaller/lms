@@ -458,9 +458,39 @@ var App = class App {
   }
 
   executeAction(type, data) {
-    // Placeholder for action execution (e.g., open affiliate link, book appointment)
-    console.log('Execute action:', type, data);
-    Components.showToast('Action: ' + type, 'info');
+    if (type === 'open_url' || type === 'affiliate_link') {
+      const url = (data && data.url) ? data.url : null;
+      if (url) {
+        window.open(url, '_blank', 'noopener');
+        if (typeof AffiliateManager !== 'undefined') AffiliateManager.track(type, url);
+      }
+    } else if (type === 'navigate') {
+      if (data && data.page) this.navigate(data.page);
+    } else if (type === 'switch_domain') {
+      if (data && data.domain) this.switchDomain(data.domain);
+    } else if (type === 'record') {
+      const domain = (data && data.domain) || store.get('currentDomain');
+      this.switchDomain(domain);
+      this.navigate('record');
+    } else {
+      Components.showToast(data && data.label ? data.label : type, 'info');
+    }
+  }
+
+  showConfirm(message, onConfirm, options = {}) {
+    const confirmLabel = options.confirmLabel || '実行する';
+    const cancelLabel = options.cancelLabel || 'キャンセル';
+    const btnClass = options.danger ? 'btn-primary" style="background:#ef4444;border-color:#ef4444' : 'btn-primary';
+    const body = `<p style="margin:0 0 20px;font-size:15px;line-height:1.6">${Components.escapeHtml(message)}</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-secondary" onclick="app.closeModal()">${Components.escapeHtml(cancelLabel)}</button>
+        <button class="btn ${btnClass}" id="_confirm_ok">${Components.escapeHtml(confirmLabel)}</button>
+      </div>`;
+    this.openModal(options.title || '確認', body);
+    requestAnimationFrame(() => {
+      const btn = document.getElementById('_confirm_ok');
+      if (btn) btn.onclick = () => { this.closeModal(); onConfirm(); };
+    });
   }
 
   // ─── Stock Analysis (Assets domain) ───
@@ -741,21 +771,21 @@ var App = class App {
   }
 
   deleteDataEntry(domain, category, id) {
-    if (!confirm('この記録を削除しますか？')) return;
-    const key = `${domain}_${category}`;
-    const entries = (store.get(key) || []).filter(e => e.id !== id);
-    store.set(key, entries);
+    this.showConfirm('この記録を削除しますか？', () => {
+      const key = `${domain}_${category}`;
+      const entries = (store.get(key) || []).filter(e => e.id !== id);
+      store.set(key, entries);
 
-    // Also delete from Firestore if connected
-    if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.db) {
-      const uid = store.get('user')?.uid;
-      if (uid) {
-        FirebaseBackend.db.collection('users').doc(uid).collection(key).doc(id).delete().catch(e => console.warn(e));
+      if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.db) {
+        const uid = store.get('user')?.uid;
+        if (uid) {
+          FirebaseBackend.db.collection('users').doc(uid).collection(key).doc(id).delete().catch(e => console.warn(e));
+        }
       }
-    }
 
-    Components.showToast('削除しました', 'info');
-    this.renderApp();
+      Components.showToast('削除しました', 'info');
+      this.renderApp();
+    }, { danger: true, confirmLabel: '削除する' });
   }
 
   exportDomainData(domain) {
@@ -824,10 +854,11 @@ var App = class App {
   }
 
   fitbitDisconnect() {
-    if (!confirm('Fitbit接続を解除しますか？')) return;
-    if (typeof fitbit !== 'undefined') fitbit.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.showConfirm('Fitbit接続を解除しますか？', () => {
+      if (typeof fitbit !== 'undefined') fitbit.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    }, { confirmLabel: '解除する' });
   }
 
   async fitbitImportToday() {
@@ -874,10 +905,11 @@ var App = class App {
   }
 
   gcalDisconnect() {
-    if (!confirm('Googleカレンダー接続を解除しますか？')) return;
-    if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.showConfirm('Googleカレンダー接続を解除しますか？', () => {
+      if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    }, { confirmLabel: '解除する' });
   }
 
   async gcalSync() {
@@ -909,10 +941,11 @@ var App = class App {
   }
 
   outlookDisconnect() {
-    if (!confirm('Outlook接続を解除しますか？')) return;
-    if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.showConfirm('Outlook接続を解除しますか？', () => {
+      if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    }, { confirmLabel: '解除する' });
   }
 
   async outlookSync() {
@@ -944,10 +977,11 @@ var App = class App {
   }
 
   gmailDisconnect() {
-    if (!confirm('Gmail接続を解除しますか？')) return;
-    if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.showConfirm('Gmail接続を解除しますか？', () => {
+      if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    }, { confirmLabel: '解除する' });
   }
 
   async gmailImportContacts() {
@@ -1106,7 +1140,7 @@ var App = class App {
     const textarea = document.getElementById('transcriptText');
     const source = document.getElementById('transcriptSource')?.value || 'manual';
     if (!textarea || !textarea.value.trim()) {
-      Components.showToast('文字起こしの��容を入力してください', 'info');
+      Components.showToast('文字起こしの内容を入力してください', 'info');
       return;
     }
 
@@ -1479,22 +1513,33 @@ var App = class App {
   }
 
   deletePrompt(key) {
-    if (!confirm('このプロンプトを削除しますか？')) return;
-    delete CONFIG.prompts[key];
-    const custom = store.get('customPrompts') || {};
-    delete custom[key];
-    store.set('customPrompts', custom);
-    Components.showToast('削除しました', 'info');
-    this.renderApp();
+    this.showConfirm('このプロンプトを削除しますか？', () => {
+      delete CONFIG.prompts[key];
+      const custom = store.get('customPrompts') || {};
+      delete custom[key];
+      store.set('customPrompts', custom);
+      Components.showToast('削除しました', 'info');
+      this.renderApp();
+    }, { danger: true, confirmLabel: '削除する' });
   }
 
   addNewPrompt() {
-    const key = prompt('プロンプトのキー名を入力（例: work_custom）');
-    if (!key) return;
-    if (CONFIG.prompts[key]) {
-      Components.showToast('そのキーは既に存在します', 'error');
-      return;
-    }
+    const body = `<div class="form-group">
+      <label>キー名（例: work_custom）</label>
+      <input type="text" id="_new_prompt_key" class="form-input" placeholder="domain_type形式">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="app._confirmNewPrompt()">作成</button>
+    </div>`;
+    this.openModal('新しいプロンプトを追加', body);
+  }
+
+  _confirmNewPrompt() {
+    const key = (document.getElementById('_new_prompt_key')?.value || '').trim();
+    if (!key) { Components.showToast('キー名を入力してください', 'error'); return; }
+    if (CONFIG.prompts[key]) { Components.showToast('そのキーは既に存在します', 'error'); return; }
+    this.closeModal();
     CONFIG.prompts[key] = {
       name: '新しいプロンプト',
       domain: 'universal',
@@ -1524,13 +1569,14 @@ var App = class App {
   }
 
   clearApiKeys() {
-    if (!confirm('すべてのAPIキーを削除しますか？')) return;
-    ['anthropic', 'openai', 'google'].forEach(p => {
-      localStorage.removeItem('lms_apikey_' + p);
-    });
-    store.state._apiKeys = {};
-    Components.showToast('削除しました', 'info');
-    this.renderApp();
+    this.showConfirm('すべてのAPIキーを削除しますか？', () => {
+      ['anthropic', 'openai', 'google'].forEach(p => {
+        localStorage.removeItem('lms_apikey_' + p);
+      });
+      store.state._apiKeys = {};
+      Components.showToast('削除しました', 'info');
+      this.renderApp();
+    }, { danger: true, confirmLabel: '削除する' });
   }
 
   saveAffiliateConfig() {
@@ -1559,9 +1605,10 @@ var App = class App {
   }
 
   clearFirebaseConfig() {
-    if (!confirm('Firebase設定を削除しますか？')) return;
-    localStorage.removeItem('lms_firebaseConfig');
-    Components.showToast('削除しました（再読み込みが必要です）', 'info');
+    this.showConfirm('Firebase設定を削除しますか？', () => {
+      localStorage.removeItem('lms_firebaseConfig');
+      Components.showToast('削除しました（再読み込みが必要です）', 'info');
+    }, { danger: true, confirmLabel: '削除する' });
   }
 
   saveWorkerUrl() {
@@ -1648,16 +1695,28 @@ var App = class App {
   }
 
   // ─── Admin User Management ───
-  async addAdminEmail() {
-    const email = prompt('管理者として追加するメールアドレスを入力してください');
-    if (!email || !email.trim()) return;
+  addAdminEmail() {
+    const body = `<div class="form-group">
+      <label>追加するメールアドレス</label>
+      <input type="email" id="_new_admin_email" class="form-input" placeholder="admin@example.com">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="app._confirmAddAdmin()">追加する</button>
+    </div>`;
+    this.openModal('管理者を追加', body);
+  }
 
-    const trimmed = email.trim().toLowerCase();
-    if (!/^[^@]+@[^@]+\.[^@]+$/.test(trimmed)) {
+  async _confirmAddAdmin() {
+    const email = (document.getElementById('_new_admin_email')?.value || '').trim().toLowerCase();
+    if (!email) { Components.showToast('メールアドレスを入力してください', 'error'); return; }
+    if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
       Components.showToast('有効なメールアドレスを入力してください', 'error');
       return;
     }
+    this.closeModal();
 
+    const trimmed = email;
     const list = store.get('adminEmails') || ['agewaller@gmail.com'];
     if (list.includes(trimmed)) {
       Components.showToast('すでに管理者です', 'info');
@@ -1687,23 +1746,23 @@ var App = class App {
       Components.showToast('オーナーアカウントは削除できません', 'error');
       return;
     }
-    if (!confirm(`${email} を管理者から外しますか？`)) return;
+    this.showConfirm(`${Components.escapeHtml(email)} を管理者から外しますか？`, async () => {
+      const list = (store.get('adminEmails') || ['agewaller@gmail.com']).filter(e => e !== email);
+      store.set('adminEmails', list);
 
-    const list = (store.get('adminEmails') || ['agewaller@gmail.com']).filter(e => e !== email);
-    store.set('adminEmails', list);
+      if (FirebaseBackend.db) {
+        await FirebaseBackend.db.collection('admin').doc('config').set(
+          {
+            adminEmails: list,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          },
+          { merge: true }
+        ).catch(e => console.warn(e));
+      }
 
-    if (FirebaseBackend.db) {
-      await FirebaseBackend.db.collection('admin').doc('config').set(
-        {
-          adminEmails: list,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        },
-        { merge: true }
-      ).catch(e => console.warn(e));
-    }
-
-    Components.showToast('管理者から削除しました', 'info');
-    this.renderApp();
+      Components.showToast('管理者から削除しました', 'info');
+      this.renderApp();
+    }, { danger: true, confirmLabel: '外す' });
   }
 
   async loadAllUsers() {
@@ -1908,25 +1967,118 @@ var App = class App {
   }
 
   generateDemoData() {
-    if (!confirm('デモデータを生成しますか？既存データに追加されます。')) return;
-    // Generate sample entries for each domain
-    const today = new Date();
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      store.addDomainEntry('health', 'symptoms', { condition_level: 5 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
-      store.addDomainEntry('health', 'sleepData', { quality: 6 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
-    }
-    Components.showToast('デモデータを生成しました', 'success');
-    this.renderApp();
+    this.showConfirm('6つの領域すべてにデモデータを生成しますか？既存データに追加されます。', () => {
+      const today = new Date();
+      const rnd = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+      const daysAgo = (n) => { const d = new Date(today); d.setDate(today.getDate() - n); return d.toISOString(); };
+
+      // 一・意識
+      const layerNames = ['layer_1','layer_2','layer_3','layer_35','layer_4','layer_5','layer_6','layer_7'];
+      for (let i = 0; i < 7; i++) {
+        const obs = { timestamp: daysAgo(i) };
+        layerNames.forEach(k => { obs[k] = rnd(10, 80); });
+        obs.net_value = rnd(-5, 15);
+        obs.desire_count = rnd(0, 5);
+        obs.virtue_count = rnd(0, 8);
+        obs.energy_count = rnd(1, 10);
+        store.addDomainEntry('consciousness', 'observation', obs);
+      }
+
+      // 二・健康
+      const conditions = ['腰の軽い張り', '少し疲れ気味', '目の疲れ', '頭が重い', '元気', '良好', '普通'];
+      for (let i = 0; i < 7; i++) {
+        store.addDomainEntry('health', 'symptoms', {
+          condition_level: rnd(5, 9),
+          note: conditions[i % conditions.length],
+          timestamp: daysAgo(i)
+        });
+        store.addDomainEntry('health', 'sleepData', {
+          quality: rnd(6, 9),
+          hours: rnd(6, 8) + 0.5,
+          timestamp: daysAgo(i)
+        });
+        store.addDomainEntry('health', 'activityData', {
+          steps: rnd(4000, 9000),
+          active_minutes: rnd(20, 60),
+          timestamp: daysAgo(i)
+        });
+      }
+      store.addDomainEntry('health', 'vitals', { systolic: 118, diastolic: 76, pulse: 68, timestamp: daysAgo(0) });
+      store.addDomainEntry('health', 'vitals', { systolic: 122, diastolic: 78, pulse: 72, timestamp: daysAgo(3) });
+
+      // 三・時間
+      const habits = ['朝の散歩', '読書30分', '瞑想10分', 'ストレッチ', '日記記録'];
+      habits.forEach((h, i) => {
+        store.addDomainEntry('time', 'habits', { name: h, done: i < 3, timestamp: daysAgo(i) });
+      });
+      store.addDomainEntry('time', 'entries', { title: '孫と公園', duration_min: 90, category: '家族', timestamp: daysAgo(1) });
+      store.addDomainEntry('time', 'entries', { title: '趣味の園芸', duration_min: 60, category: '趣味', timestamp: daysAgo(2) });
+      store.addDomainEntry('time', 'goals', { title: '週3回以上外出する', deadline: daysAgo(-14), timestamp: daysAgo(5) });
+
+      // 四・仕事
+      const taskList = [
+        { title: '地域の老人会イベント企画', status: 'done' },
+        { title: 'ボランティア報告書作成', status: 'done' },
+        { title: 'スキル棚卸しシート記入', status: 'in_progress' },
+        { title: 'オンライン講座受講（Excel）', status: 'pending' },
+        { title: '副業プロジェクト提案書', status: 'pending' }
+      ];
+      taskList.forEach((t, i) => {
+        store.addDomainEntry('work', 'tasks', { ...t, timestamp: daysAgo(i) });
+      });
+      store.addDomainEntry('work', 'skills', { name: '経営企画・予算管理', level: 4, timestamp: daysAgo(0) });
+      store.addDomainEntry('work', 'skills', { name: '人材育成・メンタリング', level: 5, timestamp: daysAgo(0) });
+      store.addDomainEntry('work', 'goals', { title: '月2万円の副業収入を得る', deadline: daysAgo(-60), timestamp: daysAgo(7) });
+
+      // 五・関係
+      const existingContacts = store.get('relationship_contacts') || [];
+      if (existingContacts.length === 0) {
+        [
+          { name: '田中 義雄', distance: '1', note: '幼なじみ', birthday: '1955-03-15' },
+          { name: '山本 幸子', distance: '2', note: '元同僚', birthday: '1957-07-22' },
+          { name: '鈴木 一郎', distance: '2', note: '趣味の仲間', birthday: '1952-11-08' },
+          { name: '佐藤 美恵', distance: '3', note: '近所の知人', birthday: '1960-05-30' },
+          { name: '長女（愛子）', distance: '1', note: '家族', birthday: '1982-09-10' }
+        ].forEach(c => {
+          store.addDomainEntry('relationship', 'contacts', { ...c, timestamp: daysAgo(0) });
+        });
+      }
+      store.addDomainEntry('relationship', 'interactions', { name: '田中 義雄', type: '電話', note: '久々に近況報告', timestamp: daysAgo(1) });
+      store.addDomainEntry('relationship', 'interactions', { name: '長女（愛子）', type: '食事', note: '孫も一緒に夕食', timestamp: daysAgo(2) });
+
+      // 六・資産
+      const incomeItems = [
+        { label: '年金', amount: 130000 },
+        { label: '配当', amount: 15000 },
+        { label: '副業', amount: 20000 }
+      ];
+      incomeItems.forEach((item, i) => {
+        store.addDomainEntry('assets', 'income', { ...item, timestamp: daysAgo(i * 5) });
+      });
+      const expenseItems = [
+        { label: '食費', amount: 45000 },
+        { label: '医療費', amount: 8000 },
+        { label: '光熱費', amount: 12000 },
+        { label: '娯楽・交際', amount: 18000 }
+      ];
+      expenseItems.forEach((item, i) => {
+        store.addDomainEntry('assets', 'expenses', { ...item, timestamp: daysAgo(i * 3) });
+      });
+      store.addDomainEntry('assets', 'overview', { total_assets: 32000000, monthly_expenses: 83000, timestamp: daysAgo(0) });
+
+      Components.showToast('6領域のデモデータを生成しました', 'success');
+      this.renderApp();
+    }, { confirmLabel: 'デモデータを生成' });
   }
 
   deleteAllData() {
-    if (!confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
-    if (!confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
-    store.clearAll();
-    Components.showToast('すべてのデータを削除しました', 'info');
-    window.location.reload();
+    this.showConfirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。', () => {
+      this.showConfirm('最終確認：すべてのデータを完全に削除します。よろしいですか？', () => {
+        store.clearAll();
+        Components.showToast('すべてのデータを削除しました', 'info');
+        window.location.reload();
+      }, { danger: true, confirmLabel: '完全に削除する' });
+    }, { danger: true, confirmLabel: '削除する（次の確認へ）' });
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───
