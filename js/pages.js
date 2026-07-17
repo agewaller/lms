@@ -110,6 +110,11 @@ var Pages = {
 
     // ─── Domain-specific widgets ───
 
+    // Health domain: medication tracker + trends + doctor visits
+    if (domain === 'health') {
+      if (typeof HealthFeatures !== 'undefined') html += HealthFeatures.renderDashboard();
+    }
+
     // Consciousness domain: 7-layer visualization + transcript input
     if (domain === 'consciousness') {
       html += this.renderConsciousnessLayers();
