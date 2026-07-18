@@ -6,6 +6,10 @@ var Pages = {
 
   // ─── Main render dispatcher ───
   render(page, domain) {
+    // Show onboarding wizard for first-time users before anything else
+    if (!store.get('onboardingComplete') && page !== 'admin') {
+      return this.renderOnboarding();
+    }
     switch (page) {
       case 'home':         return this.renderHome(domain);
       case 'data':         return this.renderDataBrowser(domain);
@@ -20,6 +24,126 @@ var Pages = {
   },
 
   // ═══════════════════════════════════════════════════════════
+  //  ONBOARDING WIZARD (初めてのログイン)
+  // ═══════════════════════════════════════════════════════════
+  renderOnboarding() {
+    const step = store.get('onboardingStep') || 0;
+    const user = store.get('user') || {};
+    const name = user.displayName || user.email || 'あなた';
+
+    if (step === 0) {
+      return `<div class="onboarding-page">
+        <div class="onboarding-card">
+          <div class="onboarding-logo">◈ LMS</div>
+          <h1>ようこそ、${name.split('@')[0]}さん</h1>
+          <p class="onboarding-sub">Life Management Systemへようこそ。<br>
+          人生の6つの領域をまるごとサポートします。<br>
+          まず2〜3分で初期設定をしましょう。</p>
+
+          <div class="onboarding-domains">
+            ${Object.entries(CONFIG.domains).map(([id, d]) => `
+              <div class="ob-domain-pill" style="--dc:${d.color}">
+                <span class="ob-num">${d.icon}</span>
+                <span>${i18n.t(id)}</span>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="onboarding-actions">
+            <button class="btn btn-primary btn-lg btn-block" onclick="app.onboardingNext()">
+              はじめる
+            </button>
+            <button class="btn btn-text" onclick="app.completeOnboarding()">スキップ（後で設定する）</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    if (step === 1) {
+      return `<div class="onboarding-page">
+        <div class="onboarding-card">
+          <div class="onboarding-progress"><span class="ob-step active"></span><span class="ob-step"></span><span class="ob-step"></span></div>
+          <h2>今、一番気になっていることは？</h2>
+          <p>最初に取り組む領域を選んでください。後からいつでも変えられます。</p>
+
+          <div class="ob-domain-choices">
+            ${Object.entries(CONFIG.domains).map(([id, d]) => `
+              <button class="ob-domain-btn" onclick="app.onboardingSelectDomain('${id}')"
+                style="--dc:${d.color}">
+                <span class="ob-btn-num">${d.icon}</span>
+                <div class="ob-btn-info">
+                  <strong>${i18n.t(id)}</strong>
+                  <span>${this.getDomainOnboardingHint(id)}</span>
+                </div>
+              </button>
+            `).join('')}
+          </div>
+
+          <button class="btn btn-text" onclick="app.completeOnboarding()">スキップ</button>
+        </div>
+      </div>`;
+    }
+
+    if (step === 2) {
+      const selectedDomain = store.get('currentDomain') || 'health';
+      const d = CONFIG.domains[selectedDomain];
+      return `<div class="onboarding-page">
+        <div class="onboarding-card">
+          <div class="onboarding-progress"><span class="ob-step done"></span><span class="ob-step active"></span><span class="ob-step"></span></div>
+          <div class="ob-domain-badge" style="background:${d?.color || '#6C63FF'}">${d?.icon} ${i18n.t(selectedDomain)}</div>
+          <h2>今日の${i18n.t(selectedDomain)}を一言で教えてください</h2>
+          <p>記録は短くて大丈夫です。毎日の積み重ねが大切です。</p>
+          <div class="form-group">
+            <textarea id="obFirstEntry" class="form-input" rows="4"
+              placeholder="例：今日は少し頭が痛かったが、午後から楽になった"></textarea>
+          </div>
+          <div class="onboarding-actions">
+            <button class="btn btn-primary btn-lg btn-block" onclick="app.onboardingSaveFirstEntry()">
+              記録して次へ
+            </button>
+            <button class="btn btn-text" onclick="app.onboardingNext()">記録せずに次へ</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    if (step === 3) {
+      return `<div class="onboarding-page">
+        <div class="onboarding-card">
+          <div class="onboarding-progress"><span class="ob-step done"></span><span class="ob-step done"></span><span class="ob-step active"></span></div>
+          <div class="ob-success-icon">✓</div>
+          <h2>準備完了です</h2>
+          <p>毎日少しずつ記録することで、6つの領域の全体像が見えてきます。</p>
+
+          <div class="ob-tips">
+            <div class="ob-tip">毎日のホーム画面に「今日の記録」の進み具合が表示されます</div>
+            <div class="ob-tip">「相談する」ではいつでも質問できます</div>
+            <div class="ob-tip">「アクション」では週次まとめを生成できます</div>
+          </div>
+
+          <button class="btn btn-primary btn-lg btn-block" onclick="app.completeOnboarding()">
+            LMSを始める
+          </button>
+        </div>
+      </div>`;
+    }
+
+    return `<div class="onboarding-page"><button class="btn btn-primary" onclick="app.completeOnboarding()">始める</button></div>`;
+  },
+
+  getDomainOnboardingHint(domain) {
+    const hints = {
+      consciousness: '心の状態・瞑想・意識のレイヤー',
+      health: '体調・睡眠・食事・運動',
+      time: '時間の使い方・習慣・スケジュール',
+      work: '仕事・副業・スキル・ボランティア',
+      relationship: '家族・友人・つながりの状況',
+      assets: '収支・投資・資産の管理'
+    };
+    return hints[domain] || '';
+  },
+
+  // ═══════════════════════════════════════════════════════════
   //  HOME PAGE (per domain)
   // ═══════════════════════════════════════════════════════════
   renderHome(domain) {
@@ -27,8 +151,11 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
-    // Quick input bar
+    // Daily check-in strip
+    const completion = store.getDailyCompletion();
     let html = `<div class="page-home">
+      ${Components.dailyCheckIn(completion, domain)}
+
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
@@ -570,7 +697,13 @@ var Pages = {
         <button class="btn btn-secondary btn-lg" onclick="app.generateRecommendations('holistic')">
           6領域の総合分析
         </button>
-      </div>`;
+        <button class="btn btn-secondary btn-lg weekly-synthesis-btn" onclick="app.generateWeeklySynthesis()">
+          今週のまとめを作成
+        </button>
+      </div>
+
+      <!-- Weekly synthesis result -->
+      <div id="weeklySynthesisResult"></div>`;
 
     // Loading state
     if (store.get('isAnalyzing')) {

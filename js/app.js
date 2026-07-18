@@ -420,6 +420,87 @@ var App = class App {
     }
   }
 
+  // ─── Onboarding ───
+  onboardingNext() {
+    const step = (store.get('onboardingStep') || 0) + 1;
+    store.set('onboardingStep', step);
+    this.renderApp();
+  }
+
+  onboardingSelectDomain(domain) {
+    store.set('currentDomain', domain);
+    this.onboardingNext();
+  }
+
+  async onboardingSaveFirstEntry() {
+    const textarea = document.getElementById('obFirstEntry');
+    const text = textarea?.value?.trim();
+    const domain = store.get('currentDomain') || 'health';
+    if (text) {
+      store.addDomainEntry(domain, 'entries', { type: 'diary', text });
+    }
+    this.onboardingNext();
+  }
+
+  completeOnboarding() {
+    store.set('onboardingComplete', true);
+    store.set('onboardingStep', 0);
+    store.set('currentPage', 'home');
+    this.renderApp();
+  }
+
+  // ─── Weekly Synthesis ───
+  async generateWeeklySynthesis() {
+    const resultEl = document.getElementById('weeklySynthesisResult');
+    if (resultEl) resultEl.innerHTML = Components.loading('今週7日間のデータを分析しています...');
+
+    try {
+      // Gather data summary for all 6 domains
+      const summary = Object.keys(CONFIG.domains).map(domain => {
+        const domainConfig = CONFIG.domains[domain];
+        const cats = Object.keys(domainConfig.categories || {});
+        let entries = [];
+        cats.forEach(cat => {
+          const data = store.getDomainData(domain, cat, 7);
+          entries = entries.concat(data);
+        });
+        const diary = store.getDomainData(domain, 'entries', 7);
+        entries = entries.concat(diary);
+        return `【${i18n.t(domain)}】${entries.length}件の記録`;
+      }).join('\n');
+
+      const today = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+
+      const result = await AIEngine.analyze(null, 'holistic', {
+        text: `今週（${today}まで）の記録サマリー:\n${summary}\n\n6つの領域を総合して、今週の振り返りと来週への提言をお願いします。`
+      });
+
+      const weekOf = new Date().toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
+      if (resultEl) {
+        resultEl.innerHTML = `<div class="weekly-synthesis">
+          <div class="ws-header">
+            <h3>今週のまとめ（${weekOf}時点）</h3>
+          </div>
+          <div class="ws-body">${Components.formatMarkdown(result)}</div>
+          <button class="btn btn-sm btn-secondary" onclick="app.saveWeeklySynthesis()">
+            保存する
+          </button>
+        </div>`;
+      }
+    } catch (e) {
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+    }
+  }
+
+  saveWeeklySynthesis() {
+    const domain = store.get('currentDomain') || 'health';
+    const el = document.querySelector('.ws-body');
+    const full = el ? el.textContent : '';
+    if (!full) { Components.showToast('保存するまとめがありません', 'info'); return; }
+    store.addDomainEntry(domain, 'entries', { type: 'weekly_synthesis', text: full });
+    Components.showToast('週次まとめを保存しました', 'success');
+  }
+
   // ─── Generate AI Recommendations ───
   async generateRecommendations(domain) {
     try {
@@ -741,7 +822,15 @@ var App = class App {
   }
 
   deleteDataEntry(domain, category, id) {
-    if (!confirm('この記録を削除しますか？')) return;
+    this.openModal('記録の削除', `
+      <p>この記録を削除しますか？この操作は元に戻せません。</p>
+      <div class="form-actions">
+        <button class="btn btn-danger" onclick="app._doDeleteDataEntry('${domain}','${category}','${id}');app.closeModal()">削除する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>`);
+  }
+
+  _doDeleteDataEntry(domain, category, id) {
     const key = `${domain}_${category}`;
     const entries = (store.get(key) || []).filter(e => e.id !== id);
     store.set(key, entries);
@@ -824,10 +913,11 @@ var App = class App {
   }
 
   fitbitDisconnect() {
-    if (!confirm('Fitbit接続を解除しますか？')) return;
-    if (typeof fitbit !== 'undefined') fitbit.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.openModal('Fitbit接続解除', `<p>Fitbitの接続を解除しますか？</p>
+      <div class="form-actions">
+        <button class="btn btn-danger" onclick="if(typeof fitbit!=='undefined')fitbit.disconnect();app.closeModal();Components.showToast('接続を解除しました','info');app.renderApp()">解除する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>`);
   }
 
   async fitbitImportToday() {
@@ -874,10 +964,11 @@ var App = class App {
   }
 
   gcalDisconnect() {
-    if (!confirm('Googleカレンダー接続を解除しますか？')) return;
-    if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.openModal('Googleカレンダー接続解除', `<p>Googleカレンダーの接続を解除しますか？</p>
+      <div class="form-actions">
+        <button class="btn btn-danger" onclick="if(typeof googleCalendar!=='undefined')googleCalendar.disconnect();app.closeModal();Components.showToast('接続を解除しました','info');app.renderApp()">解除する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>`);
   }
 
   async gcalSync() {
@@ -909,10 +1000,11 @@ var App = class App {
   }
 
   outlookDisconnect() {
-    if (!confirm('Outlook接続を解除しますか？')) return;
-    if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.openModal('Outlook接続解除', `<p>Outlookカレンダーの接続を解除しますか？</p>
+      <div class="form-actions">
+        <button class="btn btn-danger" onclick="if(typeof outlookCalendar!=='undefined')outlookCalendar.disconnect();app.closeModal();Components.showToast('接続を解除しました','info');app.renderApp()">解除する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>`);
   }
 
   async outlookSync() {
@@ -944,10 +1036,11 @@ var App = class App {
   }
 
   gmailDisconnect() {
-    if (!confirm('Gmail接続を解除しますか？')) return;
-    if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.openModal('Gmail接続解除', `<p>Gmailの接続を解除しますか？</p>
+      <div class="form-actions">
+        <button class="btn btn-danger" onclick="if(typeof gmailIntegration!=='undefined')gmailIntegration.disconnect();app.closeModal();Components.showToast('接続を解除しました','info');app.renderApp()">解除する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>`);
   }
 
   async gmailImportContacts() {

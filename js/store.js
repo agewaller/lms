@@ -109,7 +109,11 @@ var Store = class Store {
 
       // Notifications
       notifications: [],
-      unreadCount: 0
+      unreadCount: 0,
+
+      // Onboarding
+      onboardingComplete: false,
+      onboardingStep: 0
     };
 
     this.listeners = new Map();
@@ -182,7 +186,8 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'onboardingComplete', 'onboardingStep'
     ];
   }
 
@@ -267,6 +272,31 @@ var Store = class Store {
     scores[domain] = score;
     this.set('domainScores', scores);
     return score;
+  }
+
+  // ─── Daily Completion (today's check-in status per domain) ───
+  getDailyCompletion() {
+    const today = new Date().toISOString().slice(0, 10);
+    const result = {};
+    Object.keys(CONFIG.domains || {}).forEach(domain => {
+      const cats = Object.keys(CONFIG.domains[domain].categories || {});
+      let hasToday = false;
+      cats.forEach(cat => {
+        const key = `${domain}_${cat}`;
+        const arr = this.state[key];
+        if (Array.isArray(arr) && arr.some(e => (e.timestamp || '').slice(0, 10) === today)) {
+          hasToday = true;
+        }
+      });
+      // Also count diary entries
+      const entriesKey = `${domain}_entries`;
+      const entries = this.state[entriesKey];
+      if (Array.isArray(entries) && entries.some(e => (e.timestamp || '').slice(0, 10) === today)) {
+        hasToday = true;
+      }
+      result[domain] = hasToday;
+    });
+    return result;
   }
 
   // ─── Clear ───

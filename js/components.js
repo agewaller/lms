@@ -78,7 +78,7 @@ var Components = {
     switch (f.type) {
       case 'slider':
         return `<div class="slider-field">
-          <input type="range" name="${name}" min="${f.min||0}" max="${f.max||10}" value="${Math.floor((f.min||0 + f.max||10)/2)}" oninput="this.nextElementSibling.textContent=this.value">
+          <input type="range" name="${name}" min="${f.min||0}" max="${f.max||10}" value="${Math.floor(((f.min||0) + (f.max||10))/2)}" oninput="this.nextElementSibling.textContent=this.value">
           <span class="slider-val">${Math.floor(((f.min||0) + (f.max||10))/2)}</span>
         </div>`;
       case 'number':
@@ -246,6 +246,34 @@ var Components = {
         <button class="btn btn-primary btn-block" onclick="app.resetPassword()">再設定メールを送信</button>
         <div class="auth-help"><a href="javascript:void(0)" onclick="app.toggleAuthMode('login')">ログインに戻る</a></div>
       </div>
+    </div>`;
+  },
+
+  // ─── Daily Check-in Strip (今日の記録状況) ───
+  dailyCheckIn(completion, currentDomain) {
+    const domains = CONFIG.domains || {};
+    const doneCount = Object.values(completion).filter(Boolean).length;
+    const total = Object.keys(domains).length;
+
+    let dots = Object.entries(domains).map(([id, d]) => {
+      const done = completion[id];
+      return `<button class="checkin-dot ${done ? 'done' : ''} ${id === currentDomain ? 'current' : ''}"
+        style="--dot-color:${d.color}"
+        onclick="app.switchDomain('${id}');app.navigate('record')"
+        title="${i18n.t(id)}${done ? ' ✓' : ' 未記録'}">
+        <span class="dot-num">${d.icon}</span>
+        ${done ? '<span class="dot-check">✓</span>' : ''}
+      </button>`;
+    }).join('');
+
+    const allDone = doneCount === total;
+    return `<div class="daily-checkin-strip ${allDone ? 'all-done' : ''}">
+      <div class="checkin-label">
+        <span class="checkin-title">今日の記録</span>
+        <span class="checkin-count">${doneCount}/${total}</span>
+      </div>
+      <div class="checkin-dots">${dots}</div>
+      ${allDone ? '<div class="checkin-complete">今日の6領域すべて記録済みです</div>' : ''}
     </div>`;
   },
 

@@ -1729,6 +1729,295 @@ body.is-admin .admin-only { display: flex; }
   gap: 10px;
 }
 
+/* ─── Daily Check-in Strip ─── */
+.daily-checkin-strip {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.daily-checkin-strip.all-done {
+  background: var(--success-bg);
+  border-color: var(--success);
+}
+.checkin-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 60px;
+}
+.checkin-title {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.checkin-count {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+.checkin-dots {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+.checkin-dot {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.2s ease;
+  font-size: 15px;
+  padding: 0;
+}
+.checkin-dot:hover {
+  border-color: var(--dot-color);
+  background: var(--bg-hover);
+  transform: scale(1.08);
+}
+.checkin-dot.done {
+  border-color: var(--dot-color);
+  background: var(--dot-color);
+  color: white;
+}
+.checkin-dot.current {
+  border-width: 3px;
+}
+.dot-check {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  background: var(--success);
+  border-radius: 50%;
+  font-size: 8px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid white;
+}
+.checkin-complete {
+  font-size: 12px;
+  color: var(--success);
+  font-weight: 600;
+  width: 100%;
+}
+
+/* ─── Onboarding Wizard ─── */
+.onboarding-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg-primary);
+}
+.onboarding-card {
+  background: var(--bg-secondary);
+  border-radius: 20px;
+  padding: 40px 36px;
+  max-width: 520px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+.onboarding-logo {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 24px;
+  letter-spacing: -0.5px;
+}
+.onboarding-card h1 {
+  font-size: 26px;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+.onboarding-card h2 {
+  font-size: 22px;
+  margin-bottom: 12px;
+}
+.onboarding-sub {
+  color: var(--text-secondary);
+  margin-bottom: 28px;
+  line-height: 1.8;
+}
+.onboarding-domains {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+.ob-domain-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--dc);
+  color: var(--dc);
+  font-size: 14px;
+  font-weight: 500;
+}
+.ob-num { font-weight: 700; }
+.onboarding-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+.btn-text {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 8px;
+  text-decoration: underline;
+  font-family: var(--font-main);
+}
+.btn-text:hover { color: var(--text-primary); }
+.ob-domain-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+.ob-domain-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-main);
+  color: var(--text-primary);
+}
+.ob-domain-btn:hover {
+  border-color: var(--dc);
+  background: color-mix(in srgb, var(--dc) 5%, transparent);
+}
+.ob-btn-num {
+  font-size: 22px;
+  width: 36px;
+  text-align: center;
+}
+.ob-btn-info {
+  display: flex;
+  flex-direction: column;
+}
+.ob-btn-info strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.ob-btn-info span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.onboarding-progress {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.ob-step {
+  width: 28px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+}
+.ob-step.active { background: var(--accent); }
+.ob-step.done { background: var(--success); }
+.ob-domain-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 20px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.ob-success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--success);
+  color: white;
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+.ob-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 28px;
+  text-align: left;
+}
+.ob-tip {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.ob-tip::before {
+  content: '✓  ';
+  color: var(--success);
+  font-weight: 700;
+}
+
+/* ─── Weekly Synthesis ─── */
+.weekly-synthesis {
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-top: 16px;
+}
+.ws-header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.ws-header h3 {
+  color: var(--accent);
+  font-size: 15px;
+}
+.ws-body {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+.weekly-synthesis-btn {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
   /* Sidebar off-canvas */
