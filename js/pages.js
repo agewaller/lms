@@ -65,6 +65,20 @@ var Pages = {
       </div>
     </div>`;
 
+    // Today streak nudge — gentle reminder if no record today
+    const today = new Date().toISOString().slice(0, 10);
+    const hasToday = (store.get(`${domain}_${Object.keys(domainConfig?.categories || {})[0]}`) || [])
+      .concat(...Object.keys(domainConfig?.categories || {}).slice(1).map(c => store.get(`${domain}_${c}`) || []))
+      .some(e => (e.timestamp || '').startsWith(today));
+
+    if (!hasToday) {
+      html += `<div class="today-nudge">
+        <span class="today-nudge-icon">📝</span>
+        <span>今日はまだ記録がありません。</span>
+        <a href="javascript:void(0)" onclick="app.navigate('record')" class="today-nudge-link">記録する →</a>
+      </div>`;
+    }
+
     // Recent records
     html += `<div class="recent-section">
       <h3>${i18n.t('recent_records')}</h3>
@@ -969,8 +983,9 @@ var Pages = {
             </div>
             <div class="data-entry-fields">
               ${fields.map(([k, v]) => {
-                const label = i18n.t(k) || k;
-                const val = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
+                const label = Components.escapeHtml(i18n.t(k) || k);
+                const raw = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
+                const val = Components.escapeHtml(raw);
                 return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${val}</span></div>`;
               }).join('')}
             </div>

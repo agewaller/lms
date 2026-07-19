@@ -257,7 +257,7 @@ var Components = {
     const summary = Object.entries(entry)
       .filter(([k]) => !['id','timestamp','domain','category','_synced'].includes(k))
       .slice(0, 3)
-      .map(([k, v]) => `${i18n.t(k)}: ${v}`)
+      .map(([k, v]) => `${i18n.t(k)}: ${this.escapeHtml(String(v))}`)
       .join(' | ');
     return `<div class="record-item" style="border-left-color:${color}">
       <div class="record-header">
@@ -266,5 +266,66 @@ var Components = {
       </div>
       <div class="record-summary">${summary}</div>
     </div>`;
+  },
+
+  // ─── HTML Escape ───
+  escapeHtml(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  // ─── Inline Confirmation (replaces confirm() — mobile-safe) ───
+  // Shows a modal with Yes/Cancel buttons. onYes is called if user confirms.
+  showConfirm(message, onYes, options = {}) {
+    const title = options.title || '確認';
+    const yesLabel = options.yesLabel || 'はい';
+    const yesClass = options.danger ? 'btn-danger' : 'btn-primary';
+    const bodyHtml = `
+      <p style="margin-bottom:20px;line-height:1.6;">${this.escapeHtml(message)}</p>
+      <div class="form-actions" style="justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn ${yesClass}" id="confirm-yes-btn">${yesLabel}</button>
+      </div>`;
+    app.openModal(title, bodyHtml);
+    setTimeout(() => {
+      const btn = document.getElementById('confirm-yes-btn');
+      if (btn) btn.onclick = () => { app.closeModal(); onYes(); };
+    }, 30);
+  },
+
+  // ─── Inline Prompt Input (replaces prompt() — mobile-safe) ───
+  // Shows a modal with a text input. onSubmit(value) is called when confirmed.
+  showPrompt(message, onSubmit, options = {}) {
+    const title = options.title || '入力';
+    const placeholder = options.placeholder || '';
+    const defaultVal = this.escapeHtml(options.defaultValue || '');
+    const bodyHtml = `
+      <p style="margin-bottom:12px;">${this.escapeHtml(message)}</p>
+      <div class="form-group">
+        <input type="text" id="prompt-input" class="form-input" value="${defaultVal}" placeholder="${this.escapeHtml(placeholder)}">
+      </div>
+      <div class="form-actions" style="justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn btn-primary" id="prompt-submit-btn">OK</button>
+      </div>`;
+    app.openModal(title, bodyHtml);
+    setTimeout(() => {
+      const input = document.getElementById('prompt-input');
+      const btn = document.getElementById('prompt-submit-btn');
+      if (input) {
+        input.focus();
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') btn?.click(); });
+      }
+      if (btn) btn.onclick = () => {
+        const val = document.getElementById('prompt-input')?.value || '';
+        app.closeModal();
+        onSubmit(val);
+      };
+    }, 30);
   }
 };
