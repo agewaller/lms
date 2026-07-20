@@ -238,6 +238,49 @@ var Store = class Store {
     return data.filter(d => new Date(d.timestamp) >= cutoff);
   }
 
+  // ─── Streak Calculation ───
+  // Returns consecutive days (ending today) that have ≥1 entry in any domain category.
+  // domain='all' checks across all 6 domains.
+  getStreak(domain) {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    const domainIds = domain === 'all'
+      ? Object.keys(CONFIG.domains)
+      : [domain];
+
+    const dayHasEntry = (dateStr) => {
+      for (const d of domainIds) {
+        const cats = Object.keys(CONFIG.domains[d]?.categories || {});
+        for (const cat of cats) {
+          const entries = this.state[`${d}_${cat}`];
+          if (Array.isArray(entries) && entries.some(e => (e.timestamp || '').slice(0, 10) === dateStr)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    let streak = 0;
+    const check = new Date(today);
+    check.setHours(12, 0, 0, 0);
+
+    for (let i = 0; i < 365; i++) {
+      const dateStr = check.toISOString().slice(0, 10);
+      if (dayHasEntry(dateStr)) {
+        streak++;
+        check.setDate(check.getDate() - 1);
+      } else if (i === 0) {
+        // today has no entry yet — still count from yesterday
+        check.setDate(check.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }
+
   // ─── Score Calculation ───
 
   calculateDomainScore(domain) {

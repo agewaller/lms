@@ -65,6 +65,78 @@ var Pages = {
       </div>
     </div>`;
 
+    // Streak + 7-day trend row
+    const streak = store.getStreak(domain);
+    const allStreak = store.getStreak('all');
+    const chartId = `trend-chart-${domain}`;
+
+    // Build 7-day entry counts for trend chart
+    const trendLabels = [];
+    const trendData = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      trendLabels.push(i === 0 ? '今日' : `${d.getMonth()+1}/${d.getDate()}`);
+      const domainCats = Object.keys(domainConfig?.categories || {});
+      let count = 0;
+      domainCats.forEach(cat => {
+        const entries = store.getDomainData(domain, cat, 7);
+        count += entries.filter(e => (e.timestamp || '').slice(0, 10) === dateStr).length;
+      });
+      trendData.push(count);
+    }
+
+    html += `<div class="streak-trend-row">
+      <div class="stat-card streak-card">
+        <div class="stat-icon">${streak >= 7 ? '🔥' : streak >= 3 ? '⚡' : streak > 0 ? '✨' : '○'}</div>
+        <div>
+          <div class="stat-value">${streak}<span class="stat-unit">日</span></div>
+          <div class="stat-label">連続記録</div>
+        </div>
+      </div>
+      <div class="stat-card streak-card">
+        <div class="stat-icon">${allStreak >= 7 ? '🌟' : allStreak >= 3 ? '💪' : allStreak > 0 ? '🌱' : '○'}</div>
+        <div>
+          <div class="stat-value">${allStreak}<span class="stat-unit">日</span></div>
+          <div class="stat-label">全体連続</div>
+        </div>
+      </div>
+      <div class="trend-chart-card">
+        <div class="trend-chart-title">7日間の記録数</div>
+        <canvas id="${chartId}" height="70"></canvas>
+      </div>
+    </div>`;
+
+    // Render chart after DOM update
+    requestAnimationFrame(() => {
+      const canvas = document.getElementById(chartId);
+      if (canvas && typeof Chart !== 'undefined') {
+        if (canvas._chartInstance) canvas._chartInstance.destroy();
+        canvas._chartInstance = new Chart(canvas, {
+          type: 'bar',
+          data: {
+            labels: trendLabels,
+            datasets: [{
+              data: trendData,
+              backgroundColor: color + '44',
+              borderColor: color,
+              borderWidth: 2,
+              borderRadius: 4
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+              y: { display: false, beginAtZero: true }
+            }
+          }
+        });
+      }
+    });
+
     // Recent records
     html += `<div class="recent-section">
       <h3>${i18n.t('recent_records')}</h3>

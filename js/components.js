@@ -249,6 +249,64 @@ var Components = {
     </div>`;
   },
 
+  // ─── XSS Prevention ───
+  escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  // ─── Modal Confirm (replaces native confirm() — blocked on iOS) ───
+  // onOk and onCancel are called with no args when the user clicks
+  confirm(message, onOk, onCancel, okLabel, cancelLabel) {
+    okLabel = okLabel || 'はい';
+    cancelLabel = cancelLabel || 'キャンセル';
+    Components._confirmOk = onOk;
+    Components._confirmCancel = onCancel;
+
+    const body = `<p style="margin-bottom:20px;font-size:16px;line-height:1.7;">${this.escapeHtml(message)}</p>
+      <div style="display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="app.closeModal();if(Components._confirmCancel)Components._confirmCancel();">
+          ${this.escapeHtml(cancelLabel)}
+        </button>
+        <button class="btn btn-danger" onclick="app.closeModal();if(Components._confirmOk)Components._confirmOk();">
+          ${this.escapeHtml(okLabel)}
+        </button>
+      </div>`;
+
+    if (typeof app !== 'undefined' && app.openModal) {
+      app.openModal('確認', body);
+    }
+  },
+
+  // ─── Modal Prompt (replaces native prompt() — blocked on iOS) ───
+  promptInput(title, placeholder, onOk, defaultValue) {
+    Components._promptOk = onOk;
+    const inputId = 'components-prompt-input-' + Date.now();
+
+    const body = `<div class="form-group" style="margin-bottom:16px;">
+        <input type="text" id="${inputId}" class="form-input"
+          placeholder="${this.escapeHtml(placeholder || '')}"
+          value="${this.escapeHtml(defaultValue || '')}"
+          onkeydown="if(event.key==='Enter'){const v=this.value;app.closeModal();if(Components._promptOk)Components._promptOk(v);}">
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn btn-primary" onclick="const v=document.getElementById('${inputId}')?.value;app.closeModal();if(Components._promptOk)Components._promptOk(v);">
+          OK
+        </button>
+      </div>`;
+
+    if (typeof app !== 'undefined' && app.openModal) {
+      app.openModal(title || '入力', body);
+      setTimeout(() => document.getElementById(inputId)?.focus(), 150);
+    }
+  },
+
   // ─── Record List Item ───
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';
