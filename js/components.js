@@ -151,6 +151,54 @@ var Components = {
     </div>`;
   },
 
+  // ─── Inline Confirm Dialog (replaces window.confirm for mobile compat) ───
+  confirm(message, onOk, onCancel) {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    if (!overlay || !titleEl || !bodyEl) {
+      if (onOk) onOk();
+      return;
+    }
+    titleEl.textContent = '確認';
+    bodyEl.innerHTML = `<p style="margin-bottom:20px">${this.escapeHtml(message)}</p>
+      <div style="display:flex;gap:12px;justify-content:center">
+        <button class="btn btn-danger" id="_confirm-ok">はい</button>
+        <button class="btn btn-secondary" id="_confirm-cancel">キャンセル</button>
+      </div>`;
+    overlay.classList.add('active');
+    const close = () => overlay.classList.remove('active');
+    document.getElementById('_confirm-ok').onclick = () => { close(); onOk?.(); };
+    document.getElementById('_confirm-cancel').onclick = () => { close(); onCancel?.(); };
+  },
+
+  // ─── Inline Prompt Dialog (replaces window.prompt for mobile compat) ───
+  prompt(message, defaultValue, onOk, onCancel) {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    if (!overlay || !titleEl || !bodyEl) {
+      const val = window.prompt(message, defaultValue || '');
+      if (val !== null && onOk) onOk(val);
+      else if (val === null && onCancel) onCancel();
+      return;
+    }
+    titleEl.textContent = '入力';
+    bodyEl.innerHTML = `<p style="margin-bottom:12px">${this.escapeHtml(message)}</p>
+      <input id="_prompt-input" class="form-control" type="text" value="${this.escapeHtml(defaultValue || '')}" style="margin-bottom:20px">
+      <div style="display:flex;gap:12px;justify-content:center">
+        <button class="btn btn-primary" id="_prompt-ok">OK</button>
+        <button class="btn btn-secondary" id="_prompt-cancel">キャンセル</button>
+      </div>`;
+    overlay.classList.add('active');
+    const input = document.getElementById('_prompt-input');
+    input.focus();
+    const close = () => overlay.classList.remove('active');
+    document.getElementById('_prompt-ok').onclick = () => { close(); onOk?.(input.value); };
+    document.getElementById('_prompt-cancel').onclick = () => { close(); onCancel?.(); };
+    input.onkeydown = (e) => { if (e.key === 'Enter') { close(); onOk?.(input.value); } };
+  },
+
   // ─── Empty State ───
   emptyState(icon, title, description) {
     return `<div class="empty-state">
