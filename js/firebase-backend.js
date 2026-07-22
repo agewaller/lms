@@ -58,17 +58,14 @@ var FirebaseBackend = {
   async signInWithGoogle() {
     if (!this.auth) {
       // Local-only mode fallback (Firebase not configured).
-      // Prompt for email so that admin (agewaller@gmail.com) can still log in.
-      const email = (prompt('メールアドレスを入力してください', '') || '').trim().toLowerCase();
-      if (!email) return;
-      store.update({
-        user: {
-          uid: 'local-' + email,
-          displayName: email.split('@')[0],
-          email
-        },
-        isAuthenticated: true,
-        currentPage: 'home'
+      Components.inputPrompt('ローカルログイン（開発用）', 'admin@example.com', (email) => {
+        if (!email || !email.trim()) return;
+        const e = email.trim().toLowerCase();
+        store.update({
+          user: { uid: 'local-' + e, displayName: e.split('@')[0], email: e },
+          isAuthenticated: true,
+          currentPage: 'home'
+        });
       });
       return;
     }

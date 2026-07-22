@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LMS - 健康 - 未病ダイアリー</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <title>LMS 健康 - 未病から健康へ。データで最適な健康管理を</title>
+  <meta name="description" content="症状・バイタル・お薬・睡眠・食事をまとめて記録。あなたの体の変化を丁寧に分析して、元気な毎日をサポートします。">
+  <meta name="theme-color" content="#27AE60">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/styles.css?v=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
@@ -22,9 +25,9 @@
     </nav>
 
     <div class="hero-content">
-      <div class="hero-icon">💚</div>
-      <h1>健康 - 未病ダイアリー</h1>
-      <p class="hero-subtitle">未病から健康へ。データとAIで最適な健康管理を</p>
+      <div class="dc-num" style="background:#27AE60;margin:0 auto 16px;">二</div>
+      <h1>健康 — 未病ダイアリー</h1>
+      <p class="hero-subtitle">未病から健康へ。データで最適な健康管理を</p>
       <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
     </div>
   </header>
@@ -32,10 +35,10 @@
   <section class="lp-section">
     <h2>主な機能</h2>
     <div class="feature-grid">
-      <div class="feature-item"><div class="fi-icon">📊</div><h3>症状・バイタルの記録</h3></div>
-      <div class="feature-item"><div class="fi-icon">🤖</div><h3>AIによる健康分析</h3></div>
-      <div class="feature-item"><div class="fi-icon">📈</div><h3>薬・サプリメント管理</h3></div>
-      <div class="feature-item"><div class="fi-icon">⚡</div><h3>睡眠・運動トラッキング</h3></div>
+      <div class="feature-item"><div class="fi-num">01</div><h3>症状・バイタルの記録</h3><p>体調・体重・血圧・血糖値など、日々の数値をかんたんに記録できます</p></div>
+      <div class="feature-item"><div class="fi-num">02</div><h3>お薬・サプリ管理</h3><p>服薬記録を自動管理。飲み忘れ防止と副作用の観察をサポートします</p></div>
+      <div class="feature-item"><div class="fi-num">03</div><h3>睡眠・運動トラッキング</h3><p>Fitbitなどのウェアラブルと連携して、睡眠の質と運動量を自動記録します</p></div>
+      <div class="feature-item"><div class="fi-num">04</div><h3>体調の傾向分析</h3><p>記録されたデータから体調の変化パターンを分析し、気づきをお届けします</p></div>
     </div>
   </section>
 
@@ -44,29 +47,24 @@
     <p class="section-sub">LMSでは6つの領域を統合的に分析。ドメイン間の相関を考慮した最適な提案を行います。</p>
     <div class="domain-cards domain-cards-sm">
       <a href="consciousness.html" class="domain-card" style="--domain-color:#9B59B6">
-        <div class="dc-icon">🧠</div>
-        <h3>意識</h3>
-        <p>精神性・マインド</p>
+        <div class="dc-num" style="background:#9B59B6">一</div>
+        <h3>意識</h3><p>精神性・内側の状態</p>
       </a>
       <a href="time.html" class="domain-card" style="--domain-color:#E67E22">
-        <div class="dc-icon">⏰</div>
-        <h3>時間</h3>
-        <p>時間の最適化</p>
+        <div class="dc-num" style="background:#E67E22">三</div>
+        <h3>時間</h3><p>休養・活動の配分</p>
       </a>
       <a href="work.html" class="domain-card" style="--domain-color:#2980B9">
-        <div class="dc-icon">💼</div>
-        <h3>仕事</h3>
-        <p>仕事・キャリア</p>
+        <div class="dc-num" style="background:#2980B9">四</div>
+        <h3>仕事</h3><p>ストレスとの関係</p>
       </a>
       <a href="relationship.html" class="domain-card" style="--domain-color:#E74C3C">
-        <div class="dc-icon">🤝</div>
-        <h3>関係</h3>
-        <p>関係性・ネットワーク</p>
+        <div class="dc-num" style="background:#E74C3C">五</div>
+        <h3>関係</h3><p>孤立と健康の関係</p>
       </a>
-      <a href="assets.html" class="domain-card" style="--domain-color:#F1C40F">
-        <div class="dc-icon">💰</div>
-        <h3>資産</h3>
-        <p>投資・資産形成</p>
+      <a href="assets.html" class="domain-card" style="--domain-color:#d97706">
+        <div class="dc-num" style="background:#d97706">六</div>
+        <h3>資産</h3><p>医療費の把握</p>
       </a>
     </div>
   </section>
@@ -79,18 +77,18 @@
     <p>&copy; 2026 LMS - Life Management System</p>
   </footer>
 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="js/config.js"></script>
-  <script src="js/store.js"></script>
-  <script src="js/i18n.js"></script>
-  <script src="js/components.js"></script>
-  <script src="js/ai-engine.js"></script>
-  <script src="js/firebase-backend.js"></script>
-  <script src="js/affiliate.js"></script>
-  <script src="js/pages.js"></script>
-  <script src="js/app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="js/config.js?v=1"></script>
+  <script src="js/store.js?v=1"></script>
+  <script src="js/i18n.js?v=1"></script>
+  <script src="js/components.js?v=1"></script>
+  <script src="js/ai-engine.js?v=1"></script>
+  <script src="js/firebase-backend.js?v=1"></script>
+  <script src="js/affiliate.js?v=1"></script>
+  <script src="js/pages.js?v=1"></script>
+  <script src="js/app.js?v=1"></script>
   <script>
     document.getElementById('authFormContainer').innerHTML = Components.authForm();
   </script>

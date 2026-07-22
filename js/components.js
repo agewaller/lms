@@ -143,6 +143,57 @@ var Components = {
     setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
   },
 
+  // ─── Inline Confirm Dialog (replaces browser confirm() which breaks on iOS Safari) ───
+  confirm(message, onConfirm, onCancel) {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    if (!overlay || !bodyEl) {
+      // No modal available (landing pages) — fall through to native as last resort
+      if (window.confirm(message)) { if (onConfirm) onConfirm(); }
+      else { if (onCancel) onCancel(); }
+      return;
+    }
+    if (titleEl) titleEl.textContent = '確認';
+    bodyEl.innerHTML = `<p style="font-size:15px;margin-bottom:24px;">${this.escapeHtml(message)}</p>
+      <div class="form-actions">
+        <button class="btn btn-danger" id="_confirmOk">はい</button>
+        <button class="btn btn-secondary" id="_confirmCancel">キャンセル</button>
+      </div>`;
+    overlay.classList.add('active');
+    const cleanup = () => overlay.classList.remove('active');
+    document.getElementById('_confirmOk').onclick = () => { cleanup(); if (onConfirm) onConfirm(); };
+    document.getElementById('_confirmCancel').onclick = () => { cleanup(); if (onCancel) onCancel(); };
+  },
+
+  // ─── Inline Input Prompt (replaces browser prompt() which breaks on iOS Safari) ───
+  inputPrompt(title, placeholder, onConfirm) {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    if (!overlay || !bodyEl) {
+      const val = window.prompt(title);
+      if (val !== null && onConfirm) onConfirm(val);
+      return;
+    }
+    if (titleEl) titleEl.textContent = title;
+    bodyEl.innerHTML = `<div class="form-group" style="margin-bottom:16px;">
+        <input type="text" id="_inputPromptField" class="form-input" placeholder="${this.escapeHtml(placeholder || '')}">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="_inputPromptOk">OK</button>
+        <button class="btn btn-secondary" id="_inputPromptCancel">キャンセル</button>
+      </div>`;
+    overlay.classList.add('active');
+    const field = document.getElementById('_inputPromptField');
+    field.focus();
+    const cleanup = () => overlay.classList.remove('active');
+    const submit = () => { const v = field.value; cleanup(); if (onConfirm) onConfirm(v); };
+    field.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
+    document.getElementById('_inputPromptOk').onclick = submit;
+    document.getElementById('_inputPromptCancel').onclick = cleanup;
+  },
+
   // ─── Loading Spinner ───
   loading(text) {
     return `<div class="loading-container">

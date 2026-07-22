@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LMS - 仕事 - Work & Career</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <title>LMS 仕事 - 生きがいと社会とのつながりをサポート</title>
+  <meta name="description" content="副業診断・ボランティア情報・スキル棚卸し。あなたの経験と知恵を、社会のために活かす方法を一緒に探します。">
+  <meta name="theme-color" content="#2980B9">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/styles.css?v=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
@@ -22,9 +25,9 @@
     </nav>
 
     <div class="hero-content">
-      <div class="hero-icon">💼</div>
-      <h1>仕事 - Work & Career</h1>
-      <p class="hero-subtitle">仕事の質を高め、キャリアを最大化する</p>
+      <div class="dc-num" style="background:#2980B9;margin:0 auto 16px;">四</div>
+      <h1>仕事 — 経験を、生きがいへ</h1>
+      <p class="hero-subtitle">長年の知恵と経験を、社会とのつながりに変える</p>
       <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
     </div>
   </header>
@@ -32,10 +35,10 @@
   <section class="lp-section">
     <h2>主な機能</h2>
     <div class="feature-grid">
-      <div class="feature-item"><div class="fi-icon">📊</div><h3>タスク・プロジェクト管理</h3></div>
-      <div class="feature-item"><div class="fi-icon">🤖</div><h3>キャリア目標の設定</h3></div>
-      <div class="feature-item"><div class="fi-icon">📈</div><h3>スキル開発トラッキング</h3></div>
-      <div class="feature-item"><div class="fi-icon">⚡</div><h3>AI によるキャリアアドバイス</h3></div>
+      <div class="feature-item"><div class="fi-num">01</div><h3>スキル棚卸し</h3><p>これまでの仕事・趣味・特技を整理して、あなたの強みを言葉にします</p></div>
+      <div class="feature-item"><div class="fi-num">02</div><h3>副業・収入診断</h3><p>経験を活かせる副業・パートタイム・単発の仕事を探すお手伝いをします</p></div>
+      <div class="feature-item"><div class="fi-num">03</div><h3>ボランティア情報</h3><p>地域のボランティア活動や社会参加の機会を、あなたの状況に合わせて紹介します</p></div>
+      <div class="feature-item"><div class="fi-num">04</div><h3>働き方の記録と振り返り</h3><p>仕事の満足度・ストレス・やりがいを記録して、自分に合った働き方を見つけます</p></div>
     </div>
   </section>
 
@@ -44,29 +47,24 @@
     <p class="section-sub">LMSでは6つの領域を統合的に分析。ドメイン間の相関を考慮した最適な提案を行います。</p>
     <div class="domain-cards domain-cards-sm">
       <a href="consciousness.html" class="domain-card" style="--domain-color:#9B59B6">
-        <div class="dc-icon">🧠</div>
-        <h3>意識</h3>
-        <p>精神性・マインド</p>
+        <div class="dc-num" style="background:#9B59B6">一</div>
+        <h3>意識</h3><p>生きがい・内なる動機</p>
       </a>
       <a href="health.html" class="domain-card" style="--domain-color:#27AE60">
-        <div class="dc-icon">💚</div>
-        <h3>健康</h3>
-        <p>エネルギー・病気の克服</p>
+        <div class="dc-num" style="background:#27AE60">二</div>
+        <h3>健康</h3><p>体の状態と仕事量</p>
       </a>
       <a href="time.html" class="domain-card" style="--domain-color:#E67E22">
-        <div class="dc-icon">⏰</div>
-        <h3>時間</h3>
-        <p>時間の最適化</p>
+        <div class="dc-num" style="background:#E67E22">三</div>
+        <h3>時間</h3><p>働く時間のバランス</p>
       </a>
       <a href="relationship.html" class="domain-card" style="--domain-color:#E74C3C">
-        <div class="dc-icon">🤝</div>
-        <h3>関係</h3>
-        <p>関係性・ネットワーク</p>
+        <div class="dc-num" style="background:#E74C3C">五</div>
+        <h3>関係</h3><p>職場・仲間とのつながり</p>
       </a>
-      <a href="assets.html" class="domain-card" style="--domain-color:#F1C40F">
-        <div class="dc-icon">💰</div>
-        <h3>資産</h3>
-        <p>投資・資産形成</p>
+      <a href="assets.html" class="domain-card" style="--domain-color:#d97706">
+        <div class="dc-num" style="background:#d97706">六</div>
+        <h3>資産</h3><p>収入と資産の計画</p>
       </a>
     </div>
   </section>
@@ -79,18 +77,18 @@
     <p>&copy; 2026 LMS - Life Management System</p>
   </footer>
 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="js/config.js"></script>
-  <script src="js/store.js"></script>
-  <script src="js/i18n.js"></script>
-  <script src="js/components.js"></script>
-  <script src="js/ai-engine.js"></script>
-  <script src="js/firebase-backend.js"></script>
-  <script src="js/affiliate.js"></script>
-  <script src="js/pages.js"></script>
-  <script src="js/app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="js/config.js?v=1"></script>
+  <script src="js/store.js?v=1"></script>
+  <script src="js/i18n.js?v=1"></script>
+  <script src="js/components.js?v=1"></script>
+  <script src="js/ai-engine.js?v=1"></script>
+  <script src="js/firebase-backend.js?v=1"></script>
+  <script src="js/affiliate.js?v=1"></script>
+  <script src="js/pages.js?v=1"></script>
+  <script src="js/app.js?v=1"></script>
   <script>
     document.getElementById('authFormContainer').innerHTML = Components.authForm();
   </script>
