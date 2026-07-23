@@ -179,7 +179,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', data: 'データ', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -1123,7 +1123,6 @@ var App = class App {
     if (resultEl) resultEl.innerHTML = Components.loading('七つのレイヤーで分析中...');
 
     try {
-      const prompt = CONFIG.prompts.consciousness.transcript_analysis || CONFIG.prompts.consciousness.daily;
       const result = await AIEngine.analyze('consciousness', 'transcript_analysis', {
         text: `<<<TRANSCRIPT_START\n${text}\nTRANSCRIPT_END>>>`
       });
@@ -1133,7 +1132,7 @@ var App = class App {
 
       if (resultEl) {
         resultEl.innerHTML = `<div class="transcript-result">
-          <h3>分析結果</h3>
+          <h3>${i18n.t('ai_analysis')}</h3>
           <div class="analysis-content">${Components.formatMarkdown(result)}</div>
         </div>`;
       }
@@ -1387,7 +1386,7 @@ var App = class App {
 
     // Save to Firestore if available
     if (Object.keys(keys).length > 0) {
-      FirebaseBackend.saveApiKeys({ ...AIEngine.getApiKey, ...keys });
+      FirebaseBackend.saveApiKeys(keys);
     }
 
     Components.showToast(i18n.t('saved'), 'success');

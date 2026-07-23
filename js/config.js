@@ -28,7 +28,7 @@ var CONFIG = {
     'claude-opus-4-6':    { name: 'Claude Opus 4.6',   provider: 'anthropic', maxTokens: 4096 },
     'claude-haiku-4-5':   { name: 'Claude Haiku 4.5',  provider: 'anthropic', maxTokens: 4096 },
     'gpt-4o':             { name: 'GPT-4o',            provider: 'openai',    maxTokens: 4096 },
-    'gemini-pro':         { name: 'Gemini Pro',        provider: 'google',    maxTokens: 4096 }
+    'gemini-pro':         { name: 'Gemini 2.0 Flash',  provider: 'google',    maxTokens: 4096 }
   },
 
   // ─── API Endpoints ───

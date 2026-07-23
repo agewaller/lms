@@ -79,8 +79,7 @@ var Pages = {
     allRecent.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     if (allRecent.length === 0) {
-      html += Components.emptyState(domainConfig?.icon || '📭', i18n.t('no_data'),
-        `${i18n.t('record')} → ${i18n.t('save')}`);
+      html += this.renderWelcomeGuide(domain);
     } else {
       allRecent.slice(0, 10).forEach(entry => {
         html += Components.recordItem(entry, domain);
@@ -102,9 +101,9 @@ var Pages = {
     const latest = store.get('latestAnalysis');
     if (latest && latest.domain === domain) {
       html += `<div class="analysis-section">
-        <h3>分析結果</h3>
+        <h3>${i18n.t('ai_analysis')}</h3>
         <div class="analysis-content">${Components.formatMarkdown(latest.response)}</div>
-        <div class="analysis-meta">${latest.model} | ${new Date(latest.timestamp).toLocaleString()}</div>
+        <div class="analysis-meta">${new Date(latest.timestamp).toLocaleString()}</div>
       </div>`;
     }
 
@@ -158,6 +157,88 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── First-time welcome guide (shown when domain has no records yet) ───
+  renderWelcomeGuide(domain) {
+    const domainConfig = CONFIG.domains[domain];
+    const color = domainConfig?.color || '#6C63FF';
+
+    const guides = {
+      consciousness: {
+        icon: '✨',
+        title: 'ようこそ「意識」の領域へ',
+        steps: [
+          '毎日のスライダーで今日の意識がどこにあったか記録しましょう',
+          '音声メモの文字起こしを貼り付けて、深い洞察を受け取れます',
+          '7つのレイヤーがどう変化するか、1週間続けてみてください'
+        ]
+      },
+      health: {
+        icon: '🌱',
+        title: 'ようこそ「健康」の領域へ',
+        steps: [
+          '今日の体調・体重・睡眠を記録するところから始めましょう',
+          '毎日記録すると、体調のパターンが見えてきます',
+          '記録が3日分たまると、状態分析が使えるようになります'
+        ]
+      },
+      time: {
+        icon: '⏳',
+        title: 'ようこそ「時間」の領域へ',
+        steps: [
+          '今週の予定や、どんな時間の使い方をしたか記録しましょう',
+          'Googleカレンダーと連携すると自動でデータが入ります',
+          '空き時間を活用する方法のご提案も受け取れます'
+        ]
+      },
+      work: {
+        icon: '🌟',
+        title: 'ようこそ「仕事」の領域へ',
+        steps: [
+          '今やっていること・やってみたいことを記録しましょう',
+          '副業診断でご自身の強みを確認できます',
+          '履歴書の作成支援や求人情報の連携も利用できます'
+        ]
+      },
+      relationship: {
+        icon: '🤝',
+        title: 'ようこそ「関係」の領域へ',
+        steps: [
+          '大切な人の名前と最後に連絡した日を記録しましょう',
+          '孤立スコアで社会とのつながり度合いを確認できます',
+          '「今日連絡する人」をアドバイスしてもらえます'
+        ]
+      },
+      assets: {
+        icon: '💎',
+        title: 'ようこそ「資産」の領域へ',
+        steps: [
+          '現在の資産状況（貯蓄・年金・生活費）を入力しましょう',
+          'NISAシミュレーターで将来の資産見通しを確認できます',
+          'アドバイザーに投資の方向性を相談することもできます'
+        ]
+      }
+    };
+
+    const g = guides[domain] || {
+      icon: '👋',
+      title: 'ようこそ',
+      steps: ['記録するページから始めてみましょう', 'データが蓄積されると分析結果が見られます']
+    };
+
+    return `<div class="welcome-guide" style="border-left:4px solid ${color}">
+      <div class="welcome-icon">${g.icon}</div>
+      <div class="welcome-body">
+        <h3 class="welcome-title">${g.title}</h3>
+        <ol class="welcome-steps">
+          ${g.steps.map(s => `<li>${s}</li>`).join('')}
+        </ol>
+        <button class="btn btn-primary" onclick="app.navigate('record')" style="background:${color};border-color:${color}">
+          さっそく記録する
+        </button>
+      </div>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
