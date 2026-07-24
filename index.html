@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LMS - Life Management System</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <title>LMS - Life Management System | 人生の6領域をまるごとサポート</title>
+  <meta name="description" content="意識・健康・時間・仕事・関係・資産の6領域を統合的に管理。65歳以上の方が安心して使えるライフマネジメントシステム。">
+  <link rel="stylesheet" href="css/styles.css?v=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
@@ -19,83 +20,145 @@
       </div>
       <div class="lp-nav-links">
         <a href="#domains">6つの領域</a>
-        <a href="#features">機能</a>
+        <a href="#how">使い方</a>
         <a href="#login" class="btn btn-sm btn-primary">ログイン</a>
       </div>
     </nav>
 
     <div class="hero-content">
-      <h1>Life Management System</h1>
-      <p class="hero-subtitle">年金だけでは足りない時代。<br>意識・健康・時間・仕事・関係・資産<br>6つの領域を、まるごとサポート</p>
-      <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
+      <div class="hero-badge">65歳以上の方のために設計</div>
+      <h1>人生の6つの領域を、<br>まるごとサポート</h1>
+      <p class="hero-subtitle">年金だけでは足りない時代。<br>意識・健康・時間・仕事・関係・資産を<br>一か所で記録・振り返り・相談できます。</p>
+      <div class="hero-ctas">
+        <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
+        <a href="#domains" class="btn btn-lg btn-secondary">詳しく見る</a>
+      </div>
+      <p class="hero-note">登録・利用は完全無料。スマートフォンでも快適に使えます。</p>
     </div>
   </header>
+
+  <!-- Trust Stats -->
+  <section class="lp-stats">
+    <div class="stats-inner">
+      <div class="stat-item">
+        <div class="stat-num">6</div>
+        <div class="stat-desc">人生の領域を統合管理</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">10+</div>
+        <div class="stat-desc">外部サービスと連携</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">4</div>
+        <div class="stat-desc">言語に対応（日英中韓）</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">0円</div>
+        <div class="stat-desc">基本機能は無料</div>
+      </div>
+    </div>
+  </section>
 
   <!-- Domain Cards -->
   <section id="domains" class="lp-section">
     <h2>6つのライフドメイン</h2>
-    <p class="section-sub">それぞれの領域をやさしくサポートし、あなたに合ったアドバイスをお届けします</p>
+    <p class="section-sub">それぞれの領域でやさしくサポート。あなたの状況に合わせた気づきをお届けします。</p>
     <div class="domain-cards">
       <a href="consciousness.html" class="domain-card" style="--domain-color:#9B59B6">
-        <div class="dc-icon">🧠</div>
+        <div class="dc-num">一</div>
         <h3>意識</h3>
-        <p>心の健康・瞑想・感謝の気持ち</p>
+        <p>心の健康・日記・瞑想・感謝の記録</p>
+        <span class="dc-arrow">→</span>
       </a>
       <a href="health.html" class="domain-card" style="--domain-color:#27AE60">
-        <div class="dc-icon">💚</div>
+        <div class="dc-num">二</div>
         <h3>健康</h3>
-        <p>体調の記録・お薬の管理・元気な毎日</p>
+        <p>体調記録・お薬管理・元気な毎日</p>
+        <span class="dc-arrow">→</span>
       </a>
       <a href="time.html" class="domain-card" style="--domain-color:#E67E22">
-        <div class="dc-icon">⏰</div>
+        <div class="dc-num">三</div>
         <h3>時間</h3>
-        <p>日々の過ごし方・趣味・心豊かな時間</p>
+        <p>スケジュール・習慣・豊かな時間</p>
+        <span class="dc-arrow">→</span>
       </a>
       <a href="work.html" class="domain-card" style="--domain-color:#2980B9">
-        <div class="dc-icon">💼</div>
+        <div class="dc-num">四</div>
         <h3>仕事</h3>
         <p>生きがい・経験を活かす・社会とのつながり</p>
+        <span class="dc-arrow">→</span>
       </a>
       <a href="relationship.html" class="domain-card" style="--domain-color:#E74C3C">
-        <div class="dc-icon">🤝</div>
+        <div class="dc-num">五</div>
         <h3>関係</h3>
         <p>大切な人との関係・ご縁を大切に</p>
+        <span class="dc-arrow">→</span>
       </a>
       <a href="assets.html" class="domain-card" style="--domain-color:#F1C40F">
-        <div class="dc-icon">💰</div>
+        <div class="dc-num">六</div>
         <h3>資産</h3>
-        <p>安心の資産管理・株式投資・収支の把握</p>
+        <p>安心の資産管理・NISA・収支の把握</p>
+        <span class="dc-arrow">→</span>
       </a>
     </div>
   </section>
 
+  <!-- How it works -->
+  <section id="how" class="lp-section lp-section-alt">
+    <h2>3ステップで始められます</h2>
+    <p class="section-sub">難しい設定は不要。Googleアカウントがあればすぐに使えます。</p>
+    <div class="steps-grid">
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <h3>登録する</h3>
+        <p>Googleアカウントでボタン1つ。メールアドレスでも登録できます。</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <h3>記録する</h3>
+        <p>今日の体調・気持ち・やったことを、気軽に記録。毎日続けやすいシンプルな画面。</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <h3>相談・振り返り</h3>
+        <p>記録をもとに、あなたに合ったアドバイスを受け取れます。6領域の変化も一目瞭然。</p>
+      </div>
+    </div>
+  </section>
+
   <!-- Features -->
-  <section id="features" class="lp-section lp-section-alt">
+  <section id="features" class="lp-section">
     <h2>主な特徴</h2>
     <div class="feature-grid">
       <div class="feature-item">
-        <h3>深い分析</h3>
+        <div class="fi-icon">📊</div>
+        <h3>深い分析・気づき</h3>
         <p>あなたの記録を丁寧に読み解き、気づきと最適な打ち手をお届けします</p>
       </div>
       <div class="feature-item">
-        <h3>領域横断の洞察</h3>
-        <p>6つの領域の相互作用を考慮した、統合的なアドバイス</p>
+        <div class="fi-icon">🔗</div>
+        <h3>6領域の統合的な視点</h3>
+        <p>健康・仕事・人間関係の相互作用を考慮した、統合的なアドバイス</p>
       </div>
       <div class="feature-item">
-        <h3>自動アクション</h3>
-        <p>おすすめに基づく自動実行（投資、予約、購入など）</p>
-      </div>
-      <div class="feature-item">
-        <h3>多言語対応</h3>
-        <p>日本語・英語・中国語・韓国語に対応</p>
-      </div>
-      <div class="feature-item">
+        <div class="fi-icon">🔒</div>
         <h3>安心のデータ管理</h3>
-        <p>Google認証 + Firebase によるセキュアなデータ同期</p>
+        <p>Google認証 + Firebase によるセキュアなデータ同期。データはあなただけのもの。</p>
       </div>
       <div class="feature-item">
-        <h3>専門家連携</h3>
-        <p>必要に応じて専門家によるメンタリング・コーチングにも対応</p>
+        <div class="fi-icon">📱</div>
+        <h3>スマホでも快適</h3>
+        <p>iPhone・Android・パソコン、どこからでも同じように使えます</p>
+      </div>
+      <div class="feature-item">
+        <div class="fi-icon">🌏</div>
+        <h3>多言語対応</h3>
+        <p>日本語・英語・中国語・韓国語に対応。外国に住む方にもご利用いただけます。</p>
+      </div>
+      <div class="feature-item">
+        <div class="fi-icon">⚡</div>
+        <h3>外部サービスと連携</h3>
+        <p>Googleカレンダー・Fitbit・Plaud など10以上のサービスとつながります</p>
       </div>
     </div>
   </section>
@@ -103,6 +166,9 @@
   <!-- Login Section -->
   <section id="login" class="lp-section lp-login-section">
     <div class="login-card">
+      <h2 style="text-align:center;margin-bottom:8px;">まずは無料で始めてみましょう</h2>
+      <p style="text-align:center;color:var(--text-secondary);margin-bottom:24px;font-size:14px;">登録は1分以内。いつでも退会できます。</p>
+
       <!-- Auth mode tabs -->
       <div class="auth-tabs">
         <button class="auth-tab active" onclick="app.toggleAuthMode('login')">ログイン</button>
@@ -113,7 +179,7 @@
       <div class="auth-panel active" id="auth-login">
         <button class="btn btn-google" onclick="app.loginWithGoogle()">
           <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-          Googleでログイン
+          Googleでログイン（かんたん）
         </button>
 
         <div class="login-divider"><span>またはメールアドレスで</span></div>
@@ -124,7 +190,8 @@
         </div>
         <div class="form-group">
           <label>パスワード</label>
-          <input type="password" id="loginPassword" class="form-input" placeholder="パスワード">
+          <input type="password" id="loginPassword" class="form-input" placeholder="パスワード"
+            onkeydown="if(event.key==='Enter')app.loginWithEmail()">
         </div>
         <button class="btn btn-primary btn-block" onclick="app.loginWithEmail()">ログイン</button>
         <div class="auth-help">
@@ -143,7 +210,7 @@
 
         <button class="btn btn-google" onclick="app.loginWithGoogle()">
           <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-          Googleで登録
+          Googleで登録（かんたん）
         </button>
 
         <div class="login-divider"><span>またはメールアドレスで</span></div>
@@ -189,24 +256,32 @@
 
   <!-- Footer -->
   <footer class="lp-footer">
+    <div class="footer-links">
+      <a href="consciousness.html">意識</a>
+      <a href="health.html">健康</a>
+      <a href="time.html">時間</a>
+      <a href="work.html">仕事</a>
+      <a href="relationship.html">関係</a>
+      <a href="assets.html">資産</a>
+    </div>
     <p>&copy; 2026 LMS - Life Management System. All rights reserved.</p>
   </footer>
 
   <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
   <!-- LMS Scripts -->
-  <script src="js/config.js"></script>
-  <script src="js/store.js"></script>
-  <script src="js/i18n.js"></script>
-  <script src="js/components.js"></script>
-  <script src="js/ai-engine.js"></script>
-  <script src="js/firebase-backend.js"></script>
-  <script src="js/affiliate.js"></script>
-  <script src="js/pages.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/config.js?v=1"></script>
+  <script src="js/store.js?v=1"></script>
+  <script src="js/i18n.js?v=1"></script>
+  <script src="js/components.js?v=1"></script>
+  <script src="js/ai-engine.js?v=1"></script>
+  <script src="js/firebase-backend.js?v=1"></script>
+  <script src="js/affiliate.js?v=1"></script>
+  <script src="js/pages.js?v=1"></script>
+  <script src="js/app.js?v=1"></script>
 
   <script>
     // On login success, redirect to dashboard

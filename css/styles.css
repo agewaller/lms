@@ -534,6 +534,66 @@ select.form-input { appearance: auto; }
 
 /* Footer */
 .lp-footer { text-align: center; padding: 32px; color: var(--text-muted); font-size: 14px; }
+.footer-links { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+.footer-links a { color: var(--text-secondary); font-size: 14px; }
+.footer-links a:hover { color: var(--accent); }
+
+/* Hero extras */
+.hero-badge {
+  display: inline-block; background: var(--accent-bg); color: var(--accent);
+  border: 1px solid var(--accent-border); border-radius: 20px;
+  padding: 6px 16px; font-size: 13px; font-weight: 600; margin-bottom: 20px;
+}
+.hero-ctas { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+.hero-note { font-size: 13px; color: var(--text-muted); margin-bottom: 0; }
+
+/* Stats strip */
+.lp-stats {
+  background: var(--accent); padding: 32px 40px;
+}
+.stats-inner {
+  max-width: 900px; margin: 0 auto;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 24px; text-align: center;
+}
+.stat-item .stat-num { font-size: 36px; font-weight: 700; color: #fff; line-height: 1; }
+.stat-item .stat-desc { font-size: 13px; color: rgba(255,255,255,0.8); margin-top: 6px; }
+
+/* Steps */
+.steps-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 32px; margin-top: 40px;
+}
+.step-item {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 32px 24px; box-shadow: var(--shadow); text-align: left;
+}
+.step-num {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; margin-bottom: 16px;
+}
+.step-item h3 { font-size: 18px; margin-bottom: 10px; }
+.step-item p { font-size: 15px; color: var(--text-secondary); line-height: 1.8; margin: 0; }
+
+/* Domain card number + arrow (new style) */
+.dc-num {
+  font-size: 24px; font-weight: 700; color: var(--domain-color, var(--primary));
+  margin-bottom: 8px; opacity: 0.9;
+}
+.dc-arrow {
+  display: inline-block; margin-top: 12px; font-size: 18px;
+  color: var(--domain-color, var(--primary)); opacity: 0.7;
+  transition: transform var(--transition);
+}
+.domain-card:hover .dc-arrow { transform: translateX(4px); }
+
+/* Danger button */
+.btn-danger {
+  background: var(--danger); color: #fff;
+}
+.btn-danger:hover { background: #dc2626; }
 
 /* ═══════════════════════════════════════════════════════════
    DASHBOARD (未病ダイアリー準拠)
@@ -1770,6 +1830,11 @@ body.is-admin .admin-only { display: flex; }
   /* Grids to single column */
   .domain-cards { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
   .feature-grid { grid-template-columns: 1fr; }
+  .steps-grid { grid-template-columns: 1fr; }
+  .stats-inner { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .lp-stats { padding: 24px 20px; }
+  .hero-ctas { flex-direction: column; align-items: center; }
+  .footer-links { gap: 12px; }
   .plan-cards { flex-direction: column; }
   .sim-cards { grid-template-columns: 1fr 1fr; }
   .at-order { flex-direction: column; align-items: flex-start; }
