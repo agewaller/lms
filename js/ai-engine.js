@@ -2,6 +2,19 @@
    LMS - AI Engine
    Multi-model AI integration (Claude, GPT-4o, Gemini)
    ============================================================ */
+
+// CONFIG key → datestamped API id. Update values here when Anthropic rotates IDs.
+// Config keys stay stable; only this map changes.
+var MODEL_MAP = {
+  'claude-sonnet-4-6': 'claude-sonnet-4-6-20260101',
+  'claude-opus-4-6':   'claude-opus-4-6-20260201',
+  'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+  'claude-sonnet-5':   'claude-sonnet-5',
+  'claude-opus-5':     'claude-opus-5',
+  'gpt-4o':            'gpt-4o',
+  'gemini-pro':        'gemini-2.0-flash'
+};
+
 var AIEngine = {
 
   // ─── Main analysis entry point ───
@@ -163,13 +176,15 @@ var AIEngine = {
     console.log('[LMS] Calling Anthropic', isDirect ? '(direct)' : 'via proxy:', url);
     console.log('[LMS] Model:', model, 'Max tokens:', maxTokens);
 
+    const apiModelId = MODEL_MAP[model] || model;
+
     let res;
     try {
       res = await fetch(url, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model,
+          model: apiModelId,
           max_tokens: maxTokens,
           system: system,
           messages: [{ role: 'user', content: userMsg }]
@@ -200,6 +215,7 @@ var AIEngine = {
     const apiKey = this.getApiKey('openai');
     if (!apiKey) throw new Error('OpenAI API key not set');
 
+    const openaiModelId = MODEL_MAP[model] || model;
     const res = await fetch(CONFIG.endpoints.openai, {
       method: 'POST',
       headers: {
@@ -207,7 +223,7 @@ var AIEngine = {
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: model,
+        model: openaiModelId,
         max_tokens: maxTokens,
         messages: [
           { role: 'system', content: system },
@@ -228,7 +244,8 @@ var AIEngine = {
     const apiKey = this.getApiKey('google');
     if (!apiKey) throw new Error('Google API key not set');
 
-    const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
+    const geminiModelId = MODEL_MAP[model] || model;
+    const url = `${CONFIG.endpoints.google}/${geminiModelId}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

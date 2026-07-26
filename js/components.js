@@ -3,6 +3,65 @@
    ============================================================ */
 var Components = {
 
+  // ─── HTML Escape (XSS prevention) ───
+  escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
+
+  // ─── Inline Confirmation Dialog (replaces native confirm() for mobile) ───
+  confirmDialog(message, onYes, onNo, yesLabel = '削除') {
+    const bodyHtml = `
+      <p style="margin-bottom:20px;line-height:1.7;">${this.escapeHtml(message)}</p>
+      <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <button class="btn btn-secondary" id="_confirm-no">キャンセル</button>
+        <button class="btn btn-danger" id="_confirm-yes">${this.escapeHtml(yesLabel)}</button>
+      </div>`;
+    if (typeof app !== 'undefined') app.openModal('確認', bodyHtml);
+    setTimeout(() => {
+      const yesBtn = document.getElementById('_confirm-yes');
+      const noBtn = document.getElementById('_confirm-no');
+      if (yesBtn) yesBtn.onclick = () => { if (typeof app !== 'undefined') app.closeModal(); if (onYes) onYes(); };
+      if (noBtn) noBtn.onclick = () => { if (typeof app !== 'undefined') app.closeModal(); if (onNo) onNo(); };
+    }, 0);
+  },
+
+  // ─── Inline Prompt Dialog (replaces native prompt() for mobile) ───
+  promptDialog(message, placeholder, onSubmit) {
+    const bodyHtml = `
+      <p style="margin-bottom:12px;">${this.escapeHtml(message)}</p>
+      <input type="text" id="_prompt-input" class="form-input" placeholder="${this.escapeHtml(placeholder || '')}">
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px;">
+        <button class="btn btn-secondary" id="_prompt-cancel">キャンセル</button>
+        <button class="btn btn-primary" id="_prompt-ok">確認</button>
+      </div>`;
+    if (typeof app !== 'undefined') app.openModal('入力', bodyHtml);
+    setTimeout(() => {
+      const input = document.getElementById('_prompt-input');
+      const okBtn = document.getElementById('_prompt-ok');
+      const cancelBtn = document.getElementById('_prompt-cancel');
+      if (input) {
+        input.focus();
+        input.onkeydown = (e) => {
+          if (e.key === 'Enter') {
+            if (typeof app !== 'undefined') app.closeModal();
+            if (onSubmit) onSubmit(input.value.trim());
+          }
+        };
+      }
+      if (okBtn) okBtn.onclick = () => {
+        if (typeof app !== 'undefined') app.closeModal();
+        if (onSubmit) onSubmit(input?.value?.trim() || '');
+      };
+      if (cancelBtn) cancelBtn.onclick = () => { if (typeof app !== 'undefined') app.closeModal(); };
+    }, 0);
+  },
+
   // ─── Score Gauge (circular) ───
   scoreGauge(score, size = 120, label = '') {
     const pct = Math.max(0, Math.min(100, score));
@@ -257,7 +316,7 @@ var Components = {
     const summary = Object.entries(entry)
       .filter(([k]) => !['id','timestamp','domain','category','_synced'].includes(k))
       .slice(0, 3)
-      .map(([k, v]) => `${i18n.t(k)}: ${v}`)
+      .map(([k, v]) => `${this.escapeHtml(i18n.t(k))}: ${this.escapeHtml(String(v))}`)
       .join(' | ');
     return `<div class="record-item" style="border-left-color:${color}">
       <div class="record-header">
