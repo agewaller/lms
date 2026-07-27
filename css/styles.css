@@ -532,6 +532,53 @@ select.form-input { appearance: auto; }
   content: ''; flex: 1; height: 1px; background: var(--border);
 }
 
+/* Hero extras */
+.hero-badge {
+  display: inline-block; background: rgba(108,99,255,0.12); color: var(--primary);
+  border-radius: 20px; padding: 6px 18px; font-size: 14px; font-weight: 600;
+  margin-bottom: 20px; letter-spacing: 0.05em;
+}
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+.hero-note { font-size: 13px; color: var(--text-muted); margin: 0; }
+
+/* Domain card number (kanji) */
+.dc-num {
+  font-size: 32px; font-weight: 700; color: var(--domain-color, var(--primary));
+  margin-bottom: 12px; font-family: var(--font-main);
+}
+
+/* Pain points section */
+.lp-pain { text-align: center; }
+.pain-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px; margin: 32px 0;
+}
+.pain-item {
+  background: var(--bg-card); border-radius: var(--radius); padding: 20px;
+  font-size: 15px; line-height: 1.7; color: var(--text-secondary);
+  border-left: 3px solid var(--primary); text-align: left;
+}
+.pain-answer {
+  font-size: 18px; font-weight: 600; color: var(--text); line-height: 2;
+  margin-top: 24px;
+}
+
+/* How it works steps */
+.steps-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 32px; margin-top: 40px;
+}
+.step-item { text-align: center; padding: 24px; }
+.step-num {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--primary); color: #fff;
+  font-size: 24px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+}
+.step-item h3 { font-size: 20px; margin-bottom: 10px; }
+.step-item p { font-size: 15px; color: var(--text-light); line-height: 1.8; }
+
 /* Footer */
 .lp-footer { text-align: center; padding: 32px; color: var(--text-muted); font-size: 14px; }
 
