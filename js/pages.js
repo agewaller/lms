@@ -27,9 +27,31 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // Check if any entry was recorded today for this domain
+    const today = new Date().toISOString().slice(0, 10);
+    const domainCats = Object.keys(domainConfig?.categories || {});
+    const hasEntryToday = domainCats.some(cat => {
+      const data = store.getDomainData(domain, cat, 1);
+      return data.some(e => (e.timestamp || '').slice(0, 10) === today);
+    });
+
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    let html = `<div class="page-home">`;
+
+    // Daily check-in banner (only when no entry today)
+    if (!hasEntryToday) {
+      const hour = new Date().getHours();
+      const greeting = hour < 12 ? 'おはようございます' : hour < 18 ? 'こんにちは' : 'こんばんは';
+      html += `<div class="checkin-banner">
+        <div class="checkin-banner-text">
+          <h4>${greeting}。今日の記録をつけましょう</h4>
+          <p>毎日の記録が、あなたに合ったアドバイスになります</p>
+        </div>
+        <button class="btn btn-sm" onclick="app.navigate('record')">記録する</button>
+      </div>`;
+    }
+
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>

@@ -20,6 +20,7 @@ var App = class App {
       store.set('currentPage', 'home');
       this.renderApp();
       this.startInboxPolling();
+      setTimeout(() => this.showOnboardingIfNeeded(), 400);
     }
 
     // Listen for auth changes
@@ -29,6 +30,8 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        // Show onboarding for first-time users
+        setTimeout(() => this.showOnboardingIfNeeded(), 400);
       } else {
         this.stopInboxPolling();
       }
@@ -179,7 +182,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', data: 'データを見る', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理', integrations: '連携' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -741,21 +744,22 @@ var App = class App {
   }
 
   deleteDataEntry(domain, category, id) {
-    if (!confirm('この記録を削除しますか？')) return;
-    const key = `${domain}_${category}`;
-    const entries = (store.get(key) || []).filter(e => e.id !== id);
-    store.set(key, entries);
+    this.confirmAction('この記録を削除しますか？', () => {
+      const key = `${domain}_${category}`;
+      const entries = (store.get(key) || []).filter(e => e.id !== id);
+      store.set(key, entries);
 
-    // Also delete from Firestore if connected
-    if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.db) {
-      const uid = store.get('user')?.uid;
-      if (uid) {
-        FirebaseBackend.db.collection('users').doc(uid).collection(key).doc(id).delete().catch(e => console.warn(e));
+      // Also delete from Firestore if connected
+      if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.db) {
+        const uid = store.get('user')?.uid;
+        if (uid) {
+          FirebaseBackend.db.collection('users').doc(uid).collection(key).doc(id).delete().catch(e => console.warn(e));
+        }
       }
-    }
 
-    Components.showToast('削除しました', 'info');
-    this.renderApp();
+      Components.showToast('削除しました', 'info');
+      this.renderApp();
+    });
   }
 
   exportDomainData(domain) {
@@ -824,10 +828,11 @@ var App = class App {
   }
 
   fitbitDisconnect() {
-    if (!confirm('Fitbit接続を解除しますか？')) return;
-    if (typeof fitbit !== 'undefined') fitbit.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.confirmAction('Fitbit接続を解除しますか？', () => {
+      if (typeof fitbit !== 'undefined') fitbit.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    });
   }
 
   async fitbitImportToday() {
@@ -874,10 +879,11 @@ var App = class App {
   }
 
   gcalDisconnect() {
-    if (!confirm('Googleカレンダー接続を解除しますか？')) return;
-    if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.confirmAction('Googleカレンダー接続を解除しますか？', () => {
+      if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    });
   }
 
   async gcalSync() {
@@ -909,10 +915,11 @@ var App = class App {
   }
 
   outlookDisconnect() {
-    if (!confirm('Outlook接続を解除しますか？')) return;
-    if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.confirmAction('Outlook接続を解除しますか？', () => {
+      if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    });
   }
 
   async outlookSync() {
@@ -944,10 +951,11 @@ var App = class App {
   }
 
   gmailDisconnect() {
-    if (!confirm('Gmail接続を解除しますか？')) return;
-    if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
-    Components.showToast('接続を解除しました', 'info');
-    this.renderApp();
+    this.confirmAction('Gmail接続を解除しますか？', () => {
+      if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
+      Components.showToast('接続を解除しました', 'info');
+      this.renderApp();
+    });
   }
 
   async gmailImportContacts() {
@@ -1479,13 +1487,14 @@ var App = class App {
   }
 
   deletePrompt(key) {
-    if (!confirm('このプロンプトを削除しますか？')) return;
-    delete CONFIG.prompts[key];
-    const custom = store.get('customPrompts') || {};
-    delete custom[key];
-    store.set('customPrompts', custom);
-    Components.showToast('削除しました', 'info');
-    this.renderApp();
+    this.confirmAction('このプロンプトを削除しますか？', () => {
+      delete CONFIG.prompts[key];
+      const custom = store.get('customPrompts') || {};
+      delete custom[key];
+      store.set('customPrompts', custom);
+      Components.showToast('削除しました', 'info');
+      this.renderApp();
+    });
   }
 
   addNewPrompt() {
@@ -1524,13 +1533,14 @@ var App = class App {
   }
 
   clearApiKeys() {
-    if (!confirm('すべてのAPIキーを削除しますか？')) return;
-    ['anthropic', 'openai', 'google'].forEach(p => {
-      localStorage.removeItem('lms_apikey_' + p);
+    this.confirmAction('すべてのAPIキーを削除しますか？', () => {
+      ['anthropic', 'openai', 'google'].forEach(p => {
+        localStorage.removeItem('lms_apikey_' + p);
+      });
+      store.state._apiKeys = {};
+      Components.showToast('削除しました', 'info');
+      this.renderApp();
     });
-    store.state._apiKeys = {};
-    Components.showToast('削除しました', 'info');
-    this.renderApp();
   }
 
   saveAffiliateConfig() {
@@ -1559,9 +1569,10 @@ var App = class App {
   }
 
   clearFirebaseConfig() {
-    if (!confirm('Firebase設定を削除しますか？')) return;
-    localStorage.removeItem('lms_firebaseConfig');
-    Components.showToast('削除しました（再読み込みが必要です）', 'info');
+    this.confirmAction('Firebase設定を削除しますか？', () => {
+      localStorage.removeItem('lms_firebaseConfig');
+      Components.showToast('削除しました（再読み込みが必要です）', 'info');
+    });
   }
 
   saveWorkerUrl() {
@@ -1687,8 +1698,6 @@ var App = class App {
       Components.showToast('オーナーアカウントは削除できません', 'error');
       return;
     }
-    if (!confirm(`${email} を管理者から外しますか？`)) return;
-
     const list = (store.get('adminEmails') || ['agewaller@gmail.com']).filter(e => e !== email);
     store.set('adminEmails', list);
 
@@ -1908,7 +1917,10 @@ var App = class App {
   }
 
   generateDemoData() {
-    if (!confirm('デモデータを生成しますか？既存データに追加されます。')) return;
+    this.confirmAction('デモデータを生成しますか？既存データに追加されます。', () => this._doGenerateDemoData());
+  }
+
+  _doGenerateDemoData() {
     // Generate sample entries for each domain
     const today = new Date();
     for (let i = 0; i < 7; i++) {
@@ -1922,8 +1934,21 @@ var App = class App {
   }
 
   deleteAllData() {
-    if (!confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
-    if (!confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
+    // Double-confirm via nested modals (iOS-safe — no confirm())
+    this.openModal('データを全件削除', `
+      <div style="text-align:center;padding:8px 0 16px;">
+        <p style="color:var(--danger);font-weight:700;margin-bottom:8px;">⚠️ この操作は元に戻せません</p>
+        <p style="margin-bottom:24px;">すべての記録・設定を完全に削除します。本当によろしいですか？</p>
+        <div style="display:flex;gap:12px;justify-content:center;">
+          <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+          <button class="btn btn-danger" onclick="app._deleteAllDataConfirmed()">すべて削除する</button>
+        </div>
+      </div>`
+    );
+  }
+
+  _deleteAllDataConfirmed() {
+    this.closeModal();
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();
@@ -1953,6 +1978,65 @@ var App = class App {
   closeModal() {
     const overlay = document.getElementById('modal-overlay');
     if (overlay) overlay.classList.remove('active');
+  }
+
+  // ─── First-time onboarding ───
+  showOnboardingIfNeeded() {
+    if (localStorage.getItem('lms_onboarding_done')) return;
+    const user = store.get('user');
+    const name = user?.displayName?.split(' ')[0] || '';
+    const greeting = name ? `${name}さん、` : '';
+
+    const domainHtml = Object.entries(CONFIG.domains).map(([id, d]) => {
+      const labels = {
+        consciousness: '心の状態を整えたい',
+        health: '健康・体調を管理したい',
+        time: '時間の使い方を見直したい',
+        work: '仕事・生きがいを探したい',
+        relationship: '人との繋がりを大切にしたい',
+        assets: '資産・お金を管理したい'
+      };
+      return `<button class="onboard-domain-btn" onclick="app.completeOnboarding('${id}')"
+        style="border-left: 4px solid ${d.color}">
+        <span class="onboard-num" style="background:${d.color}">${d.icon}</span>
+        <span class="onboard-label">${labels[id] || i18n.t(id)}</span>
+      </button>`;
+    }).join('');
+
+    this.openModal('ようこそ LMS へ',
+      `<div class="onboarding-modal">
+        <p>${greeting}はじめまして。<br>まず、今一番気になる領域を選んでください。<br>後からいつでも変更できます。</p>
+        <div class="onboard-domains">${domainHtml}</div>
+        <div style="text-align:center;margin-top:16px;">
+          <button class="btn btn-sm btn-secondary" onclick="app.completeOnboarding('health')">スキップ</button>
+        </div>
+      </div>`
+    );
+  }
+
+  completeOnboarding(domain) {
+    localStorage.setItem('lms_onboarding_done', '1');
+    this.closeModal();
+    store.set('currentDomain', domain);
+    store.set('currentPage', 'home');
+  }
+
+  // ─── Confirm dialog (iOS-safe alternative to confirm()) ───
+  confirmAction(message, onConfirm) {
+    this.openModal('確認', `
+      <div style="text-align:center;padding:8px 0 16px;">
+        <p style="margin-bottom:24px;">${Components.escapeHtml(message)}</p>
+        <div style="display:flex;gap:12px;justify-content:center;">
+          <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+          <button class="btn btn-danger" id="confirmActionBtn">実行する</button>
+        </div>
+      </div>`
+    );
+    // Attach handler after DOM update
+    setTimeout(() => {
+      const btn = document.getElementById('confirmActionBtn');
+      if (btn) btn.onclick = () => { this.closeModal(); onConfirm(); };
+    }, 30);
   }
 };
 

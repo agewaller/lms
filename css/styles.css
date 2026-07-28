@@ -1797,3 +1797,37 @@ body.is-admin .admin-only { display: flex; }
   .sim-cards { grid-template-columns: 1fr; }
   .top-bar-title { font-size: 13px; }
 }
+
+/* ─── Onboarding Modal ─── */
+.onboarding-modal p {
+  font-size: 15px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.7;
+}
+.onboard-domains {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.onboard-domain-btn {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 18px; background: var(--bg-primary);
+  border: 1.5px solid var(--border); border-radius: 12px;
+  cursor: pointer; font-size: 14px; font-weight: 500;
+  text-align: left; transition: background 0.15s, border-color 0.15s;
+  width: 100%;
+}
+.onboard-domain-btn:hover { background: var(--accent-bg); border-color: var(--accent); }
+.onboard-num {
+  width: 34px; height: 34px; border-radius: 8px;
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; flex-shrink: 0;
+}
+.onboard-label { color: var(--text-primary); }
+
+/* ─── Daily check-in banner ─── */
+.checkin-banner {
+  background: linear-gradient(135deg, var(--accent) 0%, #4f46e5 100%);
+  color: #fff; border-radius: 14px; padding: 20px 24px;
+  margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.checkin-banner-text h4 { color: #fff; margin-bottom: 4px; font-size: 15px; }
+.checkin-banner-text p { color: rgba(255,255,255,0.85); font-size: 13px; margin: 0; }
+.checkin-banner .btn { background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.35); white-space: nowrap; }
+.checkin-banner .btn:hover { background: rgba(255,255,255,0.3); }
