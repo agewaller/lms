@@ -17,7 +17,7 @@ var App = class App {
     // Check if already authenticated
     if (store.get('isAuthenticated') && store.get('user')) {
       store.set('currentDomain', entryDomain || store.get('currentDomain') || 'health');
-      store.set('currentPage', 'home');
+      store.set('currentPage', store.get('onboardingDone') ? 'home' : 'onboarding');
       this.renderApp();
       this.startInboxPolling();
     }
@@ -26,7 +26,7 @@ var App = class App {
     store.on('isAuthenticated', (val) => {
       if (val) {
         store.set('currentDomain', this.entryDomain || store.get('currentDomain') || 'health');
-        store.set('currentPage', 'home');
+        store.set('currentPage', store.get('onboardingDone') ? 'home' : 'onboarding');
         this.renderApp();
         this.startInboxPolling();
       } else {
@@ -168,6 +168,53 @@ var App = class App {
     store.set('currentPage', page);
   }
 
+  // ─── Onboarding Wizard ───
+
+  onboardingNext() {
+    const step = store.get('onboardingStep') || 1;
+    store.set('onboardingStep', step + 1);
+    this.renderApp();
+  }
+
+  onboardingBack() {
+    const step = store.get('onboardingStep') || 1;
+    if (step > 1) store.set('onboardingStep', step - 1);
+    this.renderApp();
+  }
+
+  onboardingStep2Next() {
+    const name = document.getElementById('ob_name')?.value?.trim();
+    const age = document.getElementById('ob_age')?.value;
+    const gender = document.getElementById('ob_gender')?.value;
+    const profile = store.get('userProfile') || {};
+    if (name) profile.name = name;
+    if (age) profile.age = parseInt(age);
+    if (gender) profile.gender = gender;
+    store.set('userProfile', profile);
+    this.onboardingNext();
+  }
+
+  selectOnboardingDomain(domainId) {
+    store.set('onboardingDomain', domainId);
+    this.renderApp();
+  }
+
+  async onboardingFinish() {
+    const text = document.getElementById('ob_firstEntry')?.value?.trim();
+    const domain = store.get('onboardingDomain') || 'health';
+
+    if (text) {
+      store.addDomainEntry(domain, 'entries', { text, source: 'onboarding' });
+    }
+
+    store.set('currentDomain', domain);
+    store.set('onboardingDone', true);
+    store.set('onboardingStep', 1);
+    store.set('currentPage', 'home');
+    Components.showToast('ようこそ！記録を始めましょう', 'success');
+    this.renderApp();
+  }
+
   // ─── Main Render (未病ダイアリー方式) ───
   renderApp() {
     const page = store.get('currentPage');
@@ -179,8 +226,14 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
-    if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理', onboarding: 'ようこそ', data: 'データを見る', integrations: '連携' };
+    if (titleEl) {
+      if (page === 'onboarding') {
+        titleEl.textContent = 'ようこそ — LMS';
+      } else {
+        titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
+      }
+    }
 
     // Update sidebar nav active states
     document.querySelectorAll('.nav-item').forEach(el => {

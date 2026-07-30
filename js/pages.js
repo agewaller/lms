@@ -7,6 +7,7 @@ var Pages = {
   // ─── Main render dispatcher ───
   render(page, domain) {
     switch (page) {
+      case 'onboarding':   return this.renderOnboarding();
       case 'home':         return this.renderHome(domain);
       case 'data':         return this.renderDataBrowser(domain);
       case 'integrations': return this.renderIntegrations(domain);
@@ -27,9 +28,30 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // Daily check-in + streak
+    const hasToday = store.hasEntryToday();
+    const streak = store.get('streakDays') || 0;
+    const hour = new Date().getHours();
+    const greeting = hour < 11 ? 'おはようございます' : hour < 17 ? 'こんにちは' : 'こんばんは';
+    const user = store.get('user');
+    const firstName = (user?.displayName || '').split(' ')[0] || 'あなた';
+
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    let html = `<div class="page-home">`;
+
+    // Morning/daily greeting card
+    html += `<div class="daily-greeting-card">
+      <div class="greeting-left">
+        <div class="greeting-text">${greeting}、${Components.escapeHtml(firstName)}さん</div>
+        ${streak > 1 ? `<div class="streak-badge">🔥 ${streak}日連続記録中</div>` : ''}
+      </div>
+      ${!hasToday ? `<div class="greeting-nudge">
+        <span>今日の記録がまだありません</span>
+        <button class="btn btn-sm btn-primary" onclick="app.navigate('record')" style="margin-left:12px">記録する</button>
+      </div>` : `<div class="greeting-done">✅ 今日の記録済み</div>`}
+    </div>`;
+
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
@@ -1806,20 +1828,20 @@ var Pages = {
           <p style="padding:20px;text-align:center;color:var(--text-muted);">該当するユーザーがいません</p>
         ` : filtered.map(u => {
           const diseaseCount = (u.diseases || []).length;
-          const initial = (u.displayName || u.email || '?').charAt(0).toUpperCase();
+          const initial = Components.escapeHtml((u.displayName || u.email || '?').charAt(0).toUpperCase());
           const meta = [];
           if (u.age) meta.push(u.age + '歳');
           if (u.gender) meta.push(u.gender === 'male' ? '男性' : u.gender === 'female' ? '女性' : 'その他');
-          if (u.location) meta.push(u.location);
+          if (u.location) meta.push(Components.escapeHtml(u.location));
           const metaText = meta.join(' · ');
 
           return `<div class="admin-user-item clickable" onclick="app.showUserDetail('${u.uid}')">
             <div class="admin-user-info">
               <div class="admin-user-avatar">${initial}</div>
               <div>
-                <div class="admin-user-email">${u.displayName || u.email || '不明'}</div>
+                <div class="admin-user-email">${Components.escapeHtml(u.displayName || u.email || '不明')}</div>
                 <div class="admin-user-role">
-                  ${u.email ? u.email + '<br>' : ''}${metaText || 'プロフィール未設定'}
+                  ${u.email ? Components.escapeHtml(u.email) + '<br>' : ''}${metaText || 'プロフィール未設定'}
                   ${u.lastActive ? ' · 最終: ' + new Date(u.lastActive).toLocaleDateString('ja-JP') : ''}
                 </div>
               </div>
@@ -1894,6 +1916,128 @@ var Pages = {
   },
 
   // ─── Admin Tab: Data Management ───
+  // ═══════════════════════════════════════════════════════════
+  //  ONBOARDING WIZARD (新規ユーザー向け)
+  // ═══════════════════════════════════════════════════════════
+  renderOnboarding() {
+    const step = store.get('onboardingStep') || 1;
+    const profile = store.get('userProfile') || {};
+    const user = store.get('user') || {};
+
+    const steps = [
+      { num: 1, label: 'ようこそ' },
+      { num: 2, label: 'プロフィール' },
+      { num: 3, label: '気になる領域' },
+      { num: 4, label: '最初の記録' }
+    ];
+
+    const stepBar = `<div class="onboarding-steps">
+      ${steps.map(s => `
+        <div class="onboarding-step ${s.num < step ? 'done' : s.num === step ? 'active' : ''}">
+          <div class="ob-step-num">${s.num < step ? '✓' : s.num}</div>
+          <div class="ob-step-label">${s.label}</div>
+        </div>
+      `).join('<div class="ob-step-line"></div>')}
+    </div>`;
+
+    let body = '';
+    if (step === 1) {
+      body = `<div class="ob-step-body">
+        <div class="ob-welcome-icon">◈</div>
+        <h2>LMSへようこそ！</h2>
+        <p>LMSは、あなたの人生を6つの領域で整理し、毎日の記録をもとにやさしくサポートするシステムです。</p>
+        <p>最初に3分ほど設定するだけで、あなただけのアドバイザーになります。</p>
+        <div class="ob-domains-preview">
+          ${Object.entries(CONFIG.domains).map(([id, d]) => `
+            <div class="ob-domain-chip" style="background:${d.color}20;border:1px solid ${d.color}40;color:${d.color}">
+              <span>${d.icon}</span>${i18n.t(id)}
+            </div>
+          `).join('')}
+        </div>
+        <button class="btn btn-primary btn-lg" onclick="app.onboardingNext()">始めましょう →</button>
+      </div>`;
+    } else if (step === 2) {
+      body = `<div class="ob-step-body">
+        <h2>基本情報を教えてください</h2>
+        <p>あなたに合ったアドバイスをお届けするために使います。後から変更できます。</p>
+        <div class="form-group">
+          <label>お名前（ニックネームでも）</label>
+          <input type="text" id="ob_name" class="form-input" value="${Components.escapeHtml(profile.name || user.displayName || '')}" placeholder="山田 花子">
+        </div>
+        <div class="form-group">
+          <label>年齢</label>
+          <input type="number" id="ob_age" class="form-input" value="${profile.age || ''}" placeholder="65" min="0" max="120">
+        </div>
+        <div class="form-group">
+          <label>性別</label>
+          <select id="ob_gender" class="form-input">
+            <option value="">選択しない</option>
+            <option value="male" ${profile.gender === 'male' ? 'selected' : ''}>男性</option>
+            <option value="female" ${profile.gender === 'female' ? 'selected' : ''}>女性</option>
+            <option value="other" ${profile.gender === 'other' ? 'selected' : ''}>その他</option>
+          </select>
+        </div>
+        <div class="ob-actions">
+          <button class="btn btn-secondary" onclick="app.onboardingBack()">← 戻る</button>
+          <button class="btn btn-primary" onclick="app.onboardingStep2Next()">次へ →</button>
+        </div>
+      </div>`;
+    } else if (step === 3) {
+      const selectedDomain = store.get('onboardingDomain') || 'health';
+      body = `<div class="ob-step-body">
+        <h2>どの領域から始めますか？</h2>
+        <p>今一番気になることを選んでください。あとで全領域使えます。</p>
+        <div class="ob-domain-select">
+          ${Object.entries(CONFIG.domains).map(([id, d]) => `
+            <div class="ob-domain-option ${selectedDomain === id ? 'selected' : ''}"
+                 style="border-color:${selectedDomain === id ? d.color : 'transparent'};background:${selectedDomain === id ? d.color + '15' : ''}"
+                 onclick="app.selectOnboardingDomain('${id}')">
+              <div class="ob-domain-icon" style="background:${d.color}">${d.icon}</div>
+              <div class="ob-domain-name">${i18n.t(id)}</div>
+              <div class="ob-domain-desc">${Pages.getOnboardingDomainDesc(id)}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="ob-actions">
+          <button class="btn btn-secondary" onclick="app.onboardingBack()">← 戻る</button>
+          <button class="btn btn-primary" onclick="app.onboardingNext()">次へ →</button>
+        </div>
+      </div>`;
+    } else if (step === 4) {
+      const domain = store.get('onboardingDomain') || 'health';
+      const domainConfig = CONFIG.domains[domain];
+      body = `<div class="ob-step-body">
+        <h2>最初の記録をしましょう</h2>
+        <p>たった一言でも大丈夫です。「${i18n.t(domain)}」について今どう感じていますか？</p>
+        <div class="form-group">
+          <textarea id="ob_firstEntry" class="form-input" rows="4"
+            placeholder="例：最近少し疲れを感じています。散歩を再開したいと思っています。"></textarea>
+        </div>
+        <div class="ob-actions">
+          <button class="btn btn-secondary" onclick="app.onboardingBack()">← 戻る</button>
+          <button class="btn btn-primary btn-lg" onclick="app.onboardingFinish()">はじめる！</button>
+        </div>
+      </div>`;
+    }
+
+    return `<div class="page-onboarding">
+      ${stepBar}
+      ${body}
+    </div>`;
+  },
+
+  getOnboardingDomainDesc(id) {
+    const descs = {
+      consciousness: '心の状態・気持ちの記録',
+      health: '体調・お薬・睡眠の管理',
+      time: '時間の使い方・予定の管理',
+      work: '仕事・副業・ボランティア',
+      relationship: '家族・友人との関係',
+      assets: '資産・家計・老後の備え'
+    };
+    return descs[id] || '';
+  },
+
   renderAdminTab_data() {
     const user = store.get('user');
     return `<div class="card" style="margin-bottom:16px;">

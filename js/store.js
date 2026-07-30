@@ -109,7 +109,14 @@ var Store = class Store {
 
       // Notifications
       notifications: [],
-      unreadCount: 0
+      unreadCount: 0,
+
+      // Streak / engagement
+      streakDays: 0,
+      lastActivityDate: null,  // YYYY-MM-DD of last recorded entry
+      onboardingDone: false,   // true after first-login wizard is completed
+      onboardingStep: 1,
+      onboardingDomain: 'health'
     };
 
     this.listeners = new Map();
@@ -182,7 +189,8 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'streakDays', 'lastActivityDate', 'onboardingDone', 'onboardingStep', 'onboardingDomain'
     ];
   }
 
@@ -223,6 +231,7 @@ var Store = class Store {
       this.state[key] = [...this.state[key], entry];
       this.notify(key, this.state[key]);
       this.saveToStorage(key, this.state[key]);
+      this.updateStreak();
     }
     return entry;
   }
@@ -269,10 +278,43 @@ var Store = class Store {
     return score;
   }
 
+  // ─── Streak / Engagement Helpers ───
+
+  // Call after every entry save to keep streak current.
+  updateStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    const last = this.state.lastActivityDate;
+    if (last === today) return; // already counted today
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yd = yesterday.toISOString().slice(0, 10);
+
+    const current = this.state.streakDays || 0;
+    const newStreak = (last === yd) ? current + 1 : 1; // reset if gap
+    this.set('streakDays', newStreak);
+    this.set('lastActivityDate', today);
+  }
+
+  // Returns true if user has any entry saved today across all domains.
+  hasEntryToday() {
+    const today = new Date().toISOString().slice(0, 10);
+    const domainKeys = Object.keys(this.state).filter(k =>
+      k.includes('_') && Array.isArray(this.state[k]) &&
+      !k.startsWith('auto') && !k.startsWith('time_marketplace') &&
+      k !== 'analysisHistory' && k !== 'conversationHistory' &&
+      k !== 'recommendations' && k !== 'actionItems' && k !== 'aiComments'
+    );
+    return domainKeys.some(k =>
+      this.state[k].some(e => e.timestamp && e.timestamp.startsWith(today))
+    );
+  }
+
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // Remove only lms_ prefixed keys to preserve Firebase config, OAuth tokens etc.
+    Object.keys(localStorage).filter(k => k.startsWith('lms_')).forEach(k => localStorage.removeItem(k));
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
