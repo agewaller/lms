@@ -434,6 +434,14 @@ var App = class App {
   }
 
   // ─── AI Chat ───
+  useStarter(domain, text) {
+    const input = document.getElementById('chatInput');
+    if (input) {
+      input.value = text;
+      input.focus();
+    }
+  }
+
   async sendChat(domain) {
     const input = document.getElementById('chatInput');
     if (!input || !input.value.trim()) return;

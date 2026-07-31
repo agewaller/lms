@@ -786,24 +786,76 @@ var Pages = {
       .filter(m => m.domain === domain || !m.domain)
       .slice(-50);
 
+    // Domain-specific starter questions (for 65+ users)
+    const starters = {
+      health: [
+        '最近の体調で気になることがあります',
+        '飲んでいる薬について教えてほしいことがあります',
+        '血圧が高めなのですが、何か気をつけることはありますか？',
+        '睡眠の質を上げるにはどうすればいいですか？'
+      ],
+      consciousness: [
+        '最近、気分が落ち込みがちです',
+        '毎日の感謝の気持ちを持つにはどうすればいいですか？',
+        '心の平和を保つコツを教えてください',
+        '朝の過ごし方を変えたいと思っています'
+      ],
+      time: [
+        '退職後の時間の使い方が分かりません',
+        '毎日の習慣を作りたいと思っています',
+        '趣味を見つけたいのですが何から始めれば良いですか？',
+        '生活リズムを整えるアドバイスがほしいです'
+      ],
+      work: [
+        '定年後も社会と関わりたいと思っています',
+        '経験を活かしてできる仕事を探しています',
+        'ボランティアに興味があります',
+        '副収入を得る方法を教えてほしいです'
+      ],
+      relationship: [
+        '子供や孫ともっと仲良くしたいです',
+        '友人との関係を大切にする方法を教えてください',
+        '最近、孤独を感じることがあります',
+        '地域のコミュニティに参加したいのですが'
+      ],
+      assets: [
+        'NISAを始めたいのですがどうすれば良いですか？',
+        '老後の資金が心配です',
+        '家計の見直しをしたいと思っています',
+        '投資のリスクが怖くて踏み出せません'
+      ]
+    };
+
+    const domainStarters = starters[domain] || [];
+
     let html = `<div class="page-ask-ai">
       <h2>${i18n.t(domain)} - 相談する</h2>
 
       <div class="chat-container" id="chatContainer">
-        ${history.length === 0 ?
-          Components.emptyState('💬', '相談する', i18n.t('quick_input_placeholder')) :
-          history.map(m => Components.chatMessage(m)).join('')
-        }
+        ${history.length === 0 ? `
+          <div class="chat-welcome">
+            <div class="chat-welcome-icon">◇</div>
+            <p class="chat-welcome-text">どんなことでもお気軽にどうぞ。<br>気になること、困っていること、聞きたいことを教えてください。</p>
+            ${domainStarters.length > 0 ? `
+              <div class="chat-starters">
+                <p class="starters-label">よくある相談</p>
+                ${domainStarters.map(s => `
+                  <button class="starter-btn" onclick="app.useStarter('${domain}', '${s.replace(/'/g, "\\'")}')">${s}</button>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        ` : history.map(m => Components.chatMessage(m)).join('')}
       </div>
 
       <div class="chat-input-bar">
         <textarea id="chatInput" class="form-input" rows="2"
-          placeholder="${i18n.t('quick_input_placeholder')}"
+          placeholder="ここに書いてください..."
           onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();app.sendChat('${domain}')}"></textarea>
         <button class="btn btn-primary" onclick="app.sendChat('${domain}')">${i18n.t('send')}</button>
       </div>
 
-      ${store.get('isAnalyzing') ? Components.loading(i18n.t('analyzing')) : ''}
+      ${store.get('isAnalyzing') ? Components.loading('考えています...') : ''}
     </div>`;
 
     return html;

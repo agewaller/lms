@@ -1319,6 +1319,53 @@ body.is-admin .admin-only { display: flex; }
 .chat-input-bar { display: flex; gap: 10px; }
 .chat-input-bar .form-input { flex: 1; }
 
+/* ─── Chat welcome / starter buttons ─── */
+.chat-welcome {
+  text-align: center;
+  padding: 32px 16px;
+}
+.chat-welcome-icon {
+  font-size: 40px;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.chat-welcome-text {
+  font-size: 17px;
+  color: var(--text-secondary);
+  line-height: 1.8;
+  margin-bottom: 24px;
+}
+.chat-starters {
+  text-align: left;
+}
+.starters-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+.starter-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 15px;
+  color: var(--text-primary);
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: all 0.15s;
+}
+.starter-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 5%, var(--bg-secondary));
+}
+
 /* ─── Settings Page ─── */
 .settings-section {
   background: var(--bg-card); border-radius: var(--radius);
