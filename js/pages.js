@@ -7,6 +7,7 @@ var Pages = {
   // ─── Main render dispatcher ───
   render(page, domain) {
     switch (page) {
+      case 'onboarding':   return this.renderOnboarding();
       case 'home':         return this.renderHome(domain);
       case 'data':         return this.renderDataBrowser(domain);
       case 'integrations': return this.renderIntegrations(domain);
@@ -20,6 +21,122 @@ var Pages = {
   },
 
   // ═══════════════════════════════════════════════════════════
+  //  ONBOARDING WIZARD (first-time users)
+  // ═══════════════════════════════════════════════════════════
+  renderOnboarding() {
+    const step = store.get('onboardingStep') || 0;
+    const user = store.get('user') || {};
+    const name = user.displayName?.split(' ')[0] || 'あなた';
+
+    const domainInfo = {
+      health:          { icon: '二', color: '#10b981', label: '健康', desc: '体調・薬・睡眠の管理' },
+      consciousness:   { icon: '一', color: '#6C63FF', label: '意識', desc: '心の状態・瞑想・感謝' },
+      relationship:    { icon: '五', color: '#ef4444', label: '関係', desc: '大切な人とのつながり' },
+      assets:          { icon: '六', color: '#d97706', label: '資産', desc: '資産・投資・家計' },
+      time:            { icon: '三', color: '#f59e0b', label: '時間', desc: '時間の使い方・習慣' },
+      work:            { icon: '四', color: '#3b82f6', label: '仕事', desc: '生きがい・副業・社会参加' }
+    };
+
+    let html = `<div class="page-onboarding">`;
+
+    if (step === 0) {
+      html += `
+        <div class="onboarding-welcome">
+          <div class="onboarding-logo">◈</div>
+          <h1>ようこそ、${Components.escapeHtml(name)}さん</h1>
+          <p class="onboarding-lead">
+            LMSは、あなたの毎日をやさしく整えるお手伝いをします。<br>
+            <strong>意識・健康・時間・仕事・関係・資産</strong>の6つの視点から、<br>
+            今のあなたに合ったアドバイスをお届けします。
+          </p>
+          <p class="onboarding-sub">まず、いくつか教えてください。3分でできます。</p>
+          <button class="btn btn-primary btn-lg" onclick="app.onboardingNext()">はじめる →</button>
+        </div>`;
+
+    } else if (step === 1) {
+      html += `
+        <div class="onboarding-step">
+          <div class="step-indicator">ステップ 1 / 3</div>
+          <h2>今、一番気になっていることは？</h2>
+          <p>最初に重点的にサポートする領域を選んでください。後から変更できます。</p>
+          <div class="onboarding-domains">
+            ${Object.entries(domainInfo).map(([id, d]) => `
+              <button class="onboarding-domain-btn" style="--dc:${d.color}" onclick="app.onboardingSelectDomain('${id}')">
+                <span class="od-icon" style="background:${d.color}">${d.icon}</span>
+                <span class="od-label">${d.label}</span>
+                <span class="od-desc">${d.desc}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>`;
+
+    } else if (step === 2) {
+      html += `
+        <div class="onboarding-step">
+          <div class="step-indicator">ステップ 2 / 3</div>
+          <h2>少しだけ教えてください</h2>
+          <p>より的確なアドバイスのために使います。すべて任意です。</p>
+          <div class="onboarding-form">
+            <div class="form-group">
+              <label>おなまえ（ニックネームでも）</label>
+              <input type="text" id="ob_name" class="form-input form-input-lg"
+                value="${Components.escapeHtml(user.displayName || '')}"
+                placeholder="例: 鈴木さん">
+            </div>
+            <div class="form-group">
+              <label>年齢</label>
+              <input type="number" id="ob_age" class="form-input form-input-lg"
+                min="1" max="120" placeholder="例: 68">
+            </div>
+            <div class="form-group">
+              <label>性別</label>
+              <select id="ob_gender" class="form-input form-input-lg">
+                <option value="">選択しない</option>
+                <option value="male">男性</option>
+                <option value="female">女性</option>
+                <option value="other">その他</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>お住まいの地域</label>
+              <input type="text" id="ob_location" class="form-input form-input-lg"
+                placeholder="例: 東京都">
+            </div>
+          </div>
+          <div class="onboarding-btns">
+            <button class="btn btn-secondary" onclick="app.onboardingBack()">← 戻る</button>
+            <button class="btn btn-primary btn-lg" onclick="app.onboardingNext()">次へ →</button>
+          </div>
+        </div>`;
+
+    } else if (step === 3) {
+      const domain = store.get('currentDomain') || 'health';
+      const d = domainInfo[domain] || domainInfo.health;
+      html += `
+        <div class="onboarding-step onboarding-finish">
+          <div class="finish-icon" style="background:${d.color}">${d.icon}</div>
+          <h2>準備ができました！</h2>
+          <p>
+            <strong>${d.label}</strong>を最初の領域に設定しました。<br>
+            早速、今日の状態を記録してみましょう。
+          </p>
+          <div class="onboarding-tips">
+            <div class="tip">📝 毎日少しずつ記録するだけでOK</div>
+            <div class="tip">💬 気になることはいつでも相談できます</div>
+            <div class="tip">📊 記録が増えるほど、アドバイスが精度を増します</div>
+          </div>
+          <div class="onboarding-btns">
+            <button class="btn btn-secondary" onclick="app.onboardingBack()">← 戻る</button>
+            <button class="btn btn-primary btn-lg" onclick="app.onboardingFinish()">記録を始める ✓</button>
+          </div>
+        </div>`;
+    }
+
+    html += `</div>`;
+    return html;
+  },
+
+  // ═══════════════════════════════════════════════════════════
   //  HOME PAGE (per domain)
   // ═══════════════════════════════════════════════════════════
   renderHome(domain) {
@@ -27,9 +144,34 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // Check if user has recorded anything today (for streak/check-in banner)
+    const today = new Date().toDateString();
+    const todayRecorded = Object.keys(CONFIG.domains[domain]?.categories || {}).some(cat => {
+      const data = store.getDomainData(domain, cat, 1);
+      return data.some(e => new Date(e.timestamp).toDateString() === today);
+    });
+
+    // Calculate streak (consecutive days with any record in this domain)
+    const streakDays = this.calculateStreak(domain);
+
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    let html = `<div class="page-home">`;
+
+    // Daily check-in banner (only if not yet recorded today)
+    if (!todayRecorded) {
+      const domainLabel = i18n.t(domain);
+      html += `<div class="daily-checkin">
+        <div class="daily-checkin-text">
+          <h3>今日の${domainLabel}を記録しましょう</h3>
+          <p>毎日の記録が、より良いアドバイスにつながります</p>
+        </div>
+        <button class="btn btn-white" onclick="app.navigate('record')">記録する</button>
+      </div>`;
+    } else if (streakDays >= 3) {
+      html += `<div class="streak-badge">🔥 ${streakDays}日連続記録中！</div>`;
+    }
+
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
@@ -334,6 +476,30 @@ var Pages = {
   },
 
   // ─── Stock Analysis Widget (Assets domain) ───
+  // ─── Calculate recording streak (consecutive days with any entry) ───
+  calculateStreak(domain) {
+    const categories = Object.keys(CONFIG.domains[domain]?.categories || {});
+    const allEntries = [];
+    categories.forEach(cat => {
+      allEntries.push(...store.getDomainData(domain, cat, 90));
+    });
+    if (allEntries.length === 0) return 0;
+
+    const days = new Set(allEntries.map(e => new Date(e.timestamp).toDateString()));
+    let streak = 0;
+    const today = new Date();
+    for (let i = 0; i < 90; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      if (days.has(d.toDateString())) {
+        streak++;
+      } else if (i > 0) {
+        break;
+      }
+    }
+    return streak;
+  },
+
   renderStockAnalysisWidget() {
     return `<div class="stock-analysis-section">
       <h3>${i18n.t('stock_investment')}</h3>

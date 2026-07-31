@@ -17,7 +17,8 @@ var App = class App {
     // Check if already authenticated
     if (store.get('isAuthenticated') && store.get('user')) {
       store.set('currentDomain', entryDomain || store.get('currentDomain') || 'health');
-      store.set('currentPage', 'home');
+      const startPage = store.get('onboardingComplete') ? 'home' : 'onboarding';
+      store.set('currentPage', startPage);
       this.renderApp();
       this.startInboxPolling();
     }
@@ -26,7 +27,9 @@ var App = class App {
     store.on('isAuthenticated', (val) => {
       if (val) {
         store.set('currentDomain', this.entryDomain || store.get('currentDomain') || 'health');
-        store.set('currentPage', 'home');
+        // Show onboarding wizard for first-time users
+        const startPage = store.get('onboardingComplete') ? 'home' : 'onboarding';
+        store.set('currentPage', startPage);
         this.renderApp();
         this.startInboxPolling();
       } else {
@@ -158,6 +161,48 @@ var App = class App {
     }
   }
 
+  // ─── Onboarding ───
+  onboardingNext() {
+    const step = store.get('onboardingStep') || 0;
+    if (step === 2) {
+      // Save profile from form
+      const profile = store.get('userProfile') || {};
+      const name = document.getElementById('ob_name')?.value?.trim();
+      const age = document.getElementById('ob_age')?.value;
+      const gender = document.getElementById('ob_gender')?.value;
+      const location = document.getElementById('ob_location')?.value?.trim();
+      if (name) profile.name = name;
+      if (age) profile.age = parseInt(age, 10);
+      if (gender) profile.gender = gender;
+      if (location) profile.location = location;
+      store.set('userProfile', profile);
+    }
+    store.set('onboardingStep', step + 1);
+    this.renderApp();
+  }
+
+  onboardingBack() {
+    const step = store.get('onboardingStep') || 0;
+    if (step > 0) {
+      store.set('onboardingStep', step - 1);
+      this.renderApp();
+    }
+  }
+
+  onboardingSelectDomain(domain) {
+    store.set('currentDomain', domain);
+    store.set('onboardingStep', 2);
+    this.renderApp();
+  }
+
+  onboardingFinish() {
+    store.set('onboardingComplete', true);
+    store.set('onboardingStep', 0);
+    store.set('currentPage', 'record');
+    this.renderApp();
+    Components.showToast('ようこそ！まず今日の記録をしてみましょう', 'success');
+  }
+
   // ─── Navigation ───
   switchDomain(domain) {
     store.set('currentDomain', domain);
@@ -179,7 +224,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理', data: 'データ', integrations: '連携' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
