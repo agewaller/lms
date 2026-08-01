@@ -138,6 +138,7 @@ var Pages = {
       html += this.renderHealthDailyCheckIn();
       html += this.renderSleepCheckIn();
       html += this.renderWaterIntake();
+      html += this.renderStepCounter();
       html += this.renderBPStatus();
       html += this.renderVitalsChart();
       html += this.renderMedicationReminder();
@@ -504,6 +505,49 @@ var Pages = {
     if (delta > 0) Components.showToast(`水分補給 ${glasses}杯目！`, 'success');
     const widget = document.querySelector('.water-widget');
     if (widget) widget.outerHTML = this.renderWaterIntake();
+    else if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Step Counter Widget ───
+  renderStepCounter() {
+    const today = new Date().toISOString().slice(0, 10);
+    const stepsData = store.get('health_steps') || {};
+    const steps = stepsData[today] || 0;
+    const goal = 5000; // WHO推奨（65歳以上は5000〜7500歩）
+    const pct = Math.min(100, Math.round(steps / goal * 100));
+    const emoji = steps === 0 ? '🚶' : steps < goal / 2 ? '👣' : steps < goal ? '🏃' : '🎯';
+    const presets = [500, 1000, 2000, 3000, 5000];
+
+    return `<div class="steps-widget">
+      <div class="sw-header">
+        <span class="sw-title">${emoji} 歩数</span>
+        <span class="sw-count">${steps.toLocaleString()} 歩</span>
+      </div>
+      <div class="sw-bar"><div class="sw-fill" style="width:${pct}%"></div></div>
+      <div class="sw-info">${steps >= goal ? '目標達成！よく動けました' : `目標まであと${(goal - steps).toLocaleString()}歩（目標：${goal.toLocaleString()}歩）`}</div>
+      <div class="sw-presets">
+        ${presets.map(n => `<button class="btn btn-sm btn-secondary sw-preset" onclick="Pages.addSteps(${n})">+${(n/1000).toFixed(n < 1000 ? 1 : 0)}k歩</button>`).join('')}
+        <button class="btn btn-sm btn-danger" onclick="Pages.addSteps(0, true)" ${steps <= 0 ? 'disabled' : ''}>リセット</button>
+      </div>
+    </div>`;
+  },
+
+  addSteps(delta, reset = false) {
+    const today = new Date().toISOString().slice(0, 10);
+    const stepsData = store.get('health_steps') || {};
+    if (reset) {
+      stepsData[today] = 0;
+    } else {
+      stepsData[today] = (stepsData[today] || 0) + delta;
+    }
+    store.set('health_steps', stepsData);
+    if (!reset) {
+      const total = stepsData[today];
+      if (total >= 5000 && total - delta < 5000) Components.showToast('目標5,000歩達成！素晴らしい！', 'success');
+      else Components.showToast(`${total.toLocaleString()}歩`, 'success');
+    }
+    const widget = document.querySelector('.steps-widget');
+    if (widget) widget.outerHTML = this.renderStepCounter();
     else if (typeof app !== 'undefined') app.renderApp();
   },
 
