@@ -2052,3 +2052,58 @@ body.is-admin .admin-only { display: flex; }
 .vitals-chart-section { background: var(--bg-card); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
 .vitals-chart-section h3 { margin: 0 0 16px; font-size: 16px; font-weight: 600; }
 .vitals-chart-wrap { position: relative; max-height: 240px; }
+
+/* ─── Weekly Summary Card ─── */
+.weekly-summary-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+}
+.wsc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.wsc-header h3 { margin: 0; font-size: 16px; font-weight: 600; }
+.wsc-coverage { display: flex; align-items: center; gap: 10px; }
+.wsc-days-label { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+.wsc-progress-bar {
+  width: 80px; height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: 3px; overflow: hidden;
+}
+.wsc-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #10b981);
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+.wsc-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.wsc-metric {
+  flex: 1;
+  min-width: 80px;
+  max-width: 120px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  padding: 12px 8px;
+  text-align: center;
+}
+.wsc-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+.wsc-value { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+.wsc-label { font-size: 11px; color: var(--text-secondary); }
+.wsc-message {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+}

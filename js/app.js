@@ -1868,7 +1868,7 @@ var App = class App {
       const result = await AIEngine.analyze(null, 'text_analysis', { text: 'テスト' });
       if (resultEl) resultEl.innerHTML = '<div class="toast toast-success" style="position:static;opacity:1;margin-top:10px;">✓ 接続成功</div>';
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = '<div class="toast toast-error" style="position:static;opacity:1;margin-top:10px;">✗ ' + e.message + '</div>';
+      if (resultEl) resultEl.innerHTML = '<div class="toast toast-error" style="position:static;opacity:1;margin-top:10px;">✗ ' + Components.escapeHtml(e.message) + '</div>';
     }
   }
 

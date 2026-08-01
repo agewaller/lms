@@ -78,6 +78,9 @@ var Pages = {
       </div>
     </div>`;
 
+    // Week-in-review summary (shown only when user has data)
+    html += this.renderWeeklySummary(domain);
+
     // Recent records
     html += `<div class="recent-section">
       <h3>${i18n.t('recent_records')}</h3>
@@ -423,6 +426,111 @@ var Pages = {
       <button class="btn btn-sm btn-secondary" style="margin-top:8px" onclick="app.navigate('record')">
         今日のデータを記録
       </button>
+    </div>`;
+  },
+
+  // ─── Week-in-Review Summary Card ───
+  renderWeeklySummary(domain) {
+    const domainConfig = CONFIG.domains[domain];
+    const categories = Object.keys(domainConfig?.categories || {});
+
+    let totalRecords = 0;
+    const daysCovered = new Set();
+    categories.forEach(cat => {
+      const data = store.getDomainData(domain, cat, 7);
+      totalRecords += data.length;
+      data.forEach(e => { if (e.timestamp) daysCovered.add(e.timestamp.slice(0, 10)); });
+    });
+
+    if (totalRecords === 0) return '';
+
+    const days = daysCovered.size;
+    const pct = Math.round(days / 7 * 100);
+    const metrics = [];
+
+    if (domain === 'health') {
+      const symptoms = store.getDomainData('health', 'symptoms', 7);
+      const sleep = store.getDomainData('health', 'sleepData', 7);
+      const vitals = store.getDomainData('health', 'vitals', 7);
+      if (symptoms.length > 0) {
+        const avg = (symptoms.reduce((s, e) => s + (e.condition_level || 5), 0) / symptoms.length).toFixed(1);
+        metrics.push({ icon: '🤒', label: '体調平均', value: avg + '/10' });
+      }
+      if (sleep.length > 0) {
+        const avg = (sleep.reduce((s, e) => s + (e.quality || 5), 0) / sleep.length).toFixed(1);
+        metrics.push({ icon: '😴', label: '睡眠品質', value: avg + '/10' });
+      }
+      const bpVitals = vitals.filter(v => v.bp_systolic);
+      if (bpVitals.length > 0) {
+        const sys = Math.round(bpVitals.reduce((s, v) => s + (v.bp_systolic || 0), 0) / bpVitals.length);
+        const dia = Math.round(bpVitals.reduce((s, v) => s + (v.bp_diastolic || 0), 0) / bpVitals.length);
+        metrics.push({ icon: '❤️', label: '血圧平均', value: sys + '/' + dia });
+      }
+      metrics.push({ icon: '📋', label: '記録日数', value: days + '/7日' });
+    } else if (domain === 'consciousness') {
+      const entries = store.getDomainData('consciousness', 'entries', 7);
+      const moodEntries = entries.filter(e => e.mood_level);
+      if (moodEntries.length > 0) {
+        const avg = (moodEntries.reduce((s, e) => s + (e.mood_level || 3), 0) / moodEntries.length).toFixed(1);
+        const emoji = avg >= 4 ? '😊' : avg >= 3 ? '😐' : '😔';
+        metrics.push({ icon: emoji, label: '気分平均', value: avg + '/5' });
+      }
+      const obs = store.getDomainData('consciousness', 'observation', 7);
+      metrics.push({ icon: '👁️', label: '定点観測', value: obs.length + '回' });
+      metrics.push({ icon: '📝', label: '日記', value: entries.filter(e => e.type === 'diary').length + '回' });
+      metrics.push({ icon: '📅', label: '記録日数', value: days + '/7日' });
+    } else if (domain === 'time') {
+      const logs = store.getDomainData('time', 'entries', 7);
+      const totalMin = logs.reduce((s, e) => s + (e.duration || 0), 0);
+      if (totalMin > 0) metrics.push({ icon: '⏱️', label: '記録時間', value: Math.round(totalMin / 60) + '時間' });
+      if (logs.length > 0) {
+        const avgProd = (logs.reduce((s, e) => s + (e.productivity || 5), 0) / logs.length).toFixed(1);
+        metrics.push({ icon: '📊', label: '生産性', value: avgProd + '/10' });
+      }
+      const habits = store.getDomainData('time', 'habits', 7);
+      metrics.push({ icon: '🔄', label: '習慣', value: habits.length + '回' });
+      metrics.push({ icon: '📅', label: '記録日数', value: days + '/7日' });
+    } else if (domain === 'work') {
+      const tasks = store.getDomainData('work', 'tasks', 7);
+      const done = tasks.filter(t => t.status === 'done').length;
+      metrics.push({ icon: '✅', label: '完了タスク', value: done + '/' + tasks.length });
+      metrics.push({ icon: '📅', label: '記録日数', value: days + '/7日' });
+    } else if (domain === 'relationship') {
+      const interactions = store.getDomainData('relationship', 'interactions', 7);
+      const contacted = new Set(interactions.map(i => i.person)).size;
+      metrics.push({ icon: '💬', label: '連絡した人', value: contacted + '人' });
+      metrics.push({ icon: '📞', label: '連絡回数', value: interactions.length + '回' });
+      metrics.push({ icon: '📅', label: '記録日数', value: days + '/7日' });
+    } else if (domain === 'assets') {
+      const income = store.getDomainData('assets', 'income', 7);
+      const expenses = store.getDomainData('assets', 'expenses', 7);
+      const totalIncome = income.reduce((s, e) => s + (e.amount || 0), 0);
+      const totalExpenses = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+      if (totalIncome > 0) metrics.push({ icon: '💵', label: '収入', value: totalIncome.toLocaleString() + '円' });
+      if (totalExpenses > 0) metrics.push({ icon: '🧾', label: '支出', value: totalExpenses.toLocaleString() + '円' });
+      metrics.push({ icon: '📅', label: '記録日数', value: days + '/7日' });
+    }
+
+    const msg = pct >= 86 ? 'すばらしい！1週間きちんと記録できています。'
+               : pct >= 57 ? 'いい調子です。もう少しで毎日記録達成！'
+               : '記録を続けると、自分の変化がよく見えてきます。';
+
+    return `<div class="weekly-summary-card">
+      <div class="wsc-header">
+        <h3>📅 この1週間のまとめ</h3>
+        <div class="wsc-coverage">
+          <span class="wsc-days-label">${days}/7日記録</span>
+          <div class="wsc-progress-bar"><div class="wsc-progress-fill" style="width:${pct}%"></div></div>
+        </div>
+      </div>
+      <div class="wsc-metrics">
+        ${metrics.map(m => `<div class="wsc-metric">
+          <span class="wsc-icon">${m.icon}</span>
+          <div class="wsc-value">${Components.escapeHtml(String(m.value))}</div>
+          <div class="wsc-label">${m.label}</div>
+        </div>`).join('')}
+      </div>
+      <p class="wsc-message">${msg}</p>
     </div>`;
   },
 
@@ -1239,7 +1347,7 @@ var Pages = {
             <div class="form-group" style="flex:2;">
               <label>検索</label>
               <input type="text" id="dataSearch" class="form-input"
-                value="${filter.search}"
+                value="${Components.escapeHtml(filter.search || '')}"
                 placeholder="記録の中身を検索..."
                 oninput="app.filterDataBrowser('search',this.value)">
             </div>
