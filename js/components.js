@@ -249,6 +249,29 @@ var Components = {
     </div>`;
   },
 
+  // ─── Confirm Dialog (mobile-safe replacement for confirm()) ───
+  showConfirm(message, onYes, options = {}) {
+    const confirmText = options.confirmText || '実行する';
+    const cancelText = options.cancelText || 'キャンセル';
+    const btnClass = options.danger ? 'btn-danger' : 'btn-primary';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active';
+    overlay.innerHTML = `<div class="modal" style="max-width:340px">
+      <div class="modal-body" style="padding:28px 24px;text-align:center">
+        <p style="margin:0 0 24px;font-size:16px;line-height:1.6">${this.escapeHtml(message)}</p>
+        <div style="display:flex;gap:12px;justify-content:center">
+          <button class="btn btn-secondary" id="_confirmNo">${cancelText}</button>
+          <button class="btn ${btnClass}" id="_confirmYes">${confirmText}</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+    const close = () => document.body.removeChild(overlay);
+    overlay.querySelector('#_confirmYes').onclick = () => { close(); onYes && onYes(); };
+    overlay.querySelector('#_confirmNo').onclick = () => close();
+  },
+
   // ─── Record List Item ───
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';
@@ -266,5 +289,16 @@ var Components = {
       </div>
       <div class="record-summary">${summary}</div>
     </div>`;
+  },
+
+  // ─── XSS-safe string escape ───
+  escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 };
