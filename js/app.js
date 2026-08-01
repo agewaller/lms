@@ -1736,6 +1736,8 @@ var App = class App {
     const latestWeight = weightData.length ? weightData[weightData.length - 1].weight : null;
     const avgSleep = sleep.length ? (sleep.reduce((s, v) => s + (v.quality || 0), 0) / sleep.length).toFixed(1) : null;
 
+    const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
     let html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
       <title>健康サマリー ${today}</title>
       <style>
@@ -1753,7 +1755,7 @@ var App = class App {
       </style></head><body>`;
 
     html += `<h1>健康サマリー</h1>
-      <p class="label">作成日：${today}　／　氏名：${profile.name || '（未登録）'}　年齢：${profile.age || '-'}歳</p>`;
+      <p class="label">作成日：${today}　／　氏名：${esc(profile.name) || '（未登録）'}　年齢：${esc(profile.age) || '-'}歳</p>`;
 
     // Vitals summary
     html += `<h2>バイタル（直近${bpData.length}回の平均）</h2><div class="row">`;
@@ -1780,7 +1782,7 @@ var App = class App {
       html += `<h2>お薬（${medList.length}種類）</h2>
         <table><tr><th>薬品名</th><th>用量</th><th>タイミング</th></tr>`;
       medList.forEach(m => {
-        html += `<tr><td>${m.name || ''}</td><td>${m.dosage || '-'}</td><td>${timings[m.timing] || m.timing || '-'}</td></tr>`;
+        html += `<tr><td>${esc(m.name)}</td><td>${esc(m.dosage) || '-'}</td><td>${esc(timings[m.timing] || m.timing) || '-'}</td></tr>`;
       });
       html += `</table>`;
     }
@@ -1791,14 +1793,14 @@ var App = class App {
         <table><tr><th>日時</th><th>体調レベル</th><th>疲労</th><th>痛み</th><th>メモ</th></tr>`;
       symptoms.slice(-10).reverse().forEach(s => {
         const d = new Date(s.timestamp).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
-        html += `<tr><td>${d}</td><td>${s.condition_level || '-'}/10</td><td>${s.fatigue_level || '-'}/10</td><td>${s.pain_level || '-'}/10</td><td>${s.notes || ''}</td></tr>`;
+        html += `<tr><td>${d}</td><td>${esc(s.condition_level) || '-'}/10</td><td>${esc(s.fatigue_level) || '-'}/10</td><td>${esc(s.pain_level) || '-'}/10</td><td>${esc(s.notes)}</td></tr>`;
       });
       html += `</table>`;
     }
 
     // Diseases
     if (Array.isArray(profile.diseases) && profile.diseases.length > 0) {
-      html += `<h2>既往症・持病</h2><p>${profile.diseases.join('、')}</p>`;
+      html += `<h2>既往症・持病</h2><p>${profile.diseases.map(esc).join('、')}</p>`;
     }
 
     html += `<p style="color:#999;font-size:12px;margin-top:32px;">
@@ -2253,7 +2255,7 @@ var App = class App {
 
     const scores = user.domainScores || {};
     const scoreHtml = Object.entries(scores).map(([d, s]) =>
-      `<div class="user-score-item"><span>${i18n.t(d)}</span><strong>${s}</strong></div>`
+      `<div class="user-score-item"><span>${i18n.t(d)}</span><strong>${Components.escapeHtml(String(s ?? ''))}</strong></div>`
     ).join('');
 
     const e = s => Components.escapeHtml(s ?? '-');

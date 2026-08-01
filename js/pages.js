@@ -2245,7 +2245,7 @@ var Pages = {
       <div class="user-filters">
         <div class="form-group" style="flex:2;">
           <input type="text" id="userSearch" class="form-input"
-            value="${filter.search}"
+            value="${Components.escapeHtml(filter.search || '')}"
             placeholder="名前・メール・居住地・症状で検索..."
             oninput="app.filterUsers('search', this.value)">
         </div>
