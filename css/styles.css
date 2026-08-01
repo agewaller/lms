@@ -1928,3 +1928,51 @@ body.is-admin .admin-only { display: flex; }
 .med-name { flex: 1; font-weight: 500; }
 .med-timing { font-size: 12px; color: var(--text-secondary); background: var(--bg-tertiary); padding: 2px 8px; border-radius: 20px; }
 .med-dosage { font-size: 12px; color: var(--text-secondary); }
+
+/* ─── Notification Bell ─── */
+.notif-wrapper { position: relative; }
+.notif-bell-btn { position: relative; font-size: 16px; min-width: 38px; }
+.notif-badge {
+  position: absolute;
+  top: -4px; right: -4px;
+  min-width: 18px; height: 18px;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  pointer-events: none;
+  border: 2px solid var(--bg-primary);
+}
+.notif-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 300px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  overflow: hidden;
+}
+.notif-dropdown.open { display: block; }
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-item:hover { background: var(--bg-secondary); }
+.notif-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+.notif-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+.notif-body { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+.notif-empty { padding: 20px 16px; text-align: center; color: var(--text-secondary); font-size: 14px; }

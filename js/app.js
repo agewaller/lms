@@ -20,6 +20,7 @@ var App = class App {
       store.set('currentPage', 'home');
       this.renderApp();
       this.startInboxPolling();
+      this.startNotificationTimer();
     }
 
     // Listen for auth changes
@@ -29,6 +30,7 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        this.startNotificationTimer();
       } else {
         this.stopInboxPolling();
       }
@@ -227,6 +229,9 @@ var App = class App {
         if (typeof AssetsFeatures !== 'undefined') AssetsFeatures.calculateNISA();
       }, 100);
     }
+
+    // Update notification badge
+    this.updateNotificationBadge();
   }
 
   updateSidebar() {
@@ -254,6 +259,123 @@ var App = class App {
     // and inline style would override the CSS class toggling.
     const isAdmin = FirebaseBackend.isAdmin();
     document.body.classList.toggle('is-admin', isAdmin);
+  }
+
+  // ─── Notification System ───
+
+  startNotificationTimer() {
+    if (this._notifTimer) return;
+    this.updateNotificationBadge();
+    // Refresh badge every 5 minutes
+    this._notifTimer = setInterval(() => this.updateNotificationBadge(), 5 * 60 * 1000);
+  }
+
+  generateNotifications() {
+    const notifs = [];
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+
+    // 1. Medication reminder: any registered med not yet ticked today
+    const meds = store.getDomainData('health', 'medications', 90);
+    const medNames = [...new Set(meds.map(m => m.name).filter(Boolean))];
+    if (medNames.length > 0) {
+      const takenToday = store.get('health_meds_taken')?.[todayStr] || {};
+      const unTaken = medNames.filter(name => !takenToday[name]);
+      if (unTaken.length > 0) {
+        const label = unTaken.slice(0, 2).join('、') + (unTaken.length > 2 ? `他${unTaken.length - 2}件` : '');
+        notifs.push({ id: 'meds', icon: '💊', title: 'お薬の確認', body: `${label}を飲みましたか？`, domain: 'health' });
+      }
+    }
+
+    // 2. Upcoming birthdays (within 7 days)
+    const contacts = store.get('relationship_contacts') || [];
+    contacts.forEach(c => {
+      if (!c.birthday) return;
+      const bday = new Date(c.birthday);
+      const thisYear = new Date(today.getFullYear(), bday.getMonth(), bday.getDate());
+      const diff = Math.ceil((thisYear - today) / (1000 * 60 * 60 * 24));
+      if (diff >= 0 && diff <= 7) {
+        const when = diff === 0 ? '今日' : `${diff}日後`;
+        notifs.push({
+          id: `bday_${c.id || c.name}`,
+          icon: '🎂',
+          title: `${c.name || '?'}さんの誕生日`,
+          body: `${when}（${bday.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })}）`,
+          domain: 'relationship'
+        });
+      }
+    });
+
+    // 3. Overdue contact alerts (distance 1-3, not contacted in > 30 days)
+    const interactions = store.get('relationship_interactions') || [];
+    contacts.filter(c => parseInt(c.distance) <= 3 && c.name).slice(0, 10).forEach(c => {
+      const last = interactions
+        .filter(i => i.contactId === c.id || i.contactName === c.name)
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+      const daysSince = last
+        ? Math.floor((today - new Date(last.timestamp)) / 86400000)
+        : 999;
+      if (daysSince >= 30) {
+        const since = daysSince >= 999 ? 'しばらく' : `${daysSince}日間`;
+        notifs.push({
+          id: `overdue_${c.id || c.name}`,
+          icon: '💌',
+          title: `${c.name}さんへ連絡しませんか`,
+          body: `${since}連絡がとれていません`,
+          domain: 'relationship'
+        });
+      }
+    });
+
+    // 4. Daily health check-in (if nothing recorded today)
+    const todayRecords = store.getDomainData('health', 'symptoms', 1)
+      .filter(s => s.timestamp?.startsWith(todayStr));
+    if (todayRecords.length === 0 && store.get('hasRecordedOnce')) {
+      notifs.push({ id: 'daily_checkin', icon: '📊', title: '今日の体調を記録', body: 'まだ今日の体調が記録されていません', domain: 'health' });
+    }
+
+    return notifs;
+  }
+
+  updateNotificationBadge() {
+    const badge = document.getElementById('notif-badge');
+    if (!badge) return;
+    const notifs = this.generateNotifications();
+    if (notifs.length > 0) {
+      badge.textContent = notifs.length > 9 ? '9+' : String(notifs.length);
+      badge.style.display = 'inline-flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  toggleNotifications() {
+    const dropdown = document.getElementById('notif-dropdown');
+    if (!dropdown) return;
+    const isOpen = dropdown.classList.contains('open');
+    if (isOpen) {
+      dropdown.classList.remove('open');
+    } else {
+      this._renderNotifDropdown(dropdown);
+      dropdown.classList.add('open');
+    }
+  }
+
+  _renderNotifDropdown(dropdown) {
+    const notifs = this.generateNotifications();
+    if (notifs.length === 0) {
+      dropdown.innerHTML = `<div class="notif-empty">今日の通知はありません</div>`;
+    } else {
+      dropdown.innerHTML = notifs.map(n => `
+        <div class="notif-item" onclick="app.switchDomain(${JSON.stringify(n.domain)});app.toggleNotifications()">
+          <span class="notif-icon">${n.icon}</span>
+          <div class="notif-text">
+            <div class="notif-title">${Components.escapeHtml(n.title)}</div>
+            <div class="notif-body">${Components.escapeHtml(n.body)}</div>
+          </div>
+        </div>
+      `).join('');
+    }
   }
 
   // ─── Quick Input ───
