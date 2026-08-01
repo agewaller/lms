@@ -776,20 +776,37 @@ var Pages = {
       }
       case 'health': {
         const symptoms = store.getDomainData('health', 'symptoms', 7);
+        const symptomsLast = store.getDomainData('health', 'symptoms', 14).filter(e => {
+          const d = new Date(e.timestamp); return d < new Date(Date.now() - 7 * 86400000);
+        });
         const sleep = store.getDomainData('health', 'sleepData', 7);
+        const sleepLast = store.getDomainData('health', 'sleepData', 14).filter(e => {
+          const d = new Date(e.timestamp); return d < new Date(Date.now() - 7 * 86400000);
+        });
         const activity = store.getDomainData('health', 'activityData', 7);
         const vitals = store.getDomainData('health', 'vitals', 7);
-        const avgCondition = symptoms.length > 0 ?
-          (symptoms.reduce((s, e) => s + (e.condition_level || 0), 0) / symptoms.length).toFixed(1) : '-';
-        const avgSleep = sleep.length > 0 ?
-          (sleep.reduce((s, e) => s + (e.quality || 0), 0) / sleep.length).toFixed(1) : '-';
+
+        const avg = (arr, key) => arr.length > 0 ? arr.reduce((s, e) => s + (e[key] || 0), 0) / arr.length : null;
+        const avgConditionNum = avg(symptoms, 'condition_level');
+        const avgConditionLastNum = avg(symptomsLast, 'condition_level');
+        const avgSleepNum = avg(sleep, 'quality');
+        const avgSleepLastNum = avg(sleepLast, 'quality');
+
+        const condTrend = (avgConditionNum !== null && avgConditionLastNum !== null)
+          ? Math.round((avgConditionNum - avgConditionLastNum) * 10) / 10 : null;
+        const sleepTrend = (avgSleepNum !== null && avgSleepLastNum !== null)
+          ? Math.round((avgSleepNum - avgSleepLastNum) * 10) / 10 : null;
+
+        const avgCondition = avgConditionNum !== null ? avgConditionNum.toFixed(1) : '-';
+        const avgSleep = avgSleepNum !== null ? avgSleepNum.toFixed(1) : '-';
         const bpReadings = vitals.filter(v => v.bp_systolic);
         const avgBP = bpReadings.length > 0 ?
           Math.round(bpReadings.reduce((s, v) => s + (v.bp_systolic || 0), 0) / bpReadings.length) + '/' +
           Math.round(bpReadings.reduce((s, v) => s + (v.bp_diastolic || 0), 0) / bpReadings.length) : '-';
-        stats.push(Components.statCard(i18n.t('condition_level'), avgCondition + '/10', null, '🤒'));
+
+        stats.push(Components.statCard(i18n.t('condition_level'), avgCondition + '/10', condTrend, '🤒'));
         stats.push(Components.statCard('血圧（平均）', avgBP, null, '❤️'));
-        stats.push(Components.statCard(i18n.t('sleep_quality'), avgSleep + '/10', null, '😴'));
+        stats.push(Components.statCard(i18n.t('sleep_quality'), avgSleep + '/10', sleepTrend, '😴'));
         stats.push(Components.statCard(i18n.t('activity'), activity.length + i18n.t('items'), null, '🏃'));
         break;
       }
