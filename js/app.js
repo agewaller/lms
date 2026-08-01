@@ -1498,7 +1498,7 @@ var App = class App {
       modal.className = 'modal-overlay';
       modal.innerHTML = `<div class="modal-content">
         <h3>レジュメをコピー</h3>
-        <textarea class="form-input" rows="10" readonly>${text}</textarea>
+        <textarea class="form-input" rows="10" readonly>${Components.escapeHtml(text)}</textarea>
         <p>上のテキストをコピーして、求人サイトに貼り付けてください。</p>
         <button class="btn btn-primary" onclick="this.parentElement.parentElement.remove()">閉じる</button>
       </div>`;
@@ -2199,7 +2199,7 @@ var App = class App {
       // Also show details in a modal
       this.openModal('ZIP取込結果', `
         <div style="font-size:14px;line-height:1.8;">
-          <p><strong>ファイル:</strong> ${file.name}</p>
+          <p><strong>ファイル:</strong> ${Components.escapeHtml(file.name)}</p>
           <p><strong>処理成功:</strong> ${result.processed}件</p>
           <p><strong>スキップ:</strong> ${result.skipped}件</p>
           <hr>
@@ -2210,7 +2210,7 @@ var App = class App {
           <details>
             <summary>含まれていたファイル (${result.files.length}件)</summary>
             <ul style="font-size:12px;color:var(--text-muted);max-height:200px;overflow-y:auto;">
-              ${result.files.slice(0, 100).map(f => `<li>${f}</li>`).join('')}
+              ${result.files.slice(0, 100).map(f => `<li>${Components.escapeHtml(f)}</li>`).join('')}
               ${result.files.length > 100 ? `<li>...他${result.files.length - 100}件</li>` : ''}
             </ul>
           </details>

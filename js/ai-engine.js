@@ -104,8 +104,16 @@ var AIEngine = {
     let msg = `[User Profile] Language: ${lang}`;
     if (profile.age) msg += `, Age: ${profile.age}`;
     if (profile.gender) msg += `, Gender: ${profile.gender}`;
+    if (profile.bloodType) msg += `, Blood Type: ${profile.bloodType}`;
     if (profile.location) msg += `, Location: ${profile.location}`;
-    msg += '\n\n';
+    msg += '\n';
+
+    // Critical health context — include if present so AI can tailor advice
+    const diseases = Array.isArray(profile.diseases) ? profile.diseases : [];
+    if (diseases.length > 0) msg += `Conditions: ${diseases.join(', ')}\n`;
+    if (profile.medications) msg += `Medications: ${profile.medications}\n`;
+    if (profile.allergies) msg += `Allergies: ${profile.allergies}\n`;
+    msg += '\n';
 
     if (domain === 'holistic' || !domain) {
       // Cross-domain: gather recent data from all domains
