@@ -688,6 +688,18 @@ var Pages = {
         const dia = Math.round(bpVitals.reduce((s, v) => s + (v.bp_diastolic || 0), 0) / bpVitals.length);
         metrics.push({ icon: '❤️', label: '血圧平均', value: sys + '/' + dia });
       }
+      // Water intake: average glasses/day over the last 7 days
+      const waterData = store.get('health_water') || {};
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        return d.toISOString().slice(0, 10);
+      });
+      const waterDays = last7Days.filter(d => waterData[d] > 0);
+      if (waterDays.length > 0) {
+        const avgGlasses = Math.round(waterDays.reduce((s, d) => s + (waterData[d] || 0), 0) / 7);
+        metrics.push({ icon: '💧', label: '水分(日平均)', value: avgGlasses + '杯' });
+      }
       metrics.push({ icon: '📋', label: '記録日数', value: days + '/7日' });
     } else if (domain === 'consciousness') {
       const entries = store.getDomainData('consciousness', 'entries', 7);
