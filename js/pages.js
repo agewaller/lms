@@ -178,9 +178,10 @@ var Pages = {
       html += this.renderUpcomingBirthdays();
     }
 
-    // Assets domain: NISA simulator + advisor + screenshot + auto trading
+    // Assets domain: Monthly budget overview + NISA simulator + advisor + screenshot + auto trading
     // (Stock analysis widget is rendered at the top of the page.)
     if (domain === 'assets') {
+      html += this.renderMonthlyBudgetOverview();
       if (typeof AssetsFeatures !== 'undefined') {
         html += AssetsFeatures.renderNISASimulator();
         html += AssetsFeatures.renderAIAdvisor();
@@ -1271,6 +1272,92 @@ var Pages = {
   },
 
   // ─── Stock Analysis Widget (Assets domain) ───
+  // ─── Monthly Budget Overview (Assets domain) ───
+  renderMonthlyBudgetOverview() {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const income = store.getDomainData('assets', 'income', 31)
+      .filter(e => e.timestamp >= monthStart);
+    const expenses = store.getDomainData('assets', 'expenses', 31)
+      .filter(e => e.timestamp >= monthStart);
+
+    const totalIncome = income.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+    const totalExpenses = expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+    const net = totalIncome - totalExpenses;
+    const monthName = now.getMonth() + 1;
+
+    // Top expense categories
+    const catTotals = {};
+    expenses.forEach(e => {
+      const cat = e.category || 'その他';
+      catTotals[cat] = (catTotals[cat] || 0) + (parseFloat(e.amount) || 0);
+    });
+    const topCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1]).slice(0, 3);
+
+    const fmt = n => Math.abs(n).toLocaleString() + '円';
+
+    const quickCats = ['食費', '医療費', '交通費', '娯楽費', 'その他'];
+
+    return `<div class="budget-overview-widget">
+      <div class="bow-header">
+        <h3>💴 ${monthName}月の家計</h3>
+        <span class="bow-net ${net >= 0 ? 'positive' : 'negative'}">${net >= 0 ? '+' : '−'}${fmt(net)}</span>
+      </div>
+      <div class="bow-bars">
+        <div class="bow-row">
+          <span class="bow-lbl">収入</span>
+          <div class="bow-bar-wrap"><div class="bow-bar income" style="width:${totalIncome || totalExpenses ? Math.min(100, totalIncome / Math.max(totalIncome, totalExpenses) * 100) : 0}%"></div></div>
+          <span class="bow-amt">${fmt(totalIncome)}</span>
+        </div>
+        <div class="bow-row">
+          <span class="bow-lbl">支出</span>
+          <div class="bow-bar-wrap"><div class="bow-bar expense" style="width:${totalIncome || totalExpenses ? Math.min(100, totalExpenses / Math.max(totalIncome, totalExpenses) * 100) : 0}%"></div></div>
+          <span class="bow-amt">${fmt(totalExpenses)}</span>
+        </div>
+      </div>
+      ${topCats.length > 0 ? `<div class="bow-cats">
+        ${topCats.map(([cat, amt]) => `<span class="bow-cat">${Components.escapeHtml(cat)} ${fmt(amt)}</span>`).join('')}
+      </div>` : ''}
+      <div class="bow-quick">
+        <span class="bow-quick-label">支出を素早く記録：</span>
+        ${quickCats.map(cat => `<button class="btn btn-sm btn-secondary bow-cat-btn"
+          onclick="Pages.quickExpense(${JSON.stringify(cat)})">${cat}</button>`).join('')}
+      </div>
+    </div>`;
+  },
+
+  quickExpense(category) {
+    Components.showModal('支出を記録', `
+      <div class="form-group">
+        <label>カテゴリ</label>
+        <input type="text" id="qeCategory" class="form-input" value="${Components.escapeHtml(category)}">
+      </div>
+      <div class="form-group">
+        <label>金額（円）</label>
+        <input type="number" id="qeAmount" class="form-input" placeholder="例：1500" autofocus>
+      </div>
+      <div class="form-group">
+        <label>メモ（任意）</label>
+        <input type="text" id="qeNote" class="form-input" placeholder="例：スーパーでの買い物">
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="Pages._saveQuickExpense()">記録する</button>
+    `, { maxWidth: '400px' });
+  },
+
+  _saveQuickExpense() {
+    const category = document.getElementById('qeCategory')?.value?.trim() || 'その他';
+    const amount = parseFloat(document.getElementById('qeAmount')?.value || 0);
+    const note = document.getElementById('qeNote')?.value?.trim() || '';
+    if (!amount || amount <= 0) { Components.showToast('金額を入力してください', 'error'); return; }
+    store.addDomainEntry('assets', 'expenses', { category, amount, note });
+    store.set('hasRecordedOnce', true);
+    // Close modal
+    const overlay = document.querySelector('.modal-overlay.active');
+    if (overlay) document.body.removeChild(overlay);
+    Components.showToast(`${category} ${amount.toLocaleString()}円を記録しました`, 'success');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
   renderStockAnalysisWidget() {
     return `<div class="stock-analysis-section">
       <h3>${i18n.t('stock_investment')}</h3>
