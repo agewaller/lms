@@ -1171,8 +1171,8 @@ var Pages = {
               <span class="data-entry-cat">${catLabel}</span>
               <span class="data-entry-time">${new Date(entry.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
               <div class="data-entry-actions">
-                <button class="btn-icon-sm" onclick="app.editDataEntry('${domain}','${entry._category}','${entry.id}')" title="編集">編集</button>
-                <button class="btn-icon-sm" onclick="app.deleteDataEntry('${domain}','${entry._category}','${entry.id}')" title="削除">削除</button>
+                <button class="btn-icon-sm" onclick="app.editDataEntry(${JSON.stringify(domain)},${JSON.stringify(entry._category)},${JSON.stringify(entry.id)})" title="編集">編集</button>
+                <button class="btn-icon-sm" onclick="app.deleteDataEntry(${JSON.stringify(domain)},${JSON.stringify(entry._category)},${JSON.stringify(entry.id)})" title="削除">削除</button>
               </div>
             </div>
             <div class="data-entry-fields">

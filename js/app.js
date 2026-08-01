@@ -834,16 +834,17 @@ var App = class App {
       .filter(([k]) => !k.startsWith('_') && k !== 'timestamp' && k !== 'id' && k !== 'domain' && k !== 'category');
 
     const formHtml = `<form id="editForm">
-      ${fields.map(([k, v]) => `
-        <div class="form-group">
+      ${fields.map(([k, v]) => {
+        const safeVal = Components.escapeHtml(String(v ?? ''));
+        return `<div class="form-group">
           <label>${i18n.t(k) || k}</label>
           ${typeof v === 'string' && v.length > 50
-            ? `<textarea name="${k}" class="form-input" rows="3">${v}</textarea>`
-            : `<input type="${typeof v === 'number' ? 'number' : 'text'}" name="${k}" class="form-input" value="${v}">`}
-        </div>
-      `).join('')}
+            ? `<textarea name="${k}" class="form-input" rows="3">${safeVal}</textarea>`
+            : `<input type="${typeof v === 'number' ? 'number' : 'text'}" name="${k}" class="form-input" value="${safeVal}">`}
+        </div>`;
+      }).join('')}
       <div class="form-actions">
-        <button type="button" class="btn btn-primary" onclick="app.saveDataEntryEdit('${domain}','${category}','${id}')">保存</button>
+        <button type="button" class="btn btn-primary" onclick="app.saveDataEntryEdit(${JSON.stringify(domain)},${JSON.stringify(category)},${JSON.stringify(id)})">保存</button>
         <button type="button" class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
       </div>
     </form>`;
