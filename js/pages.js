@@ -394,8 +394,27 @@ var Pages = {
     const medList = Object.values(uniqueMeds).slice(0, 8);
     if (medList.length === 0) return '';
 
+    // Build 7-day compliance history for display
+    const dayNames = ['日','月','火','水','木','金','土'];
+    const complianceWeek = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      const dStr = d.toISOString().slice(0, 10);
+      const dayTaken = takenData[dStr] || {};
+      const allTaken = medList.every(m => dayTaken[m.name]);
+      const someTaken = medList.some(m => dayTaken[m.name]);
+      return { dStr, dayName: dayNames[d.getDay()], allTaken, someTaken, isToday: dStr === today };
+    });
+
     return `<div class="medication-reminder">
       <h3>今日のお薬</h3>
+      <div class="med-compliance-week">
+        ${complianceWeek.map(w => `
+          <div class="mcw-day ${w.isToday ? 'mcw-today' : ''} ${w.allTaken ? 'mcw-all' : w.someTaken ? 'mcw-some' : ''}">
+            <span class="mcw-name">${w.dayName}</span>
+            <span class="mcw-dot">${w.allTaken ? '✓' : w.someTaken ? '△' : '·'}</span>
+          </div>`).join('')}
+      </div>
       <div class="med-list">
         ${medList.map(m => {
           const isTaken = taken[m.name];

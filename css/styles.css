@@ -1946,6 +1946,33 @@ body.is-admin .admin-only { display: flex; }
 .med-timing { font-size: 12px; color: var(--text-secondary); background: var(--bg-tertiary); padding: 2px 8px; border-radius: 20px; }
 .med-dosage { font-size: 12px; color: var(--text-secondary); }
 
+/* ─── Medication Compliance Week ─── */
+.med-compliance-week {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+  justify-content: space-between;
+}
+.mcw-day {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 2px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  opacity: 0.55;
+}
+.mcw-today { border: 2px solid var(--accent); opacity: 1; }
+.mcw-all { background: rgba(16,185,129,0.15); opacity: 1; }
+.mcw-some { background: rgba(245,158,11,0.15); opacity: 1; }
+.mcw-name { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+.mcw-dot { font-size: 14px; font-weight: 700; color: var(--text-secondary); }
+.mcw-all .mcw-dot { color: #10b981; }
+.mcw-some .mcw-dot { color: #f59e0b; }
+.mcw-today .mcw-name { color: var(--accent); }
+
 /* ─── Notification Bell ─── */
 .notif-wrapper { position: relative; }
 .notif-bell-btn { position: relative; font-size: 16px; min-width: 38px; }
