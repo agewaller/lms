@@ -399,6 +399,16 @@ var App = class App {
       notifs.push({ id: 'daily_checkin', icon: '📊', title: '今日の体調を記録', body: 'まだ今日の体調が記録されていません', domain: 'health' });
     }
 
+    // 5. Water intake reminder (afternoon only: 13:00-17:00, goal < 4 glasses)
+    const hour = today.getHours();
+    if (hour >= 13 && hour < 17) {
+      const waterData = store.get('health_water') || {};
+      const glasses = waterData[todayStr] || 0;
+      if (glasses < 4 && store.get('hasRecordedOnce')) {
+        notifs.push({ id: 'water_reminder', icon: '💧', title: '水分補給の確認', body: `今日はまだ${glasses}杯です。こまめな水分補給を心がけましょう`, domain: 'health' });
+      }
+    }
+
     return notifs;
   }
 

@@ -282,6 +282,23 @@ var Components = {
     overlay.querySelector('#_confirmNo').onclick = () => close();
   },
 
+  // ─── General-Purpose Modal (non-confirm) ───
+  showModal(title, bodyHtml, options = {}) {
+    const maxWidth = options.maxWidth || '640px';
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active';
+    overlay.innerHTML = `<div class="modal" style="max-width:${maxWidth};max-height:90vh;overflow-y:auto">
+      <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)">
+        <h3 style="margin:0;font-size:16px">${this.escapeHtml(title)}</h3>
+        <button class="btn btn-sm btn-secondary" id="_modalClose">✕</button>
+      </div>
+      <div class="modal-body" style="padding:20px">${bodyHtml}</div>
+    </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#_modalClose').onclick = () => document.body.removeChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) document.body.removeChild(overlay); });
+  },
+
   // ─── Record List Item ───
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';

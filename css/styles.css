@@ -2112,6 +2112,29 @@ body.is-admin .admin-only { display: flex; }
 .mcw-some .mcw-dot { color: #f59e0b; }
 .mcw-today .mcw-name { color: var(--accent); }
 
+/* ─── Weekly Summary Doctor Button ─── */
+.wsc-doctor-btn { margin-top: 12px; width: 100%; }
+
+/* ─── Doctor Report (modal) ─── */
+.doctor-report { font-size: 14px; line-height: 1.7; }
+.dr-header { background: var(--bg-secondary); padding: 14px; border-radius: var(--radius-sm); margin-bottom: 16px; }
+.dr-header h2 { margin: 0 0 6px; font-size: 18px; }
+.dr-meta, .dr-patient { font-size: 13px; color: var(--text-secondary); }
+.dr-section { margin-bottom: 18px; }
+.dr-section h3 { font-size: 14px; font-weight: 700; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 8px; }
+.dr-med-list { margin: 0; padding-left: 20px; }
+.dr-med-list li { margin-bottom: 2px; }
+.dr-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.dr-table th { background: var(--bg-secondary); font-weight: 600; padding: 6px 8px; text-align: left; border: 1px solid var(--border); }
+.dr-table td { padding: 5px 8px; border: 1px solid var(--border); vertical-align: top; }
+.dr-table tr:nth-child(even) td { background: var(--bg-secondary); }
+
+@media print {
+  .modal-overlay { position: static !important; background: none !important; }
+  .modal { box-shadow: none !important; max-height: none !important; overflow: visible !important; }
+  .modal-header button, .wsc-doctor-btn, .btn { display: none !important; }
+}
+
 /* ─── Notification Bell ─── */
 .notif-wrapper { position: relative; }
 .notif-bell-btn { position: relative; font-size: 16px; min-width: 38px; }

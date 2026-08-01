@@ -765,7 +765,66 @@ var Pages = {
         </div>`).join('')}
       </div>
       <p class="wsc-message">${msg}</p>
+      ${domain === 'health' ? `<button class="btn btn-secondary btn-sm wsc-doctor-btn" onclick="Pages.showDoctorReport()">🏥 お医者さん向けレポート</button>` : ''}
     </div>`;
+  },
+
+  // ─── Doctor Visit Report ───
+  showDoctorReport() {
+    const profile = store.get('userProfile') || {};
+    const vitals = store.getDomainData('health', 'vitals', 28).reverse();
+    const symptoms = store.getDomainData('health', 'symptoms', 28).reverse();
+    const sleep = store.getDomainData('health', 'sleepData', 28).reverse();
+    const meds = store.getDomainData('health', 'medications', 90);
+
+    const uniqueMeds = {};
+    meds.forEach(m => { if (m.name) uniqueMeds[m.name] = m; });
+    const medList = Object.values(uniqueMeds);
+
+    const fmtDate = ts => new Date(ts).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+    const avg = (arr, key) => arr.length ? (arr.reduce((s, e) => s + (e[key] || 0), 0) / arr.length).toFixed(1) : '—';
+
+    const bpRows = vitals.filter(v => v.bp_systolic).map(v =>
+      `<tr><td>${fmtDate(v.timestamp)}</td><td>${v.bp_systolic}/${v.bp_diastolic}</td><td>${v.heart_rate || '—'}</td><td>${v.weight ? v.weight + 'kg' : '—'}</td></tr>`
+    ).join('');
+
+    const symRows = symptoms.slice(0, 10).map(s =>
+      `<tr><td>${fmtDate(s.timestamp)}</td><td>${s.condition_level || '—'}/10</td><td>${s.fatigue_level !== undefined ? s.fatigue_level + '/10' : '—'}</td><td>${Components.escapeHtml(s.notes || '')}</td></tr>`
+    ).join('');
+
+    const sleepAvg = avg(sleep, 'quality');
+    const condAvg = avg(symptoms, 'condition_level');
+
+    const now = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const reportHtml = `<div class="doctor-report">
+      <div class="dr-header">
+        <h2>健康状態レポート</h2>
+        <div class="dr-meta">作成日：${now}　対象期間：過去28日間</div>
+        ${profile.displayName || profile.name ? `<div class="dr-patient">患者名：${Components.escapeHtml(profile.displayName || profile.name || '')}　年齢：${profile.age || '—'}歳</div>` : ''}
+      </div>
+
+      <div class="dr-section">
+        <h3>● 現在の服薬・サプリメント</h3>
+        ${medList.length > 0 ? `<ul class="dr-med-list">${medList.map(m => `<li>${Components.escapeHtml(m.name)}${m.timing ? '（' + m.timing + '）' : ''}</li>`).join('')}</ul>` : '<p>登録なし</p>'}
+      </div>
+
+      <div class="dr-section">
+        <h3>● 過去28日間のバイタルサイン</h3>
+        ${bpRows ? `<table class="dr-table"><thead><tr><th>日付</th><th>血圧</th><th>脈拍</th><th>体重</th></tr></thead><tbody>${bpRows}</tbody></table>` : '<p>記録なし</p>'}
+      </div>
+
+      <div class="dr-section">
+        <h3>● 体調・睡眠の概況</h3>
+        <p>体調平均：${condAvg}/10 　睡眠品質平均：${sleepAvg}/5</p>
+        ${symRows ? `<table class="dr-table"><thead><tr><th>日付</th><th>体調</th><th>疲労</th><th>メモ</th></tr></thead><tbody>${symRows}</tbody></table>` : ''}
+      </div>
+
+      ${profile.diseases?.length > 0 ? `<div class="dr-section"><h3>● 既往症・持病</h3><p>${Components.escapeHtml(profile.diseases.join('、'))}</p></div>` : ''}
+      ${profile.allergies ? `<div class="dr-section"><h3>● アレルギー</h3><p>${Components.escapeHtml(profile.allergies)}</p></div>` : ''}
+    </div>`;
+
+    Components.showModal('お医者さん向けレポート', reportHtml + `<div style="text-align:center;margin-top:16px"><button class="btn btn-primary" onclick="window.print()">印刷する</button></div>`);
   },
 
   // ─── Consciousness 7-Layer Visualization ───
