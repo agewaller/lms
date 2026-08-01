@@ -1728,23 +1728,30 @@ var Pages = {
     filtered.forEach(([key, p], i) => {
       const schedule = p.schedule || 'manual';
       const scheduleLabel = { daily: '毎日', weekly: '毎週', on_data_update: 'データ更新時', manual: '手動' }[schedule] || schedule;
-      html += `<div class="prompt-item ${p.active === false ? 'inactive' : ''}" data-key="${key}">
+      const safeKey = Components.escapeHtml(key);
+      const safeName = Components.escapeHtml(p.name || key);
+      const safeDesc = Components.escapeHtml(p.description || '');
+      const safePromptText = Components.escapeHtml(p.prompt || '');
+      const safeNameVal = Components.escapeHtml(p.name || '');
+      const safeDescVal = Components.escapeHtml(p.description || '');
+      const jKey = JSON.stringify(key);
+      html += `<div class="prompt-item ${p.active === false ? 'inactive' : ''}" data-key="${safeKey}">
         <div class="prompt-header">
           <div class="prompt-meta">
             <span class="prompt-num">${i + 1}</span>
-            <span class="prompt-name">${p.name || key}</span>
+            <span class="prompt-name">${safeName}</span>
             <span class="prompt-badge domain">${p.domain ? i18n.t(p.domain) : '共通'}</span>
             <span class="prompt-badge schedule">${scheduleLabel}</span>
           </div>
           <div class="prompt-actions">
-            <button class="btn btn-sm btn-secondary" onclick="app.editPrompt('${key}')">編集</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.editPrompt(${jKey})">編集</button>
           </div>
         </div>
-        <div class="prompt-desc">${p.description || ''}</div>
-        <div class="prompt-edit" id="edit-${key}" style="display:none;">
+        <div class="prompt-desc">${safeDesc}</div>
+        <div class="prompt-edit" id="edit-${safeKey}" style="display:none;">
           <div class="form-group">
             <label>名前</label>
-            <input type="text" class="form-input" value="${p.name || ''}" data-field="name">
+            <input type="text" class="form-input" value="${safeNameVal}" data-field="name">
           </div>
           <div class="form-group">
             <label>領域</label>
@@ -1764,16 +1771,16 @@ var Pages = {
           </div>
           <div class="form-group">
             <label>説明</label>
-            <input type="text" class="form-input" value="${p.description || ''}" data-field="description">
+            <input type="text" class="form-input" value="${safeDescVal}" data-field="description">
           </div>
           <div class="form-group">
             <label>プロンプト本文</label>
-            <textarea class="form-input prompt-textarea" rows="16" data-field="prompt">${p.prompt || ''}</textarea>
+            <textarea class="form-input prompt-textarea" rows="16" data-field="prompt">${safePromptText}</textarea>
           </div>
           <div class="form-actions">
-            <button class="btn btn-primary" onclick="app.savePrompt('${key}')">保存</button>
-            <button class="btn btn-secondary" onclick="app.cancelPromptEdit('${key}')">キャンセル</button>
-            <button class="btn btn-danger" onclick="app.deletePrompt('${key}')">削除</button>
+            <button class="btn btn-primary" onclick="app.savePrompt(${jKey})">保存</button>
+            <button class="btn btn-secondary" onclick="app.cancelPromptEdit(${jKey})">キャンセル</button>
+            <button class="btn btn-danger" onclick="app.deletePrompt(${jKey})">削除</button>
           </div>
         </div>
       </div>`;
@@ -2037,20 +2044,25 @@ var Pages = {
           if (u.location) meta.push(u.location);
           const metaText = meta.join(' · ');
 
-          return `<div class="admin-user-item clickable" onclick="app.showUserDetail('${u.uid}')">
+          const safeUid = Components.escapeHtml(u.uid || '');
+          const safeMeta = Components.escapeHtml(metaText || 'プロフィール未設定');
+          const safeName = Components.escapeHtml(u.displayName || u.email || '不明');
+          const safeEmail = Components.escapeHtml(u.email || '');
+          const safeSub = Components.escapeHtml(u.subscription || '');
+          return `<div class="admin-user-item clickable" onclick="app.showUserDetail(${JSON.stringify(u.uid || '')})">
             <div class="admin-user-info">
               <div class="admin-user-avatar">${initial}</div>
               <div>
-                <div class="admin-user-email">${u.displayName || u.email || '不明'}</div>
+                <div class="admin-user-email">${safeName}</div>
                 <div class="admin-user-role">
-                  ${u.email ? u.email + '<br>' : ''}${metaText || 'プロフィール未設定'}
+                  ${safeEmail ? safeEmail + '<br>' : ''}${safeMeta}
                   ${u.lastActive ? ' · 最終: ' + new Date(u.lastActive).toLocaleDateString('ja-JP') : ''}
                 </div>
               </div>
             </div>
             <div class="admin-user-stats">
               ${diseaseCount > 0 ? `<span class="stat-chip">持病${diseaseCount}</span>` : ''}
-              ${u.subscription && u.subscription !== 'free' ? `<span class="stat-chip">${u.subscription}</span>` : ''}
+              ${u.subscription && u.subscription !== 'free' ? `<span class="stat-chip">${safeSub}</span>` : ''}
               ${adminEmails.includes(u.email) ? '<span class="status-badge">管理者</span>' : ''}
             </div>
           </div>`;
