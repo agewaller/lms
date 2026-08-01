@@ -1341,6 +1341,47 @@ body.is-admin .admin-only { display: flex; }
 .empty-state h3 { color: var(--text-light); margin-bottom: 8px; }
 
 /* ─── Consciousness Layers ─── */
+/* ─── Consciousness Quick Check-In ─── */
+.consciousness-checkin {
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  border: 1px solid #c4b5fd;
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+.consciousness-checkin.checked { background: linear-gradient(135deg, #f5f3ff, #ede9fe); }
+.cc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.cc-title { font-size: 0.95rem; font-weight: 600; color: #5b21b6; }
+.cc-done { font-size: 0.8rem; color: #7c3aed; background: #ddd6fe; border-radius: 4px; padding: 2px 8px; }
+.cc-hint { font-size: 0.8rem; color: #7c3aed; margin-bottom: 12px; }
+.cc-result { font-size: 0.95rem; color: #5b21b6; margin-top: 4px; }
+.cc-layer-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.cc-layer-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 10px; border: 2px solid #c4b5fd; border-radius: var(--radius-sm);
+  background: white; cursor: pointer; transition: all 0.15s; min-width: 64px;
+}
+.cc-layer-btn:hover { border-color: #7c3aed; background: #f5f3ff; }
+.cc-layer-btn.selected { border-color: #7c3aed; background: #ddd6fe; }
+.cc-l-emoji { font-size: 22px; }
+.cc-l-name { font-size: 0.7rem; color: #5b21b6; font-weight: 600; }
+.cc-save-btn { width: 100%; }
+.cc-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+@media (prefers-color-scheme: dark) {
+  .consciousness-checkin { background: linear-gradient(135deg, #1e1b4b, #2e1065); border-color: #4c1d95; }
+  .cc-title, .cc-hint, .cc-result { color: #c4b5fd; }
+  .cc-done { color: #a78bfa; background: #3b0764; }
+  .cc-layer-btn { background: #2e1065; border-color: #4c1d95; }
+  .cc-layer-btn.selected { background: #4c1d95; border-color: #7c3aed; }
+  .cc-l-name { color: #c4b5fd; }
+}
+:root[data-theme="dark"] .consciousness-checkin { background: linear-gradient(135deg, #1e1b4b, #2e1065); border-color: #4c1d95; }
+:root[data-theme="dark"] .cc-title, :root[data-theme="dark"] .cc-hint, :root[data-theme="dark"] .cc-result { color: #c4b5fd; }
+:root[data-theme="dark"] .cc-done { color: #a78bfa; background: #3b0764; }
+:root[data-theme="dark"] .cc-layer-btn { background: #2e1065; border-color: #4c1d95; }
+:root[data-theme="dark"] .cc-layer-btn.selected { background: #4c1d95; border-color: #7c3aed; }
+:root[data-theme="dark"] .cc-l-name { color: #c4b5fd; }
+
 .consciousness-layers-section {
   background: var(--bg-card); border-radius: var(--radius);
   padding: 24px; margin-bottom: 32px; box-shadow: var(--shadow);

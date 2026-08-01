@@ -146,6 +146,7 @@ var Pages = {
 
     // Consciousness domain: 7-layer visualization + transcript input
     if (domain === 'consciousness') {
+      html += this.renderConsciousnessQuickCheckIn();
       html += this.renderConsciousnessLayers();
       html += this.renderTranscriptInput();
     }
@@ -909,6 +910,78 @@ var Pages = {
     </div>`;
 
     Components.showModal('お医者さん向けレポート', reportHtml + `<div style="text-align:center;margin-top:16px"><button class="btn btn-primary" onclick="window.print()">印刷する</button></div>`);
+  },
+
+  // ─── Consciousness Quick Check-In ───
+  renderConsciousnessQuickCheckIn() {
+    const today = new Date().toISOString().slice(0, 10);
+    const todayObs = store.getDomainData('consciousness', 'observation', 1)
+      .filter(e => e.timestamp && e.timestamp.startsWith(today));
+    const alreadyLogged = todayObs.length > 0;
+
+    const layerButtons = [
+      { key: 'layer_1',  name: '計測', emoji: '📊', desc: '数字・記録・締切' },
+      { key: 'layer_2',  name: '関係', emoji: '🔗', desc: '論理・比較・判断' },
+      { key: 'layer_3',  name: '現場', emoji: '👣', desc: '五感・場所・モノ' },
+      { key: 'layer_35', name: '心身', emoji: '💆', desc: '睡眠・呼吸・体感' },
+      { key: 'layer_4',  name: '構想', emoji: '🧠', desc: '記憶・価値観・計画' },
+      { key: 'layer_5',  name: '可能性', emoji: '✨', desc: '直観・インスピレーション' },
+      { key: 'layer_6',  name: '統合', emoji: '🤝', desc: '寛容・つながり・調和' },
+      { key: 'layer_7',  name: '空',  emoji: '🌌', desc: '静けさ・手放し・無' }
+    ];
+
+    if (alreadyLogged) {
+      const obs = todayObs[todayObs.length - 1];
+      const topLayer = layerButtons.slice().sort((a, b) => (obs[b.key] || 0) - (obs[a.key] || 0))[0];
+      return `<div class="consciousness-checkin checked">
+        <div class="cc-header">
+          <span class="cc-title">今日の意識</span>
+          <span class="cc-done">✓ 記録済み</span>
+        </div>
+        <div class="cc-result">${topLayer.emoji} ${topLayer.name}（${obs[topLayer.key] || 0}%）が最も高い状態です</div>
+      </div>`;
+    }
+
+    return `<div class="consciousness-checkin">
+      <div class="cc-header">
+        <span class="cc-title">今日、どのレイヤーに意識が向いていましたか？</span>
+      </div>
+      <p class="cc-hint">複数選べます。メインのものをタップしてください。</p>
+      <div class="cc-layer-btns" id="ccLayerBtns">
+        ${layerButtons.map(l => `
+          <button class="cc-layer-btn" id="ccBtn_${l.key}" onclick="Pages.toggleConsciousnessLayer('${l.key}', this)"
+            data-key="${l.key}" title="${l.desc}">
+            <span class="cc-l-emoji">${l.emoji}</span>
+            <span class="cc-l-name">${l.name}</span>
+          </button>`).join('')}
+      </div>
+      <button class="btn btn-primary cc-save-btn" onclick="Pages.saveConsciousnessCheckIn()" disabled id="ccSaveBtn">記録する</button>
+    </div>`;
+  },
+
+  toggleConsciousnessLayer(key, btn) {
+    const selected = document.querySelectorAll('.cc-layer-btn.selected');
+    if (btn.classList.contains('selected')) {
+      btn.classList.remove('selected');
+    } else {
+      btn.classList.add('selected');
+    }
+    const anySelected = document.querySelectorAll('.cc-layer-btn.selected').length > 0;
+    const saveBtn = document.getElementById('ccSaveBtn');
+    if (saveBtn) saveBtn.disabled = !anySelected;
+  },
+
+  saveConsciousnessCheckIn() {
+    const selected = document.querySelectorAll('.cc-layer-btn.selected');
+    if (selected.length === 0) return;
+    const data = {};
+    // Primary selection = 80%, secondary = 50%, rest = 10%
+    const keys = Array.from(selected).map(b => b.getAttribute('data-key'));
+    keys.forEach((k, i) => { data[k] = i === 0 ? 80 : i === 1 ? 50 : 20; });
+    store.addDomainEntry('consciousness', 'observation', data);
+    store.set('hasRecordedOnce', true);
+    Components.showToast('意識を記録しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Consciousness 7-Layer Visualization ───
