@@ -31,6 +31,7 @@ var Pages = {
     const streak = store.getRecordingStreak();
     const todayMood = this.getTodayMood();
     let html = `<div class="page-home">
+      ${this.renderProfileBanner()}
       <div class="mood-checkin-bar">
         <span class="mood-label">今日の気分：</span>
         <div class="mood-btns">
@@ -131,9 +132,10 @@ var Pages = {
 
     // ─── Domain-specific widgets ───
 
-    // Health domain: daily check-in + vitals chart + medication reminder
+    // Health domain: daily check-in + BP status + vitals chart + medication reminder
     if (domain === 'health') {
       html += this.renderHealthDailyCheckIn();
+      html += this.renderBPStatus();
       html += this.renderVitalsChart();
       html += this.renderMedicationReminder();
     }
@@ -253,6 +255,71 @@ var Pages = {
       <button class="btn btn-primary" onclick="app.navigate('record')">
         記録をはじめる
       </button>
+    </div>`;
+  },
+
+  // ─── Profile Completeness Banner ───
+  renderProfileBanner() {
+    const profile = store.get('userProfile') || {};
+    const hasAge = !!profile.age;
+    const hasDiseases = Array.isArray(profile.diseases) && profile.diseases.length > 0;
+    const hasMeds = !!profile.medications;
+    const complete = hasAge && hasDiseases && hasMeds;
+
+    if (complete || !store.get('hasRecordedOnce')) return '';
+
+    const missing = [];
+    if (!hasAge) missing.push('年齢');
+    if (!hasDiseases) missing.push('持病');
+    if (!hasMeds) missing.push('お薬情報');
+
+    return `<div class="profile-banner">
+      <span class="profile-banner-icon">📋</span>
+      <span class="profile-banner-text"><strong>プロフィール未設定:</strong> ${Components.escapeHtml(missing.join('・'))}を入力すると、よりあなたに合ったアドバイスが届きます。</span>
+      <button class="btn btn-sm btn-primary" onclick="app.navigate('settings')">設定する</button>
+    </div>`;
+  },
+
+  // ─── Blood Pressure Status Card ───
+  renderBPStatus() {
+    const vitals = store.getDomainData('health', 'vitals', 30);
+    const bpReadings = vitals.filter(v => v.bp_systolic).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    if (bpReadings.length === 0) return '';
+
+    const latest = bpReadings[0];
+    const sys = latest.bp_systolic;
+    const dia = latest.bp_diastolic;
+
+    let status, statusClass, advice;
+    if (sys > 180 || dia > 120) {
+      status = '要緊急確認'; statusClass = 'bp-crisis';
+      advice = '血圧がとても高い状態です。すぐにかかりつけ医にご相談ください。';
+    } else if (sys >= 140 || dia >= 90) {
+      status = '高血圧'; statusClass = 'bp-high';
+      advice = '血圧が高めです。無理をせず、塩分控えめで過ごしましょう。';
+    } else if (sys >= 130 || dia >= 80) {
+      status = '少し高め'; statusClass = 'bp-elevated';
+      advice = 'ゆっくり深呼吸して、リラックスした時間を作りましょう。';
+    } else if (sys >= 120 && sys < 130 && dia < 80) {
+      status = '正常高値'; statusClass = 'bp-normal-high';
+      advice = '問題ない範囲ですが、引き続き記録を続けましょう。';
+    } else {
+      status = '良好'; statusClass = 'bp-normal';
+      advice = '血圧は良好な範囲です。今日も無理なく過ごしましょう。';
+    }
+
+    const when = new Date(latest.timestamp).toLocaleString('ja-JP', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    return `<div class="bp-status-card ${statusClass}">
+      <div class="bp-status-header">
+        <span class="bp-status-badge">${status}</span>
+        <span class="bp-status-time">${when}</span>
+      </div>
+      <div class="bp-reading">
+        <span class="bp-numbers">${sys}/${dia}</span>
+        <span class="bp-unit">mmHg</span>
+      </div>
+      <p class="bp-advice">${advice}</p>
     </div>`;
   },
 
