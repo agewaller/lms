@@ -409,7 +409,17 @@ var App = class App {
       }
     }
 
-    // 6. Evening step nudge (18:00-21:00): goals unmet and user has logged steps before
+    // 6. Morning sleep reminder (6:00-10:00): haven't logged sleep yet but have history
+    if (hour >= 6 && hour < 10 && store.get('hasRecordedOnce')) {
+      const sleepToday = store.getDomainData('health', 'sleepData', 1)
+        .filter(s => s.timestamp?.startsWith(todayStr));
+      const sleepHistory = store.getDomainData('health', 'sleepData', 7);
+      if (sleepToday.length === 0 && sleepHistory.length > 0) {
+        notifs.push({ id: 'sleep_reminder', icon: '🌙', title: '昨夜の睡眠を記録', body: '起床後に睡眠の質を記録することで、健康パターンを把握できます', domain: 'health' });
+      }
+    }
+
+    // 7. Evening step nudge (18:00-21:00): goals unmet and user has logged steps before
     if (hour >= 18 && hour < 21 && store.get('hasRecordedOnce')) {
       const stepsData = store.get('health_steps') || {};
       const stepsToday = stepsData[todayStr] || 0;

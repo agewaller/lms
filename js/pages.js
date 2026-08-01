@@ -33,7 +33,6 @@ var Pages = {
     let html = `<div class="page-home">
       ${this.renderDailyGreeting()}
       ${this.renderProfileCompleteness()}
-      ${this.renderProfileBanner()}
       <div class="mood-checkin-bar">
         <span class="mood-label">今日の気分：</span>
         <div class="mood-btns">
@@ -447,8 +446,8 @@ var Pages = {
   // ─── Sleep Quick Check-In ───
   renderSleepCheckIn() {
     const today = new Date().toISOString().slice(0, 10);
-    const todaySleep = store.getDomainData('health', 'sleepData', 1)
-      .filter(e => e.timestamp && e.timestamp.startsWith(today));
+    const allSleep = store.getDomainData('health', 'sleepData', 8);
+    const todaySleep = allSleep.filter(e => e.timestamp && e.timestamp.startsWith(today));
     const alreadyLogged = todaySleep.length > 0;
 
     const levels = [
@@ -458,6 +457,24 @@ var Pages = {
       { n: 4, emoji: '😴', label: 'よく眠れた' },
       { n: 5, emoji: '🌙', label: 'ぐっすり眠れた' }
     ];
+
+    // Build 7-day history (excluding today)
+    const dayNames = ['日','月','火','水','木','金','土'];
+    const history = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (7 - i));
+      const dStr = d.toISOString().slice(0, 10);
+      const entries = allSleep.filter(e => e.timestamp && e.timestamp.startsWith(dStr));
+      const q = entries.length > 0 ? (entries[entries.length - 1].quality || 0) : 0;
+      return { dayName: dayNames[d.getDay()], q };
+    });
+    const colors = ['', '#ef4444', '#f97316', '#eab308', '#22c55e', '#6C63FF'];
+    const historyHtml = `<div class="scw-history">
+      ${history.map(h => `<div class="scw-hist-day" title="${h.q > 0 ? levels[h.q - 1]?.label : '未記録'}">
+        <div class="scw-hist-bar" style="height:${h.q > 0 ? h.q * 20 : 4}%;background:${h.q > 0 ? colors[h.q] : 'var(--border)'}"></div>
+        <div class="scw-hist-label">${h.dayName}</div>
+      </div>`).join('')}
+    </div>`;
 
     if (alreadyLogged) {
       const q = todaySleep[todaySleep.length - 1].quality || 3;
@@ -471,6 +488,7 @@ var Pages = {
           <span class="scw-emoji">${lv.emoji}</span>
           <span class="scw-label">${lv.label}</span>
         </div>
+        ${historyHtml}
       </div>`;
     }
 
@@ -485,6 +503,7 @@ var Pages = {
             <span class="scw-lbl">${lv.label}</span>
           </button>`).join('')}
       </div>
+      ${history.some(h => h.q > 0) ? historyHtml : ''}
     </div>`;
   },
 

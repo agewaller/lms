@@ -2015,6 +2015,10 @@ body.is-admin .admin-only { display: flex; }
 :root[data-theme="dark"] .scw-label { color: #c4b5fd; }
 :root[data-theme="dark"] .scw-btn { background: #2e1065; border-color: #4c1d95; }
 :root[data-theme="dark"] .scw-btn .scw-lbl { color: #a78bfa; }
+.scw-history { display: flex; gap: 4px; align-items: flex-end; height: 48px; margin-top: 12px; padding-top: 4px; border-top: 1px solid rgba(124,58,237,0.15); }
+.scw-hist-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; height: 100%; }
+.scw-hist-bar { width: 100%; border-radius: 2px; min-height: 4px; transition: height 0.3s; }
+.scw-hist-label { font-size: 9px; color: #7c3aed; opacity: 0.7; }
 
 /* ─── Water Intake ─── */
 .water-widget {
