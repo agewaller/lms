@@ -155,10 +155,13 @@ var Pages = {
       if (typeof TimeMarketplace !== 'undefined') html += TimeMarketplace.renderWidget();
     }
 
-    // Work domain: Resume + side biz diagnosis + time marketplace link
+    // Work domain: Provision selector + Resume + side biz diagnosis + job discovery + activity log + marketplace link
     if (domain === 'work') {
       if (typeof WorkFeatures !== 'undefined') {
+        html += WorkFeatures.renderProvisionSelector();
         html += WorkFeatures.renderSideBizDiagnosis();
+        html += WorkFeatures.renderJobDiscovery();
+        html += WorkFeatures.renderActivityLog();
         html += WorkFeatures.renderTimeSellingBanner();
       }
       html += this.renderResumeWidget();
@@ -2564,7 +2567,7 @@ var Pages = {
           <div class="form-group">
             <label>${name}</label>
             <input type="text" class="form-input" id="aff_${name}"
-              value="${config.tag || config.id || config.code || ''}" placeholder="アフィリエイトID / タグ">
+              value="${Components.escapeHtml(config.tag || config.id || config.code || '')}" placeholder="アフィリエイトID / タグ">
           </div>
         `).join('')}
         <button class="btn btn-primary" onclick="app.saveAffiliateConfig()">保存</button>
@@ -2583,27 +2586,27 @@ var Pages = {
       <div class="card-body">
         <div class="form-group">
           <label>API Key</label>
-          <input type="text" id="fbApiKey" class="form-input" value="${CONFIG.firebase.apiKey || ''}">
+          <input type="text" id="fbApiKey" class="form-input" value="${Components.escapeHtml(CONFIG.firebase.apiKey || '')}">
         </div>
         <div class="form-group">
           <label>Auth Domain</label>
-          <input type="text" id="fbAuthDomain" class="form-input" value="${CONFIG.firebase.authDomain || ''}">
+          <input type="text" id="fbAuthDomain" class="form-input" value="${Components.escapeHtml(CONFIG.firebase.authDomain || '')}">
         </div>
         <div class="form-group">
           <label>Project ID</label>
-          <input type="text" id="fbProjectId" class="form-input" value="${CONFIG.firebase.projectId || ''}">
+          <input type="text" id="fbProjectId" class="form-input" value="${Components.escapeHtml(CONFIG.firebase.projectId || '')}">
         </div>
         <div class="form-group">
           <label>Storage Bucket</label>
-          <input type="text" id="fbStorageBucket" class="form-input" value="${CONFIG.firebase.storageBucket || ''}">
+          <input type="text" id="fbStorageBucket" class="form-input" value="${Components.escapeHtml(CONFIG.firebase.storageBucket || '')}">
         </div>
         <div class="form-group">
           <label>Messaging Sender ID</label>
-          <input type="text" id="fbMessagingSenderId" class="form-input" value="${CONFIG.firebase.messagingSenderId || ''}">
+          <input type="text" id="fbMessagingSenderId" class="form-input" value="${Components.escapeHtml(CONFIG.firebase.messagingSenderId || '')}">
         </div>
         <div class="form-group">
           <label>App ID</label>
-          <input type="text" id="fbAppId" class="form-input" value="${CONFIG.firebase.appId || ''}">
+          <input type="text" id="fbAppId" class="form-input" value="${Components.escapeHtml(CONFIG.firebase.appId || '')}">
         </div>
         <div class="form-actions">
           <button class="btn btn-primary" onclick="app.saveFirebaseConfig()">保存</button>
