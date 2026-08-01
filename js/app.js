@@ -1634,6 +1634,107 @@ var App = class App {
     reader.readAsText(file);
   }
 
+  // ─── Doctor's Visit Health Summary Export ───
+  exportHealthSummary() {
+    const profile = store.get('userProfile') || {};
+    const vitals = store.getDomainData('health', 'vitals', 90).slice(-30);
+    const symptoms = store.getDomainData('health', 'symptoms', 30).slice(-30);
+    const meds = store.getDomainData('health', 'medications', 90);
+    const sleep = store.getDomainData('health', 'sleepData', 30).slice(-14);
+    const today = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    // De-duplicate medications by name
+    const uniqueMeds = {};
+    meds.forEach(m => { if (m.name) uniqueMeds[m.name] = m; });
+
+    // Average vitals
+    const bpData = vitals.filter(v => v.bp_systolic);
+    const avgSys = bpData.length ? Math.round(bpData.reduce((s, v) => s + v.bp_systolic, 0) / bpData.length) : null;
+    const avgDia = bpData.length ? Math.round(bpData.reduce((s, v) => s + v.bp_diastolic, 0) / bpData.length) : null;
+    const weightData = vitals.filter(v => v.weight);
+    const latestWeight = weightData.length ? weightData[weightData.length - 1].weight : null;
+    const avgSleep = sleep.length ? (sleep.reduce((s, v) => s + (v.quality || 0), 0) / sleep.length).toFixed(1) : null;
+
+    let html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+      <title>健康サマリー ${today}</title>
+      <style>
+        body { font-family: 'Noto Sans JP', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; color: #333; }
+        h1 { font-size: 22px; border-bottom: 2px solid #10b981; padding-bottom: 8px; }
+        h2 { font-size: 16px; color: #10b981; margin-top: 24px; border-left: 4px solid #10b981; padding-left: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+        th, td { padding: 8px 12px; text-align: left; border: 1px solid #ddd; }
+        th { background: #f0fdf4; font-weight: 600; }
+        .label { color: #666; font-size: 13px; }
+        .value { font-size: 18px; font-weight: 700; }
+        .row { display: flex; gap: 24px; margin: 8px 0; }
+        .stat { background: #f9f9f9; border-radius: 8px; padding: 12px 16px; min-width: 120px; }
+        @media print { body { padding: 0; } }
+      </style></head><body>`;
+
+    html += `<h1>健康サマリー</h1>
+      <p class="label">作成日：${today}　／　氏名：${profile.name || '（未登録）'}　年齢：${profile.age || '-'}歳</p>`;
+
+    // Vitals summary
+    html += `<h2>バイタル（直近${bpData.length}回の平均）</h2><div class="row">`;
+    if (avgSys) html += `<div class="stat"><div class="label">血圧（平均）</div><div class="value">${avgSys}/${avgDia} mmHg</div></div>`;
+    if (latestWeight) html += `<div class="stat"><div class="label">体重（最新）</div><div class="value">${latestWeight} kg</div></div>`;
+    if (avgSleep) html += `<div class="stat"><div class="label">睡眠の質（平均）</div><div class="value">${avgSleep}/10</div></div>`;
+    html += `</div>`;
+
+    // Blood pressure log
+    if (bpData.length > 0) {
+      html += `<h2>血圧記録（最新${Math.min(bpData.length, 10)}件）</h2>
+        <table><tr><th>日時</th><th>収縮期</th><th>拡張期</th><th>脈拍</th></tr>`;
+      bpData.slice(-10).reverse().forEach(v => {
+        const d = new Date(v.timestamp).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        html += `<tr><td>${d}</td><td>${v.bp_systolic || '-'} mmHg</td><td>${v.bp_diastolic || '-'} mmHg</td><td>${v.heart_rate || '-'} bpm</td></tr>`;
+      });
+      html += `</table>`;
+    }
+
+    // Medications
+    const medList = Object.values(uniqueMeds);
+    if (medList.length > 0) {
+      const timings = { morning: '朝', noon: '昼', evening: '夕方', bedtime: '就寝前', as_needed: '必要時' };
+      html += `<h2>お薬（${medList.length}種類）</h2>
+        <table><tr><th>薬品名</th><th>用量</th><th>タイミング</th></tr>`;
+      medList.forEach(m => {
+        html += `<tr><td>${m.name || ''}</td><td>${m.dosage || '-'}</td><td>${timings[m.timing] || m.timing || '-'}</td></tr>`;
+      });
+      html += `</table>`;
+    }
+
+    // Recent symptoms
+    if (symptoms.length > 0) {
+      html += `<h2>体調記録（最新10件）</h2>
+        <table><tr><th>日時</th><th>体調レベル</th><th>疲労</th><th>痛み</th><th>メモ</th></tr>`;
+      symptoms.slice(-10).reverse().forEach(s => {
+        const d = new Date(s.timestamp).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+        html += `<tr><td>${d}</td><td>${s.condition_level || '-'}/10</td><td>${s.fatigue_level || '-'}/10</td><td>${s.pain_level || '-'}/10</td><td>${s.notes || ''}</td></tr>`;
+      });
+      html += `</table>`;
+    }
+
+    // Diseases
+    if (Array.isArray(profile.diseases) && profile.diseases.length > 0) {
+      html += `<h2>既往症・持病</h2><p>${profile.diseases.join('、')}</p>`;
+    }
+
+    html += `<p style="color:#999;font-size:12px;margin-top:32px;">
+      ※ このサマリーはLMS（ライフマネジメントシステム）の記録から自動生成されました。
+      医療機関での診断・治療の参考資料としてご使用ください。
+    </p></body></html>`;
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `health-summary-${new Date().toISOString().slice(0, 10)}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    Components.showToast('健康サマリーをダウンロードしました', 'success');
+  }
+
   // ─── Admin Methods (未病ダイアリー準拠: tabbed) ───
 
   setAdminTab(tab) {

@@ -675,11 +675,17 @@ var Pages = {
         const symptoms = store.getDomainData('health', 'symptoms', 7);
         const sleep = store.getDomainData('health', 'sleepData', 7);
         const activity = store.getDomainData('health', 'activityData', 7);
+        const vitals = store.getDomainData('health', 'vitals', 7);
         const avgCondition = symptoms.length > 0 ?
           (symptoms.reduce((s, e) => s + (e.condition_level || 0), 0) / symptoms.length).toFixed(1) : '-';
         const avgSleep = sleep.length > 0 ?
           (sleep.reduce((s, e) => s + (e.quality || 0), 0) / sleep.length).toFixed(1) : '-';
+        const bpReadings = vitals.filter(v => v.bp_systolic);
+        const avgBP = bpReadings.length > 0 ?
+          Math.round(bpReadings.reduce((s, v) => s + (v.bp_systolic || 0), 0) / bpReadings.length) + '/' +
+          Math.round(bpReadings.reduce((s, v) => s + (v.bp_diastolic || 0), 0) / bpReadings.length) : '-';
         stats.push(Components.statCard(i18n.t('condition_level'), avgCondition + '/10', null, '🤒'));
+        stats.push(Components.statCard('血圧（平均）', avgBP, null, '❤️'));
         stats.push(Components.statCard(i18n.t('sleep_quality'), avgSleep + '/10', null, '😴'));
         stats.push(Components.statCard(i18n.t('activity'), activity.length + i18n.t('items'), null, '🏃'));
         break;
@@ -1087,6 +1093,14 @@ var Pages = {
         <h3>サブスクリプション</h3>
         ${PayPalManager.renderStatus()}
       </div>
+
+      <!-- Doctor's Visit Summary -->
+      ${domain === 'health' ? `
+      <div class="settings-section">
+        <h3>🏥 お医者さんへのサマリー</h3>
+        <p>血圧・お薬・体調記録をまとめて印刷用ファイルに出力します。診察時にご利用ください。</p>
+        <button class="btn btn-primary" onclick="app.exportHealthSummary()">健康サマリーを作成</button>
+      </div>` : ''}
 
       <!-- Data Export/Import -->
       <div class="settings-section">
