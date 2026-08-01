@@ -79,8 +79,13 @@ var Pages = {
     allRecent.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     if (allRecent.length === 0) {
-      html += Components.emptyState(domainConfig?.icon || '📭', i18n.t('no_data'),
-        `${i18n.t('record')} → ${i18n.t('save')}`);
+      const isFirstRun = !store.get('hasRecordedOnce');
+      if (isFirstRun) {
+        html += this.renderWelcomeGuide(domain);
+      } else {
+        html += Components.emptyState(domainConfig?.icon || '📭', i18n.t('no_data'),
+          '「記録する」から今日のデータを入力してみてください');
+      }
     } else {
       allRecent.slice(0, 10).forEach(entry => {
         html += Components.recordItem(entry, domain);
@@ -109,6 +114,12 @@ var Pages = {
     }
 
     // ─── Domain-specific widgets ───
+
+    // Health domain: daily check-in + medication reminder
+    if (domain === 'health') {
+      html += this.renderHealthDailyCheckIn();
+      html += this.renderMedicationReminder();
+    }
 
     // Consciousness domain: 7-layer visualization + transcript input
     if (domain === 'consciousness') {
@@ -158,6 +169,159 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Welcome Guide (first-run) ───
+  renderWelcomeGuide(domain) {
+    const domainConfig = CONFIG.domains[domain];
+    const steps = {
+      health: [
+        { icon: '💊', text: '「記録する」→「お薬」で毎日飲んでいるお薬を登録' },
+        { icon: '❤️', text: '「記録する」→「バイタル」で血圧・体重を記録' },
+        { icon: '🤒', text: '「記録する」→「体調」で毎日の体調をひと言入力' }
+      ],
+      consciousness: [
+        { icon: '✍️', text: '上の入力欄に今日感じたことを書いてみてください' },
+        { icon: '📊', text: '「記録する」→「観察」で意識のレイヤーを記録' }
+      ],
+      relationship: [
+        { icon: '👤', text: '「設定」→「連絡先」に大切な方を登録' },
+        { icon: '📞', text: '連絡したら「連絡済み」ボタンを押して記録' }
+      ],
+      assets: [
+        { icon: '📊', text: '「設定」→「資産概要」で現在の資産を入力' },
+        { icon: '💰', text: '上の株式分析ウィジェットで銘柄をチェック' }
+      ],
+      time: [
+        { icon: '📅', text: '「連携」→「Googleカレンダー」を接続' },
+        { icon: '⏰', text: '「設定」→「空き時間の提供」で空き時間を活用' }
+      ],
+      work: [
+        { icon: '📝', text: '「設定」→「レジュメ」に経歴・スキルを入力' },
+        { icon: '💼', text: '下の「活動診断」であなたに合った活動を見つける' }
+      ]
+    };
+    const guide = steps[domain] || [];
+
+    return `<div class="welcome-guide">
+      <div class="wg-header">
+        <span class="wg-icon">${domainConfig?.icon || '📌'}</span>
+        <div>
+          <h3>はじめての方へ</h3>
+          <p>まず以下の手順でデータを登録してみてください</p>
+        </div>
+      </div>
+      <div class="wg-steps">
+        ${guide.map((s, i) => `<div class="wg-step">
+          <span class="wg-step-num">${i + 1}</span>
+          <span class="wg-step-icon">${s.icon}</span>
+          <span class="wg-step-text">${s.text}</span>
+        </div>`).join('')}
+      </div>
+      <button class="btn btn-primary" onclick="app.navigate('record')">
+        記録をはじめる
+      </button>
+    </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  HEALTH DOMAIN WIDGETS
+  // ═══════════════════════════════════════════════════════════
+
+  renderHealthDailyCheckIn() {
+    const today = new Date().toISOString().slice(0, 10);
+    const todaySymptoms = store.getDomainData('health', 'symptoms', 1)
+      .filter(e => e.timestamp && e.timestamp.startsWith(today));
+    const todayChecked = todaySymptoms.length > 0;
+    const lastLevel = todayChecked ? (todaySymptoms[todaySymptoms.length - 1].condition_level || 5) : null;
+
+    const emojis = ['', '😩', '😟', '😐', '🙂', '😊', '😄', '🌟', '✨', '🎉', '🏆'];
+    const labels = ['', 'とても辛い', '辛い', '少し辛い', 'まあまあ', '普通', 'まあ良い', '良い', 'とても良い', '絶好調', '最高！'];
+
+    if (todayChecked) {
+      return `<div class="health-checkin-widget checked">
+        <div class="hcw-header">
+          <span class="hcw-title">今日の体調記録</span>
+          <span class="hcw-done">✓ 記録済み</span>
+        </div>
+        <div class="hcw-result">
+          <span class="hcw-emoji">${emojis[lastLevel] || '😐'}</span>
+          <span class="hcw-label">${labels[lastLevel] || '普通'}</span>
+        </div>
+        <button class="btn btn-sm btn-secondary" onclick="app.navigate('record')">別の記録を追加</button>
+      </div>`;
+    }
+
+    return `<div class="health-checkin-widget">
+      <div class="hcw-header">
+        <span class="hcw-title">今日の体調はいかがですか？</span>
+      </div>
+      <div class="hcw-emojis">
+        ${[1,2,3,4,5,6,7,8,9,10].map(n => `
+          <button class="hcw-btn" onclick="Pages.recordQuickCondition(${n})" title="${labels[n]}">
+            <span class="hcw-btn-emoji">${emojis[n]}</span>
+            <span class="hcw-btn-label">${n <= 3 ? labels[n] : n === 5 ? labels[n] : n >= 8 ? labels[n] : ''}</span>
+          </button>`).join('')}
+      </div>
+    </div>`;
+  },
+
+  recordQuickCondition(level) {
+    store.addDomainEntry('health', 'symptoms', { condition_level: level });
+    Components.showToast('体調を記録しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  renderMedicationReminder() {
+    const meds = store.getDomainData('health', 'medications', 90);
+    if (meds.length === 0) return '';
+
+    const today = new Date().toISOString().slice(0, 10);
+    const takenData = store.get('health_meds_taken') || {};
+    const taken = takenData[today] || {};
+
+    const timings = {
+      morning: '朝',
+      noon: '昼',
+      evening: '夕方',
+      bedtime: '就寝前',
+      as_needed: '必要時'
+    };
+
+    const uniqueMeds = {};
+    meds.forEach(m => {
+      if (m.name && !uniqueMeds[m.name]) uniqueMeds[m.name] = m;
+    });
+    const medList = Object.values(uniqueMeds).slice(0, 8);
+    if (medList.length === 0) return '';
+
+    return `<div class="medication-reminder">
+      <h3>今日のお薬</h3>
+      <div class="med-list">
+        ${medList.map(m => {
+          const isTaken = taken[m.name];
+          return `<div class="med-item ${isTaken ? 'taken' : ''}">
+            <label class="med-check" onclick="Pages.toggleMedTaken(${JSON.stringify(m.name)})">
+              <span class="med-check-box">${isTaken ? '✓' : ''}</span>
+              <span class="med-name">${Components.escapeHtml(m.name || '')}</span>
+              <span class="med-timing">${timings[m.timing] || m.timing || ''}</span>
+              ${m.dosage ? `<span class="med-dosage">${Components.escapeHtml(m.dosage)}</span>` : ''}
+            </label>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  },
+
+  toggleMedTaken(medName) {
+    const today = new Date().toISOString().slice(0, 10);
+    const takenData = store.get('health_meds_taken') || {};
+    if (!takenData[today]) takenData[today] = {};
+    takenData[today][medName] = !takenData[today][medName];
+    // Keep only last 7 days
+    Object.keys(takenData).sort().slice(0, -7).forEach(k => delete takenData[k]);
+    store.set('health_meds_taken', takenData);
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Consciousness 7-Layer Visualization ───
@@ -591,7 +755,7 @@ var Pages = {
     // Action items (todos)
     if (actions.length > 0) {
       html += `<div class="action-items">
-        <h3>📋 Action Items</h3>
+        <h3>📋 やることリスト</h3>
         ${actions.map((a, i) => `
           <div class="action-item ${a.done ? 'done' : ''}">
             <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${a.text}</label>

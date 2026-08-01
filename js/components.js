@@ -181,7 +181,7 @@ var Components = {
       { id: 'home', icon: '🏠' },
       { id: 'record', icon: '📝' },
       { id: 'actions', icon: '⚡' },
-      { id: 'ask_ai', icon: '' },
+      { id: 'ask_ai', icon: '💬' },
       { id: 'settings', icon: '⚙️' }
     ];
     const color = CONFIG.domains[domain]?.color || '#6C63FF';

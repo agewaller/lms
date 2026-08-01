@@ -342,6 +342,7 @@ var App = class App {
     });
 
     store.addDomainEntry(domain, category, data);
+    store.set('hasRecordedOnce', true);
     Components.showToast(i18n.t('saved'), 'success');
     form.reset();
   }
