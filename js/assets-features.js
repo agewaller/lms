@@ -219,7 +219,7 @@ var AssetsFeatures = {
         </div>`;
       }
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message)}</div>`;
     }
   },
 
@@ -311,7 +311,7 @@ var AssetsFeatures = {
           </div>`;
         }
       } catch (e) {
-        if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+        if (resultEl) resultEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message)}</div>`;
       }
     };
     reader.readAsDataURL(file);

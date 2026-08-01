@@ -27,8 +27,20 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
-    // Quick input bar
+    // Quick input bar + mood check-in
+    const streak = store.getRecordingStreak();
+    const todayMood = this.getTodayMood();
     let html = `<div class="page-home">
+      <div class="mood-checkin-bar">
+        <span class="mood-label">今日の気分：</span>
+        <div class="mood-btns">
+          ${[['😔','とても悪い'],['😕','悪い'],['😐','普通'],['🙂','良い'],['😊','とても良い']].map(([emoji, label], i) =>
+            `<button class="mood-btn ${todayMood === i + 1 ? 'selected' : ''}" title="${label}"
+              onclick="Pages.recordMood(${i + 1})">${emoji}</button>`
+          ).join('')}
+        </div>
+        ${streak > 0 ? `<span class="streak-badge" title="${streak}日連続記録中">🔥 ${streak}日</span>` : ''}
+      </div>
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
@@ -109,7 +121,7 @@ var Pages = {
       html += `<div class="analysis-section">
         <h3>分析結果</h3>
         <div class="analysis-content">${Components.formatMarkdown(latest.response)}</div>
-        <div class="analysis-meta">${latest.model} | ${new Date(latest.timestamp).toLocaleString()}</div>
+        <div class="analysis-meta">${new Date(latest.timestamp).toLocaleString()}</div>
       </div>`;
     }
 
@@ -169,6 +181,21 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Mood Check-in helpers ───
+  getTodayMood() {
+    const today = new Date().toISOString().slice(0, 10);
+    const entries = store.get('consciousness_entries') || [];
+    const todayEntry = entries.filter(e => e.timestamp?.startsWith(today)).slice(-1)[0];
+    return todayEntry?.mood_level || null;
+  },
+
+  recordMood(level) {
+    store.addDomainEntry('consciousness', 'entries', { mood_level: level });
+    store.set('hasRecordedOnce', true);
+    Components.showToast('気分を記録しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Welcome Guide (first-run) ───

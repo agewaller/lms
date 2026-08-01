@@ -2015,3 +2015,25 @@ body.is-admin .admin-only { display: flex; }
 
 /* ─── Toggle Row (settings label + toggle) ─── */
 .toggle-row { display: flex; align-items: center; gap: 12px; cursor: default; }
+
+/* ─── Mood Check-in Bar ─── */
+.mood-checkin-bar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--bg-secondary); border-radius: var(--radius-sm);
+  padding: 10px 16px; margin-bottom: 12px;
+}
+.mood-label { font-size: 14px; color: var(--text-secondary); white-space: nowrap; }
+.mood-btns { display: flex; gap: 6px; }
+.mood-btn {
+  font-size: 22px; background: none; border: 2px solid transparent;
+  border-radius: 50%; width: 40px; height: 40px; cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+}
+.mood-btn:hover { transform: scale(1.2); }
+.mood-btn.selected { border-color: var(--accent); background: var(--bg-hover); }
+.streak-badge {
+  margin-left: auto; font-size: 13px; font-weight: 600;
+  background: linear-gradient(135deg, #ff6b35, #f7c948);
+  color: #fff; border-radius: 20px; padding: 3px 10px; white-space: nowrap;
+}

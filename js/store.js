@@ -270,6 +270,43 @@ var Store = class Store {
     return score;
   }
 
+  // ─── Recording Streak ───
+
+  getRecordingStreak() {
+    // Collect all entry timestamps across all domain arrays
+    const dates = new Set();
+    this.persistKeys.forEach(key => {
+      const data = this.state[key];
+      if (Array.isArray(data)) {
+        data.forEach(entry => {
+          if (entry && entry.timestamp) {
+            dates.add(entry.timestamp.slice(0, 10));
+          }
+        });
+      }
+    });
+
+    if (dates.size === 0) return 0;
+
+    let streak = 0;
+    const check = new Date();
+    // If nothing recorded today yet, still count from yesterday onward
+    const todayStr = check.toISOString().slice(0, 10);
+    if (!dates.has(todayStr)) check.setDate(check.getDate() - 1);
+
+    while (true) {
+      const d = check.toISOString().slice(0, 10);
+      if (dates.has(d)) {
+        streak++;
+        check.setDate(check.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  }
+
   // ─── Clear ───
 
   clearAll() {

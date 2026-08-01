@@ -425,7 +425,7 @@ var App = class App {
 
       input.value = '';
     } catch (e) {
-      if (responseEl) responseEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (responseEl) responseEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message)}</div>`;
     }
   }
 
@@ -1279,7 +1279,7 @@ var App = class App {
       textarea.value = '';
       Components.showToast('分析が完了しました', 'success');
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message)}</div>`;
     }
   }
 
