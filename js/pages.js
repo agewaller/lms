@@ -133,9 +133,10 @@ var Pages = {
 
     // ─── Domain-specific widgets ───
 
-    // Health domain: daily check-in + BP status + vitals chart + medication reminder
+    // Health domain: daily check-in + sleep check-in + BP status + vitals chart + medication reminder
     if (domain === 'health') {
       html += this.renderHealthDailyCheckIn();
+      html += this.renderSleepCheckIn();
       html += this.renderBPStatus();
       html += this.renderVitalsChart();
       html += this.renderMedicationReminder();
@@ -413,6 +414,56 @@ var Pages = {
   recordQuickCondition(level) {
     store.addDomainEntry('health', 'symptoms', { condition_level: level });
     Components.showToast('体調を記録しました', 'success');
+    if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Sleep Quick Check-In ───
+  renderSleepCheckIn() {
+    const today = new Date().toISOString().slice(0, 10);
+    const todaySleep = store.getDomainData('health', 'sleepData', 1)
+      .filter(e => e.timestamp && e.timestamp.startsWith(today));
+    const alreadyLogged = todaySleep.length > 0;
+
+    const levels = [
+      { n: 1, emoji: '😩', label: '眠れなかった' },
+      { n: 2, emoji: '😟', label: 'あまり眠れなかった' },
+      { n: 3, emoji: '😐', label: 'まあまあ' },
+      { n: 4, emoji: '😴', label: 'よく眠れた' },
+      { n: 5, emoji: '🌙', label: 'ぐっすり眠れた' }
+    ];
+
+    if (alreadyLogged) {
+      const q = todaySleep[todaySleep.length - 1].quality || 3;
+      const lv = levels[q - 1] || levels[2];
+      return `<div class="sleep-checkin-widget checked">
+        <div class="scw-header">
+          <span class="scw-title">昨夜の睡眠</span>
+          <span class="scw-done">✓ 記録済み</span>
+        </div>
+        <div class="scw-result">
+          <span class="scw-emoji">${lv.emoji}</span>
+          <span class="scw-label">${lv.label}</span>
+        </div>
+      </div>`;
+    }
+
+    return `<div class="sleep-checkin-widget">
+      <div class="scw-header">
+        <span class="scw-title">昨夜の眠りはいかがでしたか？</span>
+      </div>
+      <div class="scw-btns">
+        ${levels.map(lv => `
+          <button class="scw-btn" onclick="Pages.recordSleepQuality(${lv.n})" title="${lv.label}">
+            <span class="scw-emoji">${lv.emoji}</span>
+            <span class="scw-lbl">${lv.label}</span>
+          </button>`).join('')}
+      </div>
+    </div>`;
+  },
+
+  recordSleepQuality(quality) {
+    store.addDomainEntry('health', 'sleepData', { quality });
+    Components.showToast('睡眠を記録しました', 'success');
     if (typeof app !== 'undefined') app.renderApp();
   },
 
