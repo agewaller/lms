@@ -409,6 +409,21 @@ var App = class App {
       }
     }
 
+    // 6. Evening step nudge (18:00-21:00): goals unmet and user has logged steps before
+    if (hour >= 18 && hour < 21 && store.get('hasRecordedOnce')) {
+      const stepsData = store.get('health_steps') || {};
+      const stepsToday = stepsData[todayStr] || 0;
+      const stepsHistory = Object.values(stepsData).filter(v => v > 0);
+      if (stepsHistory.length > 0 && stepsToday < 5000) {
+        notifs.push({ id: 'steps_nudge', icon: '🚶', title: '今日の歩数', body: `今日は${stepsToday.toLocaleString()}歩です。少し歩いてみましょう`, domain: 'health' });
+      }
+    }
+
+    // 7. Sunday weekly reflection prompt
+    if (today.getDay() === 0 && hour >= 19) {
+      notifs.push({ id: 'weekly_reflection', icon: '📅', title: '今週の振り返り', body: '1週間お疲れさまでした。今週の記録を確認してみましょう', domain: store.get('currentDomain') || 'health' });
+    }
+
     return notifs;
   }
 

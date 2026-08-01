@@ -32,6 +32,7 @@ var Pages = {
     const todayMood = this.getTodayMood();
     let html = `<div class="page-home">
       ${this.renderDailyGreeting()}
+      ${this.renderProfileCompleteness()}
       ${this.renderProfileBanner()}
       <div class="mood-checkin-bar">
         <span class="mood-label">今日の気分：</span>
@@ -211,6 +212,26 @@ var Pages = {
     store.set('hasRecordedOnce', true);
     Components.showToast('気分を記録しました', 'success');
     if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Profile Completeness Banner ───
+  renderProfileCompleteness() {
+    const profile = store.get('userProfile') || {};
+    const fields = ['name', 'birthYear', 'gender', 'prefecture', 'occupation', 'diseases', 'allergies', 'medications'];
+    const filled = fields.filter(f => profile[f] && String(profile[f]).trim() !== '' && (!Array.isArray(profile[f]) || profile[f].length > 0));
+    const pct = Math.round(filled.length / fields.length * 100);
+    if (pct >= 75) return '';
+    const missing = fields.filter(f => !filled.includes(f));
+    const labels = { name: 'お名前', birthYear: '生年', gender: '性別', prefecture: '都道府県', occupation: '職業', diseases: '既往症', allergies: 'アレルギー', medications: 'お薬' };
+    const missingStr = missing.slice(0, 3).map(f => labels[f]).join('、');
+    return `<div class="profile-completeness-banner">
+      <div class="pcb-left">
+        <div class="pcb-title">プロフィールを完成させてより的確なアドバイスを</div>
+        <div class="pcb-bar"><div class="pcb-fill" style="width:${pct}%"></div></div>
+        <div class="pcb-hint">${pct}% 完成 — 未記入：${Components.escapeHtml(missingStr)}${missing.length > 3 ? ` 他${missing.length - 3}項目` : ''}</div>
+      </div>
+      <button class="btn btn-primary btn-sm pcb-btn" onclick="app.navigate('settings')">入力する</button>
+    </div>`;
   },
 
   // ─── Welcome Guide (first-run) ───
