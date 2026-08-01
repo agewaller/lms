@@ -2147,6 +2147,28 @@ body.is-admin .admin-only { display: flex; }
 :root[data-theme="dark"] .notif-status.enabled { background: #064e3b; color: #6ee7b7; }
 
 /* ─── Profile Completeness Banner ─── */
+/* ─── Daily Greeting ─── */
+.daily-greeting {
+  background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  color: #fff;
+}
+.dg-main { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.dg-hello { font-size: 18px; font-weight: 700; line-height: 1.2; }
+.dg-date { font-size: 13px; opacity: 0.85; margin-top: 3px; }
+.dg-tip {
+  font-size: 13px;
+  line-height: 1.6;
+  opacity: 0.9;
+  background: rgba(255,255,255,0.15);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+html.font-large .dg-hello { font-size: 20px !important; }
+html.font-xlarge .dg-hello { font-size: 24px !important; }
+
 .profile-banner {
   display: flex;
   align-items: center;

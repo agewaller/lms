@@ -31,6 +31,7 @@ var Pages = {
     const streak = store.getRecordingStreak();
     const todayMood = this.getTodayMood();
     let html = `<div class="page-home">
+      ${this.renderDailyGreeting()}
       ${this.renderProfileBanner()}
       <div class="mood-checkin-bar">
         <span class="mood-label">今日の気分：</span>
@@ -255,6 +256,50 @@ var Pages = {
       <button class="btn btn-primary" onclick="app.navigate('record')">
         記録をはじめる
       </button>
+    </div>`;
+  },
+
+  // ─── Daily Greeting ───
+  renderDailyGreeting() {
+    const profile = store.get('userProfile') || {};
+    const name = profile.displayName || profile.name || '';
+    const hour = new Date().getHours();
+    let greeting;
+    if (hour < 5) greeting = '夜遅くまでお疲れさまです';
+    else if (hour < 11) greeting = 'おはようございます';
+    else if (hour < 17) greeting = 'こんにちは';
+    else if (hour < 21) greeting = 'こんばんは';
+    else greeting = '夜もお元気ですか';
+
+    const now = new Date();
+    const dayNames = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+    const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日（${dayNames[now.getDay()]}）`;
+
+    // Seasonal health tips (by month)
+    const monthTips = [
+      '寒い季節は起床時に血圧が上がりやすいです。急に動かず、ゆっくり起き上がりましょう。',
+      '乾燥が続いています。こまめな水分補給をお忘れなく。',
+      '花粉の季節が始まります。症状がある方は早めに対策を。',
+      '春は気温差が激しいです。薄手の羽織物を一枚持ち歩きましょう。',
+      '気温が上がってきました。熱中症予防に水分をしっかりとりましょう。',
+      '梅雨の季節です。湿気が多い日は関節が痛む方も。無理しないようにしてください。',
+      '猛暑日が続きます。冷房をうまく活用して、室温は28度以下に保ちましょう。',
+      '夏の疲れが出やすい時期です。十分な睡眠と栄養で英気を養いましょう。',
+      '朝晩が涼しくなってきました。急な気温差に気をつけてください。',
+      '食欲の秋です。旬の野菜をしっかり食べて免疫力を高めましょう。',
+      '空気が乾燥してきました。手洗い・うがいで感染症予防を。',
+      '年末は慌ただしくなります。無理しすぎず、休憩を大切に。'
+    ];
+    const tip = monthTips[now.getMonth()];
+
+    return `<div class="daily-greeting">
+      <div class="dg-main">
+        <div class="dg-text">
+          <div class="dg-hello">${greeting}${name ? '、' + Components.escapeHtml(name) + 'さん' : ''}</div>
+          <div class="dg-date">${dateStr}</div>
+        </div>
+      </div>
+      <div class="dg-tip">${tip}</div>
     </div>`;
   },
 
