@@ -512,6 +512,15 @@ var App = class App {
   }
 
   // ─── AI Chat ───
+  useStarter(question, domain) {
+    const input = document.getElementById('chatInput');
+    if (input) {
+      input.value = question;
+      input.focus();
+      this.sendChat(domain);
+    }
+  }
+
   async sendChat(domain) {
     const input = document.getElementById('chatInput');
     if (!input || !input.value.trim()) return;

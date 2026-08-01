@@ -784,12 +784,55 @@ var Pages = {
       .filter(m => m.domain === domain || !m.domain)
       .slice(-50);
 
+    const starters = {
+      health: [
+        '最近、体の調子が優れません。何か改善できることはありますか？',
+        '血圧が高めと言われています。生活で気をつけることを教えてください。',
+        '睡眠の質を上げるにはどうすればいいですか？',
+        '薬の飲み忘れを防ぐコツはありますか？'
+      ],
+      consciousness: [
+        '最近、気持ちが落ち着かない日が続いています。',
+        '自分の意識のレイヤーについて聞かせてください。',
+        '瞑想を始めてみたいのですが、どうすればいいですか？',
+        '感謝の気持ちを深めるにはどうすればいいですか？'
+      ],
+      time: [
+        '毎日の時間の使い方を見直したいです。どこから始めればいいですか？',
+        '自分の空き時間を有効に使うアドバイスをください。',
+        '老後の時間の過ごし方について相談したいです。'
+      ],
+      work: [
+        '定年後も働き続けたいのですが、どんな仕事が向いていますか？',
+        '自分のスキルや経験を活かせる場所を見つけたいです。',
+        'ボランティア活動を始めるにはどうすればいいですか？'
+      ],
+      relationship: [
+        '最近、友人との連絡が減ってきています。どうすれば維持できますか？',
+        '家族との関係をよくする方法を教えてください。',
+        '孤独感を感じることがあります。何かできることはありますか？'
+      ],
+      assets: [
+        'NISAを始めたいのですが、どこから始めればいいですか？',
+        '老後の資金計画について相談したいです。',
+        '株式投資のリスクを減らす方法を教えてください。',
+        '年金だけでは不安です。資産運用のアドバイスをください。'
+      ]
+    };
+    const domainStarters = starters[domain] || starters.health;
+
     let html = `<div class="page-ask-ai">
       <h2>${i18n.t(domain)} - 相談する</h2>
 
       <div class="chat-container" id="chatContainer">
         ${history.length === 0 ?
-          Components.emptyState('💬', '相談する', i18n.t('quick_input_placeholder')) :
+          `<div class="chat-welcome">
+            <div class="chat-welcome-icon">💬</div>
+            <p class="chat-welcome-text">どんなことでもお気軽にご相談ください。<br>よくあるご相談はこちら：</p>
+            <div class="chat-starters">
+              ${domainStarters.map(q => `<button class="chat-starter-btn" onclick="app.useStarter(${JSON.stringify(q)}, ${JSON.stringify(domain)})">${Components.escapeHtml(q)}</button>`).join('')}
+            </div>
+          </div>` :
           history.map(m => Components.chatMessage(m)).join('')
         }
       </div>
@@ -797,8 +840,8 @@ var Pages = {
       <div class="chat-input-bar">
         <textarea id="chatInput" class="form-input" rows="2"
           placeholder="${i18n.t('quick_input_placeholder')}"
-          onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();app.sendChat('${domain}')}"></textarea>
-        <button class="btn btn-primary" onclick="app.sendChat('${domain}')">${i18n.t('send')}</button>
+          onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();app.sendChat(${JSON.stringify(domain)})}"></textarea>
+        <button class="btn btn-primary" onclick="app.sendChat(${JSON.stringify(domain)})">${i18n.t('send')}</button>
       </div>
 
       ${store.get('isAnalyzing') ? Components.loading(i18n.t('analyzing')) : ''}

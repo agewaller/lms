@@ -1976,3 +1976,22 @@ body.is-admin .admin-only { display: flex; }
 .notif-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
 .notif-body { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
 .notif-empty { padding: 20px 16px; text-align: center; color: var(--text-secondary); font-size: 14px; }
+
+/* ─── Ask AI Conversation Starters ─── */
+.chat-welcome { text-align: center; padding: 32px 16px 8px; }
+.chat-welcome-icon { font-size: 40px; margin-bottom: 12px; }
+.chat-welcome-text { color: var(--text-secondary); font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
+.chat-starters { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 600px; margin: 0 auto; }
+.chat-starter-btn {
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+  max-width: 280px;
+}
+.chat-starter-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
