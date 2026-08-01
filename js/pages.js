@@ -412,6 +412,9 @@ var Pages = {
       }
     };
 
+    // Store chart config for post-render initialization (innerHTML blocks script execution)
+    this._pendingVitalsChart = { id: chartId, config: chartConfig };
+
     return `<div class="vitals-chart-section">
       <h3>バイタル推移（過去${sorted.length}件）</h3>
       <div class="vitals-chart-wrap">
@@ -420,15 +423,7 @@ var Pages = {
       <button class="btn btn-sm btn-secondary" style="margin-top:8px" onclick="app.navigate('record')">
         今日のデータを記録
       </button>
-    </div>
-    <script>
-    (function() {
-      const el = document.getElementById(${JSON.stringify(chartId)});
-      if (el && typeof Chart !== 'undefined') {
-        new Chart(el.getContext('2d'), ${JSON.stringify(chartConfig)});
-      }
-    })();
-    </script>`;
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───

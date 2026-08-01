@@ -231,6 +231,21 @@ var App = class App {
       }, 100);
     }
 
+    // Initialize vitals chart (must run after innerHTML, since script tags don't execute there)
+    if (domain === 'health' && page === 'home' && Pages._pendingVitalsChart) {
+      const { id, config } = Pages._pendingVitalsChart;
+      Pages._pendingVitalsChart = null;
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el && typeof Chart !== 'undefined') {
+          // Destroy any previous chart on the same canvas to avoid overlap
+          const existing = Chart.getChart(el);
+          if (existing) existing.destroy();
+          new Chart(el.getContext('2d'), config);
+        }
+      }, 50);
+    }
+
     // Update notification badge
     this.updateNotificationBadge();
   }
@@ -644,9 +659,27 @@ var App = class App {
   }
 
   executeAction(type, data) {
-    // Placeholder for action execution (e.g., open affiliate link, book appointment)
-    console.log('Execute action:', type, data);
-    Components.showToast('Action: ' + type, 'info');
+    switch (type) {
+      case 'navigate':
+        if (data) this.navigate(data);
+        break;
+      case 'navigate_domain':
+        if (data) this.switchDomain(data);
+        break;
+      case 'record':
+        this.navigate('record');
+        break;
+      case 'ask':
+        this.navigate('ask_ai');
+        break;
+      case 'url':
+        if (data) window.open(data, '_blank', 'noopener,noreferrer');
+        break;
+      default:
+        if (data) {
+          this.navigate('ask_ai');
+        }
+    }
   }
 
   // ─── Stock Analysis (Assets domain) ───
