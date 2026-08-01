@@ -1876,35 +1876,36 @@ var App = class App {
       `<div class="user-score-item"><span>${i18n.t(d)}</span><strong>${s}</strong></div>`
     ).join('');
 
+    const e = s => Components.escapeHtml(s ?? '-');
     const body = `
       <div class="user-detail">
         <div class="user-detail-section">
           <h4>基本情報</h4>
-          <p><strong>お名前:</strong> ${user.displayName || '-'}</p>
-          <p><strong>メール:</strong> ${user.email || '-'}</p>
-          <p><strong>年齢:</strong> ${user.age || '-'}</p>
-          <p><strong>性別:</strong> ${user.gender || '-'}</p>
-          <p><strong>居住地:</strong> ${user.location || '-'}</p>
-          <p><strong>職業:</strong> ${user.occupation || '-'}</p>
+          <p><strong>お名前:</strong> ${e(user.displayName)}</p>
+          <p><strong>メール:</strong> ${e(user.email)}</p>
+          <p><strong>年齢:</strong> ${e(user.age)}</p>
+          <p><strong>性別:</strong> ${e(user.gender)}</p>
+          <p><strong>居住地:</strong> ${e(user.location)}</p>
+          <p><strong>職業:</strong> ${e(user.occupation)}</p>
         </div>
 
         <div class="user-detail-section">
           <h4>健康</h4>
-          <p><strong>持病・症状:</strong> ${user.diseases.length > 0 ? user.diseases.join(', ') : 'なし'}</p>
-          <p><strong>服薬:</strong> ${user.medications || 'なし'}</p>
+          <p><strong>持病・症状:</strong> ${user.diseases?.length > 0 ? Components.escapeHtml(user.diseases.join(', ')) : 'なし'}</p>
+          <p><strong>服薬:</strong> ${e(user.medications) || 'なし'}</p>
         </div>
 
         <div class="user-detail-section">
           <h4>資産・収入</h4>
-          <p><strong>月収:</strong> ${user.monthlyIncome || '-'}</p>
-          <p><strong>貯蓄:</strong> ${user.savings || '-'}</p>
-          <p><strong>プラン:</strong> ${user.subscription}</p>
+          <p><strong>月収:</strong> ${e(user.monthlyIncome)}</p>
+          <p><strong>貯蓄:</strong> ${e(user.savings)}</p>
+          <p><strong>プラン:</strong> ${e(user.subscription)}</p>
         </div>
 
         <div class="user-detail-section">
           <h4>人生目標・悩み</h4>
-          <p><strong>目標:</strong> ${user.lifeGoals || '-'}</p>
-          <p><strong>悩み:</strong> ${user.concerns || '-'}</p>
+          <p><strong>目標:</strong> ${e(user.lifeGoals)}</p>
+          <p><strong>悩み:</strong> ${e(user.concerns)}</p>
         </div>
 
         ${scoreHtml ? `
@@ -1914,7 +1915,7 @@ var App = class App {
         </div>` : ''}
 
         <div class="user-detail-section" style="font-size:11px;color:var(--text-muted);">
-          UID: ${user.uid}<br>
+          UID: ${e(user.uid)}<br>
           最終アクティビティ: ${user.lastActive ? new Date(user.lastActive).toLocaleString('ja-JP') : '-'}
         </div>
       </div>

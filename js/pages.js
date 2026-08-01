@@ -758,7 +758,7 @@ var Pages = {
         <h3>📋 やることリスト</h3>
         ${actions.map((a, i) => `
           <div class="action-item ${a.done ? 'done' : ''}">
-            <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${a.text}</label>
+            <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${Components.escapeHtml(a.text || '')}</label>
             <span class="action-domain" style="background:${CONFIG.domains[a.domain]?.color || '#666'}">${CONFIG.domains[a.domain]?.icon || ''}</span>
           </div>
         `).join('')}
@@ -817,7 +817,8 @@ var Pages = {
 
     // Helper: render a form field from schema definition
     const renderField = (field, value) => {
-      const val = value ?? '';
+      const raw = value ?? '';
+      const val = Components.escapeHtml(String(raw));
       const id = 'profile_' + field.key;
       switch (field.type) {
         case 'number':
@@ -831,7 +832,7 @@ var Pages = {
         case 'select':
           return `<select id="${id}" class="form-input">
             <option value="">選択してください</option>
-            ${(field.options || []).map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
+            ${(field.options || []).map(o => `<option value="${Components.escapeHtml(o)}" ${raw === o ? 'selected' : ''}>${Components.escapeHtml(o)}</option>`).join('')}
           </select>`;
         default:
           return `<input type="text" id="${id}" class="form-input" value="${val}">`;

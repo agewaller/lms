@@ -45,7 +45,7 @@ var Components = {
         <span class="rec-domain-badge" style="background:${CONFIG.domains[rec.domain]?.color || '#666'}">${CONFIG.domains[rec.domain]?.icon || ''} ${i18n.t(rec.domain)}</span>
         <span class="rec-priority">${i18n.t(rec.priority || 'medium')}</span>
       </div>
-      <div class="rec-body">${rec.text || ''}</div>
+      <div class="rec-body">${this.formatMarkdown(rec.text || '')}</div>
       ${rec.action ? `<button class="btn btn-sm btn-primary" onclick="app.executeAction('${rec.actionType}','${rec.actionData || ''}')">${rec.action}</button>` : ''}
     </div>`;
   },
@@ -118,7 +118,8 @@ var Components = {
   // ─── Markdown Formatter ───
   formatMarkdown(text) {
     if (!text) return '';
-    return text
+    const t = this.escapeHtml(text);
+    return t
       .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
