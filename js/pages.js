@@ -133,10 +133,11 @@ var Pages = {
 
     // ─── Domain-specific widgets ───
 
-    // Health domain: daily check-in + sleep check-in + BP status + vitals chart + medication reminder
+    // Health domain: daily check-in + sleep check-in + water intake + BP status + vitals chart + medication reminder
     if (domain === 'health') {
       html += this.renderHealthDailyCheckIn();
       html += this.renderSleepCheckIn();
+      html += this.renderWaterIntake();
       html += this.renderBPStatus();
       html += this.renderVitalsChart();
       html += this.renderMedicationReminder();
@@ -465,6 +466,41 @@ var Pages = {
     store.addDomainEntry('health', 'sleepData', { quality });
     Components.showToast('睡眠を記録しました', 'success');
     if (typeof app !== 'undefined') app.renderApp();
+  },
+
+  // ─── Water Intake Widget ───
+  renderWaterIntake() {
+    const today = new Date().toISOString().slice(0, 10);
+    const waterData = store.get('health_water') || {};
+    const glasses = waterData[today] || 0;
+    const goal = 6; // 高齢者は6〜8杯推奨
+    const pct = Math.min(100, Math.round(glasses / goal * 100));
+    const emoji = glasses === 0 ? '🥤' : glasses < goal / 2 ? '💧' : glasses < goal ? '🚰' : '✅';
+
+    return `<div class="water-widget">
+      <div class="ww-header">
+        <span class="ww-title">${emoji} 水分補給</span>
+        <span class="ww-count">${glasses} / ${goal}杯</span>
+      </div>
+      <div class="ww-bar"><div class="ww-fill" style="width:${pct}%"></div></div>
+      <div class="ww-btns">
+        <button class="btn btn-sm btn-secondary" onclick="Pages.adjustWater(-1)" ${glasses <= 0 ? 'disabled' : ''}>−</button>
+        <span class="ww-hint">${glasses >= goal ? '目標達成！よくできました' : `あと${goal - glasses}杯で目標達成です`}</span>
+        <button class="btn btn-sm btn-primary" onclick="Pages.adjustWater(1)">コップ1杯 ＋</button>
+      </div>
+    </div>`;
+  },
+
+  adjustWater(delta) {
+    const today = new Date().toISOString().slice(0, 10);
+    const waterData = store.get('health_water') || {};
+    waterData[today] = Math.max(0, (waterData[today] || 0) + delta);
+    store.set('health_water', waterData);
+    const glasses = waterData[today];
+    if (delta > 0) Components.showToast(`水分補給 ${glasses}杯目！`, 'success');
+    const widget = document.querySelector('.water-widget');
+    if (widget) widget.outerHTML = this.renderWaterIntake();
+    else if (typeof app !== 'undefined') app.renderApp();
   },
 
   renderMedicationReminder() {

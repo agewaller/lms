@@ -1968,6 +1968,41 @@ body.is-admin .admin-only { display: flex; }
 :root[data-theme="dark"] .scw-btn { background: #2e1065; border-color: #4c1d95; }
 :root[data-theme="dark"] .scw-btn .scw-lbl { color: #a78bfa; }
 
+/* ─── Water Intake ─── */
+.water-widget {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border: 1px solid #93c5fd;
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+.ww-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.ww-title { font-weight: 600; font-size: 16px; color: #1e40af; }
+.ww-count { font-size: 18px; font-weight: 700; color: #2563eb; }
+.ww-bar {
+  height: 8px;
+  background: rgba(37,99,235,0.15);
+  border-radius: 4px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.ww-fill {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+.ww-btns { display: flex; align-items: center; gap: 10px; }
+.ww-hint { flex: 1; font-size: 13px; color: #1d4ed8; text-align: center; }
+@media (prefers-color-scheme: dark) {
+  .water-widget { background: linear-gradient(135deg, #1e3a5f, #1e3a8a); border-color: #1d4ed8; }
+  .ww-title, .ww-hint { color: #93c5fd; }
+  .ww-count { color: #60a5fa; }
+}
+:root[data-theme="dark"] .water-widget { background: linear-gradient(135deg, #1e3a5f, #1e3a8a); border-color: #1d4ed8; }
+:root[data-theme="dark"] .ww-title, :root[data-theme="dark"] .ww-hint { color: #93c5fd; }
+:root[data-theme="dark"] .ww-count { color: #60a5fa; }
+
 /* ─── Medication Reminder ─── */
 .medication-reminder {
   background: var(--bg-secondary);
