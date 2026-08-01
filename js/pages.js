@@ -44,6 +44,7 @@ var Pages = {
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
+        <button class="btn btn-icon btn-secondary voice-btn" id="voiceBtn" onclick="app.toggleVoiceInput('quickInput')" title="音声入力">🎙️</button>
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
       <div id="quickResponse"></div>`;
@@ -127,9 +128,10 @@ var Pages = {
 
     // ─── Domain-specific widgets ───
 
-    // Health domain: daily check-in + medication reminder
+    // Health domain: daily check-in + vitals chart + medication reminder
     if (domain === 'health') {
       html += this.renderHealthDailyCheckIn();
+      html += this.renderVitalsChart();
       html += this.renderMedicationReminder();
     }
 
@@ -351,6 +353,84 @@ var Pages = {
     if (typeof app !== 'undefined') app.renderApp();
   },
 
+  // ─── Health Vitals Trend Chart ───
+  renderVitalsChart() {
+    const vitals = store.getDomainData('health', 'vitals', 90);
+    if (vitals.length < 2) return '';
+
+    // Sort by time and take last 30
+    const sorted = vitals.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)).slice(-30);
+
+    const hasBP = sorted.some(v => v.bp_systolic || v.bp_diastolic);
+    const hasWeight = sorted.some(v => v.weight);
+    if (!hasBP && !hasWeight) return '';
+
+    const labels = sorted.map(v => {
+      const d = new Date(v.timestamp);
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    });
+
+    const chartId = 'vitalsChart_' + Date.now();
+
+    // Build chart datasets
+    const datasets = [];
+    if (hasBP) {
+      datasets.push({
+        label: '収縮期血圧',
+        data: sorted.map(v => v.bp_systolic || null),
+        borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.08)',
+        tension: 0.3, fill: false, yAxisID: 'bp'
+      });
+      datasets.push({
+        label: '拡張期血圧',
+        data: sorted.map(v => v.bp_diastolic || null),
+        borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.08)',
+        tension: 0.3, fill: false, yAxisID: 'bp'
+      });
+    }
+    if (hasWeight) {
+      datasets.push({
+        label: '体重 (kg)',
+        data: sorted.map(v => v.weight || null),
+        borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.08)',
+        tension: 0.3, fill: false, yAxisID: 'weight'
+      });
+    }
+
+    const chartConfig = {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { position: 'bottom' }, tooltip: { mode: 'index', intersect: false } },
+        scales: {
+          bp: { type: 'linear', position: 'left', display: hasBP,
+            title: { display: true, text: 'mmHg' }, min: 60, max: 180 },
+          weight: { type: 'linear', position: 'right', display: hasWeight,
+            title: { display: true, text: 'kg' }, grid: { drawOnChartArea: !hasBP } }
+        }
+      }
+    };
+
+    return `<div class="vitals-chart-section">
+      <h3>バイタル推移（過去${sorted.length}件）</h3>
+      <div class="vitals-chart-wrap">
+        <canvas id="${chartId}"></canvas>
+      </div>
+      <button class="btn btn-sm btn-secondary" style="margin-top:8px" onclick="app.navigate('record')">
+        今日のデータを記録
+      </button>
+    </div>
+    <script>
+    (function() {
+      const el = document.getElementById(${JSON.stringify(chartId)});
+      if (el && typeof Chart !== 'undefined') {
+        new Chart(el.getContext('2d'), ${JSON.stringify(chartConfig)});
+      }
+    })();
+    </script>`;
+  },
+
   // ─── Consciousness 7-Layer Visualization ───
   renderConsciousnessLayers() {
     const observations = store.getDomainData('consciousness', 'observation', 7);
@@ -478,7 +558,7 @@ var Pages = {
       html += `<div class="graph-ring ring-${level}" style="--ring-color: ${levels[level].color}">
         <div class="ring-label">${levels[level].description}（${people.length}人）</div>
         <div class="ring-people">
-          ${people.slice(0, 8).map(p => `<span class="ring-person" title="${p.name}">${(p.name || '').substring(0, 3)}</span>`).join('')}
+          ${people.slice(0, 8).map(p => `<span class="ring-person" title="${Components.escapeHtml(p.name || '')}">${Components.escapeHtml((p.name || '').substring(0, 3))}</span>`).join('')}
           ${people.length > 8 ? `<span class="ring-more">+${people.length - 8}</span>` : ''}
         </div>
       </div>`;
@@ -868,6 +948,7 @@ var Pages = {
         <textarea id="chatInput" class="form-input" rows="2"
           placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();app.sendChat(${JSON.stringify(domain)})}"></textarea>
+        <button class="btn btn-icon btn-secondary voice-btn" onclick="app.toggleVoiceInput('chatInput')" title="音声入力">🎙️</button>
         <button class="btn btn-primary" onclick="app.sendChat(${JSON.stringify(domain)})">${i18n.t('send')}</button>
       </div>
 
@@ -1047,19 +1128,19 @@ var Pages = {
       <p>ここに登録した内容を求人プラットフォームにワンクリックで送信できます。</p>
       <div class="form-group">
         <label>お名前</label>
-        <input type="text" id="resumeName" class="form-input" value="${r.name || ''}" placeholder="山田花子">
+        <input type="text" id="resumeName" class="form-input" value="${Components.escapeHtml(r.name || '')}" placeholder="山田花子">
       </div>
       <div class="form-group">
         <label>職務要約・自己PR</label>
-        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${r.summary || ''}</textarea>
+        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${Components.escapeHtml(r.summary || '')}</textarea>
       </div>
       <div class="form-group">
         <label>スキル・資格（カンマ区切り）</label>
-        <input type="text" id="resumeSkills" class="form-input" value="${(r.skills || []).join(', ')}" placeholder="例：看護師免許, 英検2級, Excel">
+        <input type="text" id="resumeSkills" class="form-input" value="${Components.escapeHtml((r.skills || []).join(', '))}" placeholder="例：看護師免許, 英検2級, Excel">
       </div>
       <div class="form-group">
         <label>職務経歴</label>
-        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${r.history || ''}</textarea>
+        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${Components.escapeHtml(r.history || '')}</textarea>
       </div>
       <div class="form-group">
         <label>希望する働き方</label>
@@ -2164,7 +2245,7 @@ var Pages = {
       <div class="card-body">
         <div class="admin-user-item">
           <div>
-            <strong>${user?.email || '未ログイン'}</strong>
+            <strong>${Components.escapeHtml(user?.email || '未ログイン')}</strong>
             <span class="status-badge">オーナー</span>
           </div>
         </div>

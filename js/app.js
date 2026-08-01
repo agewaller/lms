@@ -446,6 +446,59 @@ var App = class App {
     return text.trim();
   }
 
+  // ─── Voice Input ───
+  toggleVoiceInput(targetId) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      Components.showToast('このブラウザでは音声入力に対応していません', 'info');
+      return;
+    }
+
+    if (this._voiceRecog) {
+      this._voiceRecog.stop();
+      this._voiceRecog = null;
+      const btn = document.getElementById('voiceBtn') || document.querySelector('.voice-btn.recording');
+      if (btn) btn.classList.remove('recording');
+      return;
+    }
+
+    const recognition = new SR();
+    recognition.lang = 'ja-JP';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    this._voiceRecog = recognition;
+
+    const btn = document.getElementById('voiceBtn') || document.querySelector(`[onclick*="${targetId}"]`);
+    if (btn) btn.classList.add('recording');
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      const el = document.getElementById(targetId);
+      if (el) {
+        el.value = (el.value ? el.value + '　' : '') + transcript;
+        el.focus();
+      }
+      this._voiceRecog = null;
+      if (btn) btn.classList.remove('recording');
+    };
+
+    recognition.onerror = (event) => {
+      this._voiceRecog = null;
+      if (btn) btn.classList.remove('recording');
+      if (event.error !== 'aborted') {
+        Components.showToast('音声入力でエラーが発生しました', 'error');
+      }
+    };
+
+    recognition.onend = () => {
+      this._voiceRecog = null;
+      if (btn) btn.classList.remove('recording');
+    };
+
+    recognition.start();
+    Components.showToast('聞いています…（もう一度タップで停止）', 'info');
+  }
+
   // ─── Record Save ───
   saveRecord(domain, category) {
     const form = document.querySelector(`form[data-domain="${domain}"][data-category="${category}"]`);
@@ -645,7 +698,7 @@ var App = class App {
       if (resultEl) {
         resultEl.innerHTML = `<div class="error-msg">
           <strong>分析できませんでした</strong><br>
-          ${e.message || 'もう一度お試しください'}
+          ${Components.escapeHtml(e.message || 'もう一度お試しください')}
         </div>`;
       }
     }
