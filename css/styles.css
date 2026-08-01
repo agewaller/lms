@@ -2118,3 +2118,58 @@ body.is-admin .admin-only { display: flex; }
   .notif-status.enabled { background: #064e3b; color: #6ee7b7; }
 }
 :root[data-theme="dark"] .notif-status.enabled { background: #064e3b; color: #6ee7b7; }
+
+/* ─── Font Size Accessibility ─── */
+.font-size-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.font-size-btn {
+  padding: 8px 16px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.font-size-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+html.font-large,
+html.font-large body { font-size: 18px !important; }
+html.font-large h1 { font-size: 29px !important; }
+html.font-large h2 { font-size: 24px !important; }
+html.font-large h3 { font-size: 21px !important; }
+html.font-large h4 { font-size: 18px !important; }
+html.font-large .form-input,
+html.font-large select,
+html.font-large textarea { font-size: 18px !important; }
+html.font-large .btn { font-size: 17px !important; padding: 10px 22px !important; }
+html.font-large .btn-sm { font-size: 14px !important; }
+html.font-large .btn-lg { font-size: 20px !important; }
+html.font-large .stat-value { font-size: 28px !important; }
+html.font-large .mood-btn { font-size: 26px !important; }
+html.font-large label { font-size: 16px !important; }
+html.font-large p { font-size: 17px !important; }
+html.font-large li { font-size: 17px !important; }
+
+html.font-xlarge,
+html.font-xlarge body { font-size: 22px !important; }
+html.font-xlarge h1 { font-size: 35px !important; }
+html.font-xlarge h2 { font-size: 29px !important; }
+html.font-xlarge h3 { font-size: 26px !important; }
+html.font-xlarge h4 { font-size: 22px !important; }
+html.font-xlarge .form-input,
+html.font-xlarge select,
+html.font-xlarge textarea { font-size: 22px !important; }
+html.font-xlarge .btn { font-size: 21px !important; padding: 12px 26px !important; }
+html.font-xlarge .btn-sm { font-size: 17px !important; }
+html.font-xlarge .btn-lg { font-size: 25px !important; }
+html.font-xlarge .stat-value { font-size: 34px !important; }
+html.font-xlarge .mood-btn { font-size: 32px !important; }
+html.font-xlarge label { font-size: 20px !important; }
+html.font-xlarge p { font-size: 21px !important; }
+html.font-xlarge li { font-size: 21px !important; }

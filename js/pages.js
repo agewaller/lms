@@ -1200,6 +1200,20 @@ var Pages = {
         }
       </div>
 
+      <!-- 文字サイズ -->
+      <div class="settings-section">
+        <h3>文字の大きさ</h3>
+        <p>読みやすい文字サイズに変更できます。</p>
+        <div class="font-size-btns">
+          ${['standard','large','xlarge'].map(s => {
+            const labels = { standard: '標準', large: '大きめ', xlarge: 'とても大きく' };
+            const current = store.get('fontSize') || 'standard';
+            return `<button class="font-size-btn ${current === s ? 'active' : ''}"
+              onclick="app.changeFontSize('${s}')">${labels[s]}</button>`;
+          }).join('')}
+        </div>
+      </div>
+
       <!-- 言語 -->
       <div class="settings-section">
         <h3>言語</h3>
@@ -2289,7 +2303,7 @@ var Pages = {
           <p style="padding:20px;text-align:center;color:var(--text-muted);">該当するユーザーがいません</p>
         ` : filtered.map(u => {
           const diseaseCount = (u.diseases || []).length;
-          const initial = (u.displayName || u.email || '?').charAt(0).toUpperCase();
+          const initial = Components.escapeHtml((u.displayName || u.email || '?').charAt(0).toUpperCase());
           const meta = [];
           if (u.age) meta.push(u.age + '歳');
           if (u.gender) meta.push(u.gender === 'male' ? '男性' : u.gender === 'female' ? '女性' : 'その他');

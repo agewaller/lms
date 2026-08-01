@@ -107,6 +107,9 @@ var Store = class Store {
       cachedResearch: null,
       aiComments: [],
 
+      // Accessibility
+      fontSize: 'standard', // standard | large | xlarge
+
       // Notifications
       notifications: [],
       unreadCount: 0
@@ -183,7 +186,8 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'fontSize'
     ];
   }
 

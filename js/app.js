@@ -10,6 +10,7 @@ var App = class App {
   async init(entryDomain) {
     this.entryDomain = entryDomain || null;
     this.applyTheme();
+    this.applyFontSize();
     this.checkOAuthCallbacks();
 
     // Initialize Firebase
@@ -1657,6 +1658,18 @@ var App = class App {
   applyTheme() {
     const theme = store.get('theme') || 'light';
     document.documentElement.setAttribute('data-theme', theme);
+  }
+
+  applyFontSize() {
+    const size = store.get('fontSize') || 'standard';
+    document.documentElement.classList.remove('font-large', 'font-xlarge');
+    if (size === 'large') document.documentElement.classList.add('font-large');
+    else if (size === 'xlarge') document.documentElement.classList.add('font-xlarge');
+  }
+
+  changeFontSize(size) {
+    store.set('fontSize', size);
+    this.applyFontSize();
   }
 
   saveApiKeys() {
