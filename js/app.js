@@ -9,6 +9,7 @@ var App = class App {
   // ─── Initialize ───
   async init(entryDomain) {
     this.entryDomain = entryDomain || null;
+    this.applyTheme();
     this.checkOAuthCallbacks();
 
     // Initialize Firebase
@@ -1510,6 +1511,18 @@ var App = class App {
   changeLanguage(lang) {
     i18n.setLang(lang);
     this.renderApp();
+  }
+
+  toggleTheme(isDark) {
+    const theme = isDark ? 'dark' : 'light';
+    store.set('theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
+    this.renderApp();
+  }
+
+  applyTheme() {
+    const theme = store.get('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', theme);
   }
 
   saveApiKeys() {

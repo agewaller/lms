@@ -941,6 +941,21 @@ var Pages = {
       <!-- 目標・価値観 -->
       ${renderSchemaSection('goals', '目標・価値観')}
 
+      <!-- 表示設定 -->
+      <div class="settings-section">
+        <h3>表示設定</h3>
+        <div class="form-group">
+          <label>ダークモード</label>
+          <label class="toggle-row">
+            <label class="toggle">
+              <input type="checkbox" id="darkModeToggle" ${store.get('theme') === 'dark' ? 'checked' : ''} onchange="app.toggleTheme(this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+            <span>${store.get('theme') === 'dark' ? '夜モードON' : '夜モードOFF'}</span>
+          </label>
+        </div>
+      </div>
+
       <!-- 言語 -->
       <div class="settings-section">
         <h3>言語</h3>

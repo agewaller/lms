@@ -59,6 +59,23 @@
   --font-main: 'Noto Sans JP', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* ─── Dark Mode ─── */
+[data-theme="dark"] {
+  --bg-primary:   #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary:  #1a2540;
+  --bg-card:      #1e293b;
+  --bg-hover:     #263352;
+  --border:       #2d3f5e;
+  --border-light: #374a6a;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted:   #64748b;
+  --bg: #0f172a;
+  --text: #e2e8f0;
+  --text-light: #94a3b8;
+}
+
 /* ─── Reset (未病ダイアリー準拠) ─── */
 * { box-sizing: border-box; margin: 0; padding: 0; max-width: 100%; }
 html { scroll-behavior: smooth; font-size: 15px; overflow-x: hidden; }
@@ -1995,3 +2012,6 @@ body.is-admin .admin-only { display: flex; }
   max-width: 280px;
 }
 .chat-starter-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+
+/* ─── Toggle Row (settings label + toggle) ─── */
+.toggle-row { display: flex; align-items: center; gap: 12px; cursor: default; }
