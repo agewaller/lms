@@ -181,7 +181,7 @@ var Store = class Store {
       'assets_overview', 'assets_stocks', 'assets_portfolio',
       'assets_income', 'assets_expenses', 'assets_goals',
       // Shared
-      'hasRecordedOnce', 'health_meds_taken', 'health_water', 'health_steps',
+      'hasRecordedOnce', 'health_meds_taken', 'health_water', 'health_steps', 'time_habits_done',
       'analysisHistory', 'recommendations', 'actionItems',
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',

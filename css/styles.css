@@ -2096,6 +2096,34 @@ body.is-admin .admin-only { display: flex; }
 :root[data-theme="dark"] .ww-title, :root[data-theme="dark"] .ww-hint { color: #93c5fd; }
 :root[data-theme="dark"] .ww-count { color: #60a5fa; }
 
+/* ─── Habit Tracker Widget ─── */
+.habit-tracker-widget {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);
+}
+.htw-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.htw-header h3 { margin: 0; }
+.htw-count { font-size: 0.85rem; color: var(--text-light); font-weight: 600; }
+.htw-progress { height: 6px; background: var(--border); border-radius: 3px; margin-bottom: 14px; }
+.htw-fill { height: 100%; background: #f59e0b; border-radius: 3px; transition: width 0.4s; }
+.htw-list { display: flex; flex-direction: column; gap: 8px; }
+.htw-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  cursor: pointer; transition: all 0.15s;
+}
+.htw-item:hover { border-color: #f59e0b; background: #fffbeb; }
+.htw-item.done { border-color: #f59e0b; background: #fffbeb; }
+.htw-check {
+  width: 20px; height: 20px; border-radius: 50%; border: 2px solid #d1d5db;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: white; background: transparent; flex-shrink: 0;
+}
+.htw-item.done .htw-check { background: #f59e0b; border-color: #f59e0b; }
+.htw-name { font-size: 0.95rem; }
+.htw-item.done .htw-name { text-decoration: line-through; color: var(--text-light); }
+.htw-complete { text-align: center; margin-top: 12px; font-size: 0.9rem; color: #d97706; font-weight: 600; }
+
 /* ─── Step Counter Widget ─── */
 .steps-widget {
   background: linear-gradient(135deg, #f0fdf4, #dcfce7);

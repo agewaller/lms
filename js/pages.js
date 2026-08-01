@@ -151,9 +151,10 @@ var Pages = {
       html += this.renderTranscriptInput();
     }
 
-    // Time domain: Calendar widget + Marketplace widget
+    // Time domain: Calendar widget + Habit tracker + Marketplace widget
     if (domain === 'time') {
       if (typeof CalendarIntegration !== 'undefined') html += CalendarIntegration.renderWidget();
+      html += this.renderHabitTracker();
       if (typeof TimeMarketplace !== 'undefined') html += TimeMarketplace.renderWidget();
     }
 
@@ -1092,6 +1093,66 @@ var Pages = {
       </button>
       <div id="transcriptResult"></div>
     </div>`;
+  },
+
+  // ─── Daily Habit Tracker (Time domain) ───
+  renderHabitTracker() {
+    const habits = store.getDomainData('time', 'habits', 90);
+    // Deduplicate: get unique habit names from entries
+    const habitMap = {};
+    habits.forEach(h => {
+      if (h.habit_name && !habitMap[h.habit_name]) habitMap[h.habit_name] = h;
+    });
+    const habitList = Object.values(habitMap).slice(0, 8);
+
+    if (habitList.length === 0) {
+      return `<div class="habit-tracker-widget">
+        <h3>🔄 今日の習慣</h3>
+        <div class="empty-state-card">
+          <div class="esc-icon">🗓️</div>
+          <div class="esc-title">習慣がまだ登録されていません</div>
+          <div class="esc-body">毎日続けたいことを登録しておくと、ここでチェックできます。</div>
+          <button class="btn btn-primary esc-btn" onclick="app.navigate('record')">習慣を登録する</button>
+        </div>
+      </div>`;
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const doneData = store.get('time_habits_done') || {};
+    const todayDone = doneData[today] || {};
+    const doneCount = Object.values(todayDone).filter(Boolean).length;
+    const pct = Math.round(doneCount / habitList.length * 100);
+
+    return `<div class="habit-tracker-widget">
+      <div class="htw-header">
+        <h3>🔄 今日の習慣</h3>
+        <span class="htw-count">${doneCount}/${habitList.length} 完了</span>
+      </div>
+      <div class="htw-progress"><div class="htw-fill" style="width:${pct}%"></div></div>
+      <div class="htw-list">
+        ${habitList.map(h => {
+          const done = !!todayDone[h.habit_name];
+          return `<div class="htw-item ${done ? 'done' : ''}" onclick="Pages.toggleHabitDone(${JSON.stringify(h.habit_name)})">
+            <span class="htw-check">${done ? '✓' : ''}</span>
+            <span class="htw-name">${Components.escapeHtml(h.habit_name || '')}</span>
+          </div>`;
+        }).join('')}
+      </div>
+      ${pct === 100 ? '<div class="htw-complete">🎉 今日の習慣を全て達成しました！</div>' : ''}
+    </div>`;
+  },
+
+  toggleHabitDone(habitName) {
+    const today = new Date().toISOString().slice(0, 10);
+    const doneData = store.get('time_habits_done') || {};
+    if (!doneData[today]) doneData[today] = {};
+    doneData[today][habitName] = !doneData[today][habitName];
+    // Keep only last 7 days
+    Object.keys(doneData).sort().slice(0, -7).forEach(k => delete doneData[k]);
+    store.set('time_habits_done', doneData);
+    const widget = document.querySelector('.habit-tracker-widget');
+    if (widget) widget.outerHTML = this.renderHabitTracker();
+    else if (typeof app !== 'undefined') app.renderApp();
   },
 
   // ─── Social Graph (Relationship domain) ───
