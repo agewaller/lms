@@ -282,8 +282,56 @@ var App = class App {
   startNotificationTimer() {
     if (this._notifTimer) return;
     this.updateNotificationBadge();
+    // Send browser notification once per day if permission is granted
+    this.maybeSendDailyReminder();
     // Refresh badge every 5 minutes
     this._notifTimer = setInterval(() => this.updateNotificationBadge(), 5 * 60 * 1000);
+  }
+
+  // Request browser notification permission (called from settings page button)
+  async requestNotificationPermission() {
+    if (typeof Notification === 'undefined') {
+      Components.showToast('このブラウザはお知らせ機能に対応していません', 'info');
+      return;
+    }
+    const result = await Notification.requestPermission();
+    if (result === 'granted') {
+      Components.showToast('お知らせを受け取る設定が完了しました', 'success');
+      this.renderApp();
+      this.maybeSendDailyReminder();
+    } else {
+      Components.showToast('お知らせの受け取りが拒否されました。ブラウザの設定から変更できます。', 'info');
+    }
+  }
+
+  // Send browser notification once per day if there are pending in-app alerts
+  maybeSendDailyReminder() {
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const lastSent = localStorage.getItem('lms_notif_last_sent');
+    if (lastSent === todayStr) return; // already sent today
+
+    // Only remind after 8am
+    const hour = new Date().getHours();
+    if (hour < 8) return;
+
+    const notifs = this.generateNotifications();
+    if (notifs.length === 0) return;
+
+    localStorage.setItem('lms_notif_last_sent', todayStr);
+
+    // Lead with the highest-priority notification
+    const first = notifs[0];
+    const rest = notifs.length > 1 ? `\nほか${notifs.length - 1}件のお知らせがあります` : '';
+    try {
+      new Notification('LMS - ' + first.title, {
+        body: first.body + rest,
+        icon: '/favicon.ico'
+      });
+    } catch (e) {
+      // Notification may be blocked in some environments; fail silently
+    }
   }
 
   generateNotifications() {

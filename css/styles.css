@@ -2107,3 +2107,14 @@ body.is-admin .admin-only { display: flex; }
   color: var(--text-secondary);
   font-style: italic;
 }
+
+/* ─── Notification status indicator ─── */
+.notif-status.enabled {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #d1fae5; color: #065f46;
+  padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;
+}
+@media (prefers-color-scheme: dark) {
+  .notif-status.enabled { background: #064e3b; color: #6ee7b7; }
+}
+:root[data-theme="dark"] .notif-status.enabled { background: #064e3b; color: #6ee7b7; }

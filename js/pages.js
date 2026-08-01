@@ -1173,6 +1173,16 @@ var Pages = {
         </div>
       </div>
 
+      <!-- 通知設定 -->
+      <div class="settings-section">
+        <h3>🔔 お知らせ設定</h3>
+        <p>毎日の記録やお薬の時間をお知らせします。</p>
+        ${(typeof Notification !== 'undefined' && Notification.permission === 'granted')
+          ? `<div class="notif-status enabled">✓ お知らせが有効です</div>`
+          : `<button class="btn btn-secondary" onclick="app.requestNotificationPermission()">お知らせを受け取る（一日一回）</button>`
+        }
+      </div>
+
       <!-- 言語 -->
       <div class="settings-section">
         <h3>言語</h3>
@@ -1934,7 +1944,7 @@ var Pages = {
       <div class="card-body">
         <div class="admin-filters">
           <input type="text" id="promptSearch" class="form-input" placeholder="プロンプト名で検索"
-            value="${filter.search}" oninput="app.filterPrompts()">
+            value="${Components.escapeHtml(filter.search || '')}" oninput="app.filterPrompts()">
           <select id="promptDomainFilter" class="form-input" onchange="app.filterPrompts()">
             <option value="">すべての領域</option>
             ${Object.keys(CONFIG.domains).map(d => `<option value="${d}" ${filter.domain === d ? 'selected' : ''}>${i18n.t(d)}</option>`).join('')}
