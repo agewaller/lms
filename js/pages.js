@@ -2176,7 +2176,7 @@ var Pages = {
         <div class="form-group">
           <label>APIプロキシURL ${isDirect ? '（直接モードでは未使用）' : '（必須）'}</label>
           <input type="text" id="workerUrl" class="form-input"
-            value="${CONFIG.endpoints.anthropic}"
+            value="${Components.escapeHtml(CONFIG.endpoints.anthropic || '')}"
             placeholder="https://...workers.dev または direct"
             ${isDirect ? 'disabled' : ''}>
           <div class="input-help">CloudflareワーカーのURL、または「direct」で直接モード</div>
@@ -2220,7 +2220,7 @@ var Pages = {
         <div class="form-group">
           <label>Google Client ID <span class="mode-badge ${CONFIG.oauthClientIds?.google ? 'mode-direct' : 'mode-proxy'}">${CONFIG.oauthClientIds?.google ? '設定済' : '未設定'}</span></label>
           <input type="text" id="oauthGoogle" class="form-input"
-            value="${CONFIG.oauthClientIds?.google || ''}"
+            value="${Components.escapeHtml(CONFIG.oauthClientIds?.google || '')}"
             placeholder="xxx.apps.googleusercontent.com">
           <div class="input-help">Google カレンダー + Gmail で共通利用</div>
         </div>
@@ -2228,7 +2228,7 @@ var Pages = {
         <div class="form-group">
           <label>Microsoft Client ID <span class="mode-badge ${CONFIG.oauthClientIds?.microsoft ? 'mode-direct' : 'mode-proxy'}">${CONFIG.oauthClientIds?.microsoft ? '設定済' : '未設定'}</span></label>
           <input type="text" id="oauthMicrosoft" class="form-input"
-            value="${CONFIG.oauthClientIds?.microsoft || ''}"
+            value="${Components.escapeHtml(CONFIG.oauthClientIds?.microsoft || '')}"
             placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
           <div class="input-help">Outlook カレンダー用</div>
         </div>
@@ -2236,7 +2236,7 @@ var Pages = {
         <div class="form-group">
           <label>Fitbit Client ID <span class="mode-badge ${CONFIG.oauthClientIds?.fitbit ? 'mode-direct' : 'mode-proxy'}">${CONFIG.oauthClientIds?.fitbit ? '設定済' : '未設定'}</span></label>
           <input type="text" id="oauthFitbit" class="form-input"
-            value="${CONFIG.oauthClientIds?.fitbit || ''}"
+            value="${Components.escapeHtml(CONFIG.oauthClientIds?.fitbit || '')}"
             placeholder="XXXXXX">
           <div class="input-help">Fitbit 活動・睡眠データ用</div>
         </div>
@@ -2244,7 +2244,7 @@ var Pages = {
         <div class="form-group">
           <label>Withings Client ID <span class="mode-badge ${CONFIG.oauthClientIds?.withings ? 'mode-direct' : 'mode-proxy'}">${CONFIG.oauthClientIds?.withings ? '設定済' : '未設定'}</span></label>
           <input type="text" id="oauthWithings" class="form-input"
-            value="${CONFIG.oauthClientIds?.withings || ''}"
+            value="${Components.escapeHtml(CONFIG.oauthClientIds?.withings || '')}"
             placeholder="xxxxxxxxxx">
           <div class="input-help">Withings 体組成計・睡眠マット用（認証コードのみ取得）</div>
         </div>
