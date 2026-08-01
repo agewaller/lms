@@ -880,6 +880,18 @@ var Pages = {
     // Get latest observation or defaults
     const latest = observations.length > 0 ? observations[observations.length - 1] : null;
 
+    if (!latest) {
+      return `<div class="consciousness-layers-section">
+        <h3>七つの意識レイヤー</h3>
+        <div class="empty-state-card">
+          <div class="esc-icon">🧘</div>
+          <div class="esc-title">まだ記録がありません</div>
+          <div class="esc-body">「記録する」から最初の観測を記録してみましょう。自分の意識がどこに向いているかを可視化できます。</div>
+          <button class="btn btn-primary esc-btn" onclick="app.navigate('record')">最初の観測を記録する</button>
+        </div>
+      </div>`;
+    }
+
     let html = `<div class="consciousness-layers-section">
       <h3>七つの意識レイヤー</h3>
       <p>今日、あなたの意識はどのレイヤーに多く向いていましたか？</p>
@@ -1892,8 +1904,8 @@ var Pages = {
             <div class="auto-flow-email">
               <label>あなた専用の受信アドレス</label>
               <div class="ingest-email-box">
-                <code class="ingest-email">${ingestEmail}</code>
-                <button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('${ingestEmail}');Components.showToast('コピーしました','success')">コピー</button>
+                <code class="ingest-email">${Components.escapeHtml(ingestEmail)}</code>
+                <button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('${Components.escapeHtml(ingestEmail)}');Components.showToast('コピーしました','success')">コピー</button>
               </div>
             </div>
 
@@ -2592,12 +2604,12 @@ var Pages = {
               <div class="admin-user-info">
                 <div class="admin-user-avatar">${email.charAt(0).toUpperCase()}</div>
                 <div>
-                  <div class="admin-user-email">${email}${isSelf ? ' <span class="you-badge">あなた</span>' : ''}</div>
+                  <div class="admin-user-email">${Components.escapeHtml(email)}${isSelf ? ' <span class="you-badge">あなた</span>' : ''}</div>
                   <div class="admin-user-role">${isOwner ? 'オーナー（削除不可）' : '管理者'}</div>
                 </div>
               </div>
               ${isOwner ? '<span class="status-badge">オーナー</span>' : `
-                <button class="btn btn-sm btn-danger" onclick="app.removeAdminEmail('${email}')">削除</button>
+                <button class="btn btn-sm btn-danger" onclick="app.removeAdminEmail('${Components.escapeHtml(email)}')">削除</button>
               `}
             </div>`;
           }).join('')}

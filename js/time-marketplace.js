@@ -289,6 +289,8 @@ var TimeMarketplace = {
         </div>`;
       });
       html += `</div>`;
+    } else {
+      html += `<p class="mp-no-slots">今週は空き枠がありません。カレンダーを確認するか、設定で稼働時間を見直してみましょう。</p>`;
     }
 
     html += `</div>`;
