@@ -180,7 +180,7 @@ var TimeMarketplace = {
 
       <div class="form-group">
         <label>自己紹介・経験</label>
-        <textarea id="mpBio" class="form-input" rows="3" placeholder="例：30年間の看護師経験があります。健康相談が得意です。">${s.profile.bio || ''}</textarea>
+        <textarea id="mpBio" class="form-input" rows="3" placeholder="例：30年間の看護師経験があります。健康相談が得意です。">${Components.escapeHtml(s.profile.bio || '')}</textarea>
       </div>
 
       <div class="form-group">
@@ -304,10 +304,10 @@ var TimeMarketplace = {
 
     let html = `<div class="booking-page">
       <div class="booking-profile">
-        <h2>${settings.profile.displayName || 'ユーザー'}さんのページ</h2>
-        <p>${settings.profile.bio || ''}</p>
+        <h2>${Components.escapeHtml(settings.profile.displayName || 'ユーザー')}さんのページ</h2>
+        <p>${Components.escapeHtml(settings.profile.bio || '')}</p>
         <div class="booking-skills">
-          ${(settings.skills || []).map(s => `<span class="skill-tag">${s.name}</span>`).join('')}
+          ${(settings.skills || []).map(s => `<span class="skill-tag">${Components.escapeHtml(s.name)}</span>`).join('')}
         </div>
         <div class="booking-meta">
           <span>📍 ${settings.location.type === 'remote' ? 'オンライン' : settings.location.type === 'both' ? 'オンライン/対面' : '対面'}</span>
@@ -334,7 +334,7 @@ var TimeMarketplace = {
             <div class="slot-time">${timeStr} ~ ${endStr}（${slot.durationMinutes}分）</div>
           </div>
           <div class="slot-price">${amount.toLocaleString()}円</div>
-          <button class="btn btn-primary btn-sm" onclick="TimeMarketplace.requestBooking('${slot.start}', '${slot.end}')">予約する</button>
+          <button class="btn btn-primary btn-sm" onclick="TimeMarketplace.requestBooking(${JSON.stringify(slot.start)}, ${JSON.stringify(slot.end)})">予約する</button>
         </div>`;
       });
     }
