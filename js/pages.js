@@ -167,8 +167,9 @@ var Pages = {
       html += this.renderResumeWidget();
     }
 
-    // Relationship domain: Isolation score + today contacts + social graph + birthdays
+    // Relationship domain: Emergency contacts + Isolation score + today contacts + social graph + birthdays
     if (domain === 'relationship') {
+      html += this.renderEmergencyContacts();
       if (typeof RelationshipFeatures !== 'undefined') html += RelationshipFeatures.renderDashboard();
       html += this.renderSocialGraph();
       html += this.renderUpcomingBirthdays();
@@ -854,6 +855,46 @@ var Pages = {
   },
 
   // ─── Social Graph (Relationship domain) ───
+  // ─── Emergency Contacts Quick-Dial ───
+  renderEmergencyContacts() {
+    const contacts = store.get('relationship_contacts') || [];
+    // Distance 1 = family/partner, distance 2 = closest friends — show up to 4
+    const emergency = contacts
+      .filter(c => parseInt(c.distance) <= 2 && (c.phone || c.email))
+      .slice(0, 4);
+
+    if (emergency.length === 0) {
+      // Only show prompt if contacts exist but none have phone
+      if (contacts.length > 0) {
+        return `<div class="emergency-contacts-section empty">
+          <h3>🆘 緊急連絡先</h3>
+          <p>距離感「1」または「2」の方に電話番号を登録すると、すぐに連絡できるボタンが表示されます。</p>
+          <button class="btn btn-secondary btn-sm" onclick="app.navigate('record')">連絡先を登録</button>
+        </div>`;
+      }
+      return '';
+    }
+
+    return `<div class="emergency-contacts-section">
+      <h3>🆘 すぐに連絡</h3>
+      <div class="ec-grid">
+        ${emergency.map(c => {
+          const name = Components.escapeHtml(c.name || '');
+          const phone = Components.escapeHtml(c.phone || '');
+          const note = Components.escapeHtml(c.note || c.relationship || '');
+          return `<div class="ec-card">
+            <div class="ec-name">${name}</div>
+            ${note ? `<div class="ec-note">${note}</div>` : ''}
+            <div class="ec-btns">
+              ${phone ? `<a href="tel:${phone}" class="btn btn-primary ec-btn">📞 電話</a>` : ''}
+              ${c.email ? `<a href="mailto:${Components.escapeHtml(c.email)}" class="btn btn-secondary ec-btn">✉️ メール</a>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  },
+
   renderSocialGraph() {
     const contacts = store.get('relationship_contacts') || [];
     if (contacts.length === 0) {

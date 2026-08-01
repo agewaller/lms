@@ -1566,6 +1566,48 @@ body.is-admin .admin-only { display: flex; }
 .tsb-content h4 { margin-bottom: 4px; }
 .tsb-content p { font-size: 14px; color: var(--text-light); }
 
+/* ─── Emergency Contacts ─── */
+.emergency-contacts-section {
+  background: linear-gradient(135deg, #fff1f2, #ffe4e6);
+  border: 1px solid #fda4af;
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.emergency-contacts-section h3 { margin: 0 0 14px; font-size: 16px; font-weight: 700; color: #9f1239; }
+.emergency-contacts-section.empty { background: var(--bg-secondary); border-color: var(--border); }
+.emergency-contacts-section.empty h3 { color: var(--text-primary); }
+.ec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.ec-card {
+  background: white;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  border: 1px solid #fecdd3;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ec-name { font-weight: 700; font-size: 15px; color: #881337; }
+.ec-note { font-size: 11px; color: #9f1239; }
+.ec-btns { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.ec-btn { font-size: 14px !important; padding: 8px 10px !important; text-align: center; text-decoration: none; }
+@media (prefers-color-scheme: dark) {
+  .emergency-contacts-section { background: linear-gradient(135deg, #3f0614, #4c0519); border-color: #9f1239; }
+  .emergency-contacts-section h3 { color: #fda4af; }
+  .ec-card { background: #5c0a20; border-color: #9f1239; }
+  .ec-name { color: #fda4af; }
+  .ec-note { color: #fb7185; }
+}
+:root[data-theme="dark"] .emergency-contacts-section { background: linear-gradient(135deg, #3f0614, #4c0519); border-color: #9f1239; }
+:root[data-theme="dark"] .emergency-contacts-section h3 { color: #fda4af; }
+:root[data-theme="dark"] .ec-card { background: #5c0a20; border-color: #9f1239; }
+:root[data-theme="dark"] .ec-name { color: #fda4af; }
+:root[data-theme="dark"] .ec-note { color: #fb7185; }
+
 /* ─── Isolation Widget ─── */
 .isolation-widget {
   background: var(--bg-card); border-radius: var(--radius);
