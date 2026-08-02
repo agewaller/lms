@@ -98,13 +98,26 @@ var Pages = {
       </div>`;
     }
 
+    // Streak display
+    const streak = store.get('loginStreak') || 0;
+    if (streak >= 3) {
+      html += `<div class="streak-display">
+        <span class="streak-flame">◆</span>
+        <span class="streak-count">${streak}日連続</span>
+        <span class="streak-label">毎日の記録を続けています</span>
+      </div>`;
+    }
+
+    // 7-day trend chart
+    html += this.renderTrendChart(domain);
+
     // Latest analysis
     const latest = store.get('latestAnalysis');
     if (latest && latest.domain === domain) {
       html += `<div class="analysis-section">
         <h3>分析結果</h3>
         <div class="analysis-content">${Components.formatMarkdown(latest.response)}</div>
-        <div class="analysis-meta">${latest.model} | ${new Date(latest.timestamp).toLocaleString()}</div>
+        <div class="analysis-meta">${new Date(latest.timestamp).toLocaleString()}</div>
       </div>`;
     }
 
@@ -158,6 +171,75 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── 7-Day Trend Chart ───
+  renderTrendChart(domain) {
+    const domainConfig = CONFIG.domains[domain];
+    const color = domainConfig?.color || '#6C63FF';
+    const chartId = 'trendChart_' + domain;
+
+    // Gather last 7 days of data across all categories
+    const today = new Date();
+    const days = [];
+    const counts = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      days.push(d.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }));
+
+      let count = 0;
+      Object.keys(domainConfig?.categories || {}).forEach(cat => {
+        const entries = store.getDomainData(domain, cat, 30);
+        count += entries.filter(e => (e.timestamp || '').slice(0, 10) === dateStr).length;
+      });
+      counts.push(count);
+    }
+
+    const hasData = counts.some(c => c > 0);
+    if (!hasData) return '';
+
+    // Render chart via Chart.js (loaded in dashboard.html)
+    setTimeout(() => {
+      const canvas = document.getElementById(chartId);
+      if (!canvas || !window.Chart) return;
+      // Destroy existing chart if re-rendered
+      if (canvas._chart) canvas._chart.destroy();
+      canvas._chart = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: days,
+          datasets: [{
+            data: counts,
+            backgroundColor: color + '55',
+            borderColor: color,
+            borderWidth: 2,
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { stepSize: 1, font: { size: 11 } },
+              grid: { color: '#e4e7ef' }
+            },
+            x: { ticks: { font: { size: 11 } }, grid: { display: false } }
+          }
+        }
+      });
+    }, 60);
+
+    return `<div class="trend-chart-section">
+      <h3>この7日間の記録</h3>
+      <div class="trend-chart-wrap">
+        <canvas id="${chartId}" height="120"></canvas>
+      </div>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───

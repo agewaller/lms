@@ -18,8 +18,10 @@ var App = class App {
     if (store.get('isAuthenticated') && store.get('user')) {
       store.set('currentDomain', entryDomain || store.get('currentDomain') || 'health');
       store.set('currentPage', 'home');
+      this.updateLoginStreak();
       this.renderApp();
       this.startInboxPolling();
+      setTimeout(() => this.showOnboardingIfNeeded(), 800);
     }
 
     // Listen for auth changes
@@ -27,8 +29,10 @@ var App = class App {
       if (val) {
         store.set('currentDomain', this.entryDomain || store.get('currentDomain') || 'health');
         store.set('currentPage', 'home');
+        this.updateLoginStreak();
         this.renderApp();
         this.startInboxPolling();
+        setTimeout(() => this.showOnboardingIfNeeded(), 800);
       } else {
         this.stopInboxPolling();
       }
@@ -158,6 +162,80 @@ var App = class App {
     }
   }
 
+  // ─── Login Streak Tracking ───
+  updateLoginStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    const lastLogin = store.get('lastLoginDate');
+    let streak = store.get('loginStreak') || 0;
+
+    if (lastLogin === today) return; // already counted today
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yd = yesterday.toISOString().slice(0, 10);
+
+    if (lastLogin === yd) {
+      streak += 1;
+    } else if (lastLogin && lastLogin < yd) {
+      streak = 1; // streak broken
+    } else {
+      streak = 1; // first ever login
+    }
+
+    store.set('loginStreak', streak);
+    store.set('lastLoginDate', today);
+
+    if (streak > 1 && streak % 7 === 0) {
+      setTimeout(() => Components.showToast(`${streak}日連続！素晴らしい継続です`, 'success'), 1200);
+    }
+  }
+
+  // ─── Onboarding for first-time users ───
+  showOnboardingIfNeeded() {
+    if (store.get('hasSeenOnboarding')) return;
+    const user = store.get('user');
+    if (!user) return;
+
+    store.set('hasSeenOnboarding', true);
+
+    const body = `<div class="onboarding-modal">
+      <div class="onboarding-welcome">
+        <div class="onboarding-icon">◈</div>
+        <h3>LMSへようこそ</h3>
+        <p>${user.displayName ? user.displayName + 'さん、' : ''}人生の6つの領域を一緒に整えていきましょう。</p>
+      </div>
+      <div class="onboarding-steps">
+        <div class="onboarding-step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <strong>まず「設定」でプロフィールを入力</strong>
+            <p>年齢・お住まいを登録すると、あなたに合ったアドバイスが届きます</p>
+          </div>
+        </div>
+        <div class="onboarding-step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <strong>気になる領域を選んで「記録する」</strong>
+            <p>健康・お金・つながりなど、今日の状態を手短に入力してください</p>
+          </div>
+        </div>
+        <div class="onboarding-step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <strong>「相談する」で深く話し合う</strong>
+            <p>悩みや疑問を自由に書くと、専門家のようなアドバイスが返ってきます</p>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:24px;display:flex;gap:10px;">
+        <button class="btn btn-primary" onclick="app.closeModal();app.navigate('settings');">プロフィールを設定する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">あとで</button>
+      </div>
+    </div>`;
+
+    this.openModal('はじめに', body);
+  }
+
   // ─── Navigation ───
   switchDomain(domain) {
     store.set('currentDomain', domain);
@@ -179,7 +257,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理', data: 'データ', integrations: '連携' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -741,12 +819,20 @@ var App = class App {
   }
 
   deleteDataEntry(domain, category, id) {
-    if (!confirm('この記録を削除しますか？')) return;
+    const body = `<p style="margin-bottom:24px;">この記録を削除しますか？この操作は元に戻せません。</p>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn btn-danger" onclick="app._confirmDeleteDataEntry('${domain}','${category}','${id}')">削除する</button>
+      </div>`;
+    this.openModal('記録の削除', body);
+  }
+
+  _confirmDeleteDataEntry(domain, category, id) {
+    this.closeModal();
     const key = `${domain}_${category}`;
     const entries = (store.get(key) || []).filter(e => e.id !== id);
     store.set(key, entries);
 
-    // Also delete from Firestore if connected
     if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.db) {
       const uid = store.get('user')?.uid;
       if (uid) {
@@ -1908,8 +1994,16 @@ var App = class App {
   }
 
   generateDemoData() {
-    if (!confirm('デモデータを生成しますか？既存データに追加されます。')) return;
-    // Generate sample entries for each domain
+    const body = `<p style="margin-bottom:20px;">7日分のサンプルデータを生成します。既存データには影響しません。</p>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn btn-primary" onclick="app._doGenerateDemoData()">生成する</button>
+      </div>`;
+    this.openModal('デモデータの生成', body);
+  }
+
+  _doGenerateDemoData() {
+    this.closeModal();
     const today = new Date();
     for (let i = 0; i < 7; i++) {
       const d = new Date(today);
@@ -1922,8 +2016,17 @@ var App = class App {
   }
 
   deleteAllData() {
-    if (!confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
-    if (!confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
+    const body = `<p style="margin-bottom:8px;color:var(--danger);font-weight:600;">この操作は元に戻せません。</p>
+      <p style="margin-bottom:20px;">すべての記録データを完全に削除します。本当によろしいですか？</p>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn btn-danger" onclick="app._doDeleteAllData()">すべて削除する</button>
+      </div>`;
+    this.openModal('全データの削除', body);
+  }
+
+  _doDeleteAllData() {
+    this.closeModal();
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();
