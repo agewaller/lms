@@ -1907,26 +1907,62 @@ var App = class App {
     this.openModal(user.displayName || user.email || 'ユーザー詳細', body);
   }
 
+  // ─── Modal-based confirm (replaces browser confirm() which blocks on iOS) ───
+  confirmModal(title, message, onConfirm) {
+    this._confirmCallback = onConfirm;
+    const bodyHtml = `
+      <p style="margin-bottom:20px;">${Components.escapeHtml(message)}</p>
+      <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn btn-danger" onclick="if(app._confirmCallback){app._confirmCallback();app._confirmCallback=null;}app.closeModal();">実行する</button>
+      </div>`;
+    this.openModal(title, bodyHtml);
+  }
+
   generateDemoData() {
-    if (!confirm('デモデータを生成しますか？既存データに追加されます。')) return;
-    // Generate sample entries for each domain
-    const today = new Date();
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      store.addDomainEntry('health', 'symptoms', { condition_level: 5 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
-      store.addDomainEntry('health', 'sleepData', { quality: 6 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
-    }
-    Components.showToast('デモデータを生成しました', 'success');
-    this.renderApp();
+    this.confirmModal('デモデータの生成', 'デモデータを生成しますか？既存データに追加されます。', () => {
+      const today = new Date();
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        store.addDomainEntry('health', 'symptoms', { condition_level: 5 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
+        store.addDomainEntry('health', 'sleepData', { quality: 6 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
+      }
+      Components.showToast('デモデータを生成しました', 'success');
+      this.renderApp();
+    });
   }
 
   deleteAllData() {
-    if (!confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
-    if (!confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
-    store.clearAll();
-    Components.showToast('すべてのデータを削除しました', 'info');
-    window.location.reload();
+    this.confirmModal(
+      '⚠️ データの完全削除',
+      'すべてのデータを完全に削除します。この操作は取り消せません。本当によろしいですか？',
+      () => {
+        store.clearAll();
+        Components.showToast('すべてのデータを削除しました', 'info');
+        window.location.reload();
+      }
+    );
+  }
+
+  // ─── Weekly Summary ───
+  async generateWeeklySummary() {
+    const btn = document.getElementById('weeklySummaryBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '生成中...'; }
+
+    try {
+      const result = await AIEngine.analyze(null, 'weekly', {});
+      store.set('weeklySummary', { text: result, timestamp: new Date().toISOString() });
+      this.openModal(
+        '今週のまとめ',
+        `<div class="analysis-content">${Components.formatMarkdown(result)}</div>`
+      );
+      this.renderApp();
+    } catch (e) {
+      Components.showToast(e.message, 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '今週のまとめを見る'; }
+    }
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───

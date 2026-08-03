@@ -4,6 +4,16 @@
    ============================================================ */
 var AIEngine = {
 
+  // ─── Model ID mapping (config key → Anthropic/OpenAI/Google API id) ───
+  // Update values here when providers rotate model IDs; nothing else changes.
+  MODEL_MAP: {
+    'claude-sonnet-4-6': 'claude-sonnet-4-6-20260101',
+    'claude-opus-4-6':   'claude-opus-4-6-20260201',
+    'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+    'gpt-4o':            'gpt-4o-2025-12-17',
+    'gemini-pro':        'gemini-2.0-flash'
+  },
+
   // ─── Main analysis entry point ───
   async analyze(domain, promptType, userData, options = {}) {
     const model = options.model || store.get('selectedModel') || 'claude-sonnet-4-6';
@@ -61,11 +71,12 @@ var AIEngine = {
     // Legacy aliases for backward compatibility
     let key;
     if (promptType === 'holistic') key = 'universal_holistic';
+    else if (promptType === 'weekly') key = 'universal_weekly';
     else if (promptType === 'quickInput' || promptType === 'text_analysis') key = 'text_analysis';
     else if (promptType === 'imageAnalysis' || promptType === 'image_analysis') key = 'image_analysis';
     else if (promptType === 'transcript_analysis') key = 'consciousness_transcript';
-    else if (promptType === 'stock_analysis') key = 'stock_analysis'; // short inline prompt
-    else if (promptType === 'stock_full') key = 'assets_stock';      // full VM Hands-on
+    else if (promptType === 'stock_analysis') key = 'stock_analysis';
+    else if (promptType === 'stock_full') key = 'assets_stock';
     else if (promptType === 'enrich_contact') key = 'relationship_enrich';
     else if (domain && promptType) key = `${domain}_${promptType}`;
     else if (domain) key = `${domain}_daily`;
@@ -163,13 +174,14 @@ var AIEngine = {
     console.log('[LMS] Calling Anthropic', isDirect ? '(direct)' : 'via proxy:', url);
     console.log('[LMS] Model:', model, 'Max tokens:', maxTokens);
 
+    const apiModelId = this.MODEL_MAP[model] || model;
     let res;
     try {
       res = await fetch(url, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model,
+          model: apiModelId,
           max_tokens: maxTokens,
           system: system,
           messages: [{ role: 'user', content: userMsg }]
@@ -200,6 +212,7 @@ var AIEngine = {
     const apiKey = this.getApiKey('openai');
     if (!apiKey) throw new Error('OpenAI API key not set');
 
+    const apiModelId = this.MODEL_MAP[model] || model;
     const res = await fetch(CONFIG.endpoints.openai, {
       method: 'POST',
       headers: {
@@ -207,7 +220,7 @@ var AIEngine = {
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: model,
+        model: apiModelId,
         max_tokens: maxTokens,
         messages: [
           { role: 'system', content: system },
@@ -228,7 +241,8 @@ var AIEngine = {
     const apiKey = this.getApiKey('google');
     if (!apiKey) throw new Error('Google API key not set');
 
-    const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
+    const apiModelId = this.MODEL_MAP[model] || model;
+    const url = `${CONFIG.endpoints.google}/${apiModelId}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

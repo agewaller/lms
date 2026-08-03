@@ -54,7 +54,12 @@ var Pages = {
 
     // All domain scores overview (mini)
     html += `<div class="all-domains-overview">
-      <h3>${i18n.t('holistic_analysis')}</h3>
+      <div class="overview-header">
+        <h3>${i18n.t('holistic_analysis')}</h3>
+        <button id="weeklySummaryBtn" class="btn btn-sm btn-secondary" onclick="app.generateWeeklySummary()">
+          今週のまとめを見る
+        </button>
+      </div>
       <div class="domain-scores-grid">
         ${Object.keys(CONFIG.domains).map(d => {
           const s = store.get('domainScores')?.[d] || 0;
@@ -63,6 +68,16 @@ var Pages = {
           </div>`;
         }).join('')}
       </div>
+      ${(() => {
+        const ws = store.get('weeklySummary');
+        if (!ws) return '';
+        const age = Math.round((Date.now() - new Date(ws.timestamp)) / 86400000);
+        if (age > 7) return '';
+        return `<div class="weekly-summary-preview" onclick="app.openModal('今週のまとめ', \`<div class=\\"analysis-content\\">\${Components.formatMarkdown(ws.text)}</div>\`)">
+          <div class="ws-label">最新のまとめ（${age === 0 ? '今日' : age + '日前'}）</div>
+          <div class="ws-snippet">${Components.escapeHtml(ws.text.slice(0, 80))}...</div>
+        </div>`;
+      })()}
     </div>`;
 
     // Recent records
