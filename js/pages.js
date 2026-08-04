@@ -65,6 +65,9 @@ var Pages = {
       </div>
     </div>`;
 
+    // Today's check-in status banner
+    html += this.renderTodayStatus(domain, domainConfig);
+
     // Recent records
     html += `<div class="recent-section">
       <h3>${i18n.t('recent_records')}</h3>
@@ -381,6 +384,57 @@ var Pages = {
         <button class="btn btn-sm btn-secondary" onclick="app.switchDomain('time');app.navigate('settings')">時間販売の設定へ</button>
       </div>` : ''}
     </div>`;
+  },
+
+  // ─── Today's check-in status ───
+  renderTodayStatus(domain, domainConfig) {
+    const today = new Date().toISOString().slice(0, 10);
+    const cats = Object.keys(domainConfig?.categories || {});
+
+    // Check if any entry was recorded today for this domain
+    let recordedToday = false;
+    let consecutiveDays = 0;
+    cats.forEach(cat => {
+      const entries = store.getDomainData(domain, cat);
+      if (entries.some(e => (e.timestamp || '').slice(0, 10) === today)) {
+        recordedToday = true;
+      }
+    });
+
+    // Calculate streak: how many consecutive days ending today have at least one entry
+    if (cats.length > 0) {
+      const allEntries = cats.flatMap(c => store.getDomainData(domain, c));
+      const days = new Set(allEntries.map(e => (e.timestamp || '').slice(0, 10)));
+      for (let i = 0; i < 365; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        if (days.has(key)) {
+          consecutiveDays++;
+        } else if (i === 0) {
+          break; // Not recorded today, streak is 0
+        } else {
+          break;
+        }
+      }
+    }
+
+    const color = domainConfig?.color || '#6C63FF';
+    if (recordedToday) {
+      const streakMsg = consecutiveDays > 1 ? `<span class="streak-badge" style="color:${color}">${consecutiveDays}日連続 🔥</span>` : '';
+      return `<div class="checkin-status checkin-done" style="border-color:${color}20;background:${color}08">
+        <span class="checkin-icon">✓</span>
+        <span>今日の記録は完了しています ${streakMsg}</span>
+      </div>`;
+    } else {
+      const total = cats.flatMap(c => store.getDomainData(domain, c)).length;
+      if (total === 0) return ''; // Brand new user — onboarding modal handles this
+      return `<div class="checkin-status checkin-pending">
+        <span class="checkin-icon">○</span>
+        <span>今日の記録がまだです</span>
+        <button class="btn btn-sm btn-primary" style="margin-left:auto" onclick="app.navigate('record')">記録する</button>
+      </div>`;
+    }
   },
 
   // ─── Domain-specific stat cards ───
