@@ -249,6 +249,67 @@ var Components = {
     </div>`;
   },
 
+  // ─── HTML Escape (XSS prevention) ───
+  escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
+
+  // ─── Confirm Dialog (iOS-safe replacement for confirm()) ───
+  _pendingConfirm: null,
+
+  confirmDialog(message, onConfirm, title) {
+    this._pendingConfirm = onConfirm;
+    const body = `
+      <p style="margin-bottom:24px;font-size:16px;line-height:1.7">${this.escapeHtml(message)}</p>
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn btn-danger" onclick="Components._runConfirm()">確認する</button>
+      </div>
+    `;
+    if (typeof app !== 'undefined') app.openModal(title || '確認', body);
+  },
+
+  _runConfirm() {
+    const cb = this._pendingConfirm;
+    this._pendingConfirm = null;
+    if (typeof app !== 'undefined') app.closeModal();
+    if (typeof cb === 'function') cb();
+  },
+
+  // ─── Prompt Dialog (iOS-safe replacement for prompt()) ───
+  _pendingPrompt: null,
+
+  promptDialog(message, onConfirm, placeholder, title) {
+    this._pendingPrompt = onConfirm;
+    const inputId = 'prompt-dialog-input-' + Date.now();
+    const body = `
+      <p style="margin-bottom:16px;font-size:16px">${this.escapeHtml(message)}</p>
+      <input type="text" id="${inputId}" class="form-input" placeholder="${this.escapeHtml(placeholder || '')}"
+        style="margin-bottom:20px" onkeydown="if(event.key==='Enter')Components._runPrompt('${inputId}')">
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn btn-primary" onclick="Components._runPrompt('${inputId}')">確認</button>
+      </div>
+    `;
+    if (typeof app !== 'undefined') {
+      app.openModal(title || '入力', body);
+      setTimeout(() => document.getElementById(inputId)?.focus(), 100);
+    }
+  },
+
+  _runPrompt(inputId) {
+    const val = document.getElementById(inputId)?.value || '';
+    const cb = this._pendingPrompt;
+    this._pendingPrompt = null;
+    if (typeof app !== 'undefined') app.closeModal();
+    if (typeof cb === 'function') cb(val);
+  },
+
   // ─── Record List Item ───
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';

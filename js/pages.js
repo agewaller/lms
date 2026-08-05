@@ -460,6 +460,9 @@ var Pages = {
       }
     }
 
+    const streak = store.getStreak(domain);
+    if (streak > 0) stats.push(Components.statCard('継続記録', `${streak}日`, null, '🔥'));
+
     return stats.join('');
   },
 

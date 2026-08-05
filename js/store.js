@@ -269,10 +269,44 @@ var Store = class Store {
     return score;
   }
 
+  // ─── Streak Calculation ───
+  // Returns the number of consecutive days (up to today) that have any entry for the domain.
+  getStreak(domain) {
+    const categories = Object.keys(window.CONFIG?.domains?.[domain]?.categories || {});
+    const allDates = new Set();
+
+    categories.forEach(cat => {
+      const entries = this.state[`${domain}_${cat}`];
+      if (!Array.isArray(entries)) return;
+      entries.forEach(e => {
+        if (e.timestamp) allDates.add(e.timestamp.slice(0, 10));
+      });
+    });
+
+    if (allDates.size === 0) return 0;
+
+    let streak = 0;
+    const today = new Date();
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      if (allDates.has(dateStr)) {
+        streak++;
+      } else if (i > 0) {
+        break; // gap found, streak ends
+      }
+    }
+    return streak;
+  }
+
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // Only remove lms_* keys to preserve Firebase config, OAuth tokens, etc.
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('lms_')) localStorage.removeItem(key);
+    });
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
