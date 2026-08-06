@@ -249,6 +249,70 @@ var Components = {
     </div>`;
   },
 
+  // ─── Inline Confirm Dialog (mobile-safe replace for window.confirm) ───
+  confirm(message, okLabel = '確認', cancelLabel = 'キャンセル') {
+    return new Promise(resolve => {
+      const overlay = document.getElementById('confirm-overlay');
+      const msgEl = document.getElementById('confirm-message');
+      const okBtn = document.getElementById('confirm-ok');
+      const cancelBtn = document.getElementById('confirm-cancel');
+
+      if (!overlay) { resolve(window.confirm(message)); return; }
+
+      msgEl.textContent = message;
+      okBtn.textContent = okLabel;
+      cancelBtn.textContent = cancelLabel;
+      overlay.classList.add('active');
+
+      const close = (result) => {
+        overlay.classList.remove('active');
+        okBtn.onclick = null;
+        cancelBtn.onclick = null;
+        overlay.onclick = null;
+        resolve(result);
+      };
+
+      okBtn.onclick = () => close(true);
+      cancelBtn.onclick = () => close(false);
+      overlay.onclick = (e) => { if (e.target === overlay) close(false); };
+    });
+  },
+
+  // ─── Inline Prompt Dialog (mobile-safe replace for window.prompt) ───
+  prompt(message, defaultValue = '') {
+    return new Promise(resolve => {
+      const overlay = document.getElementById('prompt-overlay');
+      const msgEl = document.getElementById('prompt-message');
+      const inputEl = document.getElementById('prompt-input');
+      const okBtn = document.getElementById('prompt-ok');
+      const cancelBtn = document.getElementById('prompt-cancel');
+
+      if (!overlay) { resolve(window.prompt(message, defaultValue)); return; }
+
+      msgEl.textContent = message;
+      inputEl.value = defaultValue;
+      overlay.classList.add('active');
+      setTimeout(() => inputEl.focus(), 50);
+
+      const close = (result) => {
+        overlay.classList.remove('active');
+        okBtn.onclick = null;
+        cancelBtn.onclick = null;
+        overlay.onclick = null;
+        inputEl.onkeydown = null;
+        resolve(result);
+      };
+
+      okBtn.onclick = () => close(inputEl.value);
+      cancelBtn.onclick = () => close(null);
+      overlay.onclick = (e) => { if (e.target === overlay) close(null); };
+      inputEl.onkeydown = (e) => {
+        if (e.key === 'Enter') close(inputEl.value);
+        if (e.key === 'Escape') close(null);
+      };
+    });
+  },
+
   // ─── Record List Item ───
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';

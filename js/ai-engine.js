@@ -4,6 +4,20 @@
    ============================================================ */
 var AIEngine = {
 
+  // ─── Model ID translation (logical → date-stamped API ID) ───
+  // Update only this map when Anthropic rotates model IDs.
+  MODEL_MAP: {
+    'claude-sonnet-4-6': 'claude-sonnet-4-6-20260101',
+    'claude-opus-4-6':   'claude-opus-4-6-20260201',
+    'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+    'gpt-4o':            'gpt-4o-2025-12-17',
+    'gemini-pro':        'gemini-2.0-flash'
+  },
+
+  resolveModelId(model) {
+    return this.MODEL_MAP[model] || model;
+  },
+
   // ─── Main analysis entry point ───
   async analyze(domain, promptType, userData, options = {}) {
     const model = options.model || store.get('selectedModel') || 'claude-sonnet-4-6';
@@ -20,13 +34,13 @@ var AIEngine = {
       let result;
       switch (modelConfig.provider) {
         case 'anthropic':
-          result = await this.callAnthropic(model, systemPrompt, userMessage, modelConfig.maxTokens);
+          result = await this.callAnthropic(model, systemPrompt, userMessage, modelConfig.maxTokens, options);
           break;
         case 'openai':
-          result = await this.callOpenAI(model, systemPrompt, userMessage, modelConfig.maxTokens);
+          result = await this.callOpenAI(model, systemPrompt, userMessage, modelConfig.maxTokens, options);
           break;
         case 'google':
-          result = await this.callGemini(model, systemPrompt, userMessage, modelConfig.maxTokens);
+          result = await this.callGemini(model, systemPrompt, userMessage, modelConfig.maxTokens, options);
           break;
         default:
           throw new Error('Unknown provider: ' + modelConfig.provider);
@@ -130,7 +144,7 @@ var AIEngine = {
 
   // ─── API Calls ───
 
-  async callAnthropic(model, system, userMsg, maxTokens) {
+  async callAnthropic(model, system, userMsg, maxTokens, options = {}) {
     const apiKey = this.getApiKey('anthropic');
     if (!apiKey) throw new Error('Anthropic APIキーが設定されていません。管理者にご連絡ください。');
 
@@ -161,7 +175,20 @@ var AIEngine = {
     }
 
     console.log('[LMS] Calling Anthropic', isDirect ? '(direct)' : 'via proxy:', url);
-    console.log('[LMS] Model:', model, 'Max tokens:', maxTokens);
+
+    const apiModel = this.resolveModelId(model);
+    console.log('[LMS] Model:', model, '→', apiModel, 'Max tokens:', maxTokens);
+
+    // Build message content (text only, or text + image block for vision)
+    let messageContent;
+    if (options.imageBase64) {
+      messageContent = [
+        { type: 'image', source: { type: 'base64', media_type: options.imageMediaType || 'image/jpeg', data: options.imageBase64 } },
+        { type: 'text', text: userMsg }
+      ];
+    } else {
+      messageContent = userMsg;
+    }
 
     let res;
     try {
@@ -169,10 +196,10 @@ var AIEngine = {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model,
+          model: apiModel,
           max_tokens: maxTokens,
           system: system,
-          messages: [{ role: 'user', content: userMsg }]
+          messages: [{ role: 'user', content: messageContent }]
         })
       });
     } catch (e) {
@@ -207,7 +234,7 @@ var AIEngine = {
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: model,
+        model: this.resolveModelId(model),
         max_tokens: maxTokens,
         messages: [
           { role: 'system', content: system },
@@ -228,7 +255,7 @@ var AIEngine = {
     const apiKey = this.getApiKey('google');
     if (!apiKey) throw new Error('Google API key not set');
 
-    const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
+    const url = `${CONFIG.endpoints.google}/${this.resolveModelId(model)}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

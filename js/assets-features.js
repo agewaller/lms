@@ -191,7 +191,12 @@ var AssetsFeatures = {
 
     if (resultEl) resultEl.innerHTML = Components.loading('あなたに合ったアドバイスを作成中...');
 
-    const userInfo = `65歳女性のユーザーからの投資相談です。
+    const profile = store.get('userProfile') || {};
+    const age = profile.age || '65';
+    const gender = profile.gender === 'female' ? '女性' : profile.gender === 'male' ? '男性' : '';
+    const location = profile.location || '';
+
+    const userInfo = `${age}歳${gender}${location ? '（' + location + '）' : ''}のユーザーからの投資相談です。
 ・貯蓄: ${savings}
 ・毎月の年金: ${pension}
 ・毎月の生活費: ${expenses}
@@ -290,18 +295,18 @@ var AssetsFeatures = {
       });
 
       try {
+        const base64 = dataUrl.split(',')[1];
+        const mediaType = file.type || 'image/jpeg';
         const result = await AIEngine.analyze('assets', 'daily', {
-          text: `ユーザーが証券口座または銀行のアプリの画面キャプチャをアップロードしました。
-画像の内容を読み取り、以下を分析してください：
-1. 表示されている資産の種類と金額
-2. ポートフォリオの構成（何にいくら投資しているか）
+          text: `証券口座または銀行アプリのスクリーンショットを読み取り、以下を分析してください：
+1. 資産の種類と金額
+2. ポートフォリオの構成
 3. 損益の状況
-4. 改善の提案（分散投資、リバランスなど）
+4. 改善の提案
 5. 注意すべき点
 
-65歳女性のユーザーにわかりやすい言葉で説明してください。
-※画像の内容をテキストとして読み取れない場合は、ユーザーに手入力をお願いしてください。`
-        });
+わかりやすい言葉でお伝えください。`
+        }, { imageBase64: base64, imageMediaType: mediaType });
 
         if (resultEl) {
           resultEl.innerHTML = `<div class="screenshot-result">

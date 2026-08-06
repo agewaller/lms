@@ -1729,6 +1729,46 @@ body.is-admin .admin-only { display: flex; }
   gap: 10px;
 }
 
+/* ─── Inline Confirm / Prompt Dialogs ─── */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.15s ease;
+}
+.dialog-overlay.active { opacity: 1; visibility: visible; }
+.dialog-box {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 90%;
+  max-width: 360px;
+  box-shadow: var(--shadow-lg);
+  transform: scale(0.95);
+  transition: transform 0.15s ease;
+}
+.dialog-overlay.active .dialog-box { transform: scale(1); }
+.dialog-message {
+  font-size: 15px;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+  line-height: 1.6;
+}
+#prompt-input { margin-bottom: 16px; }
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
   /* Sidebar off-canvas */
