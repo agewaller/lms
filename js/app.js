@@ -29,6 +29,11 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        // Show onboarding for first-time users (after a brief render delay)
+        const profile = store.get('userProfile') || {};
+        if (!profile._onboarded) {
+          setTimeout(() => this.showOnboarding(), 600);
+        }
       } else {
         this.stopInboxPolling();
       }
@@ -37,6 +42,103 @@ var App = class App {
     // Listen for navigation changes
     store.on('currentPage', () => this.renderApp());
     store.on('currentDomain', () => this.renderApp());
+  }
+
+  // ─── First-time onboarding ───
+  showOnboarding() {
+    const user = store.get('user') || {};
+    const bodyHtml = `
+      <div class="onboarding-modal">
+        <p class="onboarding-intro">
+          LMSは、毎日の記録をもとに<br>あなたの生活をより良くするためのアプリです。<br>
+          まず、簡単に教えてください。
+        </p>
+        <div class="form-group">
+          <label>呼び名（ニックネームでOK）</label>
+          <input type="text" id="ob_name" class="form-input" placeholder="例：田中さん" value="${Components.escapeHtml(user.displayName || '')}">
+        </div>
+        <div class="form-group">
+          <label>年齢</label>
+          <input type="number" id="ob_age" class="form-input" placeholder="例：67" min="0" max="120">
+        </div>
+        <div class="form-group">
+          <label>一番気になっていること</label>
+          <select id="ob_concern" class="form-input">
+            <option value="health">体の健康・持病</option>
+            <option value="consciousness">心の健康・ストレス</option>
+            <option value="relationship">家族や友人との関係</option>
+            <option value="assets">お金・老後の資産</option>
+            <option value="work">仕事・生きがい</option>
+            <option value="time">時間の使い方・趣味</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-lg" style="width:100%;margin-top:8px;" onclick="app.finishOnboarding()">
+          はじめる →
+        </button>
+      </div>`;
+    this.openModal('ようこそ、LMSへ', bodyHtml);
+  }
+
+  finishOnboarding() {
+    const name = document.getElementById('ob_name')?.value?.trim();
+    const age = document.getElementById('ob_age')?.value;
+    const concern = document.getElementById('ob_concern')?.value || 'health';
+
+    const profile = store.get('userProfile') || {};
+    if (name) profile.name = name;
+    if (age) profile.age = Number(age);
+    profile._onboarded = true;
+    store.set('userProfile', profile);
+
+    // Navigate to their main concern domain
+    store.set('currentDomain', concern);
+    store.set('currentPage', 'home');
+
+    this.closeModal();
+    Components.showToast(`${name || 'ようこそ'}！「${i18n.t(concern)}」からはじめましょう`, 'success');
+    this.renderApp();
+  }
+
+  // ─── Daily streak helper ───
+  getDomainLastRecord(domain) {
+    const categories = Object.keys(CONFIG.domains[domain]?.categories || {});
+    let latest = null;
+    categories.forEach(cat => {
+      const data = store.getDomainData(domain, cat, 1);
+      if (data.length > 0) {
+        const ts = new Date(data[data.length - 1].timestamp);
+        if (!latest || ts > latest) latest = ts;
+      }
+    });
+    return latest;
+  }
+
+  getStreakDays() {
+    const key = 'lms_streak';
+    try {
+      const saved = JSON.parse(localStorage.getItem(key) || '{}');
+      const today = new Date().toISOString().slice(0, 10);
+      const hasRecordToday = Object.keys(CONFIG.domains).some(d => {
+        const last = this.getDomainLastRecord(d);
+        return last && last.toISOString().slice(0, 10) === today;
+      });
+
+      if (hasRecordToday) {
+        if (saved.last !== today) {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yStr = yesterday.toISOString().slice(0, 10);
+          const streak = saved.last === yStr ? (saved.count || 0) + 1 : 1;
+          const updated = { last: today, count: streak };
+          localStorage.setItem(key, JSON.stringify(updated));
+          return streak;
+        }
+        return saved.count || 1;
+      }
+      return saved.count || 0;
+    } catch (e) {
+      return 0;
+    }
   }
 
   // ─── Inbox polling: fetch Plaud auto-sent transcripts ───
@@ -179,7 +281,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', data: 'データを見る', actions: 'アクション', ask_ai: '相談する', integrations: '連携', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -741,7 +843,10 @@ var App = class App {
   }
 
   deleteDataEntry(domain, category, id) {
-    if (!confirm('この記録を削除しますか？')) return;
+    this.confirmModal('この記録を削除しますか？', () => this._doDeleteDataEntry(domain, category, id), true);
+  }
+
+  _doDeleteDataEntry(domain, category, id) {
     const key = `${domain}_${category}`;
     const entries = (store.get(key) || []).filter(e => e.id !== id);
     store.set(key, entries);
@@ -1123,7 +1228,7 @@ var App = class App {
     if (resultEl) resultEl.innerHTML = Components.loading('七つのレイヤーで分析中...');
 
     try {
-      const prompt = CONFIG.prompts.consciousness.transcript_analysis || CONFIG.prompts.consciousness.daily;
+      // promptType 'transcript_analysis' maps to key 'consciousness_transcript' in buildSystemPrompt
       const result = await AIEngine.analyze('consciousness', 'transcript_analysis', {
         text: `<<<TRANSCRIPT_START\n${text}\nTRANSCRIPT_END>>>`
       });
@@ -1387,7 +1492,7 @@ var App = class App {
 
     // Save to Firestore if available
     if (Object.keys(keys).length > 0) {
-      FirebaseBackend.saveApiKeys({ ...AIEngine.getApiKey, ...keys });
+      FirebaseBackend.saveApiKeys(keys);
     }
 
     Components.showToast(i18n.t('saved'), 'success');
@@ -1908,7 +2013,10 @@ var App = class App {
   }
 
   generateDemoData() {
-    if (!confirm('デモデータを生成しますか？既存データに追加されます。')) return;
+    this.confirmModal('デモデータを生成しますか？既存データに追加されます。', () => this._doGenerateDemoData());
+  }
+
+  _doGenerateDemoData() {
     // Generate sample entries for each domain
     const today = new Date();
     for (let i = 0; i < 7; i++) {
@@ -1922,11 +2030,15 @@ var App = class App {
   }
 
   deleteAllData() {
-    if (!confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
-    if (!confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
-    store.clearAll();
-    Components.showToast('すべてのデータを削除しました', 'info');
-    window.location.reload();
+    this.confirmModal(
+      '本当にすべてのデータを削除しますか？この操作は元に戻せません。',
+      () => {
+        store.clearAll();
+        Components.showToast('すべてのデータを削除しました', 'info');
+        setTimeout(() => window.location.reload(), 800);
+      },
+      true
+    );
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───
@@ -1938,6 +2050,19 @@ var App = class App {
     const isOpen = sidebar.classList.contains('open');
     sidebar.classList.toggle('open', !isOpen);
     if (overlay) overlay.classList.toggle('active', !isOpen);
+  }
+
+  // ─── Confirm modal (replaces confirm() which is blocked on iOS Safari) ───
+  confirmModal(message, onConfirm, destructive = false) {
+    const btnClass = destructive ? 'btn-danger' : 'btn-primary';
+    const bodyHtml = `
+      <p style="margin-bottom:24px;font-size:16px;">${Components.escapeHtml(message)}</p>
+      <div class="form-actions">
+        <button class="btn ${btnClass}" onclick="app._confirmCb();app.closeModal()">実行する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>`;
+    this._confirmCb = onConfirm;
+    this.openModal('確認', bodyHtml);
   }
 
   // ─── Modal ───

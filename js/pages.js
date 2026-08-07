@@ -19,6 +19,48 @@ var Pages = {
     }
   },
 
+  // ─── Today's Checklist widget ───
+  renderTodayChecklist() {
+    const today = new Date().toISOString().slice(0, 10);
+    const streak = typeof app !== 'undefined' && app.getStreakDays ? app.getStreakDays() : 0;
+
+    const domainStatus = Object.keys(CONFIG.domains).map(d => {
+      const last = typeof app !== 'undefined' && app.getDomainLastRecord
+        ? app.getDomainLastRecord(d)
+        : null;
+      const doneToday = last && last.toISOString().slice(0, 10) === today;
+      return { id: d, config: CONFIG.domains[d], doneToday };
+    });
+
+    const doneCount = domainStatus.filter(d => d.doneToday).length;
+    const allDone = doneCount === 6;
+    const streakHtml = streak >= 2
+      ? `<div class="streak-badge">&#x1F525; ${streak}日連続</div>`
+      : '';
+
+    return `<div class="today-checklist">
+      <div class="today-checklist-header">
+        <div class="today-checklist-title">
+          <span class="today-date">${new Date().toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' })}</span>
+          <span class="today-progress ${allDone ? 'all-done' : ''}">${doneCount}/6 完了</span>
+        </div>
+        ${streakHtml}
+      </div>
+      <div class="today-domain-grid">
+        ${domainStatus.map(d => `
+          <button class="today-domain-item ${d.doneToday ? 'done' : ''}"
+            onclick="app.switchDomain('${d.id}');app.navigate('record')"
+            style="--domain-color:${d.config.color}">
+            <span class="today-domain-num">${d.config.icon}</span>
+            <span class="today-domain-name">${i18n.t(d.id)}</span>
+            <span class="today-domain-check">${d.doneToday ? '&#x2713;' : ''}</span>
+          </button>
+        `).join('')}
+      </div>
+      ${allDone ? `<div class="today-complete-msg">素晴らしい！今日の記録が完成しました &#x1F31F;</div>` : ''}
+    </div>`;
+  },
+
   // ═══════════════════════════════════════════════════════════
   //  HOME PAGE (per domain)
   // ═══════════════════════════════════════════════════════════
@@ -29,6 +71,7 @@ var Pages = {
 
     // Quick input bar
     let html = `<div class="page-home">
+      ${this.renderTodayChecklist()}
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">

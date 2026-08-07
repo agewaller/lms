@@ -30,6 +30,9 @@ var FirebaseBackend = {
       // Listen for auth state changes
       this.auth.onAuthStateChanged(user => this.handleAuthChange(user));
       this.initialized = true;
+
+      // Handle post-redirect sign-in result (mobile Google OAuth)
+      this.checkRedirectResult();
     } catch (e) {
       console.error('Firebase init error:', e);
     }
@@ -75,11 +78,36 @@ var FirebaseBackend = {
 
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
+
+    // Mobile browsers block popups — use redirect flow on mobile devices
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     try {
-      await this.auth.signInWithPopup(provider);
+      if (isMobile) {
+        await this.auth.signInWithRedirect(provider);
+        // onAuthStateChanged handles the post-redirect sign-in state
+      } else {
+        await this.auth.signInWithPopup(provider);
+      }
     } catch (e) {
       console.error('Google sign-in error:', e);
       Components.showToast(i18n.t('error') + ': ' + e.message, 'error');
+    }
+  },
+
+  // ─── Handle redirect result (called in init after redirect-based sign-in) ───
+  async checkRedirectResult() {
+    if (!this.auth) return;
+    try {
+      const result = await this.auth.getRedirectResult();
+      if (result && result.user) {
+        // onAuthStateChanged fires automatically; no additional handling needed
+        console.log('[LMS] Redirect sign-in completed for', result.user.email);
+      }
+    } catch (e) {
+      if (e.code !== 'auth/no-auth-event') {
+        console.error('Redirect result error:', e);
+        Components.showToast('Googleログインに失敗しました: ' + e.message, 'error');
+      }
     }
   },
 

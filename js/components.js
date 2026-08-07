@@ -3,6 +3,17 @@
    ============================================================ */
 var Components = {
 
+  // ─── XSS Prevention: always escape user-supplied values before innerHTML ───
+  escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;');
+  },
+
   // ─── Score Gauge (circular) ───
   scoreGauge(score, size = 120, label = '') {
     const pct = Math.max(0, Math.min(100, score));
@@ -76,11 +87,15 @@ var Components = {
   renderField(f) {
     const name = f.key;
     switch (f.type) {
-      case 'slider':
+      case 'slider': {
+        const minVal = f.min ?? 0;
+        const maxVal = f.max ?? 10;
+        const defaultVal = Math.floor((minVal + maxVal) / 2);
         return `<div class="slider-field">
-          <input type="range" name="${name}" min="${f.min||0}" max="${f.max||10}" value="${Math.floor((f.min||0 + f.max||10)/2)}" oninput="this.nextElementSibling.textContent=this.value">
-          <span class="slider-val">${Math.floor(((f.min||0) + (f.max||10))/2)}</span>
+          <input type="range" name="${name}" min="${minVal}" max="${maxVal}" value="${defaultVal}" oninput="this.nextElementSibling.textContent=this.value">
+          <span class="slider-val">${defaultVal}</span>
         </div>`;
+      }
       case 'number':
         return `<input type="number" name="${name}" step="${f.step||1}" class="form-input" placeholder="${i18n.t(f.label)}${f.unit ? ' ('+f.unit+')' : ''}">`;
       case 'text':
