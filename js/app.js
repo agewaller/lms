@@ -29,10 +29,18 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
-        // Show onboarding for first-time users (after a brief render delay)
         const profile = store.get('userProfile') || {};
+        const user = store.get('user') || {};
         if (!profile._onboarded) {
+          // New registration: send welcome email, show onboarding
+          if (typeof MailClient !== 'undefined') MailClient.onUserRegistered(user);
           setTimeout(() => this.showOnboarding(), 600);
+        } else {
+          // Returning user: check daily reminder and birthday reminders
+          if (typeof MailClient !== 'undefined') {
+            MailClient.checkDailyReminder(user);
+            MailClient.checkBirthdayReminders(user);
+          }
         }
       } else {
         this.stopInboxPolling();
@@ -1710,6 +1718,19 @@ var App = class App {
     }
 
     Components.showToast('保存しました: ' + url, 'success');
+  }
+
+  saveMailSenderUrl() {
+    const url = (document.getElementById('mailSenderUrl')?.value || '').trim().replace(/\/+$/, '');
+    CONFIG.endpoints.mailSender = url;
+    store.set('mailSenderUrl', url);
+    if (FirebaseBackend.isAdmin() && FirebaseBackend.db) {
+      FirebaseBackend.db.collection('admin').doc('config').set(
+        { mailSenderUrl: url, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
+        { merge: true }
+      ).catch(e => console.warn('mailSenderUrl sync error:', e));
+    }
+    Components.showToast('保存しました', 'success');
   }
 
   // ─── Save admin-shared OAuth Client IDs ───

@@ -229,6 +229,10 @@ var FirebaseBackend = {
           }
           if (cfg.emailIngestUrl) CONFIG.endpoints.emailIngest = cfg.emailIngestUrl;
           if (cfg.emailIngestDomain) CONFIG.emailIngestDomain = cfg.emailIngestDomain;
+          if (cfg.mailSenderUrl) {
+            CONFIG.endpoints.mailSender = cfg.mailSenderUrl;
+            store.set('mailSenderUrl', cfg.mailSenderUrl);
+          }
 
           // OAuth Client IDs (admin-shared) - merge with defaults
           // so that all users inherit the admin's OAuth apps and only

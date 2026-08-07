@@ -36,7 +36,8 @@ var CONFIG = {
     anthropic: 'https://lms-api-proxy.your-account.workers.dev',
     openai: 'https://api.openai.com/v1/chat/completions',
     google: 'https://generativelanguage.googleapis.com/v1beta/models',
-    emailIngest: 'https://lms-email-ingest.your-account.workers.dev'
+    emailIngest: 'https://lms-email-ingest.your-account.workers.dev',
+    mailSender: ''  // set via admin panel → メール送信Worker URL
   },
 
   // ─── Email Ingest Domain ───

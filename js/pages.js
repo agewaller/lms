@@ -1661,6 +1661,13 @@ var Pages = {
           <div class="input-help">CloudflareワーカーのURL、または「direct」で直接モード</div>
         </div>
         <div class="form-group">
+          <label>メール送信Worker URL</label>
+          <input type="text" id="mailSenderUrl" class="form-input"
+            value="${CONFIG.endpoints.mailSender || ''}"
+            placeholder="https://lms-mail-sender.your-account.workers.dev">
+          <div class="input-help">worker/mail-sender.js をデプロイしたCloudflare Worker URL（未設定でもOK）</div>
+        </div>
+        <div class="form-group">
           <label>Anthropic API Key (Claude)</label>
           <input type="password" id="apiKeyAnthropic" class="form-input"
             value="${AIEngine.getApiKey('anthropic') ? '••••••••' : ''}" placeholder="sk-ant-...">
@@ -1676,7 +1683,7 @@ var Pages = {
             value="${AIEngine.getApiKey('google') ? '••••••••' : ''}" placeholder="AI...">
         </div>
         <div class="form-actions">
-          <button class="btn btn-primary" onclick="app.saveApiKeys();app.saveWorkerUrl()">保存</button>
+          <button class="btn btn-primary" onclick="app.saveApiKeys();app.saveWorkerUrl();app.saveMailSenderUrl()">保存</button>
           <button class="btn btn-secondary" onclick="app.testConnection()">接続テスト</button>
           <button class="btn btn-danger" onclick="app.clearApiKeys()">すべて削除</button>
         </div>
