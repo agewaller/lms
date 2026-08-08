@@ -20,6 +20,9 @@ var App = class App {
       store.set('currentPage', 'home');
       this.renderApp();
       this.startInboxPolling();
+      if (!store.get('onboardingComplete')) {
+        setTimeout(() => this.showOnboarding(), 400);
+      }
     }
 
     // Listen for auth changes
@@ -29,6 +32,10 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        // Show onboarding wizard on first login
+        if (!store.get('onboardingComplete')) {
+          setTimeout(() => this.showOnboarding(), 400);
+        }
       } else {
         this.stopInboxPolling();
       }
@@ -179,7 +186,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -254,6 +261,98 @@ var App = class App {
     // and inline style would override the CSS class toggling.
     const isAdmin = FirebaseBackend.isAdmin();
     document.body.classList.toggle('is-admin', isAdmin);
+  }
+
+  // ─── First-Run Onboarding ───
+  showOnboarding() {
+    const user = store.get('user') || {};
+    const guessedName = user.displayName ? user.displayName.split(' ')[0] : '';
+
+    const domainOptions = Object.entries(CONFIG.domains).map(([id, d]) => `
+      <label class="onboard-domain-card" onclick="document.querySelectorAll('.onboard-domain-card').forEach(c=>c.classList.remove('selected'));this.classList.add('selected');document.getElementById('onboardDomain').value='${id}'">
+        <span class="odc-icon">${d.icon || ''}</span>
+        <span class="odc-name">${d.name}</span>
+        <span class="odc-desc">${d.tagline || ''}</span>
+      </label>`).join('');
+
+    const html = `<div class="onboarding-wizard">
+      <div class="onboard-step" id="onboard-step-1">
+        <h2>ようこそ！</h2>
+        <p>まず、あなたのことを少し教えてください。<br>難しいことはありません。3つだけです。</p>
+        <div class="form-group">
+          <label>お名前（よばれたい名前で）</label>
+          <input type="text" id="onboardName" class="form-input" placeholder="例：花子" value="${Components.escapeHtml(guessedName)}">
+        </div>
+        <div class="form-group">
+          <label>年齢</label>
+          <input type="number" id="onboardAge" class="form-input" placeholder="例：68" min="50" max="100" style="width:120px">
+        </div>
+        <button class="btn btn-primary btn-lg" onclick="app.onboardStep2()" style="width:100%;margin-top:12px">次へ →</button>
+      </div>
+
+      <div class="onboard-step" id="onboard-step-2" style="display:none">
+        <h2>いちばん気になることは？</h2>
+        <p>今、いちばん力を入れたい分野を1つ選んでください。<br>あとで変えられます。</p>
+        <input type="hidden" id="onboardDomain" value="health">
+        <div class="onboard-domain-grid">${domainOptions}</div>
+        <button class="btn btn-primary btn-lg" onclick="app.onboardStep3()" style="width:100%;margin-top:16px">次へ →</button>
+      </div>
+
+      <div class="onboard-step" id="onboard-step-3" style="display:none">
+        <h2>今、困っていることは？</h2>
+        <p>ひとことで教えてください。これを元に、あなたに合った情報をお届けします。</p>
+        <textarea id="onboardChallenge" class="form-input" rows="4"
+          placeholder="例：最近眠れない夜が多い、老後のお金が心配、孤独を感じる、やることがなくて…"></textarea>
+        <button class="btn btn-primary btn-lg" onclick="app.completeOnboarding()" style="width:100%;margin-top:12px">始める</button>
+      </div>
+    </div>`;
+
+    this.openModal('はじめての設定', html);
+  }
+
+  onboardStep2() {
+    const name = document.getElementById('onboardName')?.value?.trim();
+    if (!name) { Components.showToast('お名前を入力してください', 'info'); return; }
+    document.getElementById('onboard-step-1').style.display = 'none';
+    document.getElementById('onboard-step-2').style.display = '';
+  }
+
+  onboardStep3() {
+    const domain = document.getElementById('onboardDomain')?.value || 'health';
+    if (!domain) { Components.showToast('分野を選んでください', 'info'); return; }
+    document.getElementById('onboard-step-2').style.display = 'none';
+    document.getElementById('onboard-step-3').style.display = '';
+  }
+
+  completeOnboarding() {
+    const name = document.getElementById('onboardName')?.value?.trim() || '';
+    const age = parseInt(document.getElementById('onboardAge')?.value) || null;
+    const domain = document.getElementById('onboardDomain')?.value || 'health';
+    const challenge = document.getElementById('onboardChallenge')?.value?.trim() || '';
+
+    const profile = store.get('userProfile') || {};
+    profile.name = name || profile.name;
+    if (age) profile.age = age;
+    if (challenge) profile.initialChallenge = challenge;
+    store.set('userProfile', profile);
+
+    store.set('onboardingComplete', true);
+    store.set('currentDomain', domain);
+
+    this.closeModal();
+    Components.showToast(`${name || 'ようこそ'}、始めましょう！`, 'success');
+
+    // Generate a first personalized analysis based on their challenge
+    if (challenge) {
+      setTimeout(async () => {
+        try {
+          await AIEngine.analyze(domain, 'daily', { text: `初回相談：${challenge}` });
+          this.renderApp();
+        } catch (e) {}
+      }, 500);
+    } else {
+      this.renderApp();
+    }
   }
 
   // ─── Quick Input ───

@@ -66,6 +66,8 @@ var CONFIG = {
     consciousness: {
       id: 'consciousness',
       icon: '一',
+      name: '意識',
+      tagline: '心の健康・瞑想・感謝',
       color: '#6C63FF',
       // 七つの意識レイヤー
       layers: {
@@ -124,6 +126,8 @@ var CONFIG = {
     health: {
       id: 'health',
       icon: '二',
+      name: '健康',
+      tagline: '体調・薬・睡眠の記録',
       color: '#10b981',
       categories: {
         symptoms:     { label: 'symptoms',    icon: '🤒' },
@@ -189,6 +193,8 @@ var CONFIG = {
     time: {
       id: 'time',
       icon: '三',
+      name: '時間',
+      tagline: 'カレンダー・余暇・生きがい',
       color: '#f59e0b',
       categories: {
         entries:   { label: 'time_log',    icon: '📋' },
@@ -227,6 +233,8 @@ var CONFIG = {
     work: {
       id: 'work',
       icon: '四',
+      name: '仕事',
+      tagline: 'お仕事・ボランティア・副業',
       color: '#3b82f6',
       categories: {
         tasks:    { label: 'tasks',     icon: '✅' },
@@ -273,6 +281,8 @@ var CONFIG = {
     relationship: {
       id: 'relationship',
       icon: '五',
+      name: '関係',
+      tagline: '家族・友人・つながり',
       color: '#ef4444',
       categories: {
         contacts:     { label: 'contacts',     icon: '👤' },
@@ -331,6 +341,8 @@ var CONFIG = {
     assets: {
       id: 'assets',
       icon: '六',
+      name: '資産',
+      tagline: 'お金・NISA・株式管理',
       color: '#d97706',
       categories: {
         overview:      { label: 'asset_overview',  icon: '💰' },
