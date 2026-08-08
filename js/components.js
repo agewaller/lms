@@ -51,9 +51,8 @@ var Components = {
   // ─── Recommendation Card ───
   recommendationCard(rec) {
     const priorityClass = rec.priority === 'high' ? 'priority-high' : rec.priority === 'medium' ? 'priority-med' : 'priority-low';
-    // Use JSON.stringify for safe inline JS attribute quoting; formatMarkdown renders AI text safely
     const actionBtn = rec.action
-      ? `<button class="btn btn-sm btn-primary" onclick="app.executeAction(${JSON.stringify(rec.actionType || '')},${JSON.stringify(rec.actionData || '')})">${this.escapeHtml(rec.action)}</button>`
+      ? `<button class="btn btn-sm btn-primary" data-action-type="${this.escapeHtml(rec.actionType || '')}" data-action-data="${this.escapeHtml(rec.actionData || '')}" onclick="app.executeAction(this.dataset.actionType,this.dataset.actionData)">${this.escapeHtml(rec.action)}</button>`
       : '';
     return `<div class="recommendation-card ${priorityClass}">
       <div class="rec-header">
