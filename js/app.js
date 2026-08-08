@@ -710,6 +710,33 @@ var App = class App {
     store.addDomainEntry(domain, category, data);
     Components.showToast(i18n.t('saved'), 'success');
     form.reset();
+
+    // Silently trigger analysis after first record of the day
+    this._maybeAutoAnalyze(domain);
+  }
+
+  _maybeAutoAnalyze(domain) {
+    const today = new Date().toISOString().slice(0, 10);
+    const lastAnalyzed = store.get('lastAutoAnalyzeDate') || '';
+    if (lastAnalyzed === today) return; // already ran today
+
+    store.set('lastAutoAnalyzeDate', today);
+    setTimeout(async () => {
+      try {
+        const result = await AIEngine.analyze(domain, 'daily', {});
+        if (!result) return;
+        const existing = store.get('recommendations') || [];
+        store.set('recommendations', [{
+          domain,
+          text: result,
+          priority: 'medium',
+          timestamp: new Date().toISOString()
+        }, ...existing].slice(0, 50));
+        store.set('latestAnalysis', { domain, response: result, timestamp: new Date().toISOString() });
+      } catch (e) {
+        // Silent failure — background analysis is best-effort
+      }
+    }, 2000);
   }
 
   async saveAndAnalyze(domain, category) {
@@ -736,6 +763,7 @@ var App = class App {
 
     Components.showToast(i18n.t('saved'), 'success');
     textarea.value = '';
+    this._maybeAutoAnalyze(domain);
   }
 
   async saveDiaryAndAnalyze(domain) {
