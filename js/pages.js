@@ -129,7 +129,7 @@ var Pages = {
       html += `<div class="analysis-section">
         <h3>分析結果</h3>
         <div class="analysis-content">${Components.formatMarkdown(latest.response)}</div>
-        <div class="analysis-meta">${latest.model} | ${new Date(latest.timestamp).toLocaleString()}</div>
+        <div class="analysis-meta">${new Date(latest.timestamp).toLocaleString()}</div>
       </div>`;
     }
 
@@ -645,19 +645,50 @@ var Pages = {
       .filter(m => m.domain === domain || !m.domain)
       .slice(-50);
 
+    const startersByDomain = {
+      consciousness: ['今日の気持ちを整理したい', '瞑想を始めたい', '怒りやすくて困っています', '感謝できることを見つけたい'],
+      health:        ['最近だるさが続いています', '薬の飲み忘れが多い', '睡眠が浅い気がする', '体重が増えてきた'],
+      time:          ['時間をうまく使えていない', '趣味の時間を作りたい', '毎日の生活を整えたい', 'やることが多すぎて疲れます'],
+      work:          ['定年後の仕事を探している', 'ボランティアに興味がある', '自分のスキルを活かしたい', '副業を始めたい'],
+      relationship:  ['最近孤独を感じます', '友人と疎遠になってきた', '家族とうまく話せない', '新しい友達を作りたい'],
+      assets:        ['老後の生活費が心配', 'NISAを始めてみたい', '貯金の取り崩し方を知りたい', '投資のリスクが怖い']
+    };
+    const starters = startersByDomain[domain] || ['今日の調子はどうですか', 'アドバイスが欲しい'];
+
+    const starterChips = history.length === 0
+      ? `<div class="chat-starters">
+          <p class="starters-label">よく聞かれること：</p>
+          ${starters.map(q =>
+            `<button class="starter-chip" onclick="document.getElementById('chatInput').value=${JSON.stringify(q)};document.getElementById('chatInput').focus()">${Components.escapeHtml(q)}</button>`
+          ).join('')}
+        </div>`
+      : '';
+
+    const clearBtn = history.length > 0
+      ? `<button class="btn btn-sm btn-secondary" onclick="app.clearChat('${domain}')" style="margin-left:auto">会話を消去</button>`
+      : '';
+
     let html = `<div class="page-ask-ai">
-      <h2>${i18n.t(domain)} - 相談する</h2>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <h2 style="margin-bottom:0">${i18n.t(domain)} - 相談する</h2>
+        ${clearBtn}
+      </div>
+
+      ${starterChips}
 
       <div class="chat-container" id="chatContainer">
         ${history.length === 0 ?
-          Components.emptyState('💬', '相談する', i18n.t('quick_input_placeholder')) :
+          `<div class="chat-welcome">
+            <div class="chat-welcome-icon">💬</div>
+            <p>どんなことでも気軽にお話しください。<br>上のボタンから話題を選んでも大丈夫です。</p>
+          </div>` :
           history.map(m => Components.chatMessage(m)).join('')
         }
       </div>
 
       <div class="chat-input-bar">
         <textarea id="chatInput" class="form-input" rows="2"
-          placeholder="${i18n.t('quick_input_placeholder')}"
+          placeholder="ここに話しかけてください…"
           onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();app.sendChat('${domain}')}"></textarea>
         <button class="btn btn-primary" onclick="app.sendChat('${domain}')">${i18n.t('send')}</button>
       </div>

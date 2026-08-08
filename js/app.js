@@ -524,6 +524,13 @@ var App = class App {
     }
   }
 
+  clearChat(domain) {
+    const history = store.get('conversationHistory') || [];
+    const filtered = history.filter(m => m.domain !== domain && m.domain !== undefined);
+    store.set('conversationHistory', filtered);
+    this.renderApp();
+  }
+
   // ─── Generate AI Recommendations ───
   async generateRecommendations(domain) {
     try {
