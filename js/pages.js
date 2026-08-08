@@ -886,6 +886,45 @@ var Pages = {
         <button class="btn btn-secondary" onclick="document.getElementById('calImport').click()">カレンダーファイルを取り込む</button>
       </div>` : ''}
 
+      <!-- Notification / Reminder Settings -->
+      ${(() => {
+        const prefs = store.get('notificationPrefs') || {};
+        const enabled = prefs.enabled !== false;
+        const hour = prefs.hour ?? 9;
+        const minute = prefs.minute ?? 0;
+        const permitted = typeof Notification !== 'undefined' && Notification.permission === 'granted';
+        const denied = typeof Notification !== 'undefined' && Notification.permission === 'denied';
+        const hourOptions = Array.from({length: 24}, (_, i) =>
+          `<option value="${i}" ${hour === i ? 'selected' : ''}>${String(i).padStart(2,'0')}時</option>`).join('');
+        const minuteOptions = [0, 15, 30, 45].map(m =>
+          `<option value="${m}" ${minute === m ? 'selected' : ''}>${String(m).padStart(2,'0')}分</option>`).join('');
+        return `<div class="settings-section">
+          <h3>毎日のリマインダー</h3>
+          <p class="page-desc">記録を続けるために、毎日決まった時間にお知らせします。</p>
+          ${denied ? '<p style="color:var(--danger);font-size:14px">⚠️ ブラウザで通知がブロックされています。ブラウザの設定から通知を許可してください。</p>' : ''}
+          <div class="form-group">
+            <label>リマインダーを使う</label>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <input type="checkbox" id="notifEnabled" ${enabled ? 'checked' : ''} style="width:20px;height:20px">
+              <span>毎日リマインドする</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label>通知する時刻</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select id="notifHour" class="form-input" style="width:auto">
+                ${hourOptions}
+              </select>
+              <select id="notifMinute" class="form-input" style="width:auto">
+                ${minuteOptions}
+              </select>
+            </div>
+          </div>
+          ${!permitted && !denied ? `<button class="btn btn-secondary" onclick="app.requestNotificationPermission(true)">通知を許可する</button>` : ''}
+          <button class="btn btn-primary" onclick="app.saveNotificationPrefs()" style="margin-top:8px">保存する</button>
+        </div>`;
+      })()}
+
       <!-- Logout -->
       <div class="settings-section">
         <button class="btn btn-danger" onclick="app.logout()">🚪 ${i18n.t('logout')}</button>
@@ -971,11 +1010,62 @@ var Pages = {
     });
     const totalCount = Object.values(catCounts).reduce((a, b) => a + b, 0);
 
+    // Determine which chart to show based on domain
+    const chartSection = (() => {
+      const domColor = domainConfig?.color || '#6C63FF';
+      if (domain === 'health') {
+        const vitalEntries = store.getDomainData('health', 'vitals', 90);
+        const symptomEntries = store.getDomainData('health', 'symptoms', 90);
+        if (vitalEntries.length === 0 && symptomEntries.length === 0) return '';
+        return `<div class="card" style="margin-bottom:16px;">
+          <div class="card-body">
+            <h3 style="margin-bottom:12px">グラフで確認</h3>
+            <div class="chart-tabs">
+              ${vitalEntries.length > 0 ? `<button class="chart-tab active" onclick="app.switchDataChart('health','bp')">血圧</button>
+              <button class="chart-tab" onclick="app.switchDataChart('health','weight')">体重</button>` : ''}
+              ${symptomEntries.length > 0 ? `<button class="chart-tab" onclick="app.switchDataChart('health','condition')">体調スコア</button>` : ''}
+            </div>
+            <div style="position:relative;height:220px;margin-top:12px">
+              <canvas id="dataChart" style="max-height:220px"></canvas>
+            </div>
+          </div>
+        </div>`;
+      }
+      if (domain === 'consciousness') {
+        const obs = store.getDomainData('consciousness', 'observation', 90);
+        if (obs.length === 0) return '';
+        return `<div class="card" style="margin-bottom:16px;">
+          <div class="card-body">
+            <h3 style="margin-bottom:12px">心のグラフ</h3>
+            <div style="position:relative;height:200px">
+              <canvas id="dataChart" style="max-height:200px"></canvas>
+            </div>
+          </div>
+        </div>`;
+      }
+      if (domain === 'assets') {
+        const exp = store.getDomainData('assets', 'expenses', 90);
+        const inc = store.getDomainData('assets', 'income', 90);
+        if (exp.length === 0 && inc.length === 0) return '';
+        return `<div class="card" style="margin-bottom:16px;">
+          <div class="card-body">
+            <h3 style="margin-bottom:12px">収支グラフ</h3>
+            <div style="position:relative;height:200px">
+              <canvas id="dataChart" style="max-height:200px"></canvas>
+            </div>
+          </div>
+        </div>`;
+      }
+      return '';
+    })();
+
     let html = `<div class="page-data-browser">
       <div class="data-browser-header">
         <h2>${i18n.t(domain)} のデータ</h2>
         <p class="page-desc">これまで記録したすべてのデータを整理して見られます。</p>
       </div>
+
+      ${chartSection}
 
       <!-- Summary -->
       <div class="card" style="margin-bottom:16px;">

@@ -147,17 +147,31 @@ var App = class App {
     }
   }
 
-  async requestNotificationPermission() {
+  async requestNotificationPermission(force = false) {
     if (Notification.permission !== 'default') return;
-    // Don't ask on first open — wait for user engagement
-    const streak = store.get('usageStreak') || 0;
-    if (streak < 1) return;
+    if (!force) {
+      const streak = store.get('usageStreak') || 0;
+      if (streak < 1) return;
+    }
 
     const result = await Notification.requestPermission();
     if (result === 'granted') {
-      Components.showToast('毎日リマインダーを設定しました（朝9時）', 'success');
+      Components.showToast('通知が許可されました。毎日リマインドします。', 'success');
+      this.setupDailyReminder();
+      this.renderApp(); // refresh settings page to show updated state
+    }
+  }
+
+  saveNotificationPrefs() {
+    const enabled = document.getElementById('notifEnabled')?.checked ?? true;
+    const hour = parseInt(document.getElementById('notifHour')?.value ?? '9', 10);
+    const minute = parseInt(document.getElementById('notifMinute')?.value ?? '0', 10);
+    const prefs = { enabled, hour, minute };
+    store.set('notificationPrefs', prefs);
+    if (enabled) {
       this.setupDailyReminder();
     }
+    Components.showToast('リマインダー設定を保存しました', 'success');
   }
 
   // ─── Inbox polling: fetch Plaud auto-sent transcripts ───
@@ -348,6 +362,136 @@ var App = class App {
         if (typeof AssetsFeatures !== 'undefined') AssetsFeatures.calculateNISA();
       }, 100);
     }
+
+    // Initialize data charts
+    if (page === 'data') {
+      setTimeout(() => this.initDataCharts(domain), 100);
+    }
+  }
+
+  // ─── Data Browser Charts ───
+  _dataChart = null;
+
+  initDataCharts(domain, metric) {
+    if (typeof Chart === 'undefined') return;
+    const canvas = document.getElementById('dataChart');
+    if (!canvas) return;
+
+    if (domain === 'health') this._drawHealthChart(metric || 'bp');
+    else if (domain === 'consciousness') this._drawConsciousnessChart();
+    else if (domain === 'assets') this._drawAssetsChart();
+  }
+
+  switchDataChart(domain, metric) {
+    document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+    const clicked = event?.currentTarget || event?.target;
+    if (clicked) clicked.classList.add('active');
+    this.initDataCharts(domain, metric);
+  }
+
+  _destroyChart() {
+    if (this._dataChart) { this._dataChart.destroy(); this._dataChart = null; }
+  }
+
+  _drawHealthChart(metric) {
+    this._destroyChart();
+    const canvas = document.getElementById('dataChart');
+    if (!canvas) return;
+
+    const vitals = store.getDomainData('health', 'vitals', 90)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const symptoms = store.getDomainData('health', 'symptoms', 90)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+    const fmtDate = ts => new Date(ts).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+    const color = '#10b981';
+
+    if (metric === 'bp') {
+      const pts = vitals.filter(e => e.bp_systolic && e.bp_diastolic).slice(-30);
+      if (pts.length === 0) return;
+      this._dataChart = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: pts.map(e => fmtDate(e.timestamp)),
+          datasets: [
+            { label: '収縮期（上）mmHg', data: pts.map(e => Number(e.bp_systolic)), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.08)', tension: 0.3, pointRadius: 4 },
+            { label: '拡張期（下）mmHg', data: pts.map(e => Number(e.bp_diastolic)), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.08)', tension: 0.3, pointRadius: 4 }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: false } } }
+      });
+    } else if (metric === 'weight') {
+      const pts = vitals.filter(e => e.weight).slice(-30);
+      if (pts.length === 0) return;
+      this._dataChart = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: pts.map(e => fmtDate(e.timestamp)),
+          datasets: [{ label: '体重 (kg)', data: pts.map(e => Number(e.weight)), borderColor: color, backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.3, pointRadius: 4 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: false } } }
+      });
+    } else if (metric === 'condition') {
+      const pts = symptoms.filter(e => e.condition_level).slice(-30);
+      if (pts.length === 0) return;
+      this._dataChart = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: pts.map(e => fmtDate(e.timestamp)),
+          datasets: [{ label: '体調スコア (1-10)', data: pts.map(e => Number(e.condition_level)), backgroundColor: pts.map(e => Number(e.condition_level) >= 7 ? 'rgba(16,185,129,0.7)' : Number(e.condition_level) >= 4 ? 'rgba(245,158,11,0.7)' : 'rgba(239,68,68,0.7)') }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { min: 0, max: 10 } } }
+      });
+    }
+  }
+
+  _drawConsciousnessChart() {
+    this._destroyChart();
+    const canvas = document.getElementById('dataChart');
+    if (!canvas) return;
+    const obs = store.getDomainData('consciousness', 'observation', 90)
+      .filter(e => e.score != null)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      .slice(-30);
+    if (obs.length === 0) return;
+    const fmtDate = ts => new Date(ts).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+    this._dataChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: obs.map(e => fmtDate(e.timestamp)),
+        datasets: [{ label: '意識スコア', data: obs.map(e => Number(e.score)), borderColor: '#6C63FF', backgroundColor: 'rgba(108,99,255,0.1)', tension: 0.3, pointRadius: 4 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { min: 0, max: 100 } } }
+    });
+  }
+
+  _drawAssetsChart() {
+    this._destroyChart();
+    const canvas = document.getElementById('dataChart');
+    if (!canvas) return;
+    const expenses = store.getDomainData('assets', 'expenses', 90)
+      .filter(e => e.amount)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      .slice(-30);
+    const income = store.getDomainData('assets', 'income', 90)
+      .filter(e => e.amount)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      .slice(-30);
+    if (expenses.length === 0 && income.length === 0) return;
+    const fmtDate = ts => new Date(ts).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+    const allDates = [...new Set([...expenses.map(e => e.timestamp.slice(0,10)), ...income.map(e => e.timestamp.slice(0,10))])].sort();
+    const sumByDate = (arr, dates) => dates.map(d => arr.filter(e => e.timestamp.startsWith(d)).reduce((s, e) => s + Number(e.amount || 0), 0));
+    this._dataChart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: allDates.map(fmtDate),
+        datasets: [
+          { label: '収入 (円)', data: sumByDate(income, allDates), backgroundColor: 'rgba(16,185,129,0.7)' },
+          { label: '支出 (円)', data: sumByDate(expenses, allDates), backgroundColor: 'rgba(239,68,68,0.7)' }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
   }
 
   updateSidebar() {
@@ -759,7 +903,7 @@ var App = class App {
 
       if (resultEl) {
         resultEl.innerHTML = `<div class="stock-result">
-          <h3>${ticker} の分析結果</h3>
+          <h3>${Components.escapeHtml(ticker)} の分析結果</h3>
           <div class="analysis-content">${Components.formatMarkdown(result)}</div>
           <div class="disclaimer">${i18n.t('disclaimer_assets')}</div>
         </div>`;

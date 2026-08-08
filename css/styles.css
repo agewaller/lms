@@ -341,6 +341,11 @@ select.form-input { appearance: auto; }
 .data-cat-count { font-size: 18px; font-weight: 700; line-height: 1; }
 .data-cat-label { font-size: 11px; margin-top: 4px; }
 
+.chart-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.chart-tab { padding: 6px 16px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-secondary); cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.chart-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chart-tab:hover:not(.active) { background: var(--bg-hover); }
+
 .data-filters { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
 .data-filters .form-group { margin-bottom: 0; }
 .data-actions { display: flex; gap: 8px; }
