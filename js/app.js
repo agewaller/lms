@@ -458,9 +458,36 @@ var App = class App {
   }
 
   executeAction(type, data) {
-    // Placeholder for action execution (e.g., open affiliate link, book appointment)
-    console.log('Execute action:', type, data);
-    Components.showToast('Action: ' + type, 'info');
+    switch (type) {
+      case 'url':
+        if (data) window.open(data, '_blank', 'noopener,noreferrer');
+        break;
+      case 'domain':
+        if (data) this.switchDomain(data);
+        break;
+      case 'page':
+        if (data) this.navigate(data);
+        break;
+      case 'affiliate': {
+        const [store, url] = (data || '').split('|');
+        if (url && store) {
+          const affUrl = AffiliateEngine.generateLink(store, url);
+          AffiliateEngine.trackClick(store, url, this.currentDomain);
+          window.open(affUrl, '_blank', 'noopener,noreferrer');
+        } else if (url) {
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }
+        break;
+      }
+      case 'record':
+        this.navigate('record');
+        break;
+      case 'ask':
+        this.navigate('ask_ai');
+        break;
+      default:
+        Components.showToast('この機能はまもなく対応予定です', 'info');
+    }
   }
 
   // ─── Stock Analysis (Assets domain) ───
