@@ -3,7 +3,64 @@
    ============================================================ */
 var App = class App {
   constructor() {
-    this.entryDomain = null; // Which sub-site the user entered from
+    this.entryDomain = null;
+    this._pendingConfirmAction = null;
+    this._pendingInputAction = null;
+  }
+
+  // ─── Modal Confirm / Input (replaces native confirm()/prompt() banned on iOS) ───
+  showConfirm(message, confirmLabel, action, ...args) {
+    this._pendingConfirmAction = { action, args };
+    this.openModal('確認', `
+      <p style="margin-bottom:20px;font-size:16px;line-height:1.6">${Components.escapeHtml(message)}</p>
+      <div style="display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn btn-danger" onclick="app._runConfirmedAction()">${Components.escapeHtml(confirmLabel || '実行する')}</button>
+      </div>`);
+  }
+
+  _runConfirmedAction() {
+    this.closeModal();
+    if (!this._pendingConfirmAction) return;
+    const { action, args } = this._pendingConfirmAction;
+    this._pendingConfirmAction = null;
+    switch (action) {
+      case 'deleteDataEntry':   this._doDeleteDataEntry(...args); break;
+      case 'fitbitDisconnect':  this._doFitbitDisconnect(); break;
+      case 'gcalDisconnect':    this._doGcalDisconnect(); break;
+      case 'outlookDisconnect': this._doOutlookDisconnect(); break;
+      case 'gmailDisconnect':   this._doGmailDisconnect(); break;
+      case 'deletePrompt':      this._doDeletePrompt(...args); break;
+      case 'clearApiKeys':      this._doClearApiKeys(); break;
+      case 'clearFirebaseConfig': this._doClearFirebaseConfig(); break;
+      case 'removeAdminEmail':  this._doRemoveAdminEmail(...args); break;
+      case 'generateDemoData':  this._doGenerateDemoData(); break;
+      case 'deleteAllData':     this._doDeleteAllData(); break;
+    }
+  }
+
+  showInputModal(label, placeholder, action) {
+    this._pendingInputAction = action;
+    this.openModal('入力', `
+      <p style="margin-bottom:12px;font-size:16px">${Components.escapeHtml(label)}</p>
+      <input type="text" id="modalInputField" class="form-input" placeholder="${Components.escapeHtml(placeholder)}" style="margin-bottom:16px">
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn btn-primary" onclick="app._runInputAction()">OK</button>
+      </div>`);
+    setTimeout(() => document.getElementById('modalInputField')?.focus(), 100);
+  }
+
+  _runInputAction() {
+    const value = document.getElementById('modalInputField')?.value?.trim();
+    this.closeModal();
+    if (!value || !this._pendingInputAction) return;
+    const action = this._pendingInputAction;
+    this._pendingInputAction = null;
+    switch (action) {
+      case 'addNewPrompt':   this._doAddNewPrompt(value); break;
+      case 'addAdminEmail':  this._doAddAdminEmail(value); break;
+    }
   }
 
   // ─── Initialize ───
@@ -46,6 +103,61 @@ var App = class App {
     // Listen for navigation changes
     store.on('currentPage', () => this.renderApp());
     store.on('currentDomain', () => this.renderApp());
+
+    // Register service worker for PWA offline + notifications
+    this.registerServiceWorker();
+  }
+
+  async registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      this._swRegistration = reg;
+      // After login, set up daily reminder
+      store.on('isAuthenticated', (val) => {
+        if (val) this.setupDailyReminder();
+      });
+      if (store.get('isAuthenticated')) this.setupDailyReminder();
+    } catch (e) {
+      // Service worker failures are non-fatal
+    }
+  }
+
+  async setupDailyReminder() {
+    const prefs = store.get('notificationPrefs') || {};
+    if (prefs.enabled === false) return;
+
+    // Request permission if not yet granted, but only after user has been in the app a bit
+    if (Notification.permission === 'default') {
+      setTimeout(() => this.requestNotificationPermission(), 60000); // ask after 1 min
+    }
+    if (Notification.permission !== 'granted') return;
+
+    // Schedule daily reminder via service worker
+    const hour = prefs.hour ?? 9;
+    const minute = prefs.minute ?? 0;
+    if (this._swRegistration?.active) {
+      this._swRegistration.active.postMessage({
+        type: 'SCHEDULE_DAILY_REMINDER',
+        title: '今日の記録をつけましょう',
+        body: '体調・気持ち・時間の使い方を一言記録するだけで大丈夫です。',
+        hour,
+        minute
+      });
+    }
+  }
+
+  async requestNotificationPermission() {
+    if (Notification.permission !== 'default') return;
+    // Don't ask on first open — wait for user engagement
+    const streak = store.get('usageStreak') || 0;
+    if (streak < 1) return;
+
+    const result = await Notification.requestPermission();
+    if (result === 'granted') {
+      Components.showToast('毎日リマインダーを設定しました（朝9時）', 'success');
+      this.setupDailyReminder();
+    }
   }
 
   // ─── Inbox polling: fetch Plaud auto-sent transcripts ───
@@ -847,14 +959,16 @@ var App = class App {
       .filter(([k]) => !k.startsWith('_') && k !== 'timestamp' && k !== 'id' && k !== 'domain' && k !== 'category');
 
     const formHtml = `<form id="editForm">
-      ${fields.map(([k, v]) => `
+      ${fields.map(([k, v]) => {
+        const safeV = Components.escapeHtml(String(v ?? ''));
+        return `
         <div class="form-group">
           <label>${i18n.t(k) || k}</label>
           ${typeof v === 'string' && v.length > 50
-            ? `<textarea name="${k}" class="form-input" rows="3">${v}</textarea>`
-            : `<input type="${typeof v === 'number' ? 'number' : 'text'}" name="${k}" class="form-input" value="${v}">`}
-        </div>
-      `).join('')}
+            ? `<textarea name="${k}" class="form-input" rows="3">${safeV}</textarea>`
+            : `<input type="${typeof v === 'number' ? 'number' : 'text'}" name="${k}" class="form-input" value="${safeV}">`}
+        </div>`;
+      }).join('')}
       <div class="form-actions">
         <button type="button" class="btn btn-primary" onclick="app.saveDataEntryEdit('${domain}','${category}','${id}')">保存</button>
         <button type="button" class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
@@ -886,12 +1000,14 @@ var App = class App {
   }
 
   deleteDataEntry(domain, category, id) {
-    if (!confirm('この記録を削除しますか？')) return;
+    this.showConfirm('この記録を削除しますか？', '削除する', 'deleteDataEntry', domain, category, id);
+  }
+
+  _doDeleteDataEntry(domain, category, id) {
     const key = `${domain}_${category}`;
     const entries = (store.get(key) || []).filter(e => e.id !== id);
     store.set(key, entries);
 
-    // Also delete from Firestore if connected
     if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.db) {
       const uid = store.get('user')?.uid;
       if (uid) {
@@ -969,7 +1085,10 @@ var App = class App {
   }
 
   fitbitDisconnect() {
-    if (!confirm('Fitbit接続を解除しますか？')) return;
+    this.showConfirm('Fitbit接続を解除しますか？', '解除する', 'fitbitDisconnect');
+  }
+
+  _doFitbitDisconnect() {
     if (typeof fitbit !== 'undefined') fitbit.disconnect();
     Components.showToast('接続を解除しました', 'info');
     this.renderApp();
@@ -1019,7 +1138,10 @@ var App = class App {
   }
 
   gcalDisconnect() {
-    if (!confirm('Googleカレンダー接続を解除しますか？')) return;
+    this.showConfirm('Googleカレンダー接続を解除しますか？', '解除する', 'gcalDisconnect');
+  }
+
+  _doGcalDisconnect() {
     if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
     Components.showToast('接続を解除しました', 'info');
     this.renderApp();
@@ -1054,7 +1176,10 @@ var App = class App {
   }
 
   outlookDisconnect() {
-    if (!confirm('Outlook接続を解除しますか？')) return;
+    this.showConfirm('Outlook接続を解除しますか？', '解除する', 'outlookDisconnect');
+  }
+
+  _doOutlookDisconnect() {
     if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
     Components.showToast('接続を解除しました', 'info');
     this.renderApp();
@@ -1089,7 +1214,10 @@ var App = class App {
   }
 
   gmailDisconnect() {
-    if (!confirm('Gmail接続を解除しますか？')) return;
+    this.showConfirm('Gmail接続を解除しますか？', '解除する', 'gmailDisconnect');
+  }
+
+  _doGmailDisconnect() {
     if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
     Components.showToast('接続を解除しました', 'info');
     this.renderApp();
@@ -1624,7 +1752,10 @@ var App = class App {
   }
 
   deletePrompt(key) {
-    if (!confirm('このプロンプトを削除しますか？')) return;
+    this.showConfirm('このプロンプトを削除しますか？', '削除する', 'deletePrompt', key);
+  }
+
+  _doDeletePrompt(key) {
     delete CONFIG.prompts[key];
     const custom = store.get('customPrompts') || {};
     delete custom[key];
@@ -1634,7 +1765,10 @@ var App = class App {
   }
 
   addNewPrompt() {
-    const key = prompt('プロンプトのキー名を入力（例: work_custom）');
+    this.showInputModal('プロンプトのキー名を入力', 'work_custom', 'addNewPrompt');
+  }
+
+  _doAddNewPrompt(key) {
     if (!key) return;
     if (CONFIG.prompts[key]) {
       Components.showToast('そのキーは既に存在します', 'error');
@@ -1669,7 +1803,10 @@ var App = class App {
   }
 
   clearApiKeys() {
-    if (!confirm('すべてのAPIキーを削除しますか？')) return;
+    this.showConfirm('すべてのAPIキーを削除しますか？', '削除する', 'clearApiKeys');
+  }
+
+  _doClearApiKeys() {
     ['anthropic', 'openai', 'google'].forEach(p => {
       localStorage.removeItem('lms_apikey_' + p);
     });
@@ -1704,7 +1841,10 @@ var App = class App {
   }
 
   clearFirebaseConfig() {
-    if (!confirm('Firebase設定を削除しますか？')) return;
+    this.showConfirm('Firebase設定を削除しますか？', '削除する', 'clearFirebaseConfig');
+  }
+
+  _doClearFirebaseConfig() {
     localStorage.removeItem('lms_firebaseConfig');
     Components.showToast('削除しました（再読み込みが必要です）', 'info');
   }
@@ -1793,10 +1933,11 @@ var App = class App {
   }
 
   // ─── Admin User Management ───
-  async addAdminEmail() {
-    const email = prompt('管理者として追加するメールアドレスを入力してください');
-    if (!email || !email.trim()) return;
+  addAdminEmail() {
+    this.showInputModal('管理者として追加するメールアドレスを入力してください', 'admin@example.com', 'addAdminEmail');
+  }
 
+  async _doAddAdminEmail(email) {
     const trimmed = email.trim().toLowerCase();
     if (!/^[^@]+@[^@]+\.[^@]+$/.test(trimmed)) {
       Components.showToast('有効なメールアドレスを入力してください', 'error');
@@ -1827,13 +1968,15 @@ var App = class App {
     this.renderApp();
   }
 
-  async removeAdminEmail(email) {
+  removeAdminEmail(email) {
     if (email === 'agewaller@gmail.com') {
       Components.showToast('オーナーアカウントは削除できません', 'error');
       return;
     }
-    if (!confirm(`${email} を管理者から外しますか？`)) return;
+    this.showConfirm(`${email} を管理者から外しますか？`, '削除する', 'removeAdminEmail', email);
+  }
 
+  async _doRemoveAdminEmail(email) {
     const list = (store.get('adminEmails') || ['agewaller@gmail.com']).filter(e => e !== email);
     store.set('adminEmails', list);
 
@@ -2053,8 +2196,10 @@ var App = class App {
   }
 
   generateDemoData() {
-    if (!confirm('デモデータを生成しますか？既存データに追加されます。')) return;
-    // Generate sample entries for each domain
+    this.showConfirm('デモデータを生成しますか？既存データに追加されます。', '生成する', 'generateDemoData');
+  }
+
+  _doGenerateDemoData() {
     const today = new Date();
     for (let i = 0; i < 7; i++) {
       const d = new Date(today);
@@ -2067,8 +2212,10 @@ var App = class App {
   }
 
   deleteAllData() {
-    if (!confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
-    if (!confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
+    this.showConfirm('本当にすべてのデータを削除しますか？\nこの操作は元に戻せません。', 'すべて削除する', 'deleteAllData');
+  }
+
+  _doDeleteAllData() {
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();
