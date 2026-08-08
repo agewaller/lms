@@ -382,10 +382,9 @@ var App = class App {
     else if (domain === 'assets') this._drawAssetsChart();
   }
 
-  switchDataChart(domain, metric) {
+  switchDataChart(domain, metric, btn) {
     document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
-    const clicked = event?.currentTarget || event?.target;
-    if (clicked) clicked.classList.add('active');
+    if (btn) btn.classList.add('active');
     this.initDataCharts(domain, metric);
   }
 

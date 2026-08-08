@@ -1021,9 +1021,9 @@ var Pages = {
           <div class="card-body">
             <h3 style="margin-bottom:12px">グラフで確認</h3>
             <div class="chart-tabs">
-              ${vitalEntries.length > 0 ? `<button class="chart-tab active" onclick="app.switchDataChart('health','bp')">血圧</button>
-              <button class="chart-tab" onclick="app.switchDataChart('health','weight')">体重</button>` : ''}
-              ${symptomEntries.length > 0 ? `<button class="chart-tab" onclick="app.switchDataChart('health','condition')">体調スコア</button>` : ''}
+              ${vitalEntries.length > 0 ? `<button class="chart-tab active" onclick="app.switchDataChart('health','bp',this)">血圧</button>
+              <button class="chart-tab" onclick="app.switchDataChart('health','weight',this)">体重</button>` : ''}
+              ${symptomEntries.length > 0 ? `<button class="chart-tab" onclick="app.switchDataChart('health','condition',this)">体調スコア</button>` : ''}
             </div>
             <div style="position:relative;height:220px;margin-top:12px">
               <canvas id="dataChart" style="max-height:220px"></canvas>
