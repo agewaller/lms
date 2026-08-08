@@ -1888,3 +1888,24 @@ body.is-admin .admin-only { display: flex; }
 .streak-day { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
 .streak-dot.recorded .streak-day { color: #fff; }
 .streak-msg { font-size: 14px; color: var(--text-secondary); margin: 0; text-align: center; }
+
+/* ─── Font Size Accessibility Picker ─────────────────────────── */
+.font-size-picker { display: flex; gap: 10px; flex-wrap: wrap; }
+.fs-btn { padding: 10px 20px; border-radius: var(--radius-sm); border: 2px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; min-width: 64px; }
+.fs-btn.active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+.fs-btn:hover:not(.active) { border-color: var(--accent); background: var(--bg-hover); }
+
+/* Font size scale applied to <body> */
+body.fs-small  { font-size: 13px; }
+body.fs-medium { font-size: 16px; }
+body.fs-large  { font-size: 19px; }
+body.fs-xlarge { font-size: 22px; }
+body.fs-large .form-input,
+body.fs-xlarge .form-input { font-size: inherit; }
+body.fs-large .btn,
+body.fs-xlarge .btn { font-size: inherit; padding: 12px 20px; }
+body.fs-xlarge .sidebar-nav-item { padding: 14px 16px; font-size: 18px; }
+
+/* ─── Voice Input Button ─────────────────────────────────────── */
+.btn-icon { padding: 10px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font-size: 18px; line-height: 1; transition: background 0.15s; flex-shrink: 0; }
+.btn-icon:hover { background: var(--bg-hover); }

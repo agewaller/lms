@@ -60,12 +60,14 @@ var App = class App {
     switch (action) {
       case 'addNewPrompt':   this._doAddNewPrompt(value); break;
       case 'addAdminEmail':  this._doAddAdminEmail(value); break;
+      case 'localLogin':     this._doLocalLogin(value); break;
     }
   }
 
   // ─── Initialize ───
   async init(entryDomain) {
     this.entryDomain = entryDomain || null;
+    this._applyFontSize(store.get('fontSize') || 'medium');
     this.checkOAuthCallbacks();
 
     // Initialize Firebase
@@ -502,7 +504,7 @@ var App = class App {
     if (nameEl) nameEl.textContent = user?.displayName || user?.email || 'ゲスト';
     if (avatarEl) {
       if (user?.photoURL) {
-        avatarEl.innerHTML = `<img src="${user.photoURL}" alt="">`;
+        avatarEl.innerHTML = `<img src="${Components.escapeHtml(user.photoURL)}" alt="">`;
       } else {
         avatarEl.textContent = (user?.displayName || user?.email || '?').charAt(0).toUpperCase();
       }
@@ -616,6 +618,38 @@ var App = class App {
   }
 
   // ─── Quick Input ───
+  startVoiceInput() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      Components.showToast('お使いのブラウザは音声入力に対応していません', 'error');
+      return;
+    }
+    const btn = document.querySelector('.voice-btn');
+    if (this._recognition) {
+      this._recognition.stop();
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'ja-JP';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    this._recognition = recognition;
+    if (btn) { btn.textContent = '⏹'; btn.style.color = 'var(--danger)'; }
+    recognition.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      const input = document.getElementById('quickInput');
+      if (input) { input.value = transcript; input.focus(); }
+    };
+    recognition.onerror = () => {
+      Components.showToast('音声認識に失敗しました', 'error');
+    };
+    recognition.onend = () => {
+      this._recognition = null;
+      if (btn) { btn.textContent = '🎤'; btn.style.color = ''; }
+    };
+    recognition.start();
+  }
+
   async quickInput() {
     const input = document.getElementById('quickInput');
     if (!input || !input.value.trim()) return;
@@ -1819,6 +1853,18 @@ var App = class App {
     this.renderApp();
   }
 
+  setFontSize(size) {
+    store.set('fontSize', size);
+    this._applyFontSize(size);
+    this.renderApp();
+  }
+
+  _applyFontSize(size) {
+    const body = document.body;
+    body.classList.remove('fs-small', 'fs-medium', 'fs-large', 'fs-xlarge');
+    body.classList.add('fs-' + (size || 'medium'));
+  }
+
   saveApiKeys() {
     const keys = {};
     const anthropic = document.getElementById('apiKeyAnthropic')?.value;
@@ -1937,6 +1983,16 @@ var App = class App {
 
   addNewPrompt() {
     this.showInputModal('プロンプトのキー名を入力', 'work_custom', 'addNewPrompt');
+  }
+
+  _doLocalLogin(email) {
+    const normalized = (email || '').trim().toLowerCase();
+    if (!normalized) return;
+    store.update({
+      user: { uid: 'local-' + normalized, displayName: normalized.split('@')[0], email: normalized },
+      isAuthenticated: true,
+      currentPage: 'home'
+    });
   }
 
   _doAddNewPrompt(key) {

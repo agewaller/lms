@@ -152,7 +152,7 @@ var RelationshipFeatures = {
         </div>
         <div class="cs-actions">
           ${phoneLink}
-          <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContact(${JSON.stringify(c.name || '')},'message')">💬 連絡済み</button>
+          <button class="btn btn-sm btn-secondary" data-name="${Components.escapeHtml(c.name || '')}" onclick="RelationshipFeatures.logContact(this.dataset.name,'message')">💬 連絡済み</button>
         </div>
       </div>`;
     });
@@ -174,7 +174,7 @@ var RelationshipFeatures = {
         </div>
         <div class="cs-actions">
           ${phoneLink}
-          <button class="btn btn-sm btn-secondary" onclick="RelationshipFeatures.logContact(${JSON.stringify(d.name || '')},'call')">📝 連絡済み</button>
+          <button class="btn btn-sm btn-secondary" data-name="${Components.escapeHtml(d.name || '')}" onclick="RelationshipFeatures.logContact(this.dataset.name,'call')">📝 連絡済み</button>
         </div>
       </div>`;
     });

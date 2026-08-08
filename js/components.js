@@ -171,7 +171,7 @@ var Components = {
   loading(text) {
     return `<div class="loading-container">
       <div class="spinner"></div>
-      <p>${text || i18n.t('loading')}</p>
+      <p>${this.escapeHtml(text || i18n.t('loading'))}</p>
     </div>`;
   },
 

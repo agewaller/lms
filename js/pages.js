@@ -50,6 +50,7 @@ var Pages = {
     html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
+        <button class="btn btn-icon voice-btn" onclick="app.startVoiceInput()" title="音声で入力">🎤</button>
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
       <div id="quickResponse"></div>`;
@@ -853,6 +854,29 @@ var Pages = {
         </div>
       </div>
 
+      <!-- 文字サイズ -->
+      ${(() => {
+        const size = store.get('fontSize') || 'medium';
+        return `<div class="settings-section">
+          <h3>文字の大きさ</h3>
+          <p class="page-desc">画面の文字を大きくすることができます。</p>
+          <div class="font-size-picker">
+            <button class="fs-btn ${size === 'small' ? 'active' : ''}" onclick="app.setFontSize('small')">
+              <span style="font-size:13px">小</span>
+            </button>
+            <button class="fs-btn ${size === 'medium' ? 'active' : ''}" onclick="app.setFontSize('medium')">
+              <span style="font-size:16px">標準</span>
+            </button>
+            <button class="fs-btn ${size === 'large' ? 'active' : ''}" onclick="app.setFontSize('large')">
+              <span style="font-size:20px">大</span>
+            </button>
+            <button class="fs-btn ${size === 'xlarge' ? 'active' : ''}" onclick="app.setFontSize('xlarge')">
+              <span style="font-size:24px">特大</span>
+            </button>
+          </div>
+        </div>`;
+      })()}
+
       <div class="settings-section" style="text-align:center;">
         <button class="btn btn-primary btn-lg" onclick="app.saveProfile()">${i18n.t('save_profile')}</button>
       </div>
@@ -942,19 +966,19 @@ var Pages = {
       <p>ここに登録した内容を求人プラットフォームにワンクリックで送信できます。</p>
       <div class="form-group">
         <label>お名前</label>
-        <input type="text" id="resumeName" class="form-input" value="${r.name || ''}" placeholder="山田花子">
+        <input type="text" id="resumeName" class="form-input" value="${Components.escapeHtml(r.name || '')}" placeholder="山田花子">
       </div>
       <div class="form-group">
         <label>職務要約・自己PR</label>
-        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${r.summary || ''}</textarea>
+        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${Components.escapeHtml(r.summary || '')}</textarea>
       </div>
       <div class="form-group">
         <label>スキル・資格（カンマ区切り）</label>
-        <input type="text" id="resumeSkills" class="form-input" value="${(r.skills || []).join(', ')}" placeholder="例：看護師免許, 英検2級, Excel">
+        <input type="text" id="resumeSkills" class="form-input" value="${Components.escapeHtml((r.skills || []).join(', '))}" placeholder="例：看護師免許, 英検2級, Excel">
       </div>
       <div class="form-group">
         <label>職務経歴</label>
-        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${r.history || ''}</textarea>
+        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${Components.escapeHtml(r.history || '')}</textarea>
       </div>
       <div class="form-group">
         <label>希望する働き方</label>
@@ -1095,7 +1119,7 @@ var Pages = {
             <div class="form-group" style="flex:2;">
               <label>検索</label>
               <input type="text" id="dataSearch" class="form-input"
-                value="${filter.search}"
+                value="${Components.escapeHtml(filter.search || '')}"
                 placeholder="記録の中身を検索..."
                 oninput="app.filterDataBrowser('search',this.value)">
             </div>
