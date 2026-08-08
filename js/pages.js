@@ -39,7 +39,7 @@ var Pages = {
 
     if (!hasRecordedToday) {
       const profile = store.get('userProfile') || {};
-      const name = profile.name ? `${profile.name}さん、` : '';
+      const name = profile.name ? `${Components.escapeHtml(profile.name)}さん、` : '';
       html += `<div class="daily-checkin-prompt">
         <span class="dcp-icon">📋</span>
         <span class="dcp-text">${name}今日の記録がまだです</span>
@@ -312,7 +312,7 @@ var Pages = {
       html += `<div class="graph-ring ring-${level}" style="--ring-color: ${levels[level].color}">
         <div class="ring-label">${levels[level].description}（${people.length}人）</div>
         <div class="ring-people">
-          ${people.slice(0, 8).map(p => `<span class="ring-person" title="${p.name}">${(p.name || '').substring(0, 3)}</span>`).join('')}
+          ${people.slice(0, 8).map(p => `<span class="ring-person" title="${Components.escapeHtml(p.name || '')}">${Components.escapeHtml((p.name || '').substring(0, 3))}</span>`).join('')}
           ${people.length > 8 ? `<span class="ring-more">+${people.length - 8}</span>` : ''}
         </div>
       </div>`;
@@ -348,7 +348,7 @@ var Pages = {
       const dateStr = c.nextBirthday.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
       const label = c.daysUntil === 0 ? '今日！' : `あと${c.daysUntil}日`;
       html += `<div class="birthday-item ${c.daysUntil <= 3 ? 'birthday-soon' : ''}">
-        <span class="birthday-name">${c.name}</span>
+        <span class="birthday-name">${Components.escapeHtml(c.name || '')}</span>
         <span class="birthday-date">${dateStr}（${label}）</span>
         <span class="birthday-distance">${CONFIG.domains.relationship.distanceLevels[c.distance]?.description || ''}</span>
       </div>`;
@@ -391,9 +391,9 @@ var Pages = {
     return `<div class="resume-widget">
       <h3>📄 レジュメ</h3>
       <div class="resume-summary">
-        <p><strong>${resume.name || ''}</strong></p>
-        <p>${resume.summary || ''}</p>
-        <p>スキル: ${(resume.skills || []).join(', ')}</p>
+        <p><strong>${Components.escapeHtml(resume.name || '')}</strong></p>
+        <p>${Components.escapeHtml(resume.summary || '')}</p>
+        <p>スキル: ${Components.escapeHtml((resume.skills || []).join(', '))}</p>
       </div>
       <div class="resume-actions">
         <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')">編集</button>
@@ -616,10 +616,10 @@ var Pages = {
     // Action items (todos)
     if (actions.length > 0) {
       html += `<div class="action-items">
-        <h3>📋 Action Items</h3>
+        <h3>📋 やること</h3>
         ${actions.map((a, i) => `
           <div class="action-item ${a.done ? 'done' : ''}">
-            <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${a.text}</label>
+            <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${Components.escapeHtml(a.text || '')}</label>
             <span class="action-domain" style="background:${CONFIG.domains[a.domain]?.color || '#666'}">${CONFIG.domains[a.domain]?.icon || ''}</span>
           </div>
         `).join('')}
@@ -1564,19 +1564,19 @@ var Pages = {
         <div class="prompt-header">
           <div class="prompt-meta">
             <span class="prompt-num">${i + 1}</span>
-            <span class="prompt-name">${p.name || key}</span>
+            <span class="prompt-name">${Components.escapeHtml(p.name || key)}</span>
             <span class="prompt-badge domain">${p.domain ? i18n.t(p.domain) : '共通'}</span>
-            <span class="prompt-badge schedule">${scheduleLabel}</span>
+            <span class="prompt-badge schedule">${Components.escapeHtml(scheduleLabel)}</span>
           </div>
           <div class="prompt-actions">
             <button class="btn btn-sm btn-secondary" onclick="app.editPrompt('${key}')">編集</button>
           </div>
         </div>
-        <div class="prompt-desc">${p.description || ''}</div>
+        <div class="prompt-desc">${Components.escapeHtml(p.description || '')}</div>
         <div class="prompt-edit" id="edit-${key}" style="display:none;">
           <div class="form-group">
             <label>名前</label>
-            <input type="text" class="form-input" value="${p.name || ''}" data-field="name">
+            <input type="text" class="form-input" value="${Components.escapeHtml(p.name || '')}" data-field="name">
           </div>
           <div class="form-group">
             <label>領域</label>
@@ -1596,11 +1596,11 @@ var Pages = {
           </div>
           <div class="form-group">
             <label>説明</label>
-            <input type="text" class="form-input" value="${p.description || ''}" data-field="description">
+            <input type="text" class="form-input" value="${Components.escapeHtml(p.description || '')}" data-field="description">
           </div>
           <div class="form-group">
             <label>プロンプト本文</label>
-            <textarea class="form-input prompt-textarea" rows="16" data-field="prompt">${p.prompt || ''}</textarea>
+            <textarea class="form-input prompt-textarea" rows="16" data-field="prompt">${Components.escapeHtml(p.prompt || '')}</textarea>
           </div>
           <div class="form-actions">
             <button class="btn btn-primary" onclick="app.savePrompt('${key}')">保存</button>
