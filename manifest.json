@@ -1,0 +1,21 @@
+{
+  "name": "LMS - ライフマネジメントシステム",
+  "short_name": "LMS",
+  "description": "意識・健康・時間・仕事・関係・資産の6領域を統合管理。65歳からの充実した暮らしをサポートします。",
+  "start_url": "/dashboard.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6C63FF",
+  "orientation": "portrait-primary",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["health", "lifestyle", "productivity"],
+  "prefer_related_applications": false
+}
