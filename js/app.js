@@ -18,6 +18,7 @@ var App = class App {
     if (store.get('isAuthenticated') && store.get('user')) {
       store.set('currentDomain', entryDomain || store.get('currentDomain') || 'health');
       store.set('currentPage', 'home');
+      store.trackDailyLogin();
       this.renderApp();
       this.startInboxPolling();
       if (!store.get('onboardingComplete')) {
@@ -30,6 +31,7 @@ var App = class App {
       if (val) {
         store.set('currentDomain', this.entryDomain || store.get('currentDomain') || 'health');
         store.set('currentPage', 'home');
+        store.trackDailyLogin();
         this.renderApp();
         this.startInboxPolling();
         // Show onboarding wizard on first login
@@ -252,7 +254,10 @@ var App = class App {
     }
     if (domainLabel) {
       const d = store.get('currentDomain');
-      domainLabel.textContent = i18n.t(d);
+      const streak = store.get('usageStreak') || 0;
+      domainLabel.textContent = streak > 1
+        ? `${i18n.t(d)} ｜ 🔥${streak}日連続`
+        : i18n.t(d);
     }
 
     // Admin mode: show admin nav items via body class only.

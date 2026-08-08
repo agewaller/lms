@@ -109,7 +109,12 @@ var Store = class Store {
 
       // Notifications
       notifications: [],
-      unreadCount: 0
+      unreadCount: 0,
+
+      // Engagement
+      onboardingComplete: false,
+      usageStreak: 0,
+      lastLoginDate: null
     };
 
     this.listeners = new Map();
@@ -182,7 +187,8 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      'onboardingComplete', 'usageStreak', 'lastLoginDate'
     ];
   }
 
@@ -205,6 +211,23 @@ var Store = class Store {
         }
       } catch (e) { /* ignore */ }
     });
+  }
+
+  // ─── Daily Login Streak ───
+  trackDailyLogin() {
+    const today = new Date().toISOString().slice(0, 10);
+    const last = this.state.lastLoginDate;
+    if (last === today) return; // already tracked today
+
+    let streak = this.state.usageStreak || 0;
+    if (last) {
+      const yesterday = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+      streak = last === yesterday ? streak + 1 : 1;
+    } else {
+      streak = 1;
+    }
+    this.set('usageStreak', streak);
+    this.set('lastLoginDate', today);
   }
 
   // ─── Domain Data Helpers ───

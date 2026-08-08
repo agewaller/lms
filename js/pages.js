@@ -27,9 +27,27 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
-    // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    // Today's check-in status
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayCats = Object.keys(domainConfig?.categories || {});
+    const hasRecordedToday = todayCats.some(cat => {
+      const data = store.getDomainData(domain, cat, 1);
+      return data.some(e => (e.timestamp || '').startsWith(todayStr));
+    });
+
+    let html = `<div class="page-home">`;
+
+    if (!hasRecordedToday) {
+      const profile = store.get('userProfile') || {};
+      const name = profile.name ? `${profile.name}さん、` : '';
+      html += `<div class="daily-checkin-prompt">
+        <span class="dcp-icon">📋</span>
+        <span class="dcp-text">${name}今日の記録がまだです</span>
+        <button class="btn btn-sm btn-primary" onclick="app.navigate('record')">記録する</button>
+      </div>`;
+    }
+
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
@@ -79,8 +97,15 @@ var Pages = {
     allRecent.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     if (allRecent.length === 0) {
-      html += Components.emptyState(domainConfig?.icon || '📭', i18n.t('no_data'),
-        `${i18n.t('record')} → ${i18n.t('save')}`);
+      html += `<div class="empty-state first-entry-cta">
+        <div class="empty-icon">${domainConfig?.icon || '📋'}</div>
+        <h3>まだ記録がありません</h3>
+        <p>はじめての記録をしてみましょう。<br>何でも大丈夫です。今日の気分や体調を一言書くだけでOKです。</p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px">
+          <button class="btn btn-primary" onclick="app.navigate('record')">記録を始める</button>
+          <button class="btn btn-secondary" onclick="app.navigate('ask_ai')">相談してみる</button>
+        </div>
+      </div>`;
     } else {
       allRecent.slice(0, 10).forEach(entry => {
         html += Components.recordItem(entry, domain);
