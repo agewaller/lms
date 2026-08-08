@@ -406,7 +406,7 @@ var App = class App {
 
       input.value = '';
     } catch (e) {
-      if (responseEl) responseEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (responseEl) responseEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message)}</div>`;
     }
   }
 
@@ -444,6 +444,13 @@ var App = class App {
     form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
       data[cb.name] = cb.checked;
     });
+
+    // Guard: don't save a record with no meaningful fields (date-only)
+    const meaningfulKeys = Object.keys(data).filter(k => k !== 'date');
+    if (meaningfulKeys.length === 0) {
+      Components.showToast('何か入力してから保存してください', 'info');
+      return;
+    }
 
     store.addDomainEntry(domain, category, data);
     Components.showToast(i18n.t('saved'), 'success');
@@ -526,7 +533,7 @@ var App = class App {
 
   clearChat(domain) {
     const history = store.get('conversationHistory') || [];
-    const filtered = history.filter(m => m.domain !== domain && m.domain !== undefined);
+    const filtered = history.filter(m => m.domain !== domain);
     store.set('conversationHistory', filtered);
     this.renderApp();
   }
@@ -650,7 +657,7 @@ var App = class App {
       if (resultEl) {
         resultEl.innerHTML = `<div class="error-msg">
           <strong>分析できませんでした</strong><br>
-          ${e.message || 'もう一度お試しください'}
+          ${Components.escapeHtml(e.message || 'もう一度お試しください')}
         </div>`;
       }
     }
@@ -1279,7 +1286,7 @@ var App = class App {
       textarea.value = '';
       Components.showToast('分析が完了しました', 'success');
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(e.message)}</div>`;
     }
   }
 
@@ -1657,7 +1664,7 @@ var App = class App {
       const result = await AIEngine.analyze(null, 'text_analysis', { text: 'テスト' });
       if (resultEl) resultEl.innerHTML = '<div class="toast toast-success" style="position:static;opacity:1;margin-top:10px;">✓ 接続成功</div>';
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = '<div class="toast toast-error" style="position:static;opacity:1;margin-top:10px;">✗ ' + e.message + '</div>';
+      if (resultEl) resultEl.innerHTML = '<div class="toast toast-error" style="position:static;opacity:1;margin-top:10px;">✗ ' + Components.escapeHtml(e.message) + '</div>';
     }
   }
 
