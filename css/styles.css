@@ -188,9 +188,10 @@ textarea.form-input { resize: vertical; }
 select.form-input { appearance: auto; }
 
 /* Slider */
-.slider-field { display: flex; align-items: center; gap: 16px; }
-.slider-field input[type="range"] { flex: 1; accent-color: var(--primary); height: 28px; }
+.slider-field { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.slider-field input[type="range"] { flex: 1; min-width: 120px; accent-color: var(--primary); height: 28px; }
 .slider-val { font-weight: 700; min-width: 36px; text-align: center; font-size: 20px; }
+.slider-labels { width: 100%; display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); padding: 0 2px; }
 
 /* Toggle */
 .toggle { position: relative; display: inline-block; width: 60px; height: 32px; }
@@ -1872,3 +1873,13 @@ body.is-admin .admin-only { display: flex; }
 .chat-welcome { text-align: center; padding: 32px 20px; color: var(--text-secondary); }
 .chat-welcome-icon { font-size: 36px; margin-bottom: 12px; }
 .chat-welcome p { font-size: 15px; line-height: 1.7; }
+
+/* ─── Weekly Streak Widget ───────────────────────────────────── */
+.weekly-streak { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px; background: var(--bg-secondary); border-radius: var(--radius); margin-bottom: 16px; }
+.streak-dots { display: flex; gap: 8px; }
+.streak-dot { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; background: var(--bg-primary); transition: transform 0.15s; }
+.streak-dot.recorded { box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+.streak-dot.today { box-shadow: 0 0 0 3px var(--accent); }
+.streak-day { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.streak-dot.recorded .streak-day { color: #fff; }
+.streak-msg { font-size: 14px; color: var(--text-secondary); margin: 0; text-align: center; }

@@ -141,10 +141,10 @@ var CONFIG = {
       },
       dataFields: {
         symptoms: [
-          { key: 'condition_level', type: 'slider', min: 1, max: 10, label: 'condition_level' },
-          { key: 'fatigue_level',   type: 'slider', min: 0, max: 10, label: 'fatigue' },
-          { key: 'pain_level',      type: 'slider', min: 0, max: 10, label: 'pain' },
-          { key: 'brain_fog',       type: 'slider', min: 0, max: 10, label: 'brain_fog' },
+          { key: 'condition_level', type: 'slider', min: 1, max: 10, label: 'condition_level', minLabel: '最悪', maxLabel: '絶好調' },
+          { key: 'fatigue_level',   type: 'slider', min: 0, max: 10, label: 'fatigue',         minLabel: '元気', maxLabel: 'クタクタ' },
+          { key: 'pain_level',      type: 'slider', min: 0, max: 10, label: 'pain',            minLabel: '痛みなし', maxLabel: '強い痛み' },
+          { key: 'brain_fog',       type: 'slider', min: 0, max: 10, label: 'brain_fog',       minLabel: 'はっきり', maxLabel: 'もやもや' },
           { key: 'notes',           type: 'textarea', label: 'notes' }
         ],
         vitals: [

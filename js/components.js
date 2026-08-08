@@ -91,11 +91,18 @@ var Components = {
   renderField(f) {
     const name = f.key;
     switch (f.type) {
-      case 'slider':
+      case 'slider': {
+        const minV = f.min || 0;
+        const maxV = f.max || 10;
+        const midV = Math.floor((minV + maxV) / 2);
+        const minLabel = f.minLabel || String(minV);
+        const maxLabel = f.maxLabel || String(maxV);
         return `<div class="slider-field">
-          <input type="range" name="${name}" min="${f.min||0}" max="${f.max||10}" value="${Math.floor((f.min||0 + f.max||10)/2)}" oninput="this.nextElementSibling.textContent=this.value">
-          <span class="slider-val">${Math.floor(((f.min||0) + (f.max||10))/2)}</span>
+          <input type="range" name="${name}" min="${minV}" max="${maxV}" value="${midV}" oninput="this.parentElement.querySelector('.slider-val').textContent=this.value">
+          <span class="slider-val">${midV}</span>
+          <div class="slider-labels"><span>${minLabel}</span><span>${maxLabel}</span></div>
         </div>`;
+      }
       case 'number':
         return `<input type="number" name="${name}" step="${f.step||1}" class="form-input" placeholder="${i18n.t(f.label)}${f.unit ? ' ('+f.unit+')' : ''}">`;
       case 'text':
@@ -122,7 +129,7 @@ var Components = {
   // ─── Chat Message ───
   chatMessage(msg) {
     const cls = msg.role === 'user' ? 'chat-user' : 'chat-ai';
-    const icon = msg.role === 'user' ? 'あ' : 'S';
+    const icon = msg.role === 'user' ? 'あ' : 'ア';
     return `<div class="chat-msg ${cls}">
       <div class="chat-icon">${icon}</div>
       <div class="chat-content">${this.formatMarkdown(msg.content || '')}</div>

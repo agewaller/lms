@@ -83,6 +83,9 @@ var Pages = {
       </div>
     </div>`;
 
+    // 7-day streak widget
+    html += this.renderWeeklyStreak(domain);
+
     // Recent records
     html += `<div class="recent-section">
       <h3>${i18n.t('recent_records')}</h3>
@@ -183,6 +186,52 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── 7-day recording streak widget ───
+  renderWeeklyStreak(domain) {
+    const domainConfig = CONFIG.domains[domain];
+    const categories = Object.keys(domainConfig?.categories || {});
+    const color = domainConfig?.color || '#6C63FF';
+
+    const days = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      days.push(d.toISOString().slice(0, 10));
+    }
+
+    const allEntries = [];
+    categories.forEach(cat => {
+      const data = store.getDomainData(domain, cat, 14);
+      allEntries.push(...data);
+    });
+
+    const recordedDays = new Set(allEntries.map(e => (e.timestamp || '').slice(0, 10)));
+    const streak = days.reduce((s, d) => s + (recordedDays.has(d) ? 1 : 0), 0);
+    if (streak === 0) return '';
+
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    const dots = days.map(d => {
+      const dt = new Date(d + 'T00:00:00');
+      const recorded = recordedDays.has(d);
+      const isToday = d === today.toISOString().slice(0, 10);
+      return `<div class="streak-dot ${recorded ? 'recorded' : ''} ${isToday ? 'today' : ''}"
+        style="${recorded ? `background:${color};border-color:${color}` : ''}">
+        <span class="streak-day">${dayNames[dt.getDay()]}</span>
+      </div>`;
+    }).join('');
+
+    const msg = streak >= 7 ? '今週パーフェクト！素晴らしい継続力です。' :
+                streak >= 5 ? `今週${streak}日記録しました。いい流れです。` :
+                streak >= 3 ? `今週${streak}日記録しました。引き続き続けましょう。` :
+                              `今週${streak}日記録しました。`;
+
+    return `<div class="weekly-streak">
+      <div class="streak-dots">${dots}</div>
+      <p class="streak-msg">${msg}</p>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
