@@ -710,23 +710,24 @@ var Pages = {
     // Helper: render a form field from schema definition
     const renderField = (field, value) => {
       const val = value ?? '';
+      const safeVal = Components.escapeHtml(String(val));
       const id = 'profile_' + field.key;
       switch (field.type) {
         case 'number':
-          return `<input type="number" id="${id}" class="form-input" value="${val}" ${field.step ? `step="${field.step}"` : ''}>`;
+          return `<input type="number" id="${id}" class="form-input" value="${safeVal}" ${field.step ? `step="${field.step}"` : ''}>`;
         case 'text':
-          return `<input type="text" id="${id}" class="form-input" value="${val}">`;
+          return `<input type="text" id="${id}" class="form-input" value="${safeVal}">`;
         case 'date':
-          return `<input type="date" id="${id}" class="form-input" value="${val}">`;
+          return `<input type="date" id="${id}" class="form-input" value="${safeVal}">`;
         case 'textarea':
-          return `<textarea id="${id}" class="form-input" rows="3">${val}</textarea>`;
+          return `<textarea id="${id}" class="form-input" rows="3">${safeVal}</textarea>`;
         case 'select':
           return `<select id="${id}" class="form-input">
             <option value="">選択してください</option>
             ${(field.options || []).map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
           </select>`;
         default:
-          return `<input type="text" id="${id}" class="form-input" value="${val}">`;
+          return `<input type="text" id="${id}" class="form-input" value="${safeVal}">`;
       }
     };
 
@@ -1026,7 +1027,7 @@ var Pages = {
             <div class="data-entry-fields">
               ${fields.map(([k, v]) => {
                 const label = i18n.t(k) || k;
-                const val = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
+                const val = Components.escapeHtml(typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100));
                 return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${val}</span></div>`;
               }).join('')}
             </div>
