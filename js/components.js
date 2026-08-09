@@ -249,6 +249,98 @@ var Components = {
     </div>`;
   },
 
+  // ─── XSS-safe HTML escaping ───
+  escapeHtml(str) {
+    if (typeof str !== 'string') return String(str ?? '');
+    return str
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  },
+
+  // ─── Confirm Modal (replaces window.confirm — safe on iOS Safari) ───
+  confirmModal(message, onConfirm, opts = {}) {
+    if (!window.app) return;
+    const label = opts.confirmLabel || 'はい';
+    const btnClass = opts.danger ? 'btn-danger' : 'btn-primary';
+    const body = `
+      <p style="font-size:16px;line-height:1.7;margin-bottom:24px;">${this.escapeHtml(message)}</p>
+      <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn ${btnClass}" id="__confirmOk">${this.escapeHtml(label)}</button>
+      </div>`;
+    window.app.openModal('確認', body);
+    requestAnimationFrame(() => {
+      const btn = document.getElementById('__confirmOk');
+      if (btn) btn.addEventListener('click', () => { window.app.closeModal(); onConfirm(); });
+    });
+  },
+
+  // ─── Prompt Modal (replaces window.prompt — safe on iOS Safari) ───
+  promptModal(message, placeholder, onConfirm) {
+    if (!window.app) return;
+    const body = `
+      <p style="font-size:16px;line-height:1.7;margin-bottom:16px;">${this.escapeHtml(message)}</p>
+      <input type="text" id="__promptInput" class="form-input"
+        placeholder="${this.escapeHtml(placeholder || '')}" style="margin-bottom:20px;">
+      <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        <button class="btn btn-primary" id="__promptOk">OK</button>
+      </div>`;
+    window.app.openModal('入力', body);
+    requestAnimationFrame(() => {
+      const input = document.getElementById('__promptInput');
+      const btn = document.getElementById('__promptOk');
+      if (input) input.focus();
+      const submit = () => {
+        const val = input?.value?.trim();
+        if (val) { window.app.closeModal(); onConfirm(val); }
+      };
+      if (btn) btn.addEventListener('click', submit);
+      if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+    });
+  },
+
+  // ─── Streak Badge ───
+  streakBadge(days) {
+    if (days === 0) return '';
+    const emoji = days >= 30 ? '🔥' : days >= 7 ? '⭐' : '✨';
+    return `<div class="streak-badge" title="${days}日連続記録中">
+      <span class="streak-icon">${emoji}</span>
+      <span class="streak-days">${days}日</span>
+      <span class="streak-label">連続</span>
+    </div>`;
+  },
+
+  // ─── Today Progress Checklist ───
+  todayProgress(domain) {
+    const today = new Date().toISOString().slice(0, 10);
+    const categories = CONFIG.domains[domain]?.categories || {};
+    const checks = Object.entries(categories).map(([key, cat]) => {
+      const data = store.state[`${domain}_${key}`] || [];
+      const done = data.some(d => d.timestamp?.slice(0, 10) === today);
+      return { key, cat, done };
+    });
+
+    if (checks.length === 0) return '';
+    const doneCount = checks.filter(c => c.done).length;
+    const allDone = doneCount === checks.length;
+
+    return `<div class="today-progress">
+      <div class="tp-header">
+        <span class="tp-title">今日の記録 <strong>${doneCount}/${checks.length}</strong></span>
+        ${allDone ? '<span class="tp-complete">✓ 完了</span>' : ''}
+      </div>
+      <div class="tp-items">
+        ${checks.map(c => `
+          <div class="tp-item ${c.done ? 'done' : ''}" onclick="app.navigate('record')" title="${i18n.t(c.cat.label)}">
+            <span class="tp-dot"></span>
+            <span class="tp-cat">${c.cat.icon} ${i18n.t(c.cat.label)}</span>
+          </div>`).join('')}
+      </div>
+      ${!allDone ? `<button class="btn btn-sm btn-primary" onclick="app.navigate('record')" style="margin-top:12px">今日の記録を追加</button>` : ''}
+    </div>`;
+  },
+
   // ─── Record List Item ───
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';

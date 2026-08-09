@@ -26,10 +26,26 @@ var Pages = {
     const domainConfig = CONFIG.domains[domain];
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
+    const streak = store.getStreak();
+    const user = store.get('user');
+    const isNewUser = !store.hasTodayRecord(domain) && streak === 0;
 
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    let html = `<div class="page-home">`;
+
+    // New-user welcome banner
+    if (isNewUser) {
+      const name = user?.displayName?.split(' ')[0] || '';
+      html += `<div class="welcome-banner">
+        <div class="wb-text">
+          <h3>ようこそ${name ? '、' + Components.escapeHtml(name) + 'さん' : ''}！</h3>
+          <p>まず「記録する」から今日のデータを入力してみましょう。<br>毎日の記録が積み重なるほど、あなたに合ったアドバイスが届きます。</p>
+        </div>
+        <button class="btn btn-primary" onclick="app.navigate('record')">今日の記録を始める</button>
+      </div>`;
+    }
+
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
@@ -45,12 +61,16 @@ var Pages = {
     html += `<div class="home-overview">
         <div class="overview-score">
           ${Components.scoreGauge(score, 140, i18n.t(domain))}
+          ${streak > 0 ? Components.streakBadge(streak) : ''}
         </div>
         <div class="overview-stats">`;
 
     // Domain-specific stats
     html += this.getDomainStats(domain);
     html += `</div></div>`;
+
+    // Today's progress checklist
+    html += Components.todayProgress(domain);
 
     // All domain scores overview (mini)
     html += `<div class="all-domains-overview">
@@ -79,8 +99,8 @@ var Pages = {
     allRecent.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     if (allRecent.length === 0) {
-      html += Components.emptyState(domainConfig?.icon || '📭', i18n.t('no_data'),
-        `${i18n.t('record')} → ${i18n.t('save')}`);
+      html += Components.emptyState(domainConfig?.icon || '📭', 'まだ記録がありません',
+        '「記録する」ページから今日のデータを入力してみましょう');
     } else {
       allRecent.slice(0, 10).forEach(entry => {
         html += Components.recordItem(entry, domain);

@@ -272,16 +272,64 @@ var Store = class Store {
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // Selectively remove only LMS keys — localStorage.clear() would also wipe
+    // Firebase config, Worker URL, and OAuth tokens, breaking the app.
+    this.persistKeys.forEach(key => {
+      localStorage.removeItem(`lms_${key}`);
+    });
     Object.keys(this.state).forEach(key => {
+      if (key === 'adminEmails') return; // preserve admin list across clear
       if (Array.isArray(this.state[key])) this.state[key] = [];
-      else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
+      else if (typeof this.state[key] === 'object' && this.state[key] !== null) {
+        if (key !== 'user') this.state[key] = {};
+      }
     });
     this.state.isAuthenticated = false;
     this.state.user = null;
     this.state.currentPage = 'login';
     this.state.currentDomain = 'health';
     this.state.subscription = null;
+  }
+
+  // ─── Streak Calculation ───
+  // Returns consecutive days with at least one entry across all domains.
+  getStreak() {
+    const allDataKeys = Object.keys(this.state).filter(k =>
+      k.includes('_') && Array.isArray(this.state[k]) && this.state[k].length > 0
+    );
+
+    const daysWithData = new Set();
+    allDataKeys.forEach(k => {
+      this.state[k].forEach(entry => {
+        if (entry.timestamp) daysWithData.add(entry.timestamp.slice(0, 10));
+      });
+    });
+
+    const today = new Date();
+    let streak = 0;
+    let check = new Date(today);
+
+    // If today has no record, start counting from yesterday
+    if (!daysWithData.has(today.toISOString().slice(0, 10))) {
+      check.setDate(check.getDate() - 1);
+    }
+
+    for (let i = 0; i < 365; i++) {
+      if (!daysWithData.has(check.toISOString().slice(0, 10))) break;
+      streak++;
+      check.setDate(check.getDate() - 1);
+    }
+    return streak;
+  }
+
+  // Returns true if the given domain has at least one entry today.
+  hasTodayRecord(domain) {
+    const today = new Date().toISOString().slice(0, 10);
+    const cats = Object.keys(CONFIG.domains[domain]?.categories || {});
+    return cats.some(cat => {
+      const data = this.state[`${domain}_${cat}`];
+      return Array.isArray(data) && data.some(e => e.timestamp?.slice(0, 10) === today);
+    });
   }
 };
 
