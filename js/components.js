@@ -77,11 +77,14 @@ var Components = {
   renderField(f) {
     const name = f.key;
     switch (f.type) {
-      case 'slider':
+      case 'slider': {
+        const sMin = f.min || 0, sMax = f.max || 10;
+        const sMid = Math.round((sMin + sMax) / 2);
         return `<div class="slider-field">
-          <input type="range" name="${name}" min="${f.min||0}" max="${f.max||10}" value="${Math.floor((f.min||0 + f.max||10)/2)}" oninput="this.nextElementSibling.textContent=this.value">
-          <span class="slider-val">${Math.floor(((f.min||0) + (f.max||10))/2)}</span>
+          <input type="range" name="${name}" min="${sMin}" max="${sMax}" value="${sMid}" oninput="this.nextElementSibling.textContent=this.value">
+          <span class="slider-val">${sMid}</span>
         </div>`;
+      }
       case 'number':
         return `<input type="number" name="${name}" step="${f.step||1}" class="form-input" placeholder="${i18n.t(f.label)}${f.unit ? ' ('+f.unit+')' : ''}">`;
       case 'text':
