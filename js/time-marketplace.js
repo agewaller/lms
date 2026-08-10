@@ -175,17 +175,17 @@ var TimeMarketplace = {
 
       <div class="form-group">
         <label>あなたのお名前（表示名）</label>
-        <input type="text" id="mpDisplayName" class="form-input" value="${s.profile.displayName || ''}" placeholder="例：山田花子">
+        <input type="text" id="mpDisplayName" class="form-input" value="${Components.escapeHtml(s.profile.displayName || '')}" placeholder="例：山田花子">
       </div>
 
       <div class="form-group">
         <label>自己紹介・経験</label>
-        <textarea id="mpBio" class="form-input" rows="3" placeholder="例：30年間の看護師経験があります。健康相談が得意です。">${s.profile.bio || ''}</textarea>
+        <textarea id="mpBio" class="form-input" rows="3" placeholder="例：30年間の看護師経験があります。健康相談が得意です。">${Components.escapeHtml(s.profile.bio || '')}</textarea>
       </div>
 
       <div class="form-group">
         <label>提供できるスキル・サービス（カンマ区切り）</label>
-        <input type="text" id="mpSkills" class="form-input" value="${(s.skills || []).map(sk => sk.name).join(', ')}" placeholder="例：健康相談, 料理教室, 英会話, 書道">
+        <input type="text" id="mpSkills" class="form-input" value="${Components.escapeHtml((s.skills || []).map(sk => sk.name).join(', '))}" placeholder="例：健康相談, 料理教室, 英会話, 書道">
       </div>
 
       <div class="form-group">
@@ -199,7 +199,7 @@ var TimeMarketplace = {
 
       <div class="form-group">
         <label>場所（対面の場合）</label>
-        <input type="text" id="mpAddress" class="form-input" value="${s.location.address || ''}" placeholder="例：東京都渋谷区...">
+        <input type="text" id="mpAddress" class="form-input" value="${Components.escapeHtml(s.location.address || '')}" placeholder="例：東京都渋谷区...">
       </div>
 
       <div class="form-group">
@@ -245,7 +245,7 @@ var TimeMarketplace = {
 
       <div class="form-group">
         <label>PayPalメールアドレス（決済用）</label>
-        <input type="email" id="mpPaypal" class="form-input" value="${s.paypal.email || ''}" placeholder="your-email@example.com">
+        <input type="email" id="mpPaypal" class="form-input" value="${Components.escapeHtml(s.paypal.email || '')}" placeholder="your-email@example.com">
       </div>
 
       <button class="btn btn-primary" onclick="app.saveMarketplaceSettings()">設定を保存</button>
@@ -334,7 +334,7 @@ var TimeMarketplace = {
             <div class="slot-time">${timeStr} ~ ${endStr}（${slot.durationMinutes}分）</div>
           </div>
           <div class="slot-price">${amount.toLocaleString()}円</div>
-          <button class="btn btn-primary btn-sm" onclick="TimeMarketplace.requestBooking('${slot.start}', '${slot.end}')">予約する</button>
+          <button class="btn btn-primary btn-sm" data-start="${Components.escapeHtml(slot.start)}" data-end="${Components.escapeHtml(slot.end)}" onclick="TimeMarketplace.requestBooking(this.dataset.start, this.dataset.end)">予約する</button>
         </div>`;
       });
     }

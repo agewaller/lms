@@ -69,7 +69,7 @@ var WorkFeatures = {
         <button class="btn btn-primary" onclick="WorkFeatures.saveLocation()">設定する</button>
       </div>`;
     } else {
-      html += `<p>「${location}」の近くで見つかるお仕事やボランティアです。</p>`;
+      html += `<p>「${Components.escapeHtml(location)}」の近くで見つかるお仕事やボランティアです。</p>`;
 
       // 検索ボタン
       html += `<button class="btn btn-primary btn-lg" onclick="WorkFeatures.searchOpportunities()" style="margin-bottom:20px;">

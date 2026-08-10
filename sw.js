@@ -1,5 +1,5 @@
 /* LMS Service Worker - offline shell cache */
-const CACHE = 'lms-v8';
+const CACHE = 'lms-v9';
 const SHELL = [
   './',
   './dashboard.html',
@@ -14,9 +14,9 @@ const SHELL = [
   './js/calendar.js?v=1',
   './js/integrations.js?v=1',
   './js/sns-integrations.js?v=1',
-  './js/time-marketplace.js?v=4',
-  './js/assets-features.js?v=3',
-  './js/work-features.js?v=4',
+  './js/time-marketplace.js?v=5',
+  './js/assets-features.js?v=4',
+  './js/work-features.js?v=5',
   './js/relationship-features.js?v=3',
   './js/pages.js?v=16',
   './js/app.js?v=16',
