@@ -57,7 +57,7 @@ var WorkFeatures = {
     const prefs = store.get('workProvisionPrefs') || { paid: true, volunteer: true, bookkeeping: false };
 
     let html = `<div class="job-discovery">
-      <h3>🔍 近くのお仕事・ボランティアを見つける</h3>`;
+      <h3>近くのお仕事・ボランティアを見つける</h3>`;
 
     if (!location) {
       html += `<div class="jd-location-prompt">
@@ -84,28 +84,28 @@ var WorkFeatures = {
       if (prefs.paid) {
         html += `
         <a href="https://timee.co.jp/" target="_blank" rel="noopener" class="jd-platform-link">
-          <span class="jd-pl-icon">⏰</span>
+          <span class="jd-pl-icon">◈</span>
           <span class="jd-pl-info">
             <strong>タイミー</strong>
             <span>好きな時間に、好きな場所で、すぐ働ける</span>
           </span>
         </a>
         <a href="https://www.baitoru.com/" target="_blank" rel="noopener" class="jd-platform-link">
-          <span class="jd-pl-icon">💼</span>
+          <span class="jd-pl-icon">◈</span>
           <span class="jd-pl-info">
             <strong>バイトル</strong>
             <span>パート・アルバイトを探す</span>
           </span>
         </a>
         <a href="https://www.indeed.com/q-senior-l-${encodeURIComponent(location)}-jobs.html" target="_blank" rel="noopener" class="jd-platform-link">
-          <span class="jd-pl-icon">🔎</span>
+          <span class="jd-pl-icon">◈</span>
           <span class="jd-pl-info">
             <strong>Indeed</strong>
             <span>シニア歓迎のお仕事</span>
           </span>
         </a>
         <a href="https://crowdworks.jp/" target="_blank" rel="noopener" class="jd-platform-link">
-          <span class="jd-pl-icon">💻</span>
+          <span class="jd-pl-icon">◈</span>
           <span class="jd-pl-info">
             <strong>クラウドワークス</strong>
             <span>家にいながらできるお仕事</span>
@@ -116,21 +116,21 @@ var WorkFeatures = {
       if (prefs.volunteer) {
         html += `
         <a href="https://www.activocommunity.com/" target="_blank" rel="noopener" class="jd-platform-link volunteer">
-          <span class="jd-pl-icon">🤝</span>
+          <span class="jd-pl-icon">◈</span>
           <span class="jd-pl-info">
             <strong>activo</strong>
             <span>ボランティア・NPO求人を探す</span>
           </span>
         </a>
         <a href="https://b.volunteer-platform.org/" target="_blank" rel="noopener" class="jd-platform-link volunteer">
-          <span class="jd-pl-icon">🌱</span>
+          <span class="jd-pl-icon">◈</span>
           <span class="jd-pl-info">
             <strong>ボランティアプラットフォーム</strong>
             <span>地域のボランティア活動</span>
           </span>
         </a>
         <a href="https://www.shakyo.or.jp/" target="_blank" rel="noopener" class="jd-platform-link volunteer">
-          <span class="jd-pl-icon">🏛️</span>
+          <span class="jd-pl-icon">◈</span>
           <span class="jd-pl-info">
             <strong>社会福祉協議会</strong>
             <span>お住まいの地域のボランティア情報</span>

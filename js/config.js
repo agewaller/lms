@@ -79,10 +79,10 @@ var CONFIG = {
         7:   { label: 'layer_7',   name: '空',     description: '手放し・静けさ・沈黙・融解', color: '#1ABC9C' }
       },
       categories: {
-        observation: { label: 'daily_observation', icon: '👁️' },
-        transcript:  { label: 'transcript',        icon: '🎙️' },
-        entries:     { label: 'journal',            icon: '📝' },
-        practices:   { label: 'practice',           icon: '🧘' }
+        observation: { label: 'daily_observation', icon: '◈' },
+        transcript:  { label: 'transcript',        icon: '◈' },
+        entries:     { label: 'journal',            icon: '◈' },
+        practices:   { label: 'practice',           icon: '◈' }
       },
       dataFields: {
         observation: [
@@ -191,10 +191,10 @@ var CONFIG = {
       icon: '三',
       color: '#f59e0b',
       categories: {
-        entries:   { label: 'time_log',    icon: '📋' },
-        schedules: { label: 'schedule',    icon: '📅' },
-        habits:    { label: 'habits',      icon: '🔄' },
-        goals:     { label: 'time_goals',  icon: '🎯' }
+        entries:   { label: 'time_log',    icon: '◈' },
+        schedules: { label: 'schedule',    icon: '◈' },
+        habits:    { label: 'habits',      icon: '◈' },
+        goals:     { label: 'time_goals',  icon: '◈' }
       },
       dataFields: {
         entries: [
@@ -229,11 +229,11 @@ var CONFIG = {
       icon: '四',
       color: '#3b82f6',
       categories: {
-        tasks:    { label: 'tasks',     icon: '✅' },
-        goals:    { label: 'work_goals', icon: '🎯' },
-        skills:   { label: 'skills',    icon: '📚' },
-        projects: { label: 'projects',  icon: '📊' },
-        reviews:  { label: 'reviews',   icon: '📝' }
+        tasks:    { label: 'tasks',     icon: '◈' },
+        goals:    { label: 'work_goals', icon: '◈' },
+        skills:   { label: 'skills',    icon: '◈' },
+        projects: { label: 'projects',  icon: '◈' },
+        reviews:  { label: 'reviews',   icon: '◈' }
       },
       dataFields: {
         tasks: [
@@ -333,12 +333,12 @@ var CONFIG = {
       icon: '六',
       color: '#d97706',
       categories: {
-        overview:      { label: 'asset_overview',  icon: '💰' },
-        stocks:        { label: 'stock_investment', icon: '📈' },
-        portfolio:     { label: 'portfolio',        icon: '📊' },
-        income:        { label: 'income',           icon: '💵' },
-        expenses:      { label: 'expenses',         icon: '🧾' },
-        goals:         { label: 'financial_goals',  icon: '🎯' }
+        overview:      { label: 'asset_overview',  icon: '◈' },
+        stocks:        { label: 'stock_investment', icon: '◈' },
+        portfolio:     { label: 'portfolio',        icon: '◈' },
+        income:        { label: 'income',           icon: '◈' },
+        expenses:      { label: 'expenses',         icon: '◈' },
+        goals:         { label: 'financial_goals',  icon: '◈' }
       },
       dataFields: {
         overview: [
