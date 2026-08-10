@@ -252,19 +252,35 @@ var Components = {
   // ─── Record List Item ───
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';
-    const time = new Date(entry.timestamp).toLocaleString();
+    const time = new Date(entry.timestamp).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     const cat = entry.category ? i18n.t(entry.category) : '';
-    const summary = Object.entries(entry)
-      .filter(([k]) => !['id','timestamp','domain','category','_synced'].includes(k))
-      .slice(0, 3)
-      .map(([k, v]) => `${i18n.t(k)}: ${v}`)
-      .join(' | ');
+
+    // Internal / metadata keys to hide from the user-facing summary
+    const hidden = new Set(['id','timestamp','domain','category','_synced','syncedAt',
+                            'source','type','createdAt','updatedAt','_docId','_category']);
+
+    // Prioritize the 'notes' field (free-text entries) and show it first
+    const fields = Object.entries(entry).filter(([k, v]) =>
+      !hidden.has(k) && v !== null && v !== undefined && v !== '' && v !== false
+    );
+    const notesEntry = fields.find(([k]) => k === 'notes');
+    const otherFields = fields.filter(([k]) => k !== 'notes');
+    const display = notesEntry
+      ? [notesEntry, ...otherFields].slice(0, 2)
+      : otherFields.slice(0, 3);
+
+    const summary = display.map(([k, v]) => {
+      const label = i18n.t(k) || k;
+      const val = typeof v === 'boolean' ? (v ? '✓' : '—') : String(v).slice(0, 60);
+      return `<span class="ri-field"><span class="ri-key">${label}</span> ${Components.escapeHtml(val)}</span>`;
+    }).join('');
+
     return `<div class="record-item" style="border-left-color:${color}">
       <div class="record-header">
         <span class="record-cat">${cat}</span>
         <span class="record-time">${time}</span>
       </div>
-      <div class="record-summary">${summary}</div>
+      <div class="record-summary">${summary || '—'}</div>
     </div>`;
   }
 };
