@@ -304,10 +304,10 @@ var TimeMarketplace = {
 
     let html = `<div class="booking-page">
       <div class="booking-profile">
-        <h2>${settings.profile.displayName || 'ユーザー'}さんのページ</h2>
-        <p>${settings.profile.bio || ''}</p>
+        <h2>${Components.escapeHtml(settings.profile.displayName || 'ユーザー')}さんのページ</h2>
+        <p>${Components.escapeHtml(settings.profile.bio || '')}</p>
         <div class="booking-skills">
-          ${(settings.skills || []).map(s => `<span class="skill-tag">${s.name}</span>`).join('')}
+          ${(settings.skills || []).map(s => `<span class="skill-tag">${Components.escapeHtml(s.name || '')}</span>`).join('')}
         </div>
         <div class="booking-meta">
           <span>${settings.location.type === 'remote' ? 'オンライン' : settings.location.type === 'both' ? 'オンライン/対面' : '対面'}</span>
