@@ -39,6 +39,18 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>`;
 
+    // Profile completion nudge (show if key fields are missing)
+    const profile = store.get('userProfile') || {};
+    if (!profile.age || !profile.gender) {
+      html += `<div class="profile-nudge">
+        <div class="profile-nudge-text">
+          <strong>プロフィールを設定すると、より的確なアドバイスが届きます</strong>
+          <span class="profile-nudge-sub">年齢や健康状態を教えていただくと、あなたに合った内容が増えます。</span>
+        </div>
+        <button class="btn btn-sm btn-outline" onclick="app.navigate('settings')">設定する</button>
+      </div>`;
+    }
+
     // Streak banner
     const streak = store.calculateStreak();
     if (streak > 0) {
@@ -903,7 +915,10 @@ var Pages = {
       .slice(-50);
 
     let html = `<div class="page-ask-ai">
-      <h2>${i18n.t(domain)} - 相談する</h2>
+      <div class="chat-page-header">
+        <h2>${i18n.t(domain)} - 相談する</h2>
+        ${history.length > 0 ? `<button class="btn btn-sm btn-secondary" onclick="app.clearChatHistory('${domain}')">会話をリセット</button>` : ''}
+      </div>
 
       <div class="chat-container" id="chatContainer">
         ${history.length === 0 ? (() => {

@@ -477,6 +477,13 @@ var App = class App {
     }
   }
 
+  // ─── Clear chat history for a domain ───
+  clearChatHistory(domain) {
+    const all = store.get('conversationHistory') || [];
+    store.set('conversationHistory', all.filter(m => m.domain !== domain && m.domain));
+    this.renderApp();
+  }
+
   // ─── Generate AI Recommendations ───
   async generateRecommendations(domain) {
     try {
