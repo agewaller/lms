@@ -1932,6 +1932,24 @@ body.is-admin .admin-only { display: flex; }
 .ob-skip { margin-top: 16px; font-size: 13px; color: var(--text-muted); cursor: pointer; }
 .ob-skip:hover { color: var(--text-primary); }
 
+/* Steps section */
+.lp-section-steps { background: var(--bg-primary); }
+.steps-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;
+  max-width: 900px; margin: 0 auto;
+}
+.step-item { text-align: center; }
+.step-num {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--accent); color: #fff; font-size: 22px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+}
+.step-item h3 { font-size: 17px; margin-bottom: 10px; }
+.step-item p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+@media (max-width: 600px) {
+  .steps-grid { grid-template-columns: 1fr; gap: 24px; }
+}
+
 /* FAQ section */
 .lp-section-trust { background: var(--bg-secondary); }
 .faq-list { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
