@@ -1832,7 +1832,7 @@ var Pages = {
         <div class="prompt-header">
           <div class="prompt-meta">
             <span class="prompt-num">${i + 1}</span>
-            <span class="prompt-name">${p.name || key}</span>
+            <span class="prompt-name">${Components.escapeHtml(p.name || key)}</span>
             <span class="prompt-badge domain">${p.domain ? i18n.t(p.domain) : '共通'}</span>
             <span class="prompt-badge schedule">${scheduleLabel}</span>
           </div>
@@ -1840,11 +1840,11 @@ var Pages = {
             <button class="btn btn-sm btn-secondary" onclick="app.editPrompt('${key}')">編集</button>
           </div>
         </div>
-        <div class="prompt-desc">${p.description || ''}</div>
+        <div class="prompt-desc">${Components.escapeHtml(p.description || '')}</div>
         <div class="prompt-edit" id="edit-${key}" style="display:none;">
           <div class="form-group">
             <label>名前</label>
-            <input type="text" class="form-input" value="${p.name || ''}" data-field="name">
+            <input type="text" class="form-input" value="${Components.escapeHtml(p.name || '')}" data-field="name">
           </div>
           <div class="form-group">
             <label>領域</label>
@@ -1864,7 +1864,7 @@ var Pages = {
           </div>
           <div class="form-group">
             <label>説明</label>
-            <input type="text" class="form-input" value="${p.description || ''}" data-field="description">
+            <input type="text" class="form-input" value="${Components.escapeHtml(p.description || '')}" data-field="description">
           </div>
           <div class="form-group">
             <label>プロンプト本文</label>
@@ -2038,16 +2038,17 @@ var Pages = {
           ${adminEmails.map(email => {
             const isOwner = email === 'agewaller@gmail.com';
             const isSelf = currentUser?.email === email;
+            const safeEmail = Components.escapeHtml(email);
             return `<div class="admin-user-item">
               <div class="admin-user-info">
-                <div class="admin-user-avatar">${email.charAt(0).toUpperCase()}</div>
+                <div class="admin-user-avatar">${safeEmail.charAt(0).toUpperCase()}</div>
                 <div>
-                  <div class="admin-user-email">${email}${isSelf ? ' <span class="you-badge">あなた</span>' : ''}</div>
+                  <div class="admin-user-email">${safeEmail}${isSelf ? ' <span class="you-badge">あなた</span>' : ''}</div>
                   <div class="admin-user-role">${isOwner ? 'オーナー（削除不可）' : '管理者'}</div>
                 </div>
               </div>
               ${isOwner ? '<span class="status-badge">オーナー</span>' : `
-                <button class="btn btn-sm btn-danger" onclick="app.removeAdminEmail('${email}')">削除</button>
+                <button class="btn btn-sm btn-danger" data-email="${safeEmail}" onclick="app.removeAdminEmail(this.dataset.email)">削除</button>
               `}
             </div>`;
           }).join('')}
@@ -2139,11 +2140,11 @@ var Pages = {
 
           return `<div class="admin-user-item clickable" onclick="app.showUserDetail('${u.uid}')">
             <div class="admin-user-info">
-              <div class="admin-user-avatar">${initial}</div>
+              <div class="admin-user-avatar">${Components.escapeHtml(initial)}</div>
               <div>
-                <div class="admin-user-email">${u.displayName || u.email || '不明'}</div>
+                <div class="admin-user-email">${Components.escapeHtml(u.displayName || u.email || '不明')}</div>
                 <div class="admin-user-role">
-                  ${u.email ? u.email + '<br>' : ''}${metaText || 'プロフィール未設定'}
+                  ${u.email ? Components.escapeHtml(u.email) + '<br>' : ''}${Components.escapeHtml(metaText) || 'プロフィール未設定'}
                   ${u.lastActive ? ' · 最終: ' + new Date(u.lastActive).toLocaleDateString('ja-JP') : ''}
                 </div>
               </div>

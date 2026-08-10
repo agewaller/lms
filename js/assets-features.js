@@ -10,7 +10,7 @@ var AssetsFeatures = {
 
   renderNISASimulator() {
     return `<div class="nisa-simulator">
-      <h3>💴 プラチナNISAシミュレーター</h3>
+      <h3>プラチナNISAシミュレーター</h3>
       <p>65歳以上の方が毎月分配型で受け取れる収入を試算します。</p>
 
       <div class="sim-inputs">
@@ -236,7 +236,7 @@ var AssetsFeatures = {
         ondragover="event.preventDefault();this.classList.add('dragover')"
         ondragleave="this.classList.remove('dragover')"
         ondrop="AssetsFeatures.handleScreenshotDrop(event)">
-        <div class="upload-icon">📷</div>
+        <div class="upload-icon">◈</div>
         <p>ここに画像をドラッグ＆ドロップ</p>
         <p>または</p>
         <input type="file" id="screenshotFile" accept="image/*" style="display:none"
@@ -443,10 +443,10 @@ var AssetsFeatures = {
         ${pending.map((p, i) => `
           <div class="at-order">
             <div class="at-order-info">
-              <span class="at-order-type ${p.type}">${p.type === 'buy' ? '買い' : '売り'}</span>
-              <strong>${p.ticker || p.name}</strong>
+              <span class="at-order-type ${p.type === 'buy' ? 'buy' : 'sell'}">${p.type === 'buy' ? '買い' : '売り'}</span>
+              <strong>${Components.escapeHtml(p.ticker || p.name || '')}</strong>
               <span>${p.amount?.toLocaleString()}円</span>
-              <span class="at-order-reason">${p.reason || ''}</span>
+              <span class="at-order-reason">${Components.escapeHtml(p.reason || '')}</span>
             </div>
             <div class="at-order-actions">
               <button class="btn btn-sm btn-primary" onclick="AssetsFeatures.approveOrder(${i})">承認</button>
@@ -461,11 +461,11 @@ var AssetsFeatures = {
         ${history.length === 0 ? '<p>まだ取引はありません</p>' :
           history.slice(-10).reverse().map(h => `
             <div class="at-history-item">
-              <span class="at-order-type ${h.type}">${h.type === 'buy' ? '買い' : '売り'}</span>
-              <span>${h.ticker || h.name}</span>
+              <span class="at-order-type ${h.type === 'buy' ? 'buy' : 'sell'}">${h.type === 'buy' ? '買い' : '売り'}</span>
+              <span>${Components.escapeHtml(h.ticker || h.name || '')}</span>
               <span>${h.amount?.toLocaleString()}円</span>
               <span class="at-history-time">${new Date(h.timestamp).toLocaleString('ja-JP')}</span>
-              <span class="at-history-status ${h.status}">${h.status === 'executed' ? '約定' : h.status === 'rejected' ? '却下' : '保留'}</span>
+              <span class="at-history-status ${h.status === 'executed' ? 'executed' : h.status === 'rejected' ? 'rejected' : 'pending'}">${h.status === 'executed' ? '約定' : h.status === 'rejected' ? '却下' : '保留'}</span>
             </div>
           `).join('')}
       </div>
