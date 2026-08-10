@@ -460,9 +460,9 @@ var Pages = {
     return `<div class="resume-widget">
       <h3>レジュメ</h3>
       <div class="resume-summary">
-        <p><strong>${resume.name || ''}</strong></p>
-        <p>${resume.summary || ''}</p>
-        <p>スキル: ${(resume.skills || []).join(', ')}</p>
+        <p><strong>${Components.escapeHtml(resume.name || '')}</strong></p>
+        <p>${Components.escapeHtml(resume.summary || '')}</p>
+        <p>スキル: ${Components.escapeHtml((resume.skills || []).join(', '))}</p>
       </div>
       <div class="resume-actions">
         <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')">編集</button>
@@ -890,7 +890,7 @@ var Pages = {
         <h3>やること一覧</h3>
         ${actions.map((a, i) => `
           <div class="action-item ${a.done ? 'done' : ''}">
-            <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${a.text}</label>
+            <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${Components.escapeHtml(a.text || '')}</label>
             <span class="action-domain" style="background:${CONFIG.domains[a.domain]?.color || '#666'}">${CONFIG.domains[a.domain]?.icon || ''}</span>
           </div>
         `).join('')}
@@ -1111,15 +1111,15 @@ var Pages = {
       <p>ここに登録した内容を求人プラットフォームにワンクリックで送信できます。</p>
       <div class="form-group">
         <label>お名前</label>
-        <input type="text" id="resumeName" class="form-input" value="${r.name || ''}" placeholder="山田花子">
+        <input type="text" id="resumeName" class="form-input" value="${Components.escapeHtml(r.name || '')}" placeholder="山田花子">
       </div>
       <div class="form-group">
         <label>職務要約・自己PR</label>
-        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${r.summary || ''}</textarea>
+        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${Components.escapeHtml(r.summary || '')}</textarea>
       </div>
       <div class="form-group">
         <label>スキル・資格（カンマ区切り）</label>
-        <input type="text" id="resumeSkills" class="form-input" value="${(r.skills || []).join(', ')}" placeholder="例：看護師免許, 英検2級, Excel">
+        <input type="text" id="resumeSkills" class="form-input" value="${Components.escapeHtml((r.skills || []).join(', '))}" placeholder="例：看護師免許, 英検2級, Excel">
       </div>
       <div class="form-group">
         <label>職務経歴</label>
