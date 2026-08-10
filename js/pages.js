@@ -752,8 +752,23 @@ var Pages = {
       <h2>${i18n.t(domain)} - 相談する</h2>
 
       <div class="chat-container" id="chatContainer">
-        ${history.length === 0 ?
-          Components.emptyState('◈', '相談できます', i18n.t('quick_input_placeholder')) :
+        ${history.length === 0 ? (() => {
+          const starters = {
+            consciousness: ['最近気持ちが重い理由を整理したい', '毎日の記録から何がわかりますか？', '心を穏やかに保つコツを教えて'],
+            health: ['最近の体調について相談したい', '病院に行くべき症状を教えて', '薬の飲み合わせが心配'],
+            time: ['時間をうまく使えていない気がする', '毎日のルーティンを作りたい', '空き時間の過ごし方を一緒に考えて'],
+            work: ['退職後にどんな仕事ができますか？', '自分の経験を活かせる活動を探したい', '副業を始めるための第一歩を教えて'],
+            relationship: ['最近孤独を感じている', 'もっと人と繋がるにはどうすればいい？', '家族関係で悩んでいることがある'],
+            assets: ['老後のお金の管理について相談したい', '毎月の支出を見直したい', 'NISAについてわかりやすく教えて'],
+          };
+          const qs = starters[domain] || ['何でもお気軽にご相談ください'];
+          return `<div class="chat-starters">
+            <p class="chat-starters-label">こんなことから相談できます</p>
+            <div class="chat-starter-list">
+              ${qs.map(q => `<button class="chat-starter-btn" onclick="document.getElementById('chatInput').value='${Components.escapeHtml(q)}';app.sendChat('${domain}')">${Components.escapeHtml(q)}</button>`).join('')}
+            </div>
+          </div>`;
+        })() :
           history.map(m => Components.chatMessage(m)).join('')
         }
       </div>
@@ -2063,22 +2078,22 @@ var Pages = {
   // ═══════════════════════════════════════════════════════════
   renderOnboarding() {
     const domains = [
-      { num: '一', name: '意識', desc: '七つのレイヤー定点観測', color: '#6C63FF' },
-      { num: '二', name: '健康', desc: '未病ダイアリー・薬管理', color: '#10b981' },
-      { num: '三', name: '時間', desc: 'カレンダー連携・習慣', color: '#f59e0b' },
-      { num: '四', name: '仕事', desc: '副業診断・求人連携', color: '#3b82f6' },
-      { num: '五', name: '関係', desc: '孤立スコア・誕生日', color: '#ef4444' },
-      { num: '六', name: '資産', desc: 'NISA・銘柄分析', color: '#d97706' },
+      { id: 'consciousness', num: '一', name: '意識', desc: '毎日の気持ちや考えを整理する', color: '#6C63FF' },
+      { id: 'health',        num: '二', name: '健康', desc: '体調・お薬・睡眠を記録する', color: '#10b981' },
+      { id: 'time',          num: '三', name: '時間', desc: '毎日の時間の使い方を振り返る', color: '#f59e0b' },
+      { id: 'work',          num: '四', name: '仕事', desc: '経験を活かした活動を見つける', color: '#3b82f6' },
+      { id: 'relationship',  num: '五', name: '関係', desc: '大切な人とのつながりを守る', color: '#ef4444' },
+      { id: 'assets',        num: '六', name: '資産', desc: 'お金の流れと将来を整理する', color: '#d97706' },
     ];
 
     return `<div class="onboarding-overlay" id="onboardingOverlay">
       <div class="onboarding-modal">
         <h2>ようこそ、LMSへ</h2>
-        <p>人生の6つの領域を一緒に整えていきましょう。<br>まず、あなたが一番気になる領域を選んでください。</p>
+        <p>まず、今一番気になる領域を選んでください。<br><span style="font-size:13px;color:var(--text-secondary)">あとからいつでも変えられます。</span></p>
 
         <div class="ob-domain-grid">
           ${domains.map(d => `
-            <div class="ob-domain" onclick="app.onboardingSelectDomain('${d.name === '意識' ? 'consciousness' : d.name === '健康' ? 'health' : d.name === '時間' ? 'time' : d.name === '仕事' ? 'work' : d.name === '関係' ? 'relationship' : 'assets'}')">
+            <div class="ob-domain" onclick="app.onboardingSelectDomain('${d.id}')">
               <div class="ob-domain-num" style="background:${d.color}">${d.num}</div>
               <div class="ob-domain-name">${d.name}</div>
               <div class="ob-domain-desc">${d.desc}</div>
@@ -2087,7 +2102,7 @@ var Pages = {
         </div>
 
         <button class="btn btn-secondary ob-skip" onclick="app.onboardingSkip()">
-          スキップしてすべての領域を見る
+          すべての領域を見る
         </button>
       </div>
     </div>`;
