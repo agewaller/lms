@@ -105,6 +105,12 @@ var App = class App {
     // Listen for navigation changes
     store.on('currentPage', () => this.renderApp());
     store.on('currentDomain', () => this.renderApp());
+
+    // Show/hide top-bar progress bar when AI is analyzing
+    store.on('isAnalyzing', (val) => {
+      const bar = document.getElementById('top-bar-progress');
+      if (bar) bar.classList.toggle('active', !!val);
+    });
   }
 
   // ─── Inbox polling: fetch Plaud auto-sent transcripts ───
