@@ -169,8 +169,9 @@ var Pages = {
       html += this.renderTranscriptInput();
     }
 
-    // Time domain: Calendar widget + Marketplace widget
+    // Time domain: trend chart + Calendar widget + Marketplace widget
     if (domain === 'time') {
+      html += this.renderTimeTrend();
       if (typeof CalendarIntegration !== 'undefined') html += CalendarIntegration.renderWidget();
       if (typeof TimeMarketplace !== 'undefined') html += TimeMarketplace.renderWidget();
     }
@@ -184,16 +185,18 @@ var Pages = {
       html += this.renderResumeWidget();
     }
 
-    // Relationship domain: Isolation score + today contacts + social graph + birthdays
+    // Relationship domain: interaction trend + Isolation score + today contacts + social graph + birthdays
     if (domain === 'relationship') {
+      html += this.renderRelationshipTrend();
       if (typeof RelationshipFeatures !== 'undefined') html += RelationshipFeatures.renderDashboard();
       html += this.renderSocialGraph();
       html += this.renderUpcomingBirthdays();
     }
 
-    // Assets domain: NISA simulator + advisor + screenshot + auto trading
+    // Assets domain: income/expense trend + NISA simulator + advisor + screenshot + auto trading
     // (Stock analysis widget is rendered at the top of the page.)
     if (domain === 'assets') {
+      html += this.renderAssetsTrend();
       if (typeof AssetsFeatures !== 'undefined') {
         html += AssetsFeatures.renderNISASimulator();
         html += AssetsFeatures.renderAIAdvisor();
@@ -584,6 +587,116 @@ var Pages = {
       <p>最近の記録をもとに、診察で伝えるべきことをまとめます。</p>
       <button class="btn btn-secondary" onclick="app.generateDoctorMemo()">メモを作成する</button>
       <div id="doctorMemoResult"></div>
+    </div>`;
+  },
+
+  // ─── Time domain: productivity trend (last 14 days) ───
+  renderTimeTrend() {
+    const logs = store.getDomainData('time', 'entries', 14);
+    if (logs.length < 2) return '';
+
+    const today = new Date();
+    const cutoff7  = new Date(today); cutoff7.setDate(today.getDate() - 7);
+    const cutoff14 = new Date(today); cutoff14.setDate(today.getDate() - 14);
+
+    const thisWeek  = logs.filter(e => new Date(e.timestamp) >= cutoff7);
+    const priorWeek = logs.filter(e => new Date(e.timestamp) >= cutoff14 && new Date(e.timestamp) < cutoff7);
+
+    const avgProd = arr => arr.length === 0 ? null :
+      Math.round(arr.reduce((s, e) => s + (parseFloat(e.productivity) || 0), 0) / arr.length * 10) / 10;
+    const totalHours = arr => Math.round(arr.reduce((s, e) => s + (parseInt(e.duration) || 0), 0) / 60 * 10) / 10;
+
+    const prodNow  = avgProd(thisWeek);
+    const prodPrev = avgProd(priorWeek);
+    const hoursNow = totalHours(thisWeek);
+
+    const arrow = (c, p) => {
+      if (c === null || p === null) return '';
+      const d = c - p;
+      if (Math.abs(d) < 0.3) return '<span class="trend-neutral">→</span>';
+      return d > 0 ? '<span class="trend-up">↑</span>' : '<span class="trend-down">↓</span>';
+    };
+
+    return `<div class="health-trend-card">
+      <h3>今週の時間まとめ</h3>
+      <div class="ht-rows">
+        ${prodNow !== null ? `<div class="ht-row">
+          <span class="ht-label">集中度（平均）</span>
+          <span class="ht-val">${prodNow}/10 ${arrow(prodNow, prodPrev)}</span>
+        </div>` : ''}
+        <div class="ht-row">
+          <span class="ht-label">記録した時間（今週）</span>
+          <span class="ht-val">${hoursNow}時間</span>
+        </div>
+      </div>
+      ${logs.length >= 3 ? `<div class="ht-chart-wrap"><canvas id="timeTrendChart" height="80"></canvas></div>` : ''}
+    </div>`;
+  },
+
+  // ─── Relationship domain: interaction frequency (last 28 days, by week) ───
+  renderRelationshipTrend() {
+    const interactions = store.getDomainData('relationship', 'interactions', 28);
+    if (interactions.length < 2) return '';
+
+    const today = new Date();
+    const cutoff7  = new Date(today); cutoff7.setDate(today.getDate() - 7);
+    const cutoff14 = new Date(today); cutoff14.setDate(today.getDate() - 14);
+
+    const thisWeek  = interactions.filter(e => new Date(e.timestamp) >= cutoff7).length;
+    const priorWeek = interactions.filter(e => new Date(e.timestamp) >= cutoff14 && new Date(e.timestamp) < cutoff7).length;
+
+    const trend = thisWeek > priorWeek ? '<span class="trend-up">↑</span>' :
+                  thisWeek < priorWeek ? '<span class="trend-down">↓</span>' :
+                  '<span class="trend-neutral">→</span>';
+
+    return `<div class="health-trend-card">
+      <h3>今週のつながりまとめ</h3>
+      <div class="ht-rows">
+        <div class="ht-row">
+          <span class="ht-label">今週のやりとり</span>
+          <span class="ht-val">${thisWeek}回 ${priorWeek > 0 ? trend : ''}</span>
+        </div>
+        ${priorWeek > 0 ? `<div class="ht-row">
+          <span class="ht-label">先週のやりとり</span>
+          <span class="ht-val">${priorWeek}回</span>
+        </div>` : ''}
+      </div>
+      ${interactions.length >= 3 ? `<div class="ht-chart-wrap"><canvas id="relationshipTrendChart" height="80"></canvas></div>` : ''}
+    </div>`;
+  },
+
+  // ─── Assets domain: income vs expense trend (last 4 weeks) ───
+  renderAssetsTrend() {
+    const income   = store.getDomainData('assets', 'income', 28);
+    const expenses = store.getDomainData('assets', 'expenses', 28);
+    if (income.length === 0 && expenses.length === 0) return '';
+
+    const today = new Date();
+    const cutoff7 = new Date(today); cutoff7.setDate(today.getDate() - 7);
+
+    const incomeThisWeek   = income.filter(e => new Date(e.timestamp) >= cutoff7)
+      .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+    const expenseThisWeek  = expenses.filter(e => new Date(e.timestamp) >= cutoff7)
+      .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+    const balance = incomeThisWeek - expenseThisWeek;
+
+    return `<div class="health-trend-card">
+      <h3>今週のお金まとめ</h3>
+      <div class="ht-rows">
+        ${incomeThisWeek > 0 ? `<div class="ht-row">
+          <span class="ht-label">収入（今週）</span>
+          <span class="ht-val">${incomeThisWeek.toLocaleString()}円</span>
+        </div>` : ''}
+        ${expenseThisWeek > 0 ? `<div class="ht-row">
+          <span class="ht-label">支出（今週）</span>
+          <span class="ht-val">${expenseThisWeek.toLocaleString()}円</span>
+        </div>` : ''}
+        ${(incomeThisWeek > 0 || expenseThisWeek > 0) ? `<div class="ht-row">
+          <span class="ht-label">収支</span>
+          <span class="ht-val" style="color:${balance >= 0 ? '#10b981' : '#ef4444'}">${balance >= 0 ? '+' : ''}${balance.toLocaleString()}円</span>
+        </div>` : ''}
+      </div>
+      ${(income.length + expenses.length) >= 3 ? `<div class="ht-chart-wrap"><canvas id="assetsTrendChart" height="80"></canvas></div>` : ''}
     </div>`;
   },
 

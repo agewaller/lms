@@ -490,6 +490,13 @@ var App = class App {
     if (domain === 'health' && page === 'home') {
       setTimeout(() => this.initHealthChart(), 100);
     }
+
+    // Render non-health domain trend charts
+    if (page === 'home') {
+      if (domain === 'time')         setTimeout(() => this.initTimeChart(), 100);
+      if (domain === 'relationship') setTimeout(() => this.initRelationshipChart(), 100);
+      if (domain === 'assets')       setTimeout(() => this.initAssetsChart(), 100);
+    }
   }
 
   initHealthChart() {
@@ -546,6 +553,117 @@ var App = class App {
           y: { min: 0, max: 10, ticks: { stepSize: 2, font: { size: 13 } } },
           x: { ticks: { font: { size: 12 } } }
         }
+      }
+    });
+  }
+
+  initTimeChart() {
+    const canvas = document.getElementById('timeTrendChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const logs = store.getDomainData('time', 'entries', 14);
+    if (logs.length < 3) return;
+
+    const byDate = {};
+    logs.forEach(e => {
+      const d = (e.timestamp || '').slice(0, 10);
+      if (!d) return;
+      if (!byDate[d]) byDate[d] = [];
+      if (e.productivity != null) byDate[d].push(Number(e.productivity));
+    });
+
+    const dates = Object.keys(byDate).sort().slice(-7);
+    if (dates.length < 2) return;
+
+    const labels = dates.map(d => { const dt = new Date(d); return `${dt.getMonth()+1}/${dt.getDate()}`; });
+    const data = dates.map(d => {
+      const vals = byDate[d];
+      return vals.length ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length * 10) / 10 : null;
+    });
+
+    if (this._timeChart) this._timeChart.destroy();
+    this._timeChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{ data, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)',
+          tension: 0.3, fill: true, pointRadius: 5, pointBackgroundColor: '#f59e0b', spanGaps: true }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `集中度: ${ctx.raw}/10` } } },
+        scales: { y: { min: 0, max: 10, ticks: { stepSize: 2, font: { size: 13 } } }, x: { ticks: { font: { size: 12 } } } }
+      }
+    });
+  }
+
+  initRelationshipChart() {
+    const canvas = document.getElementById('relationshipTrendChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const interactions = store.getDomainData('relationship', 'interactions', 28);
+    if (interactions.length < 3) return;
+
+    // Group by week (last 4 weeks)
+    const today = new Date();
+    const weeks = [3, 2, 1, 0].map(w => {
+      const end = new Date(today); end.setDate(today.getDate() - w * 7);
+      const start = new Date(end); start.setDate(end.getDate() - 7);
+      const count = interactions.filter(e => {
+        const t = new Date(e.timestamp);
+        return t >= start && t < end;
+      }).length;
+      return { label: `${4 - w}週前`, count };
+    });
+    weeks[3].label = '今週';
+
+    if (this._relChart) this._relChart.destroy();
+    this._relChart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: weeks.map(w => w.label),
+        datasets: [{ data: weeks.map(w => w.count), backgroundColor: 'rgba(239,68,68,0.6)',
+          borderColor: '#ef4444', borderWidth: 1, borderRadius: 6 }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `${ctx.raw}回` } } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 13 } } }, x: { ticks: { font: { size: 12 } } } }
+      }
+    });
+  }
+
+  initAssetsChart() {
+    const canvas = document.getElementById('assetsTrendChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const income   = store.getDomainData('assets', 'income', 28);
+    const expenses = store.getDomainData('assets', 'expenses', 28);
+    if (income.length + expenses.length < 3) return;
+
+    const today = new Date();
+    const weeks = [3, 2, 1, 0].map(w => {
+      const end = new Date(today); end.setDate(today.getDate() - w * 7);
+      const start = new Date(end); start.setDate(end.getDate() - 7);
+      const filter = arr => arr.filter(e => { const t = new Date(e.timestamp); return t >= start && t < end; });
+      const sum = arr => filter(arr).reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+      return { label: w === 0 ? '今週' : `${4 - w}週前`, inc: sum(income), exp: sum(expenses) };
+    });
+
+    if (this._assetsChart) this._assetsChart.destroy();
+    this._assetsChart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: weeks.map(w => w.label),
+        datasets: [
+          { label: '収入', data: weeks.map(w => w.inc), backgroundColor: 'rgba(16,185,129,0.6)', borderColor: '#10b981', borderWidth: 1, borderRadius: 6 },
+          { label: '支出', data: weeks.map(w => w.exp), backgroundColor: 'rgba(239,68,68,0.6)', borderColor: '#ef4444', borderWidth: 1, borderRadius: 6 }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: true, labels: { font: { size: 12 } } }, tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw.toLocaleString()}円` } } },
+        scales: { y: { beginAtZero: true, ticks: { font: { size: 11 }, callback: v => v.toLocaleString() } }, x: { ticks: { font: { size: 12 } } } }
       }
     });
   }
