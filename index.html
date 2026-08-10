@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LMS - Life Management System</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
@@ -25,77 +25,111 @@
     </nav>
 
     <div class="hero-content">
+      <p class="hero-eyebrow">65歳からの人生を、もっと豊かに</p>
       <h1>Life Management System</h1>
-      <p class="hero-subtitle">年金だけでは足りない時代。<br>意識・健康・時間・仕事・関係・資産<br>6つの領域を、まるごとサポート</p>
-      <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
+      <p class="hero-subtitle">年金だけでは足りない時代。<br>意識・健康・時間・仕事・関係・資産<br>人生6つの領域を、まるごとサポート</p>
+      <div class="hero-actions">
+        <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
+        <a href="#domains" class="btn btn-lg btn-secondary">6つの領域を見る</a>
+      </div>
+      <p class="hero-note">クレジットカード不要・登録3分・いつでも解約可能</p>
     </div>
   </header>
 
   <!-- Domain Cards -->
   <section id="domains" class="lp-section">
     <h2>6つのライフドメイン</h2>
-    <p class="section-sub">それぞれの領域をやさしくサポートし、あなたに合ったアドバイスをお届けします</p>
+    <p class="section-sub">「今、自分に一番足りないのは何か」を毎日記録して、<br>6つの領域がバランスよく整った人生を一緒に作ります</p>
     <div class="domain-cards">
-      <a href="consciousness.html" class="domain-card" style="--domain-color:#9B59B6">
-        <div class="dc-icon">🧠</div>
+      <a href="consciousness.html" class="domain-card" style="--domain-color:#6C63FF">
+        <div class="dc-icon dc-num" style="background:#6C63FF">一</div>
         <h3>意識</h3>
-        <p>心の健康・瞑想・感謝の気持ち</p>
+        <p>七つのレイヤーで自分を毎日定点観測。心の深さを記録します</p>
       </a>
-      <a href="health.html" class="domain-card" style="--domain-color:#27AE60">
-        <div class="dc-icon">💚</div>
+      <a href="health.html" class="domain-card" style="--domain-color:#10b981">
+        <div class="dc-icon dc-num" style="background:#10b981">二</div>
         <h3>健康</h3>
-        <p>体調の記録・お薬の管理・元気な毎日</p>
+        <p>症状・お薬・睡眠を記録。かかりつけ医との会話がスムーズに</p>
       </a>
-      <a href="time.html" class="domain-card" style="--domain-color:#E67E22">
-        <div class="dc-icon">⏰</div>
+      <a href="time.html" class="domain-card" style="--domain-color:#f59e0b">
+        <div class="dc-icon dc-num" style="background:#f59e0b">三</div>
         <h3>時間</h3>
-        <p>日々の過ごし方・趣味・心豊かな時間</p>
+        <p>カレンダー連携で日々を整理。空き時間を副収入に変える機能も</p>
       </a>
-      <a href="work.html" class="domain-card" style="--domain-color:#2980B9">
-        <div class="dc-icon">💼</div>
+      <a href="work.html" class="domain-card" style="--domain-color:#3b82f6">
+        <div class="dc-icon dc-num" style="background:#3b82f6">四</div>
         <h3>仕事</h3>
-        <p>生きがい・経験を活かす・社会とのつながり</p>
+        <p>経験を活かして月5万円。副業・ボランティア・求人をまとめて探す</p>
       </a>
-      <a href="relationship.html" class="domain-card" style="--domain-color:#E74C3C">
-        <div class="dc-icon">🤝</div>
+      <a href="relationship.html" class="domain-card" style="--domain-color:#ef4444">
+        <div class="dc-icon dc-num" style="background:#ef4444">五</div>
         <h3>関係</h3>
-        <p>大切な人との関係・ご縁を大切に</p>
+        <p>大切な人との距離感を5段階で記録。孤立スコアで命を守る</p>
       </a>
-      <a href="assets.html" class="domain-card" style="--domain-color:#F1C40F">
-        <div class="dc-icon">💰</div>
+      <a href="assets.html" class="domain-card" style="--domain-color:#d97706">
+        <div class="dc-icon dc-num" style="background:#d97706">六</div>
         <h3>資産</h3>
-        <p>安心の資産管理・株式投資・収支の把握</p>
+        <p>プラチナNISAで年金＋α。銘柄分析と収支管理をやさしくガイド</p>
       </a>
+    </div>
+  </section>
+
+  <!-- Why LMS -->
+  <section class="lp-section lp-section-why">
+    <h2>こんなお悩みはありませんか？</h2>
+    <div class="pain-grid">
+      <div class="pain-item">
+        <div class="pain-q">「年金だけでは毎月足りない…」</div>
+        <div class="pain-a">→ 仕事・資産ドメインで副収入と投資をサポート</div>
+      </div>
+      <div class="pain-item">
+        <div class="pain-q">「体調の変化を医者にうまく説明できない」</div>
+        <div class="pain-a">→ 健康ドメインで症状をグラフ化して受診に備える</div>
+      </div>
+      <div class="pain-item">
+        <div class="pain-q">「退職してから人とのつながりが薄れた」</div>
+        <div class="pain-a">→ 関係ドメインで孤立スコアを毎日チェック</div>
+      </div>
+      <div class="pain-item">
+        <div class="pain-q">「何となく毎日が流れていく気がする」</div>
+        <div class="pain-a">→ 意識ドメインで七つのレイヤーを定点観測</div>
+      </div>
     </div>
   </section>
 
   <!-- Features -->
   <section id="features" class="lp-section lp-section-alt">
-    <h2>主な特徴</h2>
+    <h2>LMSが選ばれる理由</h2>
     <div class="feature-grid">
       <div class="feature-item">
-        <h3>深い分析</h3>
-        <p>あなたの記録を丁寧に読み解き、気づきと最適な打ち手をお届けします</p>
+        <div class="fi-icon fi-num" style="background:#6C63FF">深</div>
+        <h3>専門用語ゼロ</h3>
+        <p>小学5年生でもわかる言葉だけで説明します。難しい操作は一切ありません</p>
       </div>
       <div class="feature-item">
-        <h3>領域横断の洞察</h3>
-        <p>6つの領域の相互作用を考慮した、統合的なアドバイス</p>
+        <div class="fi-icon fi-num" style="background:#10b981">統</div>
+        <h3>6領域の統合分析</h3>
+        <p>健康・仕事・関係など、すべての領域をまとめて見て、本当の問題を見つけます</p>
       </div>
       <div class="feature-item">
-        <h3>自動アクション</h3>
-        <p>おすすめに基づく自動実行（投資、予約、購入など）</p>
+        <div class="fi-icon fi-num" style="background:#f59e0b">自</div>
+        <h3>手間を最大限に省く</h3>
+        <p>カレンダー・Fitbit・Gmail連携で、記録の多くが自動で取り込まれます</p>
       </div>
       <div class="feature-item">
-        <h3>多言語対応</h3>
-        <p>日本語・英語・中国語・韓国語に対応</p>
-      </div>
-      <div class="feature-item">
+        <div class="fi-icon fi-num" style="background:#3b82f6">安</div>
         <h3>安心のデータ管理</h3>
-        <p>Google認証 + Firebase によるセキュアなデータ同期</p>
+        <p>Google認証で安全にログイン。データはGoogle管理のサーバーに暗号化して保存</p>
       </div>
       <div class="feature-item">
-        <h3>専門家連携</h3>
-        <p>必要に応じて専門家によるメンタリング・コーチングにも対応</p>
+        <div class="fi-icon fi-num" style="background:#ef4444">提</div>
+        <h3>毎日のヒント提案</h3>
+        <p>記録をもとに、今日のあなたに合ったアドバイスを毎日お届けします</p>
+      </div>
+      <div class="feature-item">
+        <div class="fi-icon fi-num" style="background:#d97706">言</div>
+        <h3>多言語対応</h3>
+        <p>日本語・英語・中国語・韓国語に対応。海外在住のご家族とも共有できます</p>
       </div>
     </div>
   </section>

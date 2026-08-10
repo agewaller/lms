@@ -78,9 +78,16 @@ var Pages = {
     });
     allRecent.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
+    // Daily check-in reminder
+    const today = new Date().toISOString().slice(0, 10);
+    const hasRecordedToday = allRecent.some(e => (e.timestamp || '').startsWith(today));
+    if (!hasRecordedToday && allRecent.length > 0) {
+      html += `<div class="checkin-reminder">今日はまだ記録がありません。上の入力欄から気軽に一言どうぞ。</div>`;
+    }
+
     if (allRecent.length === 0) {
-      html += Components.emptyState(domainConfig?.icon || '📭', i18n.t('no_data'),
-        `${i18n.t('record')} → ${i18n.t('save')}`);
+      html += Components.emptyState(domainConfig?.icon || '◈', i18n.t('no_data'),
+        '「記録する」から最初の記録を入力してみましょう');
     } else {
       allRecent.slice(0, 10).forEach(entry => {
         html += Components.recordItem(entry, domain);
@@ -102,9 +109,9 @@ var Pages = {
     const latest = store.get('latestAnalysis');
     if (latest && latest.domain === domain) {
       html += `<div class="analysis-section">
-        <h3>分析結果</h3>
+        <h3>最新の分析結果</h3>
         <div class="analysis-content">${Components.formatMarkdown(latest.response)}</div>
-        <div class="analysis-meta">${latest.model} | ${new Date(latest.timestamp).toLocaleString()}</div>
+        <div class="analysis-meta">${new Date(latest.timestamp).toLocaleString('ja-JP')}</div>
       </div>`;
     }
 
@@ -1916,6 +1923,41 @@ var Pages = {
           <button class="btn btn-secondary" onclick="app.exportData()">データを書き出す</button>
           <button class="btn btn-danger" onclick="app.deleteAllData()">すべてのデータを削除</button>
         </div>
+      </div>
+    </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  ONBOARDING (first-time user welcome)
+  // ═══════════════════════════════════════════════════════════
+  renderOnboarding() {
+    const domains = [
+      { num: '一', name: '意識', desc: '七つのレイヤー定点観測', color: '#6C63FF' },
+      { num: '二', name: '健康', desc: '未病ダイアリー・薬管理', color: '#10b981' },
+      { num: '三', name: '時間', desc: 'カレンダー連携・習慣', color: '#f59e0b' },
+      { num: '四', name: '仕事', desc: '副業診断・求人連携', color: '#3b82f6' },
+      { num: '五', name: '関係', desc: '孤立スコア・誕生日', color: '#ef4444' },
+      { num: '六', name: '資産', desc: 'NISA・銘柄分析', color: '#d97706' },
+    ];
+
+    return `<div class="onboarding-overlay" id="onboardingOverlay">
+      <div class="onboarding-modal">
+        <h2>ようこそ、LMSへ</h2>
+        <p>人生の6つの領域を一緒に整えていきましょう。<br>まず、あなたが一番気になる領域を選んでください。</p>
+
+        <div class="ob-domain-grid">
+          ${domains.map(d => `
+            <div class="ob-domain" onclick="app.onboardingSelectDomain('${d.name === '意識' ? 'consciousness' : d.name === '健康' ? 'health' : d.name === '時間' ? 'time' : d.name === '仕事' ? 'work' : d.name === '関係' ? 'relationship' : 'assets'}')">
+              <div class="ob-domain-num" style="background:${d.color}">${d.num}</div>
+              <div class="ob-domain-name">${d.name}</div>
+              <div class="ob-domain-desc">${d.desc}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <button class="btn btn-secondary ob-skip" onclick="app.onboardingSkip()">
+          スキップしてすべての領域を見る
+        </button>
       </div>
     </div>`;
   }

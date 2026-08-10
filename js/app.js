@@ -20,6 +20,9 @@ var App = class App {
       store.set('currentPage', 'home');
       this.renderApp();
       this.startInboxPolling();
+      if (!store.get('onboardingComplete')) {
+        setTimeout(() => this.showOnboarding(), 400);
+      }
     }
 
     // Listen for auth changes
@@ -29,6 +32,10 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        // Show onboarding for first-time users (after short delay to let render settle)
+        if (!store.get('onboardingComplete')) {
+          setTimeout(() => this.showOnboarding(), 400);
+        }
       } else {
         this.stopInboxPolling();
       }
@@ -156,6 +163,27 @@ var App = class App {
     } else {
       window.location.href = 'index.html';
     }
+  }
+
+  // ─── Onboarding ───
+  showOnboarding() {
+    if (document.getElementById('onboardingOverlay')) return;
+    const el = document.createElement('div');
+    el.innerHTML = Pages.renderOnboarding();
+    document.body.appendChild(el.firstElementChild);
+  }
+
+  onboardingSelectDomain(domain) {
+    store.set('onboardingComplete', true);
+    const overlay = document.getElementById('onboardingOverlay');
+    if (overlay) overlay.remove();
+    this.switchDomain(domain);
+  }
+
+  onboardingSkip() {
+    store.set('onboardingComplete', true);
+    const overlay = document.getElementById('onboardingOverlay');
+    if (overlay) overlay.remove();
   }
 
   // ─── Navigation ───
