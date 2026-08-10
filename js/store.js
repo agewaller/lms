@@ -112,7 +112,9 @@ var Store = class Store {
       unreadCount: 0,
 
       // UX
-      onboardingComplete: false
+      onboardingComplete: false,
+      reminderPrefs: {},
+      reminderLastDate: null
     };
 
     this.listeners = new Map();
@@ -186,7 +188,8 @@ var Store = class Store {
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
       'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
-      'onboardingComplete'
+      'onboardingComplete',
+      'reminderPrefs', 'reminderLastDate'
     ];
   }
 
