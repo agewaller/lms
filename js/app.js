@@ -295,6 +295,13 @@ var App = class App {
 
     if (responseEl) responseEl.innerHTML = Components.loading(i18n.t('analyzing'));
 
+    // Auto-save the typed text as a domain diary entry so it counts toward streak
+    const quickSaveCategory = {
+      consciousness: 'entries', health: 'symptoms', time: 'entries',
+      work: 'tasks', relationship: 'interactions', assets: 'overview'
+    }[domain] || 'entries';
+    store.addDomainEntry(domain, quickSaveCategory, { notes: text, source: 'quick_input' });
+
     try {
       const result = await AIEngine.analyze(domain, 'quickInput', { text });
 
