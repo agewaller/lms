@@ -475,7 +475,7 @@ var App = class App {
     if (nameEl) nameEl.textContent = user?.displayName || user?.email || 'ゲスト';
     if (avatarEl) {
       if (user?.photoURL) {
-        avatarEl.innerHTML = `<img src="${user.photoURL}" alt="">`;
+        avatarEl.innerHTML = `<img src="${Components.escapeHtml(user.photoURL)}" alt="">`;
       } else {
         avatarEl.textContent = (user?.displayName || user?.email || '?').charAt(0).toUpperCase();
       }

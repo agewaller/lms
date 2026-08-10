@@ -1151,7 +1151,7 @@ var Pages = {
       </div>
       <div class="form-group">
         <label>職務経歴</label>
-        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${r.history || ''}</textarea>
+        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${Components.escapeHtml(r.history || '')}</textarea>
       </div>
       <div class="form-group">
         <label>希望する働き方</label>
@@ -1896,7 +1896,7 @@ var Pages = {
           </div>
           <div class="form-group">
             <label>プロンプト本文</label>
-            <textarea class="form-input prompt-textarea" rows="16" data-field="prompt">${p.prompt || ''}</textarea>
+            <textarea class="form-input prompt-textarea" rows="16" data-field="prompt">${Components.escapeHtml(p.prompt || '')}</textarea>
           </div>
           <div class="form-actions">
             <button class="btn btn-primary" onclick="app.savePrompt('${key}')">保存</button>
@@ -2179,7 +2179,7 @@ var Pages = {
             </div>
             <div class="admin-user-stats">
               ${diseaseCount > 0 ? `<span class="stat-chip">持病${diseaseCount}</span>` : ''}
-              ${u.subscription && u.subscription !== 'free' ? `<span class="stat-chip">${u.subscription}</span>` : ''}
+              ${u.subscription && u.subscription !== 'free' ? `<span class="stat-chip">${Components.escapeHtml(u.subscription)}</span>` : ''}
               ${adminEmails.includes(u.email) ? '<span class="status-badge">管理者</span>' : ''}
             </div>
           </div>`;
