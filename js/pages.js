@@ -847,8 +847,27 @@ var Pages = {
         ${recs.map(r => Components.recommendationCard(r)).join('')}
       </div>`;
     } else {
-      html += Components.emptyState('◈', i18n.t('no_data'),
-        '上の「分析を実行」ボタンを押してみてください');
+      // Static domain-specific suggestions shown while no AI recs exist
+      const staticSuggestions = {
+        consciousness: ['今日の気分を3つの言葉で書き出す', '感謝できることを1つ探す', '5分間、静かに座って呼吸に集中する', '最近のモヤモヤを声に出して誰かに話す'],
+        health: ['今日の体調を記録する', 'コップ1杯の水を飲む', '15分だけ外を歩く', 'かかりつけ医への連絡が必要か確認する'],
+        time: ['明日の予定を確認する', '今日やった3つのことを書き出す', '1時間だけ「やりたいこと」に使う', '不要なアポや約束を1つ整理する'],
+        work: ['最近の経験で誰かに役立てそうなことを1つ書く', '地域のボランティア情報を調べる', 'スキル・資格を設定画面に登録する', '知人に近況を一言メールする'],
+        relationship: ['今日、誰かに連絡を取る', '最近会えていない人の顔を思い浮かべる', '近所の集まりや地域行事を調べる', '誰かの誕生日が近くないか確認する'],
+        assets: ['今月の収支を記録する', '年金の受取額を確認する', '不用品を1つ売れないか考える', '通帳や資産一覧を最新に更新する']
+      };
+      const suggestions = staticSuggestions[domain] || [];
+      if (suggestions.length > 0) {
+        html += `<div class="static-suggestions">
+          <h3>今日できること</h3>
+          <ul class="suggestion-list">
+            ${suggestions.map(s => `<li class="suggestion-item">${s}</li>`).join('')}
+          </ul>
+          <p class="suggestion-note">上のボタンからアドバイスをもらうと、あなたの記録に合わせた提案が届きます。</p>
+        </div>`;
+      } else {
+        html += Components.emptyState('◈', i18n.t('no_data'), '上のボタンからアドバイスをもらってみましょう');
+      }
     }
 
     // Action items (todos)
@@ -1700,7 +1719,7 @@ var Pages = {
             ondragover="event.preventDefault();this.classList.add('dragover')"
             ondragleave="this.classList.remove('dragover')"
             ondrop="app.handleFileDrop(event)">
-            <div class="upload-icon">📁</div>
+            <div class="upload-icon">◈</div>
             <p>ここにファイルをドラッグ＆ドロップ</p>
             <p>または</p>
             <input type="file" id="generalFile" accept=".csv,.json,.xml,.txt,.pdf" style="display:none" onchange="app.handleFileUpload(event, '${domain}')">
