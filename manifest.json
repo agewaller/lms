@@ -1,0 +1,20 @@
+{
+  "name": "LMS - Life Management System",
+  "short_name": "LMS",
+  "description": "65歳からの人生を、もっと豊かに。6つの領域を統合管理。",
+  "start_url": "./dashboard.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#6C63FF",
+  "lang": "ja",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "images/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "lifestyle", "productivity"]
+}
