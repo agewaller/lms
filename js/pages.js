@@ -694,14 +694,14 @@ var Pages = {
         ${recs.map(r => Components.recommendationCard(r)).join('')}
       </div>`;
     } else {
-      html += Components.emptyState('⚡', i18n.t('no_data'),
+      html += Components.emptyState('◈', i18n.t('no_data'),
         '上の「分析を実行」ボタンを押してみてください');
     }
 
     // Action items (todos)
     if (actions.length > 0) {
       html += `<div class="action-items">
-        <h3>📋 Action Items</h3>
+        <h3>やること一覧</h3>
         ${actions.map((a, i) => `
           <div class="action-item ${a.done ? 'done' : ''}">
             <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${a.text}</label>
@@ -735,7 +735,7 @@ var Pages = {
 
       <div class="chat-container" id="chatContainer">
         ${history.length === 0 ?
-          Components.emptyState('💬', '相談する', i18n.t('quick_input_placeholder')) :
+          Components.emptyState('◈', '相談できます', i18n.t('quick_input_placeholder')) :
           history.map(m => Components.chatMessage(m)).join('')
         }
       </div>
