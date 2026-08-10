@@ -562,8 +562,8 @@ var Pages = {
         <div class="med-actions">
           ${status === 'taken' ? '<span class="med-done">服用済み</span>' :
             status === 'skipped' ? '<span class="med-skip-done">スキップ済み</span>' : `
-            <button class="btn btn-sm btn-primary" onclick="app.logMedTaken('${Components.escapeHtml(name)}','taken')">服用した</button>
-            <button class="btn btn-sm btn-secondary" onclick="app.logMedTaken('${Components.escapeHtml(name)}','skipped')">スキップ</button>`}
+            <button class="btn btn-sm btn-primary" data-medname="${Components.escapeHtml(name)}" onclick="app.logMedTaken(this.dataset.medname,'taken')">服用した</button>
+            <button class="btn btn-sm btn-secondary" data-medname="${Components.escapeHtml(name)}" onclick="app.logMedTaken(this.dataset.medname,'skipped')">スキップ</button>`}
         </div>
       </div>`;
     }).join('');
@@ -1311,7 +1311,7 @@ var Pages = {
             </div>
             <div class="data-entry-fields">
               ${fields.map(([k, v]) => {
-                const label = i18n.t(k) || k;
+                const label = i18n.t(k) || Components.escapeHtml(k);
                 let val;
                 if (typeof v === 'boolean') {
                   val = v ? 'あり' : 'なし';
@@ -1837,7 +1837,7 @@ var Pages = {
       <div class="card-body">
         <div class="admin-filters">
           <input type="text" id="promptSearch" class="form-input" placeholder="プロンプト名で検索"
-            value="${filter.search}" oninput="app.filterPrompts()">
+            value="${Components.escapeHtml(filter.search)}" oninput="app.filterPrompts()">
           <select id="promptDomainFilter" class="form-input" onchange="app.filterPrompts()">
             <option value="">すべての領域</option>
             ${Object.keys(CONFIG.domains).map(d => `<option value="${d}" ${filter.domain === d ? 'selected' : ''}>${i18n.t(d)}</option>`).join('')}
@@ -2133,7 +2133,7 @@ var Pages = {
       <div class="user-filters">
         <div class="form-group" style="flex:2;">
           <input type="text" id="userSearch" class="form-input"
-            value="${filter.search}"
+            value="${Components.escapeHtml(filter.search)}"
             placeholder="名前・メール・居住地・症状で検索..."
             oninput="app.filterUsers('search', this.value)">
         </div>
