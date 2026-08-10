@@ -414,9 +414,15 @@ var App = class App {
     const textarea = document.getElementById('diaryText');
     if (!textarea || !textarea.value.trim()) return;
 
-    store.addDomainEntry(domain, 'entries', {
+    // Map each domain to the most appropriate category for a free-text diary entry
+    const diaryCategoryMap = {
+      consciousness: 'entries', health: 'symptoms', time: 'entries',
+      work: 'tasks', relationship: 'interactions', assets: 'overview'
+    };
+    const category = diaryCategoryMap[domain] || 'entries';
+    store.addDomainEntry(domain, category, {
       type: 'diary',
-      text: textarea.value.trim()
+      notes: textarea.value.trim()
     });
 
     Components.showToast(i18n.t('saved'), 'success');
