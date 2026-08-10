@@ -1,5 +1,5 @@
 /* LMS Service Worker - offline shell cache */
-const CACHE = 'lms-v10';
+const CACHE = 'lms-v11';
 const SHELL = [
   './',
   './dashboard.html',
@@ -7,7 +7,7 @@ const SHELL = [
   './js/config.js?v=4',
   './js/store.js?v=4',
   './js/i18n.js?v=2',
-  './js/components.js?v=8',
+  './js/components.js?v=9',
   './js/ai-engine.js?v=4',
   './js/firebase-backend.js?v=1',
   './js/affiliate.js?v=1',
