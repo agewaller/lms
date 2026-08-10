@@ -82,8 +82,8 @@ var i18n = {
       layer_1_pct: '計測（%）', layer_2_pct: '関係（%）', layer_3_pct: '現場（%）',
       layer_35_pct: '心身（%）', layer_4_pct: '構想（%）', layer_5_pct: '可能性（%）',
       layer_6_pct: '統合（%）', layer_7_pct: '空（%）',
-      desire_count: '欲の出現', virtue_count: '徳の出現', energy_count: 'エネルギーの出現',
-      net_value: '純価値', transcript_source: '入力元',
+      desire_count: '欲求を感じた回数', virtue_count: '善いことをした回数', energy_count: '活力を感じた回数',
+      net_value: '充実度', transcript_source: '入力元',
       transcript_content: '文字起こし内容',
       plaud: 'Plaud', voice_memo: 'ボイスメモ', manual: '手入力',
 

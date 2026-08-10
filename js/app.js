@@ -632,6 +632,17 @@ var App = class App {
     }
   }
 
+  // ─── Consciousness Quick Mood ───
+  recordMoodQuick(level) {
+    store.addDomainEntry('consciousness', 'entries', {
+      type: 'mood_quick',
+      mood_level: level
+    });
+    const labels = { 8: '良い気分', 5: '普通', 2: '少しつらい' };
+    Components.showToast(`今日の気分を記録しました（${labels[level] || level}）`, 'success');
+    this.renderApp();
+  }
+
   // ─── Medication Check-in ───
   logMedTaken(name, status) {
     const today = new Date().toISOString().slice(0, 10);

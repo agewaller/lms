@@ -155,7 +155,7 @@ var Components = {
   // ─── Empty State ───
   emptyState(icon, title, description) {
     return `<div class="empty-state">
-      <div class="empty-icon">${icon || '📭'}</div>
+      <div class="empty-icon">${icon || '◈'}</div>
       <h3>${title || i18n.t('no_data')}</h3>
       <p>${description || ''}</p>
     </div>`;
@@ -183,7 +183,7 @@ var Components = {
       { id: 'record', icon: '◈' },
       { id: 'actions', icon: '◈' },
       { id: 'ask_ai', icon: '' },
-      { id: 'settings', icon: '⚙️' }
+      { id: 'settings', icon: '◈' }
     ];
     const color = CONFIG.domains[domain]?.color || '#6C63FF';
     return `<div class="sub-nav">

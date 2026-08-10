@@ -150,8 +150,9 @@ var Pages = {
 
     // ─── Domain-specific widgets ───
 
-    // Consciousness domain: 7-layer visualization + transcript input
+    // Consciousness domain: quick mood + 7-layer visualization + transcript input
     if (domain === 'consciousness') {
+      html += this.renderDailyMoodCheck();
       html += this.renderConsciousnessLayers();
       html += this.renderTranscriptInput();
     }
@@ -207,18 +208,53 @@ var Pages = {
     return html;
   },
 
+  // ─── Consciousness Quick Mood Check-in ───
+  renderDailyMoodCheck() {
+    const today = new Date().toISOString().slice(0, 10);
+    const entries = store.getDomainData('consciousness', 'entries', 1);
+    const todayEntry = entries.find(e => (e.timestamp || '').slice(0, 10) === today && e.type === 'mood_quick');
+    if (todayEntry) {
+      const labels = { 8: '良い気分', 5: '普通', 2: '少しつらい' };
+      const colors = { 8: '#27AE60', 5: '#F39C12', 2: '#E74C3C' };
+      const nv = todayEntry.mood_level;
+      return `<div class="mood-quick-card">
+        <div class="mood-quick-done">
+          今日の気分：<strong style="color:${colors[nv] || '#666'}">${labels[nv] || '記録済'}</strong>
+        </div>
+      </div>`;
+    }
+    return `<div class="mood-quick-card">
+      <div class="mood-quick-label">今日の気分は？</div>
+      <div class="mood-quick-buttons">
+        <button class="mood-quick-btn mood-good" onclick="app.recordMoodQuick(8)">良い</button>
+        <button class="mood-quick-btn mood-neutral" onclick="app.recordMoodQuick(5)">普通</button>
+        <button class="mood-quick-btn mood-low" onclick="app.recordMoodQuick(2)">つらい</button>
+      </div>
+    </div>`;
+  },
+
   // ─── Consciousness 7-Layer Visualization ───
   renderConsciousnessLayers() {
     const observations = store.getDomainData('consciousness', 'observation', 7);
     const layers = CONFIG.domains.consciousness.layers;
     const layerKeys = ['1', '2', '3', '3.5', '4', '5', '6', '7'];
 
-    // Get latest observation or defaults
     const latest = observations.length > 0 ? observations[observations.length - 1] : null;
 
+    // First-use state: show friendly intro instead of empty bars
+    if (!latest) {
+      return `<div class="consciousness-layers-section">
+        <h3>意識の記録</h3>
+        <div class="consciousness-intro">
+          <p>「記録する」タブの「定点観測」から、今日の意識の向き先を記録できます。</p>
+          <p>8つの項目に分けて、どこにどれくらい意識が向いていたかをスライダーで入力するだけです。</p>
+          <button class="btn btn-secondary" onclick="app.navigate('record')">最初の記録をつける</button>
+        </div>
+      </div>`;
+    }
+
     let html = `<div class="consciousness-layers-section">
-      <h3>七つの意識レイヤー</h3>
-      <p>今日、あなたの意識はどのレイヤーに多く向いていましたか？</p>
+      <h3>今日の意識の向き先</h3>
       <div class="layers-chart">`;
 
     layerKeys.forEach(key => {
@@ -239,24 +275,22 @@ var Pages = {
 
     html += `</div>`;
 
-    // Net value (純価値)
     if (latest) {
       const nv = latest.net_value || 0;
       const nvColor = nv >= 70 ? '#27AE60' : nv >= 40 ? '#F39C12' : '#E74C3C';
       html += `<div class="net-value-display">
-        <div class="nv-label">純価値（エネルギー＋徳−欲）</div>
+        <div class="nv-label">充実度</div>
         <div class="nv-score" style="color:${nvColor}">${nv}/100</div>
         <div class="nv-details">
-          欲: ${latest.desire_count || 0}回
-          徳: ${latest.virtue_count || 0}回
-          エネルギー: ${latest.energy_count || 0}回
+          欲求: ${latest.desire_count || 0}回 ／
+          善行: ${latest.virtue_count || 0}回 ／
+          活力: ${latest.energy_count || 0}回
         </div>
       </div>`;
     }
 
-    // Layer descriptions (collapsible)
     html += `<details class="layer-legend">
-      <summary>レイヤーの説明</summary>
+      <summary>8つの項目について</summary>
       <div class="legend-list">
         ${layerKeys.map(key => {
           const l = layers[key];
@@ -622,7 +656,7 @@ var Pages = {
         const transcripts = store.getDomainData('consciousness', 'transcript', 7);
         const latestObs = obs.length > 0 ? obs[obs.length - 1] : null;
         const nv = latestObs?.net_value || '-';
-        stats.push(Components.statCard('純価値', nv + (nv !== '-' ? '/100' : ''), null, null));
+        stats.push(Components.statCard('充実度', nv + (nv !== '-' ? '/100' : ''), null, null));
         stats.push(Components.statCard('定点観測', obs.length + i18n.t('items'), null, null));
         stats.push(Components.statCard('文字起こし', transcripts.length + i18n.t('items'), null, null));
         stats.push(Components.statCard(i18n.t('journal'), entries.length + i18n.t('items'), null, null));

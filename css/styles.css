@@ -2098,3 +2098,34 @@ body.is-admin .admin-only { display: flex; }
   margin-top: 12px; font-size: 12px; color: var(--text-muted);
   border-top: 1px solid var(--border); padding-top: 10px;
 }
+
+/* ─── Consciousness Quick Mood Check-in ─── */
+.mood-quick-card {
+  background: var(--bg-secondary); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 20px; margin-bottom: 16px;
+}
+.mood-quick-label {
+  font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px;
+}
+.mood-quick-buttons {
+  display: flex; gap: 10px;
+}
+.mood-quick-btn {
+  flex: 1; padding: 12px 8px; border-radius: var(--radius-sm);
+  border: 2px solid transparent; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: transform 0.1s;
+}
+.mood-quick-btn:active { transform: scale(0.96); }
+.mood-good    { background: rgba(39,174,96,0.12); color: #1a7a42; border-color: rgba(39,174,96,0.3); }
+.mood-neutral { background: rgba(243,156,18,0.12); color: #a07000; border-color: rgba(243,156,18,0.3); }
+.mood-low     { background: rgba(231,76,60,0.12);  color: #a02020; border-color: rgba(231,76,60,0.3); }
+.mood-quick-done { font-size: 15px; color: var(--text-secondary); }
+.mood-quick-done strong { font-size: 16px; }
+
+/* ─── Consciousness First-use Intro ─── */
+.consciousness-intro {
+  background: var(--accent-bg); border: 1px solid var(--accent-border);
+  border-radius: var(--radius-sm); padding: 18px; margin-bottom: 16px;
+}
+.consciousness-intro p { color: var(--text-secondary); margin-bottom: 10px; line-height: 1.7; }
+.consciousness-intro p:last-of-type { margin-bottom: 14px; }
