@@ -587,7 +587,7 @@ var App = class App {
     const symptoms = store.getDomainData('health', 'symptoms', 14);
     const vitals = store.getDomainData('health', 'vitals', 14);
     const sleep = store.getDomainData('health', 'sleepData', 14);
-    const meds = store.get('health_medications') || [];
+    const meds = store.getDomainData('health', 'medications', 60);
 
     if (symptoms.length === 0 && vitals.length === 0 && sleep.length === 0) {
       resultEl.innerHTML = `<div class="info-msg">まだ健康記録がありません。「記録する」から体調などを入力してみましょう。</div>`;
@@ -602,7 +602,7 @@ var App = class App {
         `・${(v.timestamp || '').slice(0, 10)} 血圧${v.bp_systolic || '-'}/${v.bp_diastolic || '-'} 体重${v.weight || '-'}kg 体温${v.temperature || '-'}℃`
       ).join('\n') : '',
       sleep.length > 0 ? `\n【睡眠（14日間 平均）】睡眠の質: ${(sleep.reduce((s, e) => s + (e.quality || 0), 0) / sleep.length).toFixed(1)}/10` : '',
-      meds.length > 0 ? `\n【服薬中の薬】\n` + meds.slice(0, 5).map(m => `・${m.medicine_name || m.notes || ''}`).join('\n') : ''
+      meds.length > 0 ? `\n【服薬中の薬】\n` + meds.slice(0, 10).map(m => `・${m.name || m.notes || ''} ${m.dosage || ''} ${m.timing || ''}`).join('\n') : ''
     ].filter(Boolean).join('\n');
 
     try {
@@ -611,10 +611,13 @@ var App = class App {
       resultEl.innerHTML = `<div class="doctor-memo-result">
         <div class="doctor-memo-header">
           <strong>診察メモ</strong>
-          <button class="btn btn-sm btn-secondary" onclick="app.copyDoctorMemo()">コピーする</button>
+          <div class="doctor-memo-btns">
+            <button class="btn btn-sm btn-secondary" onclick="app.copyDoctorMemo()">コピーする</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.printDoctorMemo()">印刷する</button>
+          </div>
         </div>
         <div id="doctorMemoText" class="doctor-memo-body">${Components.formatMarkdown(result)}</div>
-        <p class="doctor-memo-note">このメモをコピーして、診察前にお医者さんに見せてください。</p>
+        <p class="doctor-memo-note">このメモをコピー・印刷して、診察前にお医者さんに見せてください。</p>
       </div>`;
     } catch (e) {
       resultEl.innerHTML = `<div class="error-msg">メモを作成できませんでした。しばらくしてから再度お試しください。</div>`;
@@ -630,6 +633,34 @@ var App = class App {
         Components.showToast('クリップボードにコピーしました', 'success');
       });
     }
+  }
+
+  printDoctorMemo() {
+    const el = document.getElementById('doctorMemoText');
+    if (!el) return;
+    const content = el.innerHTML;
+    const date = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+    const win = window.open('', '_blank', 'width=700,height=900');
+    win.document.write(`<!DOCTYPE html><html lang="ja"><head>
+      <meta charset="UTF-8">
+      <title>診察メモ ${date}</title>
+      <style>
+        body { font-family: "Noto Sans JP", sans-serif; padding: 32px; color: #333; line-height: 1.8; }
+        h1 { font-size: 18px; border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 16px; }
+        h2, h3 { font-size: 15px; margin-top: 20px; }
+        p { margin: 8px 0; }
+        ul, ol { margin: 8px 0 8px 20px; }
+        li { margin: 4px 0; }
+        .date { font-size: 13px; color: #666; margin-bottom: 24px; }
+        @media print { body { padding: 16px; } }
+      </style>
+    </head><body>
+      <h1>診察メモ</h1>
+      <p class="date">作成日: ${date}</p>
+      ${content}
+    </body></html>`);
+    win.document.close();
+    win.print();
   }
 
   // ─── Consciousness Quick Mood ───

@@ -92,6 +92,8 @@ var AIEngine = {
     if (profile.age) msg += `, Age: ${profile.age}`;
     if (profile.gender) msg += `, Gender: ${profile.gender}`;
     if (profile.location) msg += `, Location: ${profile.location}`;
+    if (profile.living_arrangement) msg += `, Living: ${profile.living_arrangement}`;
+    if (Array.isArray(profile.diseases) && profile.diseases.length > 0) msg += `\n[Health Conditions] ${profile.diseases.join(', ')}`;
     msg += '\n\n';
 
     if (domain === 'holistic' || !domain) {
