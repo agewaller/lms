@@ -83,6 +83,47 @@ var App = class App {
     }
   }
 
+  // ─── User-friendly error messages ───
+  // Translates Firebase/AI error codes to plain Japanese for 65+ users.
+  friendlyError(e) {
+    const msg = (e && (e.code || e.message)) || '';
+    const code = e && e.code ? e.code : '';
+    if (code === 'auth/wrong-password' || code === 'auth/invalid-credential')
+      return 'パスワードまたはメールアドレスが正しくありません';
+    if (code === 'auth/user-not-found')
+      return 'このメールアドレスは登録されていません';
+    if (code === 'auth/email-already-in-use')
+      return 'このメールアドレスはすでに使われています';
+    if (code === 'auth/invalid-email')
+      return 'メールアドレスの形式が正しくありません';
+    if (code === 'auth/weak-password')
+      return 'パスワードが弱すぎます。6文字以上で設定してください';
+    if (code === 'auth/too-many-requests')
+      return 'ログイン試行が多すぎます。しばらくしてから再試行してください';
+    if (code === 'auth/network-request-failed')
+      return 'インターネット接続をご確認ください';
+    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request')
+      return 'ログインがキャンセルされました';
+    if (code === 'auth/requires-recent-login')
+      return 'セキュリティのため、再度ログインしてください';
+    if (code === 'auth/account-exists-with-different-credential')
+      return '別の方法で登録済みのメールアドレスです';
+    if (/overloaded|rate.?limit/i.test(msg))
+      return 'サーバーが混み合っています。しばらくしてから再試行してください';
+    if (/quota|limit.?exceed/i.test(msg))
+      return '利用上限に達しています。管理者にお問い合わせください';
+    if (/network|fetch|timeout|ECONNRESET/i.test(msg))
+      return 'インターネット接続を確認してから再試行してください';
+    if (/empty|空/i.test(msg))
+      return msg; // already in Japanese
+    // Last resort: strip Firebase boilerplate prefix if present
+    const cleaned = (e.message || '')
+      .replace(/^Firebase:\s*/i, '')
+      .replace(/\s*\(auth\/[\w-]+\)\.?\s*$/, '')
+      .trim();
+    return cleaned || 'エラーが発生しました。しばらくしてから再試行してください';
+  }
+
   // ─── Login Methods ───
   async loginWithGoogle() {
     await FirebaseBackend.signInWithGoogle();
@@ -102,7 +143,7 @@ var App = class App {
     try {
       await FirebaseBackend.signInWithEmail(email, password);
     } catch (e) {
-      Components.showToast(e.message, 'error');
+      Components.showToast(this.friendlyError(e), 'error');
     }
   }
 
@@ -131,7 +172,7 @@ var App = class App {
     try {
       await FirebaseBackend.registerWithEmail(email, password, name);
     } catch (e) {
-      Components.showToast(e.message, 'error');
+      Components.showToast(this.friendlyError(e), 'error');
     }
   }
 
@@ -145,7 +186,7 @@ var App = class App {
     try {
       await FirebaseBackend.sendPasswordReset(email);
     } catch (e) {
-      Components.showToast(e.message, 'error');
+      Components.showToast(this.friendlyError(e), 'error');
     }
   }
 
@@ -416,7 +457,7 @@ var App = class App {
 
       input.value = '';
     } catch (e) {
-      if (responseEl) responseEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (responseEl) responseEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(this.friendlyError(e))}</div>`;
     }
   }
 
@@ -468,7 +509,7 @@ var App = class App {
       Components.showToast(i18n.t('ai_analysis') + ' ✓', 'success');
       this.renderApp();
     } catch (e) {
-      Components.showToast(e.message, 'error');
+      Components.showToast(this.friendlyError(e), 'error');
     }
   }
 
@@ -504,7 +545,7 @@ var App = class App {
       Components.showToast(i18n.t('ai_analysis') + ' ✓', 'success');
       this.renderApp();
     } catch (e) {
-      Components.showToast(e.message, 'error');
+      Components.showToast(this.friendlyError(e), 'error');
     }
   }
 
@@ -534,7 +575,7 @@ var App = class App {
     } catch (e) {
       if (container) {
         container.innerHTML += Components.chatMessage({
-          role: 'assistant', content: 'エラーが発生しました: ' + e.message, timestamp: new Date().toISOString()
+          role: 'assistant', content: this.friendlyError(e), timestamp: new Date().toISOString()
         });
       }
     }
@@ -571,7 +612,7 @@ var App = class App {
       this.renderApp();
       Components.showToast(i18n.t('saved'), 'success');
     } catch (e) {
-      Components.showToast(e.message, 'error');
+      Components.showToast(this.friendlyError(e), 'error');
     }
   }
 
@@ -640,7 +681,7 @@ var App = class App {
       if (resultEl) {
         resultEl.innerHTML = `<div class="error-msg">
           <strong>分析できませんでした</strong><br>
-          ${e.message || 'もう一度お試しください'}
+          ${Components.escapeHtml(this.friendlyError(e))}
         </div>`;
       }
     }
@@ -911,7 +952,7 @@ var App = class App {
       this.parseAndSaveObservation(result);
       this.openModal('分析結果', `<div class="analysis-content">${Components.formatMarkdown(result)}</div>`);
     } catch (e) {
-      Components.showToast(e.message, 'error');
+      Components.showToast(this.friendlyError(e), 'error');
     }
     const textarea = document.getElementById('plaudText');
     if (textarea) textarea.value = '';
@@ -940,14 +981,16 @@ var App = class App {
       .filter(([k]) => !k.startsWith('_') && k !== 'timestamp' && k !== 'id' && k !== 'domain' && k !== 'category');
 
     const formHtml = `<form id="editForm">
-      ${fields.map(([k, v]) => `
-        <div class="form-group">
-          <label>${i18n.t(k) || k}</label>
+      ${fields.map(([k, v]) => {
+        const safeV = Components.escapeHtml(String(v ?? ''));
+        const safeK = Components.escapeHtml(k);
+        return `<div class="form-group">
+          <label>${Components.escapeHtml(i18n.t(k) || k)}</label>
           ${typeof v === 'string' && v.length > 50
-            ? `<textarea name="${k}" class="form-input" rows="3">${v}</textarea>`
-            : `<input type="${typeof v === 'number' ? 'number' : 'text'}" name="${k}" class="form-input" value="${v}">`}
-        </div>
-      `).join('')}
+            ? `<textarea name="${safeK}" class="form-input" rows="3">${safeV}</textarea>`
+            : `<input type="${typeof v === 'number' ? 'number' : 'text'}" name="${safeK}" class="form-input" value="${safeV}">`}
+        </div>`;
+      }).join('')}
       <div class="form-actions">
         <button type="button" class="btn btn-primary" onclick="app.saveDataEntryEdit('${domain}','${category}','${id}')">保存</button>
         <button type="button" class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
@@ -1086,7 +1129,7 @@ var App = class App {
       Components.showToast(`${count}件のデータを取り込みました`, 'success');
       this.renderApp();
     } catch (e) {
-      Components.showToast('取り込みに失敗しました: ' + e.message, 'error');
+      Components.showToast(this.friendlyError(e), 'error');
     }
   }
 
@@ -1101,7 +1144,7 @@ var App = class App {
       Components.showToast(`${count}件のデータを取り込みました`, 'success');
       this.renderApp();
     } catch (e) {
-      Components.showToast('取り込みに失敗しました: ' + e.message, 'error');
+      Components.showToast(this.friendlyError(e), 'error');
     }
   }
 
@@ -1135,7 +1178,7 @@ var App = class App {
       Components.showToast(`${count}件の予定を取り込みました`, 'success');
       this.renderApp();
     } catch (e) {
-      Components.showToast('同期に失敗しました: ' + e.message, 'error');
+      Components.showToast(this.friendlyError(e), 'error');
     }
   }
 
@@ -1169,7 +1212,7 @@ var App = class App {
       Components.showToast(`${count}件の予定を取り込みました`, 'success');
       this.renderApp();
     } catch (e) {
-      Components.showToast('同期に失敗しました: ' + e.message, 'error');
+      Components.showToast(this.friendlyError(e), 'error');
     }
   }
 
@@ -1206,7 +1249,7 @@ var App = class App {
       );
       this.renderApp();
     } catch (e) {
-      Components.showToast('連絡先取得に失敗: ' + e.message, 'error');
+      Components.showToast(this.friendlyError(e), 'error');
     }
   }
 
@@ -1231,7 +1274,7 @@ var App = class App {
         this.renderApp();
       }
     } catch (e) {
-      Components.showToast('取り込みに失敗: ' + e.message, 'error');
+      Components.showToast(this.friendlyError(e), 'error');
     }
   }
 
@@ -1295,7 +1338,7 @@ var App = class App {
         Components.showToast(`${source}から${count}件のデータを取り込みました`, 'success');
         this.renderApp();
       } catch (err) {
-        Components.showToast('取り込みに失敗: ' + err.message, 'error');
+        Components.showToast(this.friendlyError(err), 'error');
       }
     };
     reader.readAsText(file);
@@ -1383,7 +1426,7 @@ var App = class App {
       textarea.value = '';
       Components.showToast('分析が完了しました', 'success');
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${e.message}</div>`;
+      if (resultEl) resultEl.innerHTML = `<div class="error-msg">${Components.escapeHtml(this.friendlyError(e))}</div>`;
     }
   }
 
@@ -1667,7 +1710,7 @@ var App = class App {
         Components.showToast(i18n.t('saved'), 'success');
         this.renderApp();
       } catch (err) {
-        Components.showToast(i18n.t('error') + ': ' + err.message, 'error');
+        Components.showToast(this.friendlyError(err), 'error');
       }
     };
     reader.readAsText(file);
@@ -1779,7 +1822,7 @@ var App = class App {
       const result = await AIEngine.analyze(null, 'text_analysis', { text: 'テスト' });
       if (resultEl) resultEl.innerHTML = '<div class="toast toast-success" style="position:static;opacity:1;margin-top:10px;">✓ 接続成功</div>';
     } catch (e) {
-      if (resultEl) resultEl.innerHTML = '<div class="toast toast-error" style="position:static;opacity:1;margin-top:10px;">✗ ' + e.message + '</div>';
+      if (resultEl) resultEl.innerHTML = '<div class="toast toast-error" style="position:static;opacity:1;margin-top:10px;">✗ ' + Components.escapeHtml(this.friendlyError(e)) + '</div>';
     }
   }
 
@@ -2012,7 +2055,7 @@ var App = class App {
       Components.showToast(`${users.length}人のユーザーを読み込みました`, 'success');
       this.renderApp();
     } catch (e) {
-      Components.showToast('読み込みに失敗しました: ' + e.message, 'error');
+      Components.showToast(this.friendlyError(e), 'error');
     }
   }
 
@@ -2072,7 +2115,7 @@ var App = class App {
       `);
       this.renderApp();
     } catch (e) {
-      Components.showToast('ZIP取込失敗: ' + e.message, 'error');
+      Components.showToast(this.friendlyError(e), 'error');
     }
   }
 
