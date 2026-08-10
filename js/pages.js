@@ -30,9 +30,12 @@ var Pages = {
     // Quick input bar
     let html = `<div class="page-home">
       <div class="quick-input-bar">
-        <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
-          onkeydown="if(event.key==='Enter')app.quickInput()">
-        <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
+        <label class="quick-input-label">気になることを何でもどうぞ（送信するとアドバイスが届きます）</label>
+        <div class="quick-input-row">
+          <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
+            onkeydown="if(event.key==='Enter')app.quickInput()">
+          <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
+        </div>
       </div>
       <div id="quickResponse"></div>`;
 
@@ -124,10 +127,7 @@ var Pages = {
 
     html += `</div></div>`;
 
-    // Daily tip (only shown when user has data)
-    if (allRecent.length > 0) {
-      html += this.renderDailyTip(domain);
-    }
+    html += this.renderDailyTip(domain);
 
     // Recommendations
     const recs = (store.get('recommendations') || []).filter(r => r.domain === domain || !r.domain);
@@ -618,7 +618,7 @@ var Pages = {
           placeholder="${i18n.t('quick_input_placeholder')}"></textarea>
         <div class="diary-actions">
           <button class="btn btn-secondary" onclick="app.saveDiary('${domain}')">${i18n.t('save')}</button>
-          <button class="btn btn-primary" onclick="app.saveDiaryAndAnalyze('${domain}')">${i18n.t('save_and_analyze')}</button>
+          <button class="btn btn-primary" onclick="app.saveDiaryAndAnalyze('${domain}')" title="保存してアドバイスをもらう">${i18n.t('save_and_analyze')}</button>
         </div>
       </div>
 
@@ -688,14 +688,15 @@ var Pages = {
 
     let html = `<div class="page-actions">
       <h2>${i18n.t(domain)} - ${i18n.t('actions')}</h2>
+      <p class="page-desc">これまでの記録をもとに、今日取り組めることをご提案します。</p>
 
       <!-- Generate recommendations -->
       <div class="action-generate">
         <button class="btn btn-primary btn-lg" onclick="app.generateRecommendations('${domain}')">
-          ${i18n.t(domain)}の分析を実行
+          ${i18n.t(domain)}のアドバイスをもらう
         </button>
         <button class="btn btn-secondary btn-lg" onclick="app.generateRecommendations('holistic')">
-          6領域の総合分析
+          6つの領域をまとめて確認する
         </button>
       </div>`;
 
@@ -1557,7 +1558,7 @@ var Pages = {
   // ═══════════════════════════════════════════════════════════
   renderAdmin() {
     if (!FirebaseBackend.isAdmin()) {
-      return '<div class="page-admin"><div class="card"><div class="card-body"><h2>Access Denied</h2><p>管理権限がありません。</p></div></div></div>';
+      return '<div class="page-admin"><div class="card"><div class="card-body"><h2>アクセスできません</h2><p>管理権限がありません。</p></div></div></div>';
     }
 
     const currentTab = store.get('adminTab') || 'prompts';

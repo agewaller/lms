@@ -1108,8 +1108,10 @@ body.is-admin .admin-only { display: flex; }
 .sub-nav-btn.active { font-weight: 600; }
 
 /* ─── Home Page ─── */
-.quick-input-bar { display: flex; gap: 10px; margin-bottom: 20px; }
-.quick-input-bar .form-input { flex: 1; }
+.quick-input-bar { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+.quick-input-label { font-size: 13px; color: var(--text-secondary); }
+.quick-input-row { display: flex; gap: 10px; }
+.quick-input-row .form-input { flex: 1; }
 #quickResponse { margin-bottom: 20px; }
 .quick-response {
   background: var(--bg-card); border-radius: var(--radius);
@@ -1757,7 +1759,7 @@ body.is-admin .admin-only { display: flex; }
 
   /* Stack layouts */
   .home-overview { flex-direction: column; align-items: center; }
-  .quick-input-bar { flex-direction: column; }
+  .quick-input-row { flex-direction: column; }
   .action-generate { flex-direction: column; }
   .chat-input-bar { flex-direction: column; }
   .stock-input-bar { flex-direction: column; }

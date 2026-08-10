@@ -471,7 +471,7 @@ var App = class App {
     } catch (e) {
       if (container) {
         container.innerHTML += Components.chatMessage({
-          role: 'assistant', content: '⚠️ ' + e.message, timestamp: new Date().toISOString()
+          role: 'assistant', content: 'エラーが発生しました: ' + e.message, timestamp: new Date().toISOString()
         });
       }
     }
@@ -541,7 +541,7 @@ var App = class App {
       if (resultEl) {
         resultEl.innerHTML = `<div class="error-msg">
           <strong>分析できません</strong><br>
-          管理者がAIキーを設定していないため、分析を実行できません。管理者にご連絡ください。
+          この機能を利用するには、管理者による設定が必要です。管理者にご連絡ください。
         </div>`;
       }
       return;
