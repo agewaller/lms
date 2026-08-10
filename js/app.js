@@ -515,9 +515,10 @@ var App = class App {
   }
 
   executeAction(type, data) {
-    // Placeholder for action execution (e.g., open affiliate link, book appointment)
     console.log('Execute action:', type, data);
-    Components.showToast('Action: ' + type, 'info');
+    if (type === 'link' && data) {
+      window.open(data, '_blank', 'noopener');
+    }
   }
 
   // ─── Stock Analysis (Assets domain) ───
@@ -572,6 +573,62 @@ var App = class App {
           ${e.message || 'もう一度お試しください'}
         </div>`;
       }
+    }
+  }
+
+  // ─── Doctor Visit Memo (Health domain) ───
+  async generateDoctorMemo() {
+    const resultEl = document.getElementById('doctorMemoResult');
+    if (!resultEl) return;
+
+    resultEl.innerHTML = Components.loading('最近の記録を確認しています...');
+
+    // Gather recent health data
+    const symptoms = store.getDomainData('health', 'symptoms', 14);
+    const vitals = store.getDomainData('health', 'vitals', 14);
+    const sleep = store.getDomainData('health', 'sleepData', 14);
+    const meds = store.get('health_medications') || [];
+
+    if (symptoms.length === 0 && vitals.length === 0 && sleep.length === 0) {
+      resultEl.innerHTML = `<div class="info-msg">まだ健康記録がありません。「記録する」から体調などを入力してみましょう。</div>`;
+      return;
+    }
+
+    const summaryText = [
+      symptoms.length > 0 ? `【最近の体調（14日間: ${symptoms.length}件）】\n` + symptoms.slice(-5).map(s =>
+        `・${(s.timestamp || '').slice(0, 10)} 体調${s.condition_level || '-'}/10 ${s.notes || ''}`
+      ).join('\n') : '',
+      vitals.length > 0 ? `\n【バイタル（直近5件）】\n` + vitals.slice(-5).map(v =>
+        `・${(v.timestamp || '').slice(0, 10)} 血圧${v.bp_systolic || '-'}/${v.bp_diastolic || '-'} 体重${v.weight || '-'}kg 体温${v.temperature || '-'}℃`
+      ).join('\n') : '',
+      sleep.length > 0 ? `\n【睡眠（14日間 平均）】睡眠の質: ${(sleep.reduce((s, e) => s + (e.quality || 0), 0) / sleep.length).toFixed(1)}/10` : '',
+      meds.length > 0 ? `\n【服薬中の薬】\n` + meds.slice(0, 5).map(m => `・${m.medicine_name || m.notes || ''}`).join('\n') : ''
+    ].filter(Boolean).join('\n');
+
+    try {
+      const result = await AIEngine.analyze('health', 'doctor_memo', { text: summaryText });
+
+      resultEl.innerHTML = `<div class="doctor-memo-result">
+        <div class="doctor-memo-header">
+          <strong>診察メモ</strong>
+          <button class="btn btn-sm btn-secondary" onclick="app.copyDoctorMemo()">コピーする</button>
+        </div>
+        <div id="doctorMemoText" class="doctor-memo-body">${Components.formatMarkdown(result)}</div>
+        <p class="doctor-memo-note">このメモをコピーして、診察前にお医者さんに見せてください。</p>
+      </div>`;
+    } catch (e) {
+      resultEl.innerHTML = `<div class="error-msg">メモを作成できませんでした。しばらくしてから再度お試しください。</div>`;
+    }
+  }
+
+  copyDoctorMemo() {
+    const el = document.getElementById('doctorMemoText');
+    if (!el) return;
+    const text = el.innerText || el.textContent || '';
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        Components.showToast('クリップボードにコピーしました', 'success');
+      });
     }
   }
 
