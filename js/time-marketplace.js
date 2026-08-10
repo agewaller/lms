@@ -162,7 +162,7 @@ var TimeMarketplace = {
     const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
 
     return `<div class="marketplace-settings">
-      <h3>⏰ 空き時間の販売設定</h3>
+      <h3>空き時間の販売設定</h3>
       <p>カレンダーの空き時間を自動で計算し、あなたのスキルや経験を必要としている方に提供できます。</p>
 
       <div class="form-group">
@@ -257,7 +257,7 @@ var TimeMarketplace = {
     const settings = this.getSettings();
     if (!settings.enabled) {
       return `<div class="marketplace-widget">
-        <h3>⏰ 空き時間の活用</h3>
+        <h3>空き時間の活用</h3>
         <p>あなたの経験やスキルを、空き時間を使って提供してみませんか？</p>
         <button class="btn btn-secondary" onclick="app.navigate('settings')">設定を見る</button>
       </div>`;
