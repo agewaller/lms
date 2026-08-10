@@ -1854,9 +1854,10 @@ var Pages = {
     });
 
     filtered.forEach(([key, p], i) => {
+      const safeKey = Components.escapeHtml(key);
       const schedule = p.schedule || 'manual';
       const scheduleLabel = { daily: '毎日', weekly: '毎週', on_data_update: 'データ更新時', manual: '手動' }[schedule] || schedule;
-      html += `<div class="prompt-item ${p.active === false ? 'inactive' : ''}" data-key="${key}">
+      html += `<div class="prompt-item ${p.active === false ? 'inactive' : ''}" data-key="${safeKey}">
         <div class="prompt-header">
           <div class="prompt-meta">
             <span class="prompt-num">${i + 1}</span>
@@ -1865,11 +1866,11 @@ var Pages = {
             <span class="prompt-badge schedule">${scheduleLabel}</span>
           </div>
           <div class="prompt-actions">
-            <button class="btn btn-sm btn-secondary" onclick="app.editPrompt('${key}')">編集</button>
+            <button class="btn btn-sm btn-secondary" data-key="${safeKey}" onclick="app.editPrompt(this.dataset.key)">編集</button>
           </div>
         </div>
         <div class="prompt-desc">${Components.escapeHtml(p.description || '')}</div>
-        <div class="prompt-edit" id="edit-${key}" style="display:none;">
+        <div class="prompt-edit" id="edit-${safeKey}" style="display:none;">
           <div class="form-group">
             <label>名前</label>
             <input type="text" class="form-input" value="${Components.escapeHtml(p.name || '')}" data-field="name">
@@ -1899,9 +1900,9 @@ var Pages = {
             <textarea class="form-input prompt-textarea" rows="16" data-field="prompt">${Components.escapeHtml(p.prompt || '')}</textarea>
           </div>
           <div class="form-actions">
-            <button class="btn btn-primary" onclick="app.savePrompt('${key}')">保存</button>
-            <button class="btn btn-secondary" onclick="app.cancelPromptEdit('${key}')">キャンセル</button>
-            <button class="btn btn-danger" onclick="app.deletePrompt('${key}')">削除</button>
+            <button class="btn btn-primary" data-key="${safeKey}" onclick="app.savePrompt(this.dataset.key)">保存</button>
+            <button class="btn btn-secondary" data-key="${safeKey}" onclick="app.cancelPromptEdit(this.dataset.key)">キャンセル</button>
+            <button class="btn btn-danger" data-key="${safeKey}" onclick="app.deletePrompt(this.dataset.key)">削除</button>
           </div>
         </div>
       </div>`;

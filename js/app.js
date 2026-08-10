@@ -1599,7 +1599,7 @@ var App = class App {
       modal.className = 'modal-overlay';
       modal.innerHTML = `<div class="modal-content">
         <h3>レジュメをコピー</h3>
-        <textarea class="form-input" rows="10" readonly>${text}</textarea>
+        <textarea class="form-input" rows="10" readonly>${Components.escapeHtml(text)}</textarea>
         <p>上のテキストをコピーして、求人サイトに貼り付けてください。</p>
         <button class="btn btn-primary" onclick="this.parentElement.parentElement.remove()">閉じる</button>
       </div>`;
@@ -1820,17 +1820,17 @@ var App = class App {
   }
 
   editPrompt(key) {
-    const el = document.getElementById('edit-' + key);
+    const el = document.getElementById('edit-' + Components.escapeHtml(key));
     if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
   }
 
   cancelPromptEdit(key) {
-    const el = document.getElementById('edit-' + key);
+    const el = document.getElementById('edit-' + Components.escapeHtml(key));
     if (el) el.style.display = 'none';
   }
 
   savePrompt(key) {
-    const editEl = document.getElementById('edit-' + key);
+    const editEl = document.getElementById('edit-' + Components.escapeHtml(key));
     if (!editEl) return;
 
     const fields = editEl.querySelectorAll('[data-field]');
@@ -1853,10 +1853,11 @@ var App = class App {
   }
 
   deletePrompt(key) {
+    this._pendingDeleteKey = key;
     this.openModal('プロンプトを削除', `
       <p>このプロンプトを削除します。よろしいですか？</p>
       <div class="modal-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:center;">
-        <button class="btn btn-danger" onclick="app.closeModal();app._doDeletePrompt('${key}')">削除する</button>
+        <button class="btn btn-danger" onclick="app.closeModal();app._doDeletePrompt(app._pendingDeleteKey)">削除する</button>
         <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
       </div>`);
   }
@@ -1885,6 +1886,7 @@ var App = class App {
   _doAddNewPrompt() {
     const key = document.getElementById('newPromptKey')?.value?.trim();
     if (!key) { Components.showToast('キー名を入力してください', 'error'); return; }
+    if (!/^[a-zA-Z0-9_-]+$/.test(key)) { Components.showToast('キー名は英数字・アンダースコア・ハイフンのみ使用できます', 'error'); return; }
     if (CONFIG.prompts[key]) { Components.showToast('そのキーは既に存在します', 'error'); return; }
     this.closeModal();
     CONFIG.prompts[key] = {
