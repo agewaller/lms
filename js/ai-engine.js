@@ -200,7 +200,7 @@ var AIEngine = {
 
   async callOpenAI(model, system, userMsg, maxTokens) {
     const apiKey = this.getApiKey('openai');
-    if (!apiKey) throw new Error('OpenAI API key not set');
+    if (!apiKey) throw new Error('OpenAI APIキーが設定されていません。管理者にご連絡ください。');
 
     const res = await fetch(CONFIG.endpoints.openai, {
       method: 'POST',
@@ -220,7 +220,7 @@ var AIEngine = {
 
     if (!res.ok) {
       const err = await res.text();
-      throw new Error('OpenAI API error: ' + err);
+      throw new Error('OpenAI APIエラー (HTTP ' + res.status + '): ' + err);
     }
     const data = await res.json();
     return data.choices?.[0]?.message?.content || '';
@@ -228,7 +228,7 @@ var AIEngine = {
 
   async callGemini(model, system, userMsg, maxTokens) {
     const apiKey = this.getApiKey('google');
-    if (!apiKey) throw new Error('Google API key not set');
+    if (!apiKey) throw new Error('Google APIキーが設定されていません。管理者にご連絡ください。');
 
     const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
@@ -243,7 +243,7 @@ var AIEngine = {
 
     if (!res.ok) {
       const err = await res.text();
-      throw new Error('Gemini API error: ' + err);
+      throw new Error('Gemini APIエラー (HTTP ' + res.status + '): ' + err);
     }
     const data = await res.json();
     return data.candidates?.[0]?.content?.parts?.[0]?.text || '';

@@ -108,15 +108,20 @@ var App = class App {
       return 'セキュリティのため、再度ログインしてください';
     if (code === 'auth/account-exists-with-different-credential')
       return '別の方法で登録済みのメールアドレスです';
-    if (/overloaded|rate.?limit/i.test(msg))
+    if (/overloaded|rate.?limit|HTTP 429/i.test(msg))
       return 'サーバーが混み合っています。しばらくしてから再試行してください';
     if (/quota|limit.?exceed/i.test(msg))
       return '利用上限に達しています。管理者にお問い合わせください';
-    if (/network|fetch|timeout|ECONNRESET/i.test(msg))
+    if (/HTTP 401|HTTP 403|APIキーが設定されていません|api.?key/i.test(msg))
+      return '接続設定を確認してください。管理者にお問い合わせください';
+    if (/HTTP 5\d\d/i.test(msg))
+      return 'サービスが一時的に利用できません。しばらくしてから再試行してください';
+    if (/network|fetch|timeout|ECONNRESET|接続できません/i.test(msg))
       return 'インターネット接続を確認してから再試行してください';
-    if (/empty|空/i.test(msg))
-      return msg; // already in Japanese
-    // Last resort: strip Firebase boilerplate prefix if present
+    // If message is already in Japanese (no ASCII HTTP error prefix), pass it through
+    if (/[぀-ヿ一-鿿]/.test(msg) && !/HTTP\s*\d|error|Error/.test(msg))
+      return msg;
+    // Strip Firebase boilerplate prefix
     const cleaned = (e.message || '')
       .replace(/^Firebase:\s*/i, '')
       .replace(/\s*\(auth\/[\w-]+\)\.?\s*$/, '')
