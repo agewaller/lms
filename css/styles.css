@@ -1989,8 +1989,38 @@ body.is-admin .admin-only { display: flex; }
   .onboarding-modal { padding: 28px 20px; }
   .ob-domain-grid { grid-template-columns: repeat(2, 1fr); }
   .pain-grid { grid-template-columns: 1fr; }
+  .persona-grid { grid-template-columns: 1fr; }
   .hero-actions { flex-direction: column; align-items: center; }
   .faq-q { font-size: 15px; }
+}
+
+/* LP: Hero tagline (below h1) */
+.hero-tagline {
+  font-size: 14px; font-weight: 400; letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.5); margin-bottom: 12px; margin-top: -8px;
+}
+
+/* LP: Use-case personas section */
+.lp-section-personas { background: var(--bg-secondary); }
+.persona-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px; margin-top: 40px;
+}
+.persona-card {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 28px; border: 1px solid var(--border); text-align: left;
+}
+.persona-icon {
+  width: 40px; height: 40px; border-radius: 50%; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; margin-bottom: 14px;
+}
+.persona-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+.persona-card p { font-size: 14px; line-height: 1.9; color: var(--text-secondary); margin-bottom: 12px; }
+.persona-domain {
+  display: inline-block; font-size: 12px; padding: 3px 10px;
+  background: rgba(108,99,255,0.1); color: var(--accent);
+  border-radius: 20px;
 }
 
 /* Doctor Memo section (Health domain) */
