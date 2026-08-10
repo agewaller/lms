@@ -2,6 +2,17 @@
    LMS - AI Engine
    Multi-model AI integration (Claude, GPT-4o, Gemini)
    ============================================================ */
+
+// Map CONFIG model IDs → actual provider API IDs.
+// Update this table when providers rotate model names; nothing else needs to change.
+var MODEL_MAP = {
+  'claude-sonnet-4-6': 'claude-sonnet-4-6-20260101',
+  'claude-opus-4-6':   'claude-opus-4-6-20260201',
+  'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+  'gpt-4o':            'gpt-4o',
+  'gemini-pro':        'gemini-2.0-flash'
+};
+
 var AIEngine = {
 
   // ─── Main analysis entry point ───
@@ -136,6 +147,7 @@ var AIEngine = {
     const apiKey = this.getApiKey('anthropic');
     if (!apiKey) throw new Error('Anthropic APIキーが設定されていません。管理者にご連絡ください。');
 
+    const apiModel = MODEL_MAP[model] || model;
     const endpoint = CONFIG.endpoints.anthropic;
 
     // ─── Direct browser mode (no proxy) ───
@@ -163,7 +175,7 @@ var AIEngine = {
     }
 
     console.log('[LMS] Calling Anthropic', isDirect ? '(direct)' : 'via proxy:', url);
-    console.log('[LMS] Model:', model, 'Max tokens:', maxTokens);
+    console.log('[LMS] Model:', apiModel, 'Max tokens:', maxTokens);
 
     let res;
     try {
@@ -171,7 +183,7 @@ var AIEngine = {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model,
+          model: apiModel,
           max_tokens: maxTokens,
           system: system,
           messages: [{ role: 'user', content: userMsg }]
@@ -202,6 +214,7 @@ var AIEngine = {
     const apiKey = this.getApiKey('openai');
     if (!apiKey) throw new Error('OpenAI APIキーが設定されていません。管理者にご連絡ください。');
 
+    const apiModel = MODEL_MAP[model] || model;
     const res = await fetch(CONFIG.endpoints.openai, {
       method: 'POST',
       headers: {
@@ -209,7 +222,7 @@ var AIEngine = {
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: model,
+        model: apiModel,
         max_tokens: maxTokens,
         messages: [
           { role: 'system', content: system },
@@ -230,7 +243,8 @@ var AIEngine = {
     const apiKey = this.getApiKey('google');
     if (!apiKey) throw new Error('Google APIキーが設定されていません。管理者にご連絡ください。');
 
-    const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
+    const apiModel = MODEL_MAP[model] || model;
+    const url = `${CONFIG.endpoints.google}/${apiModel}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
