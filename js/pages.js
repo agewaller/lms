@@ -57,13 +57,20 @@ var Pages = {
       const msg = streak === 1 ? '記録を始めました！明日も続けましょう' :
                   streak < 7  ? `${streak}日連続で記録中。この調子！` :
                   streak < 30 ? `${streak}日連続！素晴らしい習慣です` :
-                                `${streak}日連続！あなたは本物です`;
+                  streak < 100 ? `${streak}日連続！あなたは本物です` :
+                                 `${streak}日連続！歴史に残る記録です`;
+      const nextMilestone = streak < 3 ? 3 : streak < 7 ? 7 : streak < 14 ? 14 :
+                            streak < 30 ? 30 : streak < 60 ? 60 : streak < 100 ? 100 : null;
+      const nextHint = nextMilestone ? `あと${nextMilestone - streak}日で${nextMilestone}日達成` : '';
       const canShare = typeof navigator.share === 'function';
       html += `<div class="streak-banner">
         <span class="streak-flame">◈</span>
         <span class="streak-count">${streak}日</span>
-        <span class="streak-msg">${msg}</span>
-        ${canShare && streak >= 7 ? `<button class="streak-share-btn" onclick="app.shareStreak(${streak})" title="シェアする">シェア</button>` : ''}
+        <div class="streak-text">
+          <span class="streak-msg">${msg}</span>
+          ${nextHint ? `<span class="streak-next">${nextHint}</span>` : ''}
+        </div>
+        ${canShare && streak >= 3 ? `<button class="streak-share-btn" onclick="app.shareStreak(${streak})" title="シェアする">シェア</button>` : ''}
       </div>`;
     }
 
