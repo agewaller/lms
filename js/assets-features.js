@@ -431,10 +431,10 @@ var AssetsFeatures = {
       </div>
 
       <div class="at-stats">
-        ${Components.statCard('戦略', this.getStrategyLabel(settings.strategy), null, '📋')}
-        ${Components.statCard('今日の取引', today.length + '件', null, '📊')}
-        ${Components.statCard('月間投資額', (settings._monthlyUsed || 0).toLocaleString() + '円', null, '💰')}
-        ${Components.statCard('月間上限', settings.monthlyLimit?.toLocaleString() + '円', null, '🔒')}
+        ${Components.statCard('戦略', this.getStrategyLabel(settings.strategy), null, null)}
+        ${Components.statCard('今日の取引', today.length + '件', null, null)}
+        ${Components.statCard('月間投資額', (settings._monthlyUsed || 0).toLocaleString() + '円', null, null)}
+        ${Components.statCard('月間上限', settings.monthlyLimit?.toLocaleString() + '円', null, null)}
       </div>
 
       ${pending.length > 0 ? `
