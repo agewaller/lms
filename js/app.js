@@ -632,6 +632,18 @@ var App = class App {
     }
   }
 
+  // ─── Medication Check-in ───
+  logMedTaken(name, status) {
+    const today = new Date().toISOString().slice(0, 10);
+    const log = store.get('health_med_log') || {};
+    if (!log[today]) log[today] = {};
+    log[today][name] = status;
+    store.set('health_med_log', log);
+    const msg = status === 'taken' ? `${name} を服用済みとして記録しました` : `${name} をスキップとして記録しました`;
+    Components.showToast(msg, 'success');
+    this.renderApp();
+  }
+
   // ─── Contact Import (Trust domain) ───
   async importContacts(event) {
     const file = event.target.files[0];

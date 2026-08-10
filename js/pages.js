@@ -189,8 +189,10 @@ var Pages = {
       }
     }
 
-    // Health domain: doctor visit memo generator
+    // Health domain: trend summary + med check-in + doctor memo
     if (domain === 'health') {
+      html += this.renderWeeklyHealthTrend();
+      html += this.renderMedCheckIn();
       html += this.renderDoctorMemo();
     }
 
@@ -425,6 +427,105 @@ var Pages = {
         <p>あなたのスキルを空き時間で提供できます。</p>
         <button class="btn btn-sm btn-secondary" onclick="app.switchDomain('time');app.navigate('settings')">時間販売の設定へ</button>
       </div>` : ''}
+    </div>`;
+  },
+
+  // ─── Weekly Health Trend (Health domain) ───
+  renderWeeklyHealthTrend() {
+    const symptoms  = store.getDomainData('health', 'symptoms', 14);
+    const sleep     = store.getDomainData('health', 'sleepData', 14);
+
+    if (symptoms.length === 0 && sleep.length === 0) return '';
+
+    const today = new Date();
+    const cutoff7  = new Date(today); cutoff7.setDate(today.getDate() - 7);
+    const cutoff14 = new Date(today); cutoff14.setDate(today.getDate() - 14);
+
+    const thisWeekSym  = symptoms.filter(s => new Date(s.timestamp) >= cutoff7);
+    const priorWeekSym = symptoms.filter(s => new Date(s.timestamp) >= cutoff14 && new Date(s.timestamp) < cutoff7);
+    const thisWeekSlp  = sleep.filter(s => new Date(s.timestamp) >= cutoff7);
+    const priorWeekSlp = sleep.filter(s => new Date(s.timestamp) >= cutoff14 && new Date(s.timestamp) < cutoff7);
+
+    const avg = (arr, key) => arr.length === 0 ? null : Math.round(arr.reduce((s, e) => s + (parseFloat(e[key]) || 0), 0) / arr.length * 10) / 10;
+    const trendArrow = (curr, prev) => {
+      if (curr === null || prev === null) return '';
+      const diff = curr - prev;
+      if (Math.abs(diff) < 0.3) return '<span class="trend-neutral">→</span>';
+      return diff > 0 ? '<span class="trend-up">↑</span>' : '<span class="trend-down">↓</span>';
+    };
+
+    const condNow  = avg(thisWeekSym, 'condition_level');
+    const condPrev = avg(priorWeekSym, 'condition_level');
+    const slpNow   = avg(thisWeekSlp, 'quality');
+    const slpPrev  = avg(priorWeekSlp, 'quality');
+
+    let rows = '';
+    if (condNow !== null) {
+      rows += `<div class="ht-row">
+        <span class="ht-label">今週の体調（平均）</span>
+        <span class="ht-val">${condNow}/10 ${trendArrow(condNow, condPrev)}</span>
+      </div>`;
+    }
+    if (slpNow !== null) {
+      rows += `<div class="ht-row">
+        <span class="ht-label">睡眠の質（平均）</span>
+        <span class="ht-val">${slpNow}/10 ${trendArrow(slpNow, slpPrev)}</span>
+      </div>`;
+    }
+
+    return `<div class="health-trend-card">
+      <h3>今週の体調まとめ</h3>
+      <div class="ht-rows">${rows}</div>
+      ${(condNow !== null && condPrev !== null) ? `<p class="ht-note">先週比: 体調 ${condNow >= condPrev ? '改善またはほぼ同じ' : 'やや低下'}傾向</p>` : ''}
+    </div>`;
+  },
+
+  // ─── Medication Check-in (Health domain) ───
+  renderMedCheckIn() {
+    const meds = store.getDomainData('health', 'medications', 60);
+    if (meds.length === 0) return '';
+
+    const today = new Date().toISOString().slice(0, 10);
+    const log = store.get('health_med_log') || {};
+    const todayLog = log[today] || {};
+
+    // Deduplicate by medication name (keep most recent entry per name)
+    const seen = new Set();
+    const uniqueMeds = [];
+    meds.slice().reverse().forEach(m => {
+      const name = m.name || m.notes || '';
+      if (name && !seen.has(name)) { seen.add(name); uniqueMeds.push(m); }
+    });
+
+    if (uniqueMeds.length === 0) return '';
+
+    const timingLabel = { morning: '朝', noon: '昼', evening: '夕', bedtime: '就寝前', as_needed: '必要時' };
+
+    const rows = uniqueMeds.slice(0, 6).map(m => {
+      const name = m.name || m.notes || '';
+      const timing = timingLabel[m.timing] || '';
+      const status = todayLog[name];
+      return `<div class="med-row ${status === 'taken' ? 'med-taken' : status === 'skipped' ? 'med-skipped' : ''}">
+        <div class="med-info">
+          <span class="med-name">${Components.escapeHtml(name)}</span>
+          ${timing ? `<span class="med-timing">${timing}</span>` : ''}
+          ${m.dosage ? `<span class="med-dosage">${Components.escapeHtml(m.dosage)}</span>` : ''}
+        </div>
+        <div class="med-actions">
+          ${status === 'taken' ? '<span class="med-done">服用済み</span>' :
+            status === 'skipped' ? '<span class="med-skip-done">スキップ済み</span>' : `
+            <button class="btn btn-sm btn-primary" onclick="app.logMedTaken('${Components.escapeHtml(name)}','taken')">服用した</button>
+            <button class="btn btn-sm btn-secondary" onclick="app.logMedTaken('${Components.escapeHtml(name)}','skipped')">スキップ</button>`}
+        </div>
+      </div>`;
+    }).join('');
+
+    const allTaken = uniqueMeds.slice(0, 6).every(m => todayLog[m.name || m.notes || '']);
+
+    return `<div class="med-checkin-card">
+      <h3>今日のお薬${allTaken ? ' <span class="med-all-done">完了</span>' : ''}</h3>
+      <div class="med-rows">${rows}</div>
+      <p class="med-note">毎日続けることが大切です。</p>
     </div>`;
   },
 

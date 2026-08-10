@@ -126,14 +126,14 @@ var CONFIG = {
       icon: '二',
       color: '#10b981',
       categories: {
-        symptoms:     { label: 'symptoms',    icon: '🤒' },
-        vitals:       { label: 'vitals',      icon: '❤️' },
-        bloodTests:   { label: 'blood_tests', icon: '🩸' },
-        medications:  { label: 'medications', icon: '💊' },
-        supplements:  { label: 'supplements', icon: '🧴' },
-        meals:        { label: 'meals',       icon: '🍽️' },
-        sleepData:    { label: 'sleep',       icon: '😴' },
-        activityData: { label: 'activity',    icon: '🏃' }
+        symptoms:     { label: 'symptoms',    icon: '◈' },
+        vitals:       { label: 'vitals',      icon: '◈' },
+        bloodTests:   { label: 'blood_tests', icon: '◈' },
+        medications:  { label: 'medications', icon: '◈' },
+        supplements:  { label: 'supplements', icon: '◈' },
+        meals:        { label: 'meals',       icon: '◈' },
+        sleepData:    { label: 'sleep',       icon: '◈' },
+        activityData: { label: 'activity',    icon: '◈' }
       },
       dataFields: {
         symptoms: [
@@ -275,10 +275,10 @@ var CONFIG = {
       icon: '五',
       color: '#ef4444',
       categories: {
-        contacts:     { label: 'contacts',     icon: '👤' },
-        interactions: { label: 'interactions',  icon: '💬' },
-        gifts:        { label: 'gifts',         icon: '🎁' },
-        groups:       { label: 'groups',        icon: '👥' }
+        contacts:     { label: 'contacts',     icon: '◈' },
+        interactions: { label: 'interactions',  icon: '◈' },
+        gifts:        { label: 'gifts',         icon: '◈' },
+        groups:       { label: 'groups',        icon: '◈' }
       },
       // 距離感レベル（5段階）
       distanceLevels: {
