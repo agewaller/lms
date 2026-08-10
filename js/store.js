@@ -273,6 +273,57 @@ var Store = class Store {
     return score;
   }
 
+  // ─── Streak Counter ───
+
+  calculateStreak() {
+    const domainCategories = {
+      consciousness: ['observation', 'transcript', 'entries', 'practices'],
+      health: ['symptoms', 'vitals', 'bloodTests', 'medications', 'supplements',
+               'meals', 'sleepData', 'activityData'],
+      time: ['entries', 'schedules', 'habits', 'goals'],
+      work: ['tasks', 'goals', 'skills', 'projects', 'reviews'],
+      relationship: ['contacts', 'interactions', 'gifts', 'groups'],
+      assets: ['overview', 'stocks', 'portfolio', 'income', 'expenses', 'goals']
+    };
+
+    // Build a Set of ISO date strings (YYYY-MM-DD) that have at least one entry
+    const daysWithData = new Set();
+    Object.entries(domainCategories).forEach(([domain, cats]) => {
+      cats.forEach(cat => {
+        const key = `${domain}_${cat}`;
+        const arr = this.state[key];
+        if (Array.isArray(arr)) {
+          arr.forEach(entry => {
+            const ts = entry.timestamp || entry.createdAt;
+            if (ts) daysWithData.add(ts.slice(0, 10));
+          });
+        }
+      });
+    });
+
+    // Count consecutive days ending today or yesterday
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().slice(0, 10);
+
+    // If nothing recorded today start counting from yesterday
+    const startDay = daysWithData.has(todayStr) ? 0 : 1;
+
+    for (let i = startDay; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      if (daysWithData.has(dateStr)) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  }
+
   // ─── Clear ───
 
   clearAll() {

@@ -1864,6 +1864,37 @@ body.is-admin .admin-only { display: flex; }
 }
 .checkin-reminder::before { content: '◎'; color: var(--accent); font-size: 18px; }
 
+/* ─── Dashboard: First-time empty state ─── */
+.empty-state-first {
+  text-align: center; padding: 40px 24px;
+  background: var(--bg-secondary); border-radius: var(--radius);
+  border: 1px dashed var(--border); margin-bottom: 16px;
+}
+.esf-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state-first h3 { font-size: 18px; margin-bottom: 10px; color: var(--text-primary); }
+.empty-state-first p { font-size: 15px; color: var(--text-secondary); line-height: 1.75; margin-bottom: 20px; }
+
+/* ─── Dashboard: Daily tip ─── */
+.daily-tip {
+  background: var(--bg-secondary); border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 14px 18px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 4px;
+}
+.tip-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--accent); }
+.tip-text { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin: 0; }
+
+/* ─── Dashboard: Streak banner ─── */
+.streak-banner {
+  display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(108,99,255,0.08) 100%);
+  border: 1px solid rgba(245,158,11,0.3); border-radius: var(--radius-sm);
+  padding: 12px 18px; margin-bottom: 16px;
+}
+.streak-flame { font-size: 22px; color: #f59e0b; flex-shrink: 0; }
+.streak-count { font-size: 22px; font-weight: 700; color: #f59e0b; flex-shrink: 0; min-width: 48px; }
+.streak-msg { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+
 /* ─── Onboarding modal ─── */
 .onboarding-overlay {
   position: fixed; inset: 0; background: rgba(10,10,20,0.75);

@@ -36,6 +36,20 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>`;
 
+    // Streak banner
+    const streak = store.calculateStreak();
+    if (streak > 0) {
+      const msg = streak === 1 ? '記録を始めました！明日も続けましょう' :
+                  streak < 7  ? `${streak}日連続で記録中。この調子！` :
+                  streak < 30 ? `${streak}日連続！素晴らしい習慣です` :
+                                `${streak}日連続！あなたは本物です`;
+      html += `<div class="streak-banner">
+        <span class="streak-flame">◈</span>
+        <span class="streak-count">${streak}日</span>
+        <span class="streak-msg">${msg}</span>
+      </div>`;
+    }
+
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
       html += this.renderStockAnalysisWidget();
@@ -86,8 +100,20 @@ var Pages = {
     }
 
     if (allRecent.length === 0) {
-      html += Components.emptyState(domainConfig?.icon || '◈', i18n.t('no_data'),
-        '「記録する」から最初の記録を入力してみましょう');
+      const firstStepTexts = {
+        consciousness: '毎朝1分、今の気持ちを書いてみましょう。\n積み重ねることで自分の傾向が見えてきます。',
+        health: '体調・睡眠・食事を記録すると、\nかかりつけ医への報告がスムーズになります。',
+        time: '昨日の過ごし方を振り返って記録してみましょう。\n「時間の使い方の癖」が見えてきます。',
+        work: '今やっていること・やりたいことを書いてみましょう。\n副業・ボランティア・スキルアップを整理できます。',
+        relationship: '大切な人の名前を登録してみましょう。\nいつ連絡したか、誕生日はいつか、が一目でわかります。',
+        assets: '収入・支出を記録してみましょう。\n年金と貯蓄でどのくらい生活できるか、見える化できます。'
+      };
+      html += `<div class="empty-state-first">
+        <div class="esf-icon">${domainConfig?.icon || '◈'}</div>
+        <h3>まだ記録がありません</h3>
+        <p>${(firstStepTexts[domain] || '「記録する」タブから最初の記録を入力してみましょう。').replace(/\n/g, '<br>')}</p>
+        <button class="btn btn-primary" onclick="app.navigate('record')">最初の記録をつける</button>
+      </div>`;
     } else {
       allRecent.slice(0, 10).forEach(entry => {
         html += Components.recordItem(entry, domain);
@@ -95,6 +121,11 @@ var Pages = {
     }
 
     html += `</div></div>`;
+
+    // Daily tip (only shown when user has data)
+    if (allRecent.length > 0) {
+      html += this.renderDailyTip(domain);
+    }
 
     // Recommendations
     const recs = (store.get('recommendations') || []).filter(r => r.domain === domain || !r.domain);
@@ -387,6 +418,78 @@ var Pages = {
         <p>あなたのスキルを空き時間で提供できます。</p>
         <button class="btn btn-sm btn-secondary" onclick="app.switchDomain('time');app.navigate('settings')">時間販売の設定へ</button>
       </div>` : ''}
+    </div>`;
+  },
+
+  // ─── Daily Tip ───
+  renderDailyTip(domain) {
+    const tips = {
+      consciousness: [
+        '感謝を3つ書くと、その日の気分が約10%上がるという研究があります。',
+        '「今この瞬間に何を感じているか」を一言書くだけで、自己理解が深まります。',
+        '昨日より少しでもよかったことを探してみましょう。脳は探したものを見つけます。',
+        '朝の5分の記録が、一日の方向を決めます。起きたらすぐ書いてみてください。',
+        '怒りや悲しみも書き出すと、感情が整理されます。感情は抑えると大きくなります。',
+        'ストレスを言語化するだけで、ストレスホルモンが減ることが確認されています。',
+        '「今日の意図」を一言書いておくと、夜の振り返りがしやすくなります。'
+      ],
+      health: [
+        '体調を数値で記録すると、調子が悪くなるパターンが見えてきます。',
+        '睡眠の質と翌日の体調には強い相関があります。今夜の就寝時間を記録してみましょう。',
+        '服薬記録をつけると、飲み忘れが約40%減るという報告があります。',
+        'バイタル（血圧・体重）を記録しておくと、かかりつけ医との会話が具体的になります。',
+        '症状を言葉で残しておくと、病院でうまく伝えられます。',
+        '食事の記録は完璧でなくてもOK。気づいたときだけでも効果があります。',
+        '体の変化を早期に察知するには、毎日同じ時間に同じことを記録するのが最も有効です。'
+      ],
+      time: [
+        'まず「何に時間を使ったか」を記録するだけで、無駄な時間が自然に減ります。',
+        '1日15分の「自分のための時間」を確保することが、長期的な健康に繋がります。',
+        '習慣は66日で定着すると言われています。今日の記録が未来を作ります。',
+        '「やらなくていいこと」リストを作ると、本当に大事なことが見えてきます。',
+        '朝の時間の使い方が、一日の生産性を決めます。',
+        '空き時間を可視化すると、家族や友人と過ごす時間を増やしやすくなります。',
+        '「何もしない時間」も立派な時間の使い方です。意図的な休息を記録しましょう。'
+      ],
+      work: [
+        '副業を始めるには「今の強み」を棚卸しするところから。スキルタブに書いてみましょう。',
+        '65歳以降のボランティアは、社会的なつながりを保つ最も効果的な方法のひとつです。',
+        '「仕事」は有償に限りません。地域活動・NPO・家族のサポートも立派な仕事です。',
+        '自分の経験を振り返ると、意外なスキルが見つかることがあります。',
+        '週1回、小さな目標を設定するだけでも、充実感が大きく変わります。',
+        '「教えること」は最も深い学びのひとつ。知識を誰かに伝える機会を探しましょう。',
+        '求人情報は「何をやりたいか」が明確になってから見るのが効果的です。'
+      ],
+      relationship: [
+        '親しい人に連絡していない日が3日以上続いたら、一言でもメッセージを送りましょう。',
+        '誕生日を把握しているだけで、関係が長続きするという研究があります。',
+        '孤立を防ぐには「深い関係を少数」より「浅い関係を多数」の方が効果的です。',
+        '今日、誰かの話をただ聞いてあげるだけで、その人のストレスは大幅に下がります。',
+        '感謝の言葉を伝えることは、言う側にも幸福感をもたらします。',
+        '定期的な交流を記録しておくと、疎遠になりかけた関係に気づけます。',
+        '新しい人と出会う場を、月1回でも意識的に作りましょう。'
+      ],
+      assets: [
+        '収支を記録するだけで、無意識な支出が平均15%減るというデータがあります。',
+        'NISAの非課税枠は使わなければ消えます。今年の残り枠を確認しましょう。',
+        '老後の資金計画は「いくら必要か」より「どんな生活をしたいか」から考えましょう。',
+        '投資は長期・分散・低コストが基本。この3原則に反する話には注意が必要です。',
+        '年金だけでは足りない場合、月3〜5万円の副収入があれば多くの問題は解決します。',
+        '固定費の見直しは、一度やれば毎月効果が続く最も効率的な節約法です。',
+        '資産を「使う・増やす・守る」の3つに分けて考えると整理しやすくなります。'
+      ]
+    };
+
+    const domainTips = tips[domain] || [];
+    if (domainTips.length === 0) return '';
+
+    // Rotate by day of month so it changes daily but is deterministic
+    const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+    const tip = domainTips[dayOfYear % domainTips.length];
+
+    return `<div class="daily-tip">
+      <span class="tip-label">今日のヒント</span>
+      <p class="tip-text">${tip}</p>
     </div>`;
   },
 
