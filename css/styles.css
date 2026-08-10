@@ -90,6 +90,7 @@ p { margin-bottom: 12px; }
   justify-content: center;
   gap: 8px;
   padding: 10px 20px;
+  min-height: 44px;
   border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 500;
@@ -168,6 +169,7 @@ p { margin-bottom: 12px; }
 .form-input, .form-select, .form-textarea {
   width: 100%;
   padding: 10px 14px;
+  min-height: 44px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-size: 14px;
@@ -2128,7 +2130,7 @@ body.is-admin .admin-only { display: flex; }
   display: flex; gap: 10px;
 }
 .mood-quick-btn {
-  flex: 1; padding: 12px 8px; border-radius: var(--radius-sm);
+  flex: 1; padding: 12px 8px; min-height: 52px; border-radius: var(--radius-sm);
   border: 2px solid transparent; font-size: 15px; font-weight: 600;
   cursor: pointer; transition: transform 0.1s;
 }
