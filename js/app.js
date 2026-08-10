@@ -604,7 +604,7 @@ var App = class App {
     }
 
     const resultEl = document.getElementById('stockResult');
-    if (resultEl) resultEl.innerHTML = Components.loading(`${ticker} を分析中です...`);
+    if (resultEl) resultEl.innerHTML = Components.loading(`${Components.escapeHtml(ticker)} を分析中です...`);
 
     // Pre-check: admin must have configured an API key
     if (!AIEngine.getApiKey('anthropic') && !AIEngine.getApiKey('openai') && !AIEngine.getApiKey('google')) {
@@ -630,7 +630,7 @@ var App = class App {
 
       if (resultEl) {
         resultEl.innerHTML = `<div class="stock-result">
-          <h3>${ticker} の分析結果</h3>
+          <h3>${Components.escapeHtml(ticker)} の分析結果</h3>
           <div class="analysis-content">${Components.formatMarkdown(result)}</div>
           <div class="disclaimer">${i18n.t('disclaimer_assets')}</div>
         </div>`;
