@@ -2375,7 +2375,7 @@ var Pages = {
       <div class="card-body">
         <div class="admin-user-item">
           <div>
-            <strong>${user?.email || '未ログイン'}</strong>
+            <strong>${Components.escapeHtml(user?.email || '未ログイン')}</strong>
             <span class="status-badge">オーナー</span>
           </div>
         </div>

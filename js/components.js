@@ -289,9 +289,9 @@ var Components = {
       : otherFields.slice(0, 3);
 
     const summary = display.map(([k, v]) => {
-      const label = i18n.t(k) || k;
+      const label = i18n.t(k) || this.escapeHtml(k);
       const val = typeof v === 'boolean' ? (v ? '✓' : '—') : String(v).slice(0, 60);
-      return `<span class="ri-field"><span class="ri-key">${label}</span> ${Components.escapeHtml(val)}</span>`;
+      return `<span class="ri-field"><span class="ri-key">${label}</span> ${this.escapeHtml(val)}</span>`;
     }).join('');
 
     return `<div class="record-item" style="border-left-color:${color}">
