@@ -20,6 +20,7 @@ var App = class App {
       store.set('currentPage', 'home');
       this.renderApp();
       this.startInboxPolling();
+      this.startReminderTimer();
       if (!store.get('onboardingComplete')) {
         setTimeout(() => this.showOnboarding(), 400);
       }
@@ -32,12 +33,14 @@ var App = class App {
         store.set('currentPage', 'home');
         this.renderApp();
         this.startInboxPolling();
+        this.startReminderTimer();
         // Show onboarding for first-time users (after short delay to let render settle)
         if (!store.get('onboardingComplete')) {
           setTimeout(() => this.showOnboarding(), 400);
         }
       } else {
         this.stopInboxPolling();
+        this.stopReminderTimer();
       }
     });
 
@@ -59,6 +62,87 @@ var App = class App {
     if (this._inboxPollTimer) {
       clearInterval(this._inboxPollTimer);
       this._inboxPollTimer = null;
+    }
+  }
+
+  // ─── Daily reminder (browser Notification API) ───
+  startReminderTimer() {
+    if (this._reminderTimer) return;
+    this._reminderTimer = setInterval(() => this.checkDailyReminder(), 10 * 60 * 1000); // check every 10 min
+    this.checkDailyReminder(); // also check on startup
+  }
+
+  stopReminderTimer() {
+    if (this._reminderTimer) {
+      clearInterval(this._reminderTimer);
+      this._reminderTimer = null;
+    }
+  }
+
+  checkDailyReminder() {
+    const prefs = store.get('reminderPrefs') || {};
+    if (!prefs.enabled || !prefs.time) return;
+
+    const now = new Date();
+    const [hh, mm] = (prefs.time || '09:00').split(':').map(Number);
+    if (now.getHours() !== hh || now.getMinutes() > mm + 9) return; // only fire in the 10-min window
+
+    const today = now.toISOString().slice(0, 10);
+    const lastNotified = store.get('reminderLastDate');
+    if (lastNotified === today) return; // already notified today
+
+    // Check if user has recorded today in any domain
+    const domains = Object.keys(CONFIG.domains);
+    let recordedToday = false;
+    for (const d of domains) {
+      const cats = Object.keys(CONFIG.domains[d].categories || {});
+      for (const c of cats) {
+        const entries = store.getDomainData(d, c, 1);
+        if (entries.some(e => (e.timestamp || '').startsWith(today))) {
+          recordedToday = true;
+          break;
+        }
+      }
+      if (recordedToday) break;
+    }
+
+    if (!recordedToday) {
+      store.set('reminderLastDate', today);
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('LMS - 今日の記録をつけましょう', {
+          body: '1分でOKです。今日の気持ちや体調を記録しておきましょう。',
+          icon: 'images/icon.svg',
+          tag: 'lms-daily-reminder'
+        });
+      } else {
+        // Fall back to in-app toast if notification permission not granted
+        Components.showToast('今日の記録をつけましょう！「記録する」タブからどうぞ。', 'info');
+      }
+    }
+  }
+
+  async requestNotificationPermission() {
+    if (!('Notification' in window)) {
+      Components.showToast('このブラウザはリマインダー通知に対応していません', 'info');
+      return;
+    }
+    const result = await Notification.requestPermission();
+    if (result === 'granted') {
+      Components.showToast('通知を許可しました。毎日指定の時刻にお知らせします。', 'success');
+    } else {
+      Components.showToast('通知が拒否されました。ブラウザの設定から変更できます。', 'info');
+    }
+    this.renderApp(); // refresh settings page to show updated state
+  }
+
+  saveReminderPrefs() {
+    const enabled = document.getElementById('reminderEnabled')?.checked;
+    const time = document.getElementById('reminderTime')?.value || '09:00';
+    store.set('reminderPrefs', { enabled: !!enabled, time });
+    if (enabled && 'Notification' in window && Notification.permission !== 'granted') {
+      this.requestNotificationPermission();
+    } else {
+      Components.showToast('リマインダー設定を保存しました', 'success');
     }
   }
 

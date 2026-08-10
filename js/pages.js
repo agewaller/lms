@@ -1062,6 +1062,33 @@ var Pages = {
         </div>
       </div>
 
+      <!-- 毎日リマインダー -->
+      ${(() => {
+        const prefs = store.get('reminderPrefs') || {};
+        const notifSupported = typeof Notification !== 'undefined';
+        const notifGranted = notifSupported && Notification.permission === 'granted';
+        return `<div class="settings-section">
+          <h3>毎日のリマインダー</h3>
+          <p class="page-desc">記録し忘れを防ぐため、毎日決まった時刻にお知らせします。</p>
+          <div class="form-group" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:15px;">
+              <input type="checkbox" id="reminderEnabled" ${prefs.enabled ? 'checked' : ''} style="width:20px;height:20px;">
+              リマインダーを受け取る
+            </label>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <label style="white-space:nowrap">通知時刻</label>
+              <input type="time" id="reminderTime" class="form-input" value="${prefs.time || '09:00'}" style="width:120px;">
+            </div>
+          </div>
+          ${notifSupported && !notifGranted && prefs.enabled ? `<p class="page-desc" style="color:var(--warning)">ブラウザの通知許可が必要です。下のボタンで許可してください。</p>
+            <button class="btn btn-secondary btn-sm" onclick="app.requestNotificationPermission()">ブラウザの通知を許可する</button>` : ''}
+          ${notifGranted ? '<p class="page-desc" style="color:var(--success)">通知が許可されています</p>' : ''}
+          <div style="margin-top:12px;">
+            <button class="btn btn-primary btn-sm" onclick="app.saveReminderPrefs()">リマインダー設定を保存</button>
+          </div>
+        </div>`;
+      })()}
+
       <div class="settings-section" style="text-align:center;">
         <button class="btn btn-primary btn-lg" onclick="app.saveProfile()">${i18n.t('save_profile')}</button>
       </div>
