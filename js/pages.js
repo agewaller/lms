@@ -43,10 +43,12 @@ var Pages = {
                   streak < 7  ? `${streak}日連続で記録中。この調子！` :
                   streak < 30 ? `${streak}日連続！素晴らしい習慣です` :
                                 `${streak}日連続！あなたは本物です`;
+      const canShare = typeof navigator.share === 'function';
       html += `<div class="streak-banner">
         <span class="streak-flame">◈</span>
         <span class="streak-count">${streak}日</span>
         <span class="streak-msg">${msg}</span>
+        ${canShare && streak >= 7 ? `<button class="streak-share-btn" onclick="app.shareStreak(${streak})" title="シェアする">シェア</button>` : ''}
       </div>`;
     }
 

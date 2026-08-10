@@ -1893,7 +1893,13 @@ body.is-admin .admin-only { display: flex; }
 }
 .streak-flame { font-size: 22px; color: #f59e0b; flex-shrink: 0; }
 .streak-count { font-size: 22px; font-weight: 700; color: #f59e0b; flex-shrink: 0; min-width: 48px; }
-.streak-msg { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+.streak-msg { font-size: 14px; color: var(--text-secondary); line-height: 1.5; flex: 1; }
+.streak-share-btn {
+  flex-shrink: 0; padding: 4px 12px; font-size: 12px; font-weight: 600;
+  background: transparent; border: 1px solid #f59e0b; border-radius: var(--radius-sm);
+  color: #f59e0b; cursor: pointer; transition: background var(--transition);
+}
+.streak-share-btn:hover { background: rgba(245,158,11,0.1); }
 
 /* ─── Onboarding modal ─── */
 .onboarding-overlay {

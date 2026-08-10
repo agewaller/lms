@@ -186,6 +186,22 @@ var App = class App {
     if (overlay) overlay.remove();
   }
 
+  // ─── Share Streak ───
+  async shareStreak(streak) {
+    const text = streak >= 100
+      ? `LMSで${streak}日連続記録達成！人生6領域を毎日記録して、自分の変化を見える化しています。`
+      : `LMSで${streak}日連続で記録中！65歳からの人生を、意識・健康・時間・仕事・関係・資産の6領域で整えています。`;
+    try {
+      await navigator.share({
+        title: 'LMS - Life Management System',
+        text,
+        url: 'https://agewaller.github.io/lms/'
+      });
+    } catch (e) {
+      // User cancelled or share not available — silently ignore
+    }
+  }
+
   // ─── Navigation ───
   switchDomain(domain) {
     store.set('currentDomain', domain);
