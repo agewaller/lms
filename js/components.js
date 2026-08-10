@@ -136,6 +136,17 @@ var Components = {
       .replace(/\n/g, '<br>');
   },
 
+  // ─── HTML Escaping (XSS prevention) ───
+  escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
   // ─── Toast Notification (未病ダイアリー方式) ───
   showToast(message, type = 'info') {
     const container = document.getElementById('toast-container') || document.body;
