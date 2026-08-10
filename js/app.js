@@ -659,7 +659,7 @@ var App = class App {
     const data = store.getDomainData(domain, category, 1);
     try {
       await AIEngine.analyze(domain, 'daily', { raw: data[data.length - 1] });
-      Components.showToast(i18n.t('ai_analysis') + ' ✓', 'success');
+      Components.showToast('分析が完了しました', 'success');
       this.renderApp();
     } catch (e) {
       Components.showToast(this.friendlyError(e), 'error');
@@ -695,7 +695,7 @@ var App = class App {
 
     try {
       await AIEngine.analyze(domain, 'daily', { text });
-      Components.showToast(i18n.t('ai_analysis') + ' ✓', 'success');
+      Components.showToast('分析が完了しました', 'success');
       this.renderApp();
     } catch (e) {
       Components.showToast(this.friendlyError(e), 'error');
@@ -763,7 +763,7 @@ var App = class App {
       store.set('recommendations', [...recs, ...existing].slice(0, 50));
 
       this.renderApp();
-      Components.showToast(i18n.t('saved'), 'success');
+      Components.showToast('アドバイスが届きました', 'success');
     } catch (e) {
       Components.showToast(this.friendlyError(e), 'error');
     }
