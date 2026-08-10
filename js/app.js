@@ -111,6 +111,26 @@ var App = class App {
       const bar = document.getElementById('top-bar-progress');
       if (bar) bar.classList.toggle('active', !!val);
     });
+
+    this.initOfflineIndicator();
+  }
+
+  initOfflineIndicator() {
+    const show = () => {
+      if (document.getElementById('lms-offline-banner')) return;
+      const banner = document.createElement('div');
+      banner.id = 'lms-offline-banner';
+      banner.className = 'offline-banner';
+      banner.textContent = 'オフラインです。記録したデータは端末に保存されています。';
+      document.body.appendChild(banner);
+    };
+    const hide = () => {
+      document.getElementById('lms-offline-banner')?.remove();
+      Components.showToast('インターネットに接続しました', 'success');
+    };
+    window.addEventListener('offline', show);
+    window.addEventListener('online', hide);
+    if (!navigator.onLine) show();
   }
 
   // ─── Inbox polling: fetch Plaud auto-sent transcripts ───

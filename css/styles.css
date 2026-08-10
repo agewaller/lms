@@ -1723,6 +1723,18 @@ body.is-admin .admin-only { display: flex; }
   flex-shrink: 0;
 }
 
+.offline-banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: #92400e;
+  color: #fff;
+  text-align: center;
+  font-size: 14px;
+  padding: 10px 16px;
+  z-index: 2000;
+  font-weight: 500;
+}
+
 .toast-container {
   position: fixed;
   top: 20px;
