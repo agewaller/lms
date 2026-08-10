@@ -769,7 +769,15 @@ var App = class App {
   }
 
   deleteDataEntry(domain, category, id) {
-    if (!confirm('この記録を削除しますか？')) return;
+    this.openModal('記録を削除', `
+      <p>この記録を削除します。削除後は元に戻せません。</p>
+      <div class="modal-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:center;">
+        <button class="btn btn-danger" onclick="app.closeModal();app._doDeleteEntry('${domain}','${category}','${id}')">削除する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>`);
+  }
+
+  _doDeleteEntry(domain, category, id) {
     const key = `${domain}_${category}`;
     const entries = (store.get(key) || []).filter(e => e.id !== id);
     store.set(key, entries);
@@ -852,9 +860,8 @@ var App = class App {
   }
 
   fitbitDisconnect() {
-    if (!confirm('Fitbit接続を解除しますか？')) return;
     if (typeof fitbit !== 'undefined') fitbit.disconnect();
-    Components.showToast('接続を解除しました', 'info');
+    Components.showToast('Fitbit接続を解除しました', 'info');
     this.renderApp();
   }
 
@@ -902,9 +909,8 @@ var App = class App {
   }
 
   gcalDisconnect() {
-    if (!confirm('Googleカレンダー接続を解除しますか？')) return;
     if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
-    Components.showToast('接続を解除しました', 'info');
+    Components.showToast('Googleカレンダー接続を解除しました', 'info');
     this.renderApp();
   }
 
@@ -937,9 +943,8 @@ var App = class App {
   }
 
   outlookDisconnect() {
-    if (!confirm('Outlook接続を解除しますか？')) return;
     if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
-    Components.showToast('接続を解除しました', 'info');
+    Components.showToast('Outlook接続を解除しました', 'info');
     this.renderApp();
   }
 
@@ -972,9 +977,8 @@ var App = class App {
   }
 
   gmailDisconnect() {
-    if (!confirm('Gmail接続を解除しますか？')) return;
     if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
-    Components.showToast('接続を解除しました', 'info');
+    Components.showToast('Gmail接続を解除しました', 'info');
     this.renderApp();
   }
 
@@ -1507,7 +1511,15 @@ var App = class App {
   }
 
   deletePrompt(key) {
-    if (!confirm('このプロンプトを削除しますか？')) return;
+    this.openModal('プロンプトを削除', `
+      <p>このプロンプトを削除します。よろしいですか？</p>
+      <div class="modal-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:center;">
+        <button class="btn btn-danger" onclick="app.closeModal();app._doDeletePrompt('${key}')">削除する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>`);
+  }
+
+  _doDeletePrompt(key) {
     delete CONFIG.prompts[key];
     const custom = store.get('customPrompts') || {};
     delete custom[key];
@@ -1517,12 +1529,22 @@ var App = class App {
   }
 
   addNewPrompt() {
-    const key = prompt('プロンプトのキー名を入力（例: work_custom）');
-    if (!key) return;
-    if (CONFIG.prompts[key]) {
-      Components.showToast('そのキーは既に存在します', 'error');
-      return;
-    }
+    this.openModal('新しいプロンプトを追加', `
+      <div class="form-group">
+        <label>プロンプトのキー名（英数字とアンダースコアのみ）</label>
+        <input type="text" id="newPromptKey" class="form-input" placeholder="例: work_custom">
+      </div>
+      <div class="modal-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:center;">
+        <button class="btn btn-primary" onclick="app._doAddNewPrompt()">追加する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>`);
+  }
+
+  _doAddNewPrompt() {
+    const key = document.getElementById('newPromptKey')?.value?.trim();
+    if (!key) { Components.showToast('キー名を入力してください', 'error'); return; }
+    if (CONFIG.prompts[key]) { Components.showToast('そのキーは既に存在します', 'error'); return; }
+    this.closeModal();
     CONFIG.prompts[key] = {
       name: '新しいプロンプト',
       domain: 'universal',
@@ -1552,12 +1574,11 @@ var App = class App {
   }
 
   clearApiKeys() {
-    if (!confirm('すべてのAPIキーを削除しますか？')) return;
     ['anthropic', 'openai', 'google'].forEach(p => {
       localStorage.removeItem('lms_apikey_' + p);
     });
     store.state._apiKeys = {};
-    Components.showToast('削除しました', 'info');
+    Components.showToast('APIキーを削除しました', 'info');
     this.renderApp();
   }
 
@@ -1587,9 +1608,8 @@ var App = class App {
   }
 
   clearFirebaseConfig() {
-    if (!confirm('Firebase設定を削除しますか？')) return;
     localStorage.removeItem('lms_firebaseConfig');
-    Components.showToast('削除しました（再読み込みが必要です）', 'info');
+    Components.showToast('Firebase設定を削除しました（再読み込みが必要です）', 'info');
   }
 
   saveWorkerUrl() {
@@ -1676,37 +1696,45 @@ var App = class App {
   }
 
   // ─── Admin User Management ───
-  async addAdminEmail() {
-    const email = prompt('管理者として追加するメールアドレスを入力してください');
-    if (!email || !email.trim()) return;
+  addAdminEmail() {
+    this.openModal('管理者を追加', `
+      <div class="form-group">
+        <label>管理者のメールアドレス</label>
+        <input type="email" id="newAdminEmail" class="form-input" placeholder="admin@example.com">
+      </div>
+      <div class="modal-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:center;">
+        <button class="btn btn-primary" onclick="app._doAddAdminEmail()">追加する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>`);
+  }
 
-    const trimmed = email.trim().toLowerCase();
-    if (!/^[^@]+@[^@]+\.[^@]+$/.test(trimmed)) {
+  async _doAddAdminEmail() {
+    const email = document.getElementById('newAdminEmail')?.value?.trim().toLowerCase();
+    if (!email) { Components.showToast('メールアドレスを入力してください', 'error'); return; }
+    if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
       Components.showToast('有効なメールアドレスを入力してください', 'error');
       return;
     }
 
     const list = store.get('adminEmails') || ['agewaller@gmail.com'];
-    if (list.includes(trimmed)) {
+    if (list.includes(email)) {
       Components.showToast('すでに管理者です', 'info');
+      this.closeModal();
       return;
     }
 
-    list.push(trimmed);
+    list.push(email);
     store.set('adminEmails', list);
+    this.closeModal();
 
-    // Sync to Firestore admin/config
     if (FirebaseBackend.db) {
       await FirebaseBackend.db.collection('admin').doc('config').set(
-        {
-          adminEmails: list,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        },
+        { adminEmails: list, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
         { merge: true }
       ).catch(e => console.warn(e));
     }
 
-    Components.showToast(`${trimmed} を管理者に追加しました`, 'success');
+    Components.showToast(`${email} を管理者に追加しました`, 'success');
     this.renderApp();
   }
 
@@ -1715,7 +1743,6 @@ var App = class App {
       Components.showToast('オーナーアカウントは削除できません', 'error');
       return;
     }
-    if (!confirm(`${email} を管理者から外しますか？`)) return;
 
     const list = (store.get('adminEmails') || ['agewaller@gmail.com']).filter(e => e !== email);
     store.set('adminEmails', list);
@@ -1936,22 +1963,41 @@ var App = class App {
   }
 
   generateDemoData() {
-    if (!confirm('デモデータを生成しますか？既存データに追加されます。')) return;
-    // Generate sample entries for each domain
+    this.openModal('デモデータを生成', `
+      <p>過去7日分のサンプルデータを全6領域に追加します。既存のデータは削除されません。</p>
+      <div class="modal-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:center;">
+        <button class="btn btn-primary" onclick="app.closeModal();app._doGenerateDemoData()">生成する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>`);
+  }
+
+  _doGenerateDemoData() {
     const today = new Date();
     for (let i = 0; i < 7; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() - i);
-      store.addDomainEntry('health', 'symptoms', { condition_level: 5 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
-      store.addDomainEntry('health', 'sleepData', { quality: 6 + Math.floor(Math.random() * 3), timestamp: d.toISOString() });
+      const ts = d.toISOString();
+      store.addDomainEntry('health', 'symptoms', { condition_level: 5 + (i % 3), fatigue_level: 3 + (i % 4), notes: 'サンプル記録', timestamp: ts });
+      store.addDomainEntry('health', 'sleepData', { quality: 6 + (i % 3), sleep_time: '23:00', wake_time: '06:30', timestamp: ts });
+      store.addDomainEntry('consciousness', 'entries', { mood_level: 6 + (i % 3), gratitude: 'サンプル感謝', reflection: 'サンプル振り返り', timestamp: ts });
+      store.addDomainEntry('time', 'habits', { habit_name: 'ウォーキング', done: i % 2 === 0, timestamp: ts });
+      store.addDomainEntry('assets', 'income', { amount: 180000, category: '年金', timestamp: ts });
     }
     Components.showToast('デモデータを生成しました', 'success');
     this.renderApp();
   }
 
   deleteAllData() {
-    if (!confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
-    if (!confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
+    this.openModal('データを削除', `
+      <p style="color:var(--error)"><strong>警告：</strong>すべてのデータを完全に削除します。この操作は取り消せません。</p>
+      <p>本当に削除してよろしいですか？</p>
+      <div class="modal-actions" style="margin-top:20px;display:flex;gap:10px;justify-content:center;">
+        <button class="btn btn-danger" onclick="app.closeModal();app._doDeleteAllData()">すべて削除する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>`);
+  }
+
+  _doDeleteAllData() {
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();
