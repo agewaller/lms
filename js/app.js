@@ -6,9 +6,63 @@ var App = class App {
     this.entryDomain = null; // Which sub-site the user entered from
   }
 
+  // ─── PWA install prompt ───
+  initInstallPrompt() {
+    if (localStorage.getItem('lms_installDismissed')) return;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this._deferredInstallPrompt = e;
+      // Wait until user is authenticated before showing the banner
+      if (store.get('isAuthenticated')) this._showInstallBanner();
+    });
+    window.addEventListener('appinstalled', () => {
+      localStorage.setItem('lms_installDismissed', '1');
+      this._removeInstallBanner();
+    });
+  }
+
+  _showInstallBanner() {
+    if (document.getElementById('lms-install-banner')) return;
+    const banner = document.createElement('div');
+    banner.id = 'lms-install-banner';
+    banner.className = 'install-banner';
+    banner.innerHTML = `
+      <div class="install-banner-text">
+        <strong>ホーム画面に追加</strong>
+        <span>アイコンからすぐ開けます。通知も受け取れます。</span>
+      </div>
+      <div class="install-banner-actions">
+        <button class="btn btn-primary btn-sm" id="install-banner-ok">追加する</button>
+        <button class="btn btn-secondary btn-sm" id="install-banner-no">後で</button>
+      </div>`;
+    document.body.appendChild(banner);
+    document.getElementById('install-banner-ok').onclick = () => this.triggerInstall();
+    document.getElementById('install-banner-no').onclick = () => this.dismissInstallBanner();
+  }
+
+  async triggerInstall() {
+    if (!this._deferredInstallPrompt) return;
+    this._deferredInstallPrompt.prompt();
+    const { outcome } = await this._deferredInstallPrompt.userChoice;
+    if (outcome === 'accepted') localStorage.setItem('lms_installDismissed', '1');
+    this._removeInstallBanner();
+    this._deferredInstallPrompt = null;
+  }
+
+  dismissInstallBanner() {
+    localStorage.setItem('lms_installDismissed', '1');
+    this._removeInstallBanner();
+  }
+
+  _removeInstallBanner() {
+    const el = document.getElementById('lms-install-banner');
+    if (el) el.remove();
+  }
+
   // ─── Initialize ───
   async init(entryDomain) {
     this.entryDomain = entryDomain || null;
+    this.initInstallPrompt();
     this.checkOAuthCallbacks();
 
     // Initialize Firebase
@@ -24,6 +78,7 @@ var App = class App {
       if (!store.get('onboardingComplete')) {
         setTimeout(() => this.showOnboarding(), 400);
       }
+      if (this._deferredInstallPrompt) setTimeout(() => this._showInstallBanner(), 2000);
     }
 
     // Listen for auth changes
@@ -38,9 +93,12 @@ var App = class App {
         if (!store.get('onboardingComplete')) {
           setTimeout(() => this.showOnboarding(), 400);
         }
+        // Show install banner if the prompt was captured before auth
+        if (this._deferredInstallPrompt) setTimeout(() => this._showInstallBanner(), 2000);
       } else {
         this.stopInboxPolling();
         this.stopReminderTimer();
+        this._removeInstallBanner();
       }
     });
 
