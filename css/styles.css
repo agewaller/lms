@@ -385,7 +385,8 @@ select.form-input { appearance: auto; }
 .data-entry-time { font-size: 13px; color: var(--text-muted); flex: 1; }
 .data-entry-actions { display: flex; gap: 4px; }
 .btn-icon-sm {
-  padding: 4px 10px;
+  padding: 6px 12px;
+  min-height: 36px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -2162,3 +2163,6 @@ body.is-admin .admin-only { display: flex; }
 /* ─── Chat page header with reset button ─── */
 .chat-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .chat-page-header h2 { margin: 0; }
+
+/* ─── Health Trend Chart ─── */
+.ht-chart-wrap { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; }

@@ -271,6 +271,69 @@ var App = class App {
         if (typeof AssetsFeatures !== 'undefined') AssetsFeatures.calculateNISA();
       }, 100);
     }
+
+    // Render health trend chart
+    if (domain === 'health' && page === 'home') {
+      setTimeout(() => this.initHealthChart(), 100);
+    }
+  }
+
+  initHealthChart() {
+    const canvas = document.getElementById('healthTrendChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const symptoms = store.getDomainData('health', 'symptoms', 14);
+    if (symptoms.length < 2) return;
+
+    // Average condition_level per day
+    const byDate = {};
+    symptoms.forEach(s => {
+      const d = (s.timestamp || '').slice(0, 10);
+      if (!d) return;
+      if (!byDate[d]) byDate[d] = [];
+      if (s.condition_level != null) byDate[d].push(Number(s.condition_level));
+    });
+
+    const dates = Object.keys(byDate).sort().slice(-7);
+    if (dates.length < 2) return;
+
+    const labels = dates.map(d => {
+      const dt = new Date(d);
+      return `${dt.getMonth() + 1}/${dt.getDate()}`;
+    });
+    const data = dates.map(d => {
+      const vals = byDate[d];
+      return vals.length ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length * 10) / 10 : null;
+    });
+
+    if (this._healthChart) this._healthChart.destroy();
+
+    this._healthChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16,185,129,0.1)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 5,
+          pointBackgroundColor: '#10b981',
+          spanGaps: true
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false }, tooltip: {
+          callbacks: { label: ctx => `体調: ${ctx.raw}/10` }
+        }},
+        scales: {
+          y: { min: 0, max: 10, ticks: { stepSize: 2, font: { size: 13 } } },
+          x: { ticks: { font: { size: 12 } } }
+        }
+      }
+    });
   }
 
   updateSidebar() {

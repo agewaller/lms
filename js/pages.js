@@ -523,6 +523,7 @@ var Pages = {
       <h3>今週の体調まとめ</h3>
       <div class="ht-rows">${rows}</div>
       ${(condNow !== null && condPrev !== null) ? `<p class="ht-note">先週比: 体調 ${condNow >= condPrev ? '改善またはほぼ同じ' : 'やや低下'}傾向</p>` : ''}
+      ${symptoms.length >= 2 ? `<div class="ht-chart-wrap"><canvas id="healthTrendChart" height="80"></canvas></div>` : ''}
     </div>`;
   },
 
