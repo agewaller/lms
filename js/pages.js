@@ -667,7 +667,7 @@ var Pages = {
     allRecent.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     if (allRecent.length === 0) {
-      html += Components.emptyState(domainConfig?.icon, i18n.t('no_data'));
+      html += Components.emptyState(domainConfig?.icon, i18n.t('no_data'), '上の入力欄から気軽に一言入力してみましょう。');
     } else {
       allRecent.slice(0, 20).forEach(entry => {
         html += Components.recordItem(entry, domain);
@@ -1098,8 +1098,18 @@ var Pages = {
             <div class="data-entry-fields">
               ${fields.map(([k, v]) => {
                 const label = i18n.t(k) || k;
-                const val = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
-                return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${val}</span></div>`;
+                let val;
+                if (typeof v === 'boolean') {
+                  val = v ? 'あり' : 'なし';
+                } else if (Array.isArray(v)) {
+                  val = v.join('、') || 'なし';
+                } else if (typeof v === 'object') {
+                  val = Object.values(v).filter(Boolean).join(' ').slice(0, 80) || '—';
+                } else {
+                  const s = String(v);
+                  val = s.length > 100 ? s.slice(0, 100) + '…' : s;
+                }
+                return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${Components.escapeHtml(val)}</span></div>`;
               }).join('')}
             </div>
           </div>`;

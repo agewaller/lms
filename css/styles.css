@@ -1160,6 +1160,7 @@ body.is-admin .admin-only { display: flex; }
 }
 .mini-score .score-value { font-size: 16px; }
 .score-label { position: absolute; bottom: 8px; font-size: 13px; color: var(--text-light); width: 100%; text-align: center; }
+.score-hint { font-size: 12px; color: var(--text-secondary); text-align: center; margin-top: 4px; }
 
 /* Stat Card */
 .stat-card {

@@ -20,7 +20,8 @@ var Components = {
       </svg>
       <div class="score-value">${pct}</div>
       ${label ? `<div class="score-label">${label}</div>` : ''}
-    </div>`;
+    </div>
+    <div class="score-hint">${pct >= 70 ? '良好' : pct >= 40 ? 'まずまず' : 'もう少し'}</div>`;
   },
 
   // ─── Stat Card ───
@@ -178,9 +179,9 @@ var Components = {
   // ─── Sub Navigation (Home, Record, Action, Settings) ───
   subNav(activePage, domain) {
     const pages = [
-      { id: 'home', icon: '🏠' },
-      { id: 'record', icon: '📝' },
-      { id: 'actions', icon: '⚡' },
+      { id: 'home', icon: '◈' },
+      { id: 'record', icon: '◈' },
+      { id: 'actions', icon: '◈' },
       { id: 'ask_ai', icon: '' },
       { id: 'settings', icon: '⚙️' }
     ];
