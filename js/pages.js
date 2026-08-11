@@ -487,9 +487,9 @@ var Pages = {
     return `<div class="resume-widget">
       <h3>📄 レジュメ</h3>
       <div class="resume-summary">
-        <p><strong>${resume.name || ''}</strong></p>
-        <p>${resume.summary || ''}</p>
-        <p>スキル: ${(resume.skills || []).join(', ')}</p>
+        <p><strong>${Components.escapeHtml(resume.name || '')}</strong></p>
+        <p>${Components.escapeHtml(resume.summary || '')}</p>
+        <p>スキル: ${Components.escapeHtml((resume.skills || []).join(', '))}</p>
       </div>
       <div class="resume-actions">
         <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')">編集</button>
@@ -913,24 +913,25 @@ var Pages = {
   // ─── Resume Settings (Contribution domain) ───
   renderResumeSettings() {
     const r = store.get('userResume') || {};
+    const esc = v => Components.escapeHtml(v || '');
     return `<div class="settings-section">
       <h3>📄 レジュメ・職務経歴</h3>
       <p>ここに登録した内容を求人プラットフォームにワンクリックで送信できます。</p>
       <div class="form-group">
         <label>お名前</label>
-        <input type="text" id="resumeName" class="form-input" value="${r.name || ''}" placeholder="山田花子">
+        <input type="text" id="resumeName" class="form-input" value="${esc(r.name)}" placeholder="山田花子">
       </div>
       <div class="form-group">
         <label>職務要約・自己PR</label>
-        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${r.summary || ''}</textarea>
+        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${esc(r.summary)}</textarea>
       </div>
       <div class="form-group">
         <label>スキル・資格（カンマ区切り）</label>
-        <input type="text" id="resumeSkills" class="form-input" value="${(r.skills || []).join(', ')}" placeholder="例：看護師免許, 英検2級, Excel">
+        <input type="text" id="resumeSkills" class="form-input" value="${esc((r.skills || []).join(', '))}" placeholder="例：看護師免許, 英検2級, Excel">
       </div>
       <div class="form-group">
         <label>職務経歴</label>
-        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${r.history || ''}</textarea>
+        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${esc(r.history)}</textarea>
       </div>
       <div class="form-group">
         <label>希望する働き方</label>
