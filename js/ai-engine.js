@@ -13,8 +13,10 @@ var AIEngine = {
     store.set('isAnalyzing', true);
 
     try {
-      // Build the prompt
-      const systemPrompt = this.buildSystemPrompt(domain, promptType);
+      // Build the prompt (+ response-language directive so the model
+      // answers entirely in the user's selected language)
+      const systemPrompt = this.buildSystemPrompt(domain, promptType)
+        + '\n\n' + this._languageDirectiveFor(this._resolveUserLang());
       const userMessage = this.buildUserMessage(domain, userData);
 
       let result;
@@ -81,6 +83,29 @@ var AIEngine = {
 
     // Fallback to universal daily
     return CONFIG.prompts.universal_daily?.prompt || '';
+  },
+
+  // ─── Response language (未病ダイアリー _languageDirectiveFor 準拠) ───
+  // Resolution order: userProfile.language → i18n.currentLang → 'ja'
+  _resolveUserLang() {
+    const profile = store.get('userProfile') || {};
+    return profile.language
+      || (typeof i18n !== 'undefined' && i18n.currentLang)
+      || 'ja';
+  },
+
+  // Directive telling the model to respond entirely in the user's
+  // language. Each directive is written in its own language so the
+  // instruction itself reinforces the target language. Unknown codes
+  // fall back to English.
+  _languageDirectiveFor(lang) {
+    const m = {
+      ja: '【応答言語】必ず日本語 (ja) で応答してください。敬語を基調に、温かく寄り添う、専門用語を使わないやさしい口調で。見出し・ラベル・箇条書き・注意書きもすべて日本語にしてください。',
+      en: '[RESPONSE LANGUAGE] Respond entirely in English (en). Warm, empathetic, supportive tone, in plain everyday words. Every heading, label, bullet, and disclaimer must be in English.',
+      zh: '【回复语言】请全程使用简体中文 (zh) 回答。语气温暖、有同理心、鼓励，避免专业术语。所有标题、标签、项目符号、注意事项都必须是中文。',
+      ko: '【응답 언어】반드시 한국어 (ko)로 응답하세요. 따뜻하고 공감적이며 격려하는 말투로, 전문 용어 없이 쉽게 설명하세요. 모든 제목, 라벨, 항목, 주의 사항은 한국어여야 합니다.'
+    };
+    return m[lang] || m.en;
   },
 
   // ─── Build user message with context ───
