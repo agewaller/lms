@@ -257,12 +257,12 @@ var Components = {
     const summary = Object.entries(entry)
       .filter(([k]) => !['id','timestamp','domain','category','_synced'].includes(k))
       .slice(0, 3)
-      .map(([k, v]) => `${i18n.t(k)}: ${v}`)
+      .map(([k, v]) => `${Components.escapeHtml(i18n.t(k) || k)}: ${Components.escapeHtml(String(v))}`)
       .join(' | ');
     return `<div class="record-item" style="border-left-color:${color}">
       <div class="record-header">
-        <span class="record-cat">${cat}</span>
-        <span class="record-time">${time}</span>
+        <span class="record-cat">${Components.escapeHtml(cat)}</span>
+        <span class="record-time">${Components.escapeHtml(time)}</span>
       </div>
       <div class="record-summary">${summary}</div>
     </div>`;

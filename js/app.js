@@ -344,6 +344,12 @@ var App = class App {
     store.addDomainEntry(domain, category, data);
     Components.showToast(i18n.t('saved'), 'success');
     form.reset();
+    // Sync slider display spans after reset (reset doesn't fire oninput)
+    form.querySelectorAll('input[type="range"]').forEach(r => {
+      if (r.nextElementSibling && r.nextElementSibling.classList.contains('slider-val')) {
+        r.nextElementSibling.textContent = r.value;
+      }
+    });
   }
 
   async saveAndAnalyze(domain, category) {
@@ -706,8 +712,8 @@ var App = class App {
         <div class="form-group">
           <label>${i18n.t(k) || k}</label>
           ${typeof v === 'string' && v.length > 50
-            ? `<textarea name="${k}" class="form-input" rows="3">${v}</textarea>`
-            : `<input type="${typeof v === 'number' ? 'number' : 'text'}" name="${k}" class="form-input" value="${v}">`}
+            ? `<textarea name="${k}" class="form-input" rows="3">${Components.escapeHtml(v)}</textarea>`
+            : `<input type="${typeof v === 'number' ? 'number' : 'text'}" name="${k}" class="form-input" value="${Components.escapeHtml(String(v))}">`}
         </div>
       `).join('')}
       <div class="form-actions">
@@ -1284,7 +1290,8 @@ var App = class App {
   showCategory(category, btn) {
     // Update tab active state
     document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-    if (btn) btn.classList.add('active');
+    const target = btn || document.querySelector(`.cat-tab[data-category="${category}"]`);
+    if (target) target.classList.add('active');
 
     // Show/hide forms
     document.querySelectorAll('.category-form').forEach(f => f.classList.remove('active'));
@@ -1890,35 +1897,36 @@ var App = class App {
       `<div class="user-score-item"><span>${i18n.t(d)}</span><strong>${s}</strong></div>`
     ).join('');
 
+    const e = v => Components.escapeHtml(v != null ? String(v) : '-');
     const body = `
       <div class="user-detail">
         <div class="user-detail-section">
           <h4>基本情報</h4>
-          <p><strong>お名前:</strong> ${user.displayName || '-'}</p>
-          <p><strong>メール:</strong> ${user.email || '-'}</p>
-          <p><strong>年齢:</strong> ${user.age || '-'}</p>
-          <p><strong>性別:</strong> ${user.gender || '-'}</p>
-          <p><strong>居住地:</strong> ${user.location || '-'}</p>
-          <p><strong>職業:</strong> ${user.occupation || '-'}</p>
+          <p><strong>お名前:</strong> ${e(user.displayName)}</p>
+          <p><strong>メール:</strong> ${e(user.email)}</p>
+          <p><strong>年齢:</strong> ${e(user.age)}</p>
+          <p><strong>性別:</strong> ${e(user.gender)}</p>
+          <p><strong>居住地:</strong> ${e(user.location)}</p>
+          <p><strong>職業:</strong> ${e(user.occupation)}</p>
         </div>
 
         <div class="user-detail-section">
           <h4>健康</h4>
-          <p><strong>持病・症状:</strong> ${user.diseases.length > 0 ? user.diseases.join(', ') : 'なし'}</p>
-          <p><strong>服薬:</strong> ${user.medications || 'なし'}</p>
+          <p><strong>持病・症状:</strong> ${user.diseases && user.diseases.length > 0 ? Components.escapeHtml(user.diseases.join(', ')) : 'なし'}</p>
+          <p><strong>服薬:</strong> ${e(user.medications) === '-' ? 'なし' : e(user.medications)}</p>
         </div>
 
         <div class="user-detail-section">
           <h4>資産・収入</h4>
-          <p><strong>月収:</strong> ${user.monthlyIncome || '-'}</p>
-          <p><strong>貯蓄:</strong> ${user.savings || '-'}</p>
-          <p><strong>プラン:</strong> ${user.subscription}</p>
+          <p><strong>月収:</strong> ${e(user.monthlyIncome)}</p>
+          <p><strong>貯蓄:</strong> ${e(user.savings)}</p>
+          <p><strong>プラン:</strong> ${e(user.subscription)}</p>
         </div>
 
         <div class="user-detail-section">
           <h4>人生目標・悩み</h4>
-          <p><strong>目標:</strong> ${user.lifeGoals || '-'}</p>
-          <p><strong>悩み:</strong> ${user.concerns || '-'}</p>
+          <p><strong>目標:</strong> ${e(user.lifeGoals)}</p>
+          <p><strong>悩み:</strong> ${e(user.concerns)}</p>
         </div>
 
         ${scoreHtml ? `
@@ -1928,8 +1936,8 @@ var App = class App {
         </div>` : ''}
 
         <div class="user-detail-section" style="font-size:11px;color:var(--text-muted);">
-          UID: ${user.uid}<br>
-          最終アクティビティ: ${user.lastActive ? new Date(user.lastActive).toLocaleString('ja-JP') : '-'}
+          UID: ${Components.escapeHtml(user.uid || '')}<br>
+          最終アクティビティ: ${user.lastActive ? Components.escapeHtml(new Date(user.lastActive).toLocaleString('ja-JP')) : '-'}
         </div>
       </div>
     `;

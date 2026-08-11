@@ -408,7 +408,7 @@ var Pages = {
       html += `<div class="graph-ring ring-${level}" style="--ring-color: ${levels[level].color}">
         <div class="ring-label">${levels[level].description}（${people.length}人）</div>
         <div class="ring-people">
-          ${people.slice(0, 8).map(p => `<span class="ring-person" title="${p.name}">${(p.name || '').substring(0, 3)}</span>`).join('')}
+          ${people.slice(0, 8).map(p => { const esc = Components.escapeHtml(p.name || ''); return `<span class="ring-person" title="${esc}">${esc.substring(0, 3)}</span>`; }).join('')}
           ${people.length > 8 ? `<span class="ring-more">+${people.length - 8}</span>` : ''}
         </div>
       </div>`;
@@ -444,7 +444,7 @@ var Pages = {
       const dateStr = c.nextBirthday.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
       const label = c.daysUntil === 0 ? '今日！' : `あと${c.daysUntil}日`;
       html += `<div class="birthday-item ${c.daysUntil <= 3 ? 'birthday-soon' : ''}">
-        <span class="birthday-name">${c.name}</span>
+        <span class="birthday-name">${Components.escapeHtml(c.name || '')}</span>
         <span class="birthday-date">${dateStr}（${label}）</span>
         <span class="birthday-distance">${CONFIG.domains.relationship.distanceLevels[c.distance]?.description || ''}</span>
       </div>`;
@@ -1093,7 +1093,7 @@ var Pages = {
               ${fields.map(([k, v]) => {
                 const label = i18n.t(k) || k;
                 const val = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
-                return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${val}</span></div>`;
+                return `<div class="data-field"><span class="data-field-key">${Components.escapeHtml(label)}</span><span class="data-field-val">${Components.escapeHtml(val)}</span></div>`;
               }).join('')}
             </div>
           </div>`;
@@ -1666,7 +1666,7 @@ var Pages = {
           </div>
           <div class="form-group">
             <label>プロンプト本文</label>
-            <textarea class="form-input prompt-textarea" rows="16" data-field="prompt">${p.prompt || ''}</textarea>
+            <textarea class="form-input prompt-textarea" rows="16" data-field="prompt">${Components.escapeHtml(p.prompt || '')}</textarea>
           </div>
           <div class="form-actions">
             <button class="btn btn-primary" onclick="app.savePrompt('${key}')">保存</button>
@@ -1939,9 +1939,9 @@ var Pages = {
             <div class="admin-user-info">
               <div class="admin-user-avatar">${initial}</div>
               <div>
-                <div class="admin-user-email">${u.displayName || u.email || '不明'}</div>
+                <div class="admin-user-email">${Components.escapeHtml(u.displayName || u.email || '不明')}</div>
                 <div class="admin-user-role">
-                  ${u.email ? u.email + '<br>' : ''}${metaText || 'プロフィール未設定'}
+                  ${u.email ? Components.escapeHtml(u.email) + '<br>' : ''}${metaText || 'プロフィール未設定'}
                   ${u.lastActive ? ' · 最終: ' + new Date(u.lastActive).toLocaleDateString('ja-JP') : ''}
                 </div>
               </div>
