@@ -1492,7 +1492,21 @@ var App = class App {
   }
 
   addNewPrompt() {
-    const key = prompt('プロンプトのキー名を入力（例: work_custom）');
+    this.openModal('新しいプロンプトを追加', `
+      <div class="form-group">
+        <label>キー名（例: work_custom）</label>
+        <input type="text" id="newPromptKey" class="form-input" placeholder="work_custom">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="app._doAddNewPrompt()">追加</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+    setTimeout(() => { const el = document.getElementById('newPromptKey'); if (el) el.focus(); }, 100);
+  }
+
+  _doAddNewPrompt() {
+    const key = (document.getElementById('newPromptKey')?.value || '').trim();
     if (!key) return;
     if (CONFIG.prompts[key]) {
       Components.showToast('そのキーは既に存在します', 'error');
@@ -1506,6 +1520,7 @@ var App = class App {
       active: true,
       prompt: ''
     };
+    this.closeModal();
     this.renderApp();
   }
 
@@ -1653,15 +1668,30 @@ var App = class App {
   }
 
   // ─── Admin User Management ───
-  async addAdminEmail() {
-    const email = prompt('管理者として追加するメールアドレスを入力してください');
-    if (!email || !email.trim()) return;
+  addAdminEmail() {
+    this.openModal('管理者を追加', `
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" id="newAdminEmail" class="form-input" placeholder="admin@example.com">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="app._doAddAdminEmail()">追加</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+    setTimeout(() => { const el = document.getElementById('newAdminEmail'); if (el) el.focus(); }, 100);
+  }
+
+  async _doAddAdminEmail() {
+    const email = document.getElementById('newAdminEmail')?.value || '';
+    if (!email.trim()) return;
 
     const trimmed = email.trim().toLowerCase();
     if (!/^[^@]+@[^@]+\.[^@]+$/.test(trimmed)) {
       Components.showToast('有効なメールアドレスを入力してください', 'error');
       return;
     }
+    this.closeModal();
 
     const list = store.get('adminEmails') || ['agewaller@gmail.com'];
     if (list.includes(trimmed)) {
