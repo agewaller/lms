@@ -190,6 +190,10 @@ var App = class App {
       el.classList.toggle('active', el.dataset.domain === domain);
     });
 
+    // Populate domain tab bar in top bar (desktop quick-switch)
+    const domainTabsEl = document.getElementById('domainTabs');
+    if (domainTabsEl) domainTabsEl.innerHTML = Components.domainTabs(domain);
+
     // Update sidebar user info
     this.updateSidebar();
 
