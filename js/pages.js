@@ -29,12 +29,15 @@ var Pages = {
 
     // Quick input bar
     let html = `<div class="page-home">
+      ${this.renderDailyGreeting()}
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
-      <div id="quickResponse"></div>`;
+      <div id="quickResponse"></div>
+      ${this.renderActivityStreak(domain)}
+      ${this.renderQuickActions(domain)}`;
 
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
@@ -79,8 +82,22 @@ var Pages = {
     allRecent.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     if (allRecent.length === 0) {
-      html += Components.emptyState(domainConfig?.icon || '📭', i18n.t('no_data'),
-        `${i18n.t('record')} → ${i18n.t('save')}`);
+      const domainGuides = {
+        consciousness: { msg: '毎日の気づきや瞑想を記録すると、心の変化が見えてきます。', btn: '最初の記録を始める' },
+        health: { msg: '体調・睡眠・食事を記録すると、健康の傾向が見えてきます。', btn: '今日の体調を記録する' },
+        time: { msg: '時間の使い方を記録すると、充実した毎日のヒントが見つかります。', btn: '時間ログを始める' },
+        work: { msg: 'タスクや目標を記録すると、あなたの力を活かす場が広がります。', btn: '今日の仕事を記録する' },
+        relationship: { msg: '大切な人を登録すると、つながりを大切にするサポートをします。', btn: '連絡先を登録する' },
+        assets: { msg: '資産の状況を記録すると、安心の老後プランが見えてきます。', btn: '資産情報を登録する' }
+      };
+      const guide = domainGuides[domain] || { msg: 'まずは最初の記録を始めましょう。', btn: '記録を始める' };
+      html += `<div class="first-steps-card">
+        <div class="first-steps-icon" style="background:${color}20;color:${color}">${domainConfig?.icon || '○'}</div>
+        <p class="first-steps-msg">${guide.msg}</p>
+        <button class="btn btn-primary" onclick="app.navigate('record')" style="background:${color};border-color:${color}">
+          ${guide.btn}
+        </button>
+      </div>`;
     } else {
       allRecent.slice(0, 10).forEach(entry => {
         html += Components.recordItem(entry, domain);
@@ -158,6 +175,110 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Daily Greeting ───
+  renderDailyGreeting() {
+    const hour = new Date().getHours();
+    let greeting;
+    if (hour < 11) greeting = 'おはようございます';
+    else if (hour < 17) greeting = 'こんにちは';
+    else greeting = 'こんばんは';
+
+    const user = store.get('user');
+    const rawName = user?.displayName || '';
+    const firstName = rawName.split(/[\s　]/)[0];
+    const nameStr = firstName ? `、${Components.escapeHtml(firstName)}さん` : '';
+
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('ja-JP', {
+      year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
+    });
+
+    return `<div class="daily-greeting">
+      <div class="greeting-text">${greeting}${nameStr}</div>
+      <div class="greeting-date">${dateStr}</div>
+    </div>`;
+  },
+
+  // ─── Activity Streak (7-day calendar dots) ───
+  renderActivityStreak(domain) {
+    const today = new Date();
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    const color = CONFIG.domains[domain]?.color || '#6C63FF';
+    const cats = Object.keys(CONFIG.domains[domain]?.categories || {});
+
+    // Collect all recorded dates for this domain in last 30 days
+    const recordedDates = new Set();
+    cats.forEach(cat => {
+      store.getDomainData(domain, cat, 30).forEach(e => {
+        if (e.timestamp) recordedDates.add(e.timestamp.slice(0, 10));
+      });
+    });
+
+    // Build 7-day window ending today
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      days.push({
+        dateStr,
+        dayName: dayNames[d.getDay()],
+        recorded: recordedDates.has(dateStr),
+        isToday: i === 0
+      });
+    }
+
+    // Streak = consecutive days backwards from yesterday (today optional)
+    let streak = 0;
+    for (let i = days.length - 2; i >= 0; i--) {
+      if (days[i].recorded) streak++;
+      else break;
+    }
+    if (days[days.length - 1].recorded) streak++;
+
+    const streakLabel = streak >= 3
+      ? `<span class="streak-count" style="color:${color}">🔥 ${streak}日連続</span>`
+      : streak >= 1
+        ? `<span class="streak-count" style="color:${color}">${streak}日記録</span>`
+        : '';
+
+    return `<div class="activity-streak">
+      <div class="streak-header">
+        <span class="streak-title">今週の記録</span>
+        ${streakLabel}
+      </div>
+      <div class="streak-days">
+        ${days.map(d => `
+          <div class="streak-day ${d.recorded ? 'recorded' : ''} ${d.isToday ? 'today' : ''}"
+               ${d.recorded ? `style="background:${color};border-color:${color}"` : ''}
+               title="${d.dateStr}">
+            ${d.dayName}
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  },
+
+  // ─── Quick Actions (shortcut buttons to record categories) ───
+  renderQuickActions(domain) {
+    const cats = CONFIG.domains[domain]?.categories || {};
+    const color = CONFIG.domains[domain]?.color || '#6C63FF';
+    const entries = Object.entries(cats).slice(0, 4);
+    if (entries.length === 0) return '';
+
+    return `<div class="quick-actions-row">
+      <span class="quick-actions-label">今日の記録</span>
+      <div class="quick-action-btns">
+        ${entries.map(([catKey, cat]) => `
+          <button class="quick-action-btn" style="--qa-color:${color}"
+                  onclick="app.navigate('record');setTimeout(()=>app.showCategory('${catKey}',null),80)">
+            ${cat.icon || '+'} <span>${i18n.t(cat.label)}</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
