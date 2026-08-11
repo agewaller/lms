@@ -313,7 +313,22 @@ var i18n = {
       disclaimer_health: 'This is for reference only. Consult a physician for health decisions.',
       disclaimer_assets: 'This is for reference only. Consult a financial advisor for investment decisions.',
       items: 'items', selected: 'selected',
-      file_upload: 'File Upload', save_and_analyze: 'Save & Analyze'
+      file_upload: 'File Upload', save_and_analyze: 'Save & Analyze',
+      // Relationship
+      import_contacts: 'Import Contacts', enrich_contact: 'Auto-lookup Info',
+      upcoming_birthdays: 'Upcoming Birthdays', long_no_contact: 'Long No Contact',
+      // Assets
+      asset_overview: 'Asset Overview', stock_investment: 'Stock Investment',
+      analyze_stock: 'Analyze Stock',
+      // Consciousness layers
+      layer_1: '1 - Measure', layer_2: '2 - Relate', layer_3: '3 - Ground',
+      layer_35: '3.5 - Mind-Body', layer_4: '4 - Vision', layer_5: '5 - Possibility',
+      layer_6: '6 - Integrate', layer_7: '7 - Void',
+      layer_1_pct: 'Measure (%)', layer_2_pct: 'Relate (%)', layer_3_pct: 'Ground (%)',
+      layer_35_pct: 'Mind-Body (%)', layer_4_pct: 'Vision (%)', layer_5_pct: 'Possibility (%)',
+      layer_6_pct: 'Integrate (%)', layer_7_pct: 'Void (%)',
+      desire_count: 'Desires', virtue_count: 'Virtues', energy_count: 'Energy',
+      net_value: 'Net Value', transcript_source: 'Source'
     },
 
     zh: {
@@ -339,7 +354,15 @@ var i18n = {
       view_all: '查看全部', no_data: '暂无数据',
       profile: '个人资料', language: '语言', logout: '退出',
       subscription: '订阅', subscribe: '订阅',
-      items: '条', selected: '已选'
+      items: '条', selected: '已选',
+      import_contacts: '导入联系人', enrich_contact: '自动查询信息',
+      upcoming_birthdays: '即将到来的生日', long_no_contact: '久未联系',
+      asset_overview: '资产总览', stock_investment: '股票投资', analyze_stock: '分析股票',
+      layer_1: '1-测量', layer_2: '2-关系', layer_3: '3-现场',
+      layer_35: '3.5-身心', layer_4: '4-构想', layer_5: '5-可能性',
+      layer_6: '6-整合', layer_7: '7-空',
+      desire_count: '欲望', virtue_count: '美德', energy_count: '能量',
+      net_value: '净价值', transcript_source: '来源'
     },
 
     ko: {
@@ -365,7 +388,15 @@ var i18n = {
       view_all: '모두 보기', no_data: '데이터 없음',
       profile: '프로필', language: '언어',
       subscription: '구독', subscribe: '구독하기',
-      items: '개', selected: '선택됨'
+      items: '개', selected: '선택됨',
+      import_contacts: '연락처 가져오기', enrich_contact: '정보 자동 조회',
+      upcoming_birthdays: '다가오는 생일', long_no_contact: '오래 연락 안 한 분',
+      asset_overview: '자산 전체', stock_investment: '주식 투자', analyze_stock: '종목 분석',
+      layer_1: '1-측정', layer_2: '2-관계', layer_3: '3-현장',
+      layer_35: '3.5-심신', layer_4: '4-구상', layer_5: '5-가능성',
+      layer_6: '6-통합', layer_7: '7-공',
+      desire_count: '욕망', virtue_count: '덕', energy_count: '에너지',
+      net_value: '순가치', transcript_source: '입력원'
     }
   },
 
