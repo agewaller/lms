@@ -18,6 +18,7 @@ var App = class App {
     if (store.get('isAuthenticated') && store.get('user')) {
       store.set('currentDomain', entryDomain || store.get('currentDomain') || 'health');
       store.set('currentPage', 'home');
+      this.updateStreak();
       this.renderApp();
       this.startInboxPolling();
     }
@@ -27,6 +28,7 @@ var App = class App {
       if (val) {
         store.set('currentDomain', this.entryDomain || store.get('currentDomain') || 'health');
         store.set('currentPage', 'home');
+        this.updateStreak();
         this.renderApp();
         this.startInboxPolling();
       } else {
@@ -179,7 +181,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', data: 'データ', actions: 'アクション', ask_ai: '相談する', integrations: '連携', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -445,6 +447,77 @@ var App = class App {
       Components.showToast(i18n.t('saved'), 'success');
     } catch (e) {
       Components.showToast(e.message, 'error');
+    }
+  }
+
+  // ─── Streak Tracking ───
+  updateStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    const last = store.get('lastActiveDate') || '';
+    const streak = store.get('streakDays') || 0;
+
+    if (last === today) return; // already counted today
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+    const newStreak = (last === yesterdayStr) ? streak + 1 : 1;
+    store.set('streakDays', newStreak);
+    store.set('lastActiveDate', today);
+
+    if (newStreak > 1 && newStreak % 7 === 0) {
+      setTimeout(() => Components.showToast(`${newStreak}日連続！すばらしいです`, 'success'), 800);
+    }
+  }
+
+  // ─── Quick Daily Check-in ───
+  saveDailyCheckIn() {
+    const mood = document.getElementById('checkinMood')?.value;
+    const energy = document.getElementById('checkinEnergy')?.value;
+    const sleep = document.getElementById('checkinSleep')?.value;
+    if (!mood && !energy && !sleep) {
+      Components.showToast('少なくとも1つ入力してください', 'info');
+      return;
+    }
+    store.addDomainEntry('health', 'symptoms', {
+      condition_level: mood ? parseInt(mood) : null,
+      energy_level: energy ? parseInt(energy) : null,
+      sleep_quality: sleep ? parseInt(sleep) : null,
+      type: 'daily_checkin'
+    });
+    store.set('lastCheckinDate', new Date().toISOString().slice(0, 10));
+    Components.showToast('今日の状態を記録しました', 'success');
+    this.renderApp();
+  }
+
+  // ─── Weekly Summary ───
+  async generateWeeklySummary() {
+    const el = document.getElementById('weeklySummaryResult');
+    if (el) el.innerHTML = Components.loading('1週間のまとめを作成中...');
+
+    // Gather last-7-days data across all domains
+    const summary = {};
+    Object.keys(CONFIG.domains).forEach(domain => {
+      const domainConfig = CONFIG.domains[domain];
+      const recent = [];
+      Object.keys(domainConfig.categories || {}).forEach(cat => {
+        recent.push(...store.getDomainData(domain, cat, 7));
+      });
+      summary[domain] = recent.length;
+    });
+
+    const summaryText = Object.entries(summary)
+      .map(([d, count]) => `${i18n.t(d)}: ${count}件の記録`)
+      .join('\n');
+
+    try {
+      const result = await AIEngine.analyze(null, 'weekly_summary', {
+        text: `今週（過去7日間）の記録状況:\n${summaryText}\n\n各領域の概要を一言ずつ評価し、来週の重点アドバイスを3点あげてください。`
+      });
+      if (el) el.innerHTML = `<div class="analysis-content">${Components.formatMarkdown(result)}</div>`;
+    } catch (e) {
+      if (el) el.innerHTML = `<div class="error-msg">${e.message}</div>`;
     }
   }
 
@@ -741,7 +814,18 @@ var App = class App {
   }
 
   deleteDataEntry(domain, category, id) {
-    if (!confirm('この記録を削除しますか？')) return;
+    // Inline confirmation via modal instead of confirm() (blocked on iOS Safari)
+    this.openModal('記録を削除', `
+      <p>この記録を削除しますか？この操作は元に戻せません。</p>
+      <div style="display:flex;gap:12px;margin-top:16px;">
+        <button class="btn btn-danger" onclick="app._doDeleteDataEntry('${domain}','${category}','${id}')">削除する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+  }
+
+  _doDeleteDataEntry(domain, category, id) {
+    this.closeModal();
     const key = `${domain}_${category}`;
     const entries = (store.get(key) || []).filter(e => e.id !== id);
     store.set(key, entries);
@@ -824,7 +908,6 @@ var App = class App {
   }
 
   fitbitDisconnect() {
-    if (!confirm('Fitbit接続を解除しますか？')) return;
     if (typeof fitbit !== 'undefined') fitbit.disconnect();
     Components.showToast('接続を解除しました', 'info');
     this.renderApp();
@@ -874,7 +957,6 @@ var App = class App {
   }
 
   gcalDisconnect() {
-    if (!confirm('Googleカレンダー接続を解除しますか？')) return;
     if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
     Components.showToast('接続を解除しました', 'info');
     this.renderApp();
@@ -909,7 +991,6 @@ var App = class App {
   }
 
   outlookDisconnect() {
-    if (!confirm('Outlook接続を解除しますか？')) return;
     if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
     Components.showToast('接続を解除しました', 'info');
     this.renderApp();
@@ -944,7 +1025,6 @@ var App = class App {
   }
 
   gmailDisconnect() {
-    if (!confirm('Gmail接続を解除しますか？')) return;
     if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
     Components.showToast('接続を解除しました', 'info');
     this.renderApp();
@@ -1479,7 +1559,6 @@ var App = class App {
   }
 
   deletePrompt(key) {
-    if (!confirm('このプロンプトを削除しますか？')) return;
     delete CONFIG.prompts[key];
     const custom = store.get('customPrompts') || {};
     delete custom[key];
@@ -1489,12 +1568,27 @@ var App = class App {
   }
 
   addNewPrompt() {
-    const key = prompt('プロンプトのキー名を入力（例: work_custom）');
-    if (!key) return;
+    this.openModal('新しいプロンプトを追加', `
+      <div class="form-group">
+        <label>キー名（英数字とアンダースコアのみ）</label>
+        <input type="text" id="newPromptKey" class="form-input" placeholder="例: work_custom">
+      </div>
+      <div style="display:flex;gap:12px;margin-top:16px;">
+        <button class="btn btn-primary" onclick="app._doAddNewPrompt()">追加</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+  }
+
+  _doAddNewPrompt() {
+    const key = (document.getElementById('newPromptKey')?.value || '').trim();
+    if (!key) { Components.showToast('キー名を入力してください', 'error'); return; }
+    if (!/^[a-z0-9_]+$/.test(key)) { Components.showToast('英小文字・数字・アンダースコアのみ使えます', 'error'); return; }
     if (CONFIG.prompts[key]) {
       Components.showToast('そのキーは既に存在します', 'error');
       return;
     }
+    this.closeModal();
     CONFIG.prompts[key] = {
       name: '新しいプロンプト',
       domain: 'universal',
@@ -1524,7 +1618,6 @@ var App = class App {
   }
 
   clearApiKeys() {
-    if (!confirm('すべてのAPIキーを削除しますか？')) return;
     ['anthropic', 'openai', 'google'].forEach(p => {
       localStorage.removeItem('lms_apikey_' + p);
     });
@@ -1559,7 +1652,6 @@ var App = class App {
   }
 
   clearFirebaseConfig() {
-    if (!confirm('Firebase設定を削除しますか？')) return;
     localStorage.removeItem('lms_firebaseConfig');
     Components.showToast('削除しました（再読み込みが必要です）', 'info');
   }
@@ -1648,11 +1740,24 @@ var App = class App {
   }
 
   // ─── Admin User Management ───
-  async addAdminEmail() {
-    const email = prompt('管理者として追加するメールアドレスを入力してください');
-    if (!email || !email.trim()) return;
+  addAdminEmail() {
+    this.openModal('管理者を追加', `
+      <div class="form-group">
+        <label>追加する管理者のメールアドレス</label>
+        <input type="email" id="newAdminEmail" class="form-input" placeholder="example@email.com">
+      </div>
+      <div style="display:flex;gap:12px;margin-top:16px;">
+        <button class="btn btn-primary" onclick="app._doAddAdminEmail()">追加</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+  }
 
-    const trimmed = email.trim().toLowerCase();
+  async _doAddAdminEmail() {
+    const email = (document.getElementById('newAdminEmail')?.value || '').trim();
+    if (!email) { Components.showToast('メールアドレスを入力してください', 'error'); return; }
+
+    const trimmed = email.toLowerCase();
     if (!/^[^@]+@[^@]+\.[^@]+$/.test(trimmed)) {
       Components.showToast('有効なメールアドレスを入力してください', 'error');
       return;
@@ -1664,6 +1769,7 @@ var App = class App {
       return;
     }
 
+    this.closeModal();
     list.push(trimmed);
     store.set('adminEmails', list);
 
@@ -1687,8 +1793,6 @@ var App = class App {
       Components.showToast('オーナーアカウントは削除できません', 'error');
       return;
     }
-    if (!confirm(`${email} を管理者から外しますか？`)) return;
-
     const list = (store.get('adminEmails') || ['agewaller@gmail.com']).filter(e => e !== email);
     store.set('adminEmails', list);
 
@@ -1908,8 +2012,6 @@ var App = class App {
   }
 
   generateDemoData() {
-    if (!confirm('デモデータを生成しますか？既存データに追加されます。')) return;
-    // Generate sample entries for each domain
     const today = new Date();
     for (let i = 0; i < 7; i++) {
       const d = new Date(today);
@@ -1922,8 +2024,18 @@ var App = class App {
   }
 
   deleteAllData() {
-    if (!confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
-    if (!confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
+    this.openModal('データの全削除', `
+      <p style="color:var(--error);font-weight:bold;">この操作は元に戻せません。</p>
+      <p>すべての記録データが完全に削除されます。本当によろしいですか？</p>
+      <div style="display:flex;gap:12px;margin-top:20px;">
+        <button class="btn btn-danger" onclick="app._confirmDeleteAllData()">削除する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+      </div>
+    `);
+  }
+
+  _confirmDeleteAllData() {
+    this.closeModal();
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();

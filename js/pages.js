@@ -27,6 +27,13 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    // Check if this is a brand-new user (no data at all)
+    const hasAnyData = Object.keys(CONFIG.domains).some(d => {
+      return Object.keys(CONFIG.domains[d].categories || {}).some(cat =>
+        store.getDomainData(d, cat, 3650).length > 0
+      );
+    });
+
     // Quick input bar
     let html = `<div class="page-home">
       <div class="quick-input-bar">
@@ -35,6 +42,17 @@ var Pages = {
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
       </div>
       <div id="quickResponse"></div>`;
+
+    // Onboarding card for first-time users
+    if (!hasAnyData) {
+      html += this.renderOnboardingCard();
+    }
+
+    // Streak + daily check-in (only shown on health domain home, or when health is current)
+    html += this.renderStreakBar();
+    if (!store.get('lastCheckinDate') || store.get('lastCheckinDate') !== new Date().toISOString().slice(0, 10)) {
+      html += this.renderDailyCheckIn();
+    }
 
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
@@ -88,6 +106,9 @@ var Pages = {
     }
 
     html += `</div></div>`;
+
+    // Weekly summary button (shown every 7 days or on-demand)
+    html += this.renderWeeklySummaryWidget();
 
     // Recommendations
     const recs = (store.get('recommendations') || []).filter(r => r.domain === domain || !r.domain);
@@ -158,6 +179,102 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Onboarding Card (first-time users) ───
+  renderOnboardingCard() {
+    return `<div class="onboarding-card">
+      <div class="onboarding-header">
+        <div class="onboarding-icon">◈</div>
+        <div>
+          <h2>LMSへようこそ</h2>
+          <p>あなたの人生を6つの領域でサポートします</p>
+        </div>
+      </div>
+      <div class="onboarding-steps">
+        <div class="onboarding-step" onclick="app.navigate('settings')">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <strong>プロフィールを設定</strong>
+            <p>基本情報を入力するとアドバイスがより的確になります</p>
+          </div>
+          <span class="step-arrow">→</span>
+        </div>
+        <div class="onboarding-step" onclick="app.navigate('record')">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <strong>最初の記録をつける</strong>
+            <p>今日の体調・気分・出来事を記録してみましょう</p>
+          </div>
+          <span class="step-arrow">→</span>
+        </div>
+        <div class="onboarding-step" onclick="app.navigate('ask_ai')">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <strong>気になることを相談する</strong>
+            <p>健康、お金、仕事、人間関係… 何でも相談できます</p>
+          </div>
+          <span class="step-arrow">→</span>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  // ─── Streak Bar ───
+  renderStreakBar() {
+    const streak = store.get('streakDays') || 0;
+    if (streak < 2) return '';
+    const gems = Math.min(streak, 30);
+    const dots = Array.from({ length: gems }, (_, i) =>
+      `<span class="streak-dot ${i < streak ? 'filled' : ''}"></span>`
+    ).join('');
+    return `<div class="streak-bar">
+      <span class="streak-flame">🔥</span>
+      <strong>${streak}日連続</strong>
+      <span class="streak-dots">${dots}</span>
+    </div>`;
+  },
+
+  // ─── Daily Quick Check-in ───
+  renderDailyCheckIn() {
+    const labels = ['最悪', '悪い', '普通', '良い', '最高'];
+    const renderStars = (id, name) => Array.from({ length: 5 }, (_, i) =>
+      `<button class="checkin-star" data-id="${id}" data-val="${i + 1}"
+        onclick="document.getElementById('${id}').value=${i+1};
+                 this.closest('.checkin-stars').querySelectorAll('.checkin-star').forEach((s,j)=>s.classList.toggle('active',j<=${i}))"
+        title="${labels[i]}">★</button>`
+    ).join('');
+
+    return `<div class="daily-checkin-card">
+      <h3>今日の状態を記録</h3>
+      <div class="checkin-row">
+        <span class="checkin-label">気分</span>
+        <div class="checkin-stars">${renderStars('checkinMood','mood')}</div>
+        <input type="hidden" id="checkinMood" value="">
+      </div>
+      <div class="checkin-row">
+        <span class="checkin-label">活力</span>
+        <div class="checkin-stars">${renderStars('checkinEnergy','energy')}</div>
+        <input type="hidden" id="checkinEnergy" value="">
+      </div>
+      <div class="checkin-row">
+        <span class="checkin-label">睡眠</span>
+        <div class="checkin-stars">${renderStars('checkinSleep','sleep')}</div>
+        <input type="hidden" id="checkinSleep" value="">
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="app.saveDailyCheckIn()">記録する</button>
+    </div>`;
+  },
+
+  // ─── Weekly Summary Widget ───
+  renderWeeklySummaryWidget() {
+    return `<div class="weekly-summary-widget">
+      <div class="weekly-header">
+        <h3>今週のまとめ</h3>
+        <button class="btn btn-sm btn-secondary" onclick="app.generateWeeklySummary()">まとめを作る</button>
+      </div>
+      <div id="weeklySummaryResult"></div>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
