@@ -3,6 +3,17 @@
    ============================================================ */
 var Components = {
 
+  // ─── XSS prevention: escape user-supplied text before injecting into DOM ───
+  escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
   // ─── Score Gauge (circular) ───
   scoreGauge(score, size = 120, label = '') {
     const pct = Math.max(0, Math.min(100, score));
@@ -257,7 +268,7 @@ var Components = {
     const summary = Object.entries(entry)
       .filter(([k]) => !['id','timestamp','domain','category','_synced'].includes(k))
       .slice(0, 3)
-      .map(([k, v]) => `${i18n.t(k)}: ${v}`)
+      .map(([k, v]) => `${i18n.t(k)}: ${this.escapeHtml(v)}`)
       .join(' | ');
     return `<div class="record-item" style="border-left-color:${color}">
       <div class="record-header">

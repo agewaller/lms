@@ -272,7 +272,10 @@ var Store = class Store {
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // Only delete lms_* keys — never localStorage.clear() (wipes Firebase config + OAuth tokens)
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('lms_'))
+      .forEach(k => localStorage.removeItem(k));
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
