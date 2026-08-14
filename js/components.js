@@ -3,6 +3,67 @@
    ============================================================ */
 var Components = {
 
+  // ─── XSS guard ───
+  escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
+
+  // ─── Mobile-safe confirm (replaces window.confirm) ───
+  confirm(message, onConfirm, onCancel) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.style.cssText = 'display:flex;z-index:9999;';
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:380px;text-align:center;padding:32px 24px;">
+        <p style="font-size:16px;margin-bottom:24px;line-height:1.6;">${this.escapeHtml(message)}</p>
+        <div style="display:flex;gap:12px;justify-content:center;">
+          <button class="btn btn-secondary" id="confirmNo" style="min-width:90px;">キャンセル</button>
+          <button class="btn btn-primary" id="confirmYes" style="min-width:90px;">はい</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#confirmYes').addEventListener('click', () => {
+      overlay.remove();
+      if (onConfirm) onConfirm();
+    });
+    overlay.querySelector('#confirmNo').addEventListener('click', () => {
+      overlay.remove();
+      if (onCancel) onCancel();
+    });
+  },
+
+  // ─── Mobile-safe text input (replaces window.prompt) ───
+  inputModal(message, placeholder, callback) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.style.cssText = 'display:flex;z-index:9999;';
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:420px;padding:32px 24px;">
+        <p style="font-size:16px;margin-bottom:16px;">${this.escapeHtml(message)}</p>
+        <input type="text" id="inputModalField" class="form-input"
+          placeholder="${this.escapeHtml(placeholder || '')}" style="margin-bottom:20px;">
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+          <button class="btn btn-secondary" id="inputModalCancel">キャンセル</button>
+          <button class="btn btn-primary" id="inputModalOk">OK</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('#inputModalField');
+    input.focus();
+    const finish = (val) => { overlay.remove(); callback(val); };
+    overlay.querySelector('#inputModalOk').addEventListener('click', () => finish(input.value.trim() || null));
+    overlay.querySelector('#inputModalCancel').addEventListener('click', () => finish(null));
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') finish(input.value.trim() || null);
+      if (e.key === 'Escape') finish(null);
+    });
+  },
+
   // ─── Score Gauge (circular) ───
   scoreGauge(score, size = 120, label = '') {
     const pct = Math.max(0, Math.min(100, score));
@@ -78,7 +139,7 @@ var Components = {
     switch (f.type) {
       case 'slider':
         return `<div class="slider-field">
-          <input type="range" name="${name}" min="${f.min||0}" max="${f.max||10}" value="${Math.floor((f.min||0 + f.max||10)/2)}" oninput="this.nextElementSibling.textContent=this.value">
+          <input type="range" name="${name}" min="${f.min||0}" max="${f.max||10}" value="${Math.floor(((f.min||0) + (f.max||10))/2)}" oninput="this.nextElementSibling.textContent=this.value">
           <span class="slider-val">${Math.floor(((f.min||0) + (f.max||10))/2)}</span>
         </div>`;
       case 'number':
@@ -107,7 +168,7 @@ var Components = {
   // ─── Chat Message ───
   chatMessage(msg) {
     const cls = msg.role === 'user' ? 'chat-user' : 'chat-ai';
-    const icon = msg.role === 'user' ? 'あ' : 'S';
+    const icon = msg.role === 'user' ? 'あ' : '◎';
     return `<div class="chat-msg ${cls}">
       <div class="chat-icon">${icon}</div>
       <div class="chat-content">${this.formatMarkdown(msg.content || '')}</div>
@@ -257,7 +318,7 @@ var Components = {
     const summary = Object.entries(entry)
       .filter(([k]) => !['id','timestamp','domain','category','_synced'].includes(k))
       .slice(0, 3)
-      .map(([k, v]) => `${i18n.t(k)}: ${v}`)
+      .map(([k, v]) => `${this.escapeHtml(i18n.t(k))}: ${this.escapeHtml(String(v))}`)
       .join(' | ');
     return `<div class="record-item" style="border-left-color:${color}">
       <div class="record-header">

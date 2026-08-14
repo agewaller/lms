@@ -57,26 +57,32 @@ var FirebaseBackend = {
   // ─── Google Sign In ───
   async signInWithGoogle() {
     if (!this.auth) {
-      // Local-only mode fallback (Firebase not configured).
-      // Prompt for email so that admin (agewaller@gmail.com) can still log in.
-      const email = (prompt('メールアドレスを入力してください', '') || '').trim().toLowerCase();
-      if (!email) return;
-      store.update({
-        user: {
-          uid: 'local-' + email,
-          displayName: email.split('@')[0],
-          email
-        },
-        isAuthenticated: true,
-        currentPage: 'home'
+      // Local-only fallback: Firebase not configured; use inputModal instead of prompt()
+      Components.inputModal('メールアドレスを入力してください', 'example@email.com', (email) => {
+        const trimmed = (email || '').trim().toLowerCase();
+        if (!trimmed) return;
+        store.update({
+          user: {
+            uid: 'local-' + trimmed,
+            displayName: trimmed.split('@')[0],
+            email: trimmed
+          },
+          isAuthenticated: true,
+          currentPage: 'home'
+        });
       });
       return;
     }
 
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
     try {
-      await this.auth.signInWithPopup(provider);
+      if (isMobile) {
+        await this.auth.signInWithRedirect(provider);
+      } else {
+        await this.auth.signInWithPopup(provider);
+      }
     } catch (e) {
       console.error('Google sign-in error:', e);
       Components.showToast(i18n.t('error') + ': ' + e.message, 'error');
