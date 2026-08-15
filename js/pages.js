@@ -41,6 +41,9 @@ var Pages = {
       html += this.renderStockAnalysisWidget();
     }
 
+    // Streak banner (returning users) or welcome card (first-time users)
+    html += this.renderWelcomeOrStreak(domain);
+
     // Domain score + overview
     html += `<div class="home-overview">
         <div class="overview-score">
@@ -1915,6 +1918,134 @@ var Pages = {
           <button class="btn btn-secondary" onclick="app.generateDemoData()">デモデータを生成</button>
           <button class="btn btn-secondary" onclick="app.exportData()">データを書き出す</button>
           <button class="btn btn-danger" onclick="app.deleteAllData()">すべてのデータを削除</button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  STREAK BANNER & WELCOME CARD (user engagement)
+  // ═══════════════════════════════════════════════════════════
+
+  renderWelcomeOrStreak(domain) {
+    if (!this.hasAnyDomainData()) return this.renderWelcomeCard();
+    return this.renderStreakBanner(domain);
+  },
+
+  hasAnyDomainData() {
+    return Object.keys(CONFIG.domains).some(d => {
+      const cats = CONFIG.domains[d].categories || {};
+      return Object.keys(cats).some(c => {
+        const data = store.state[`${d}_${c}`];
+        return Array.isArray(data) && data.length > 0;
+      });
+    });
+  },
+
+  calculateStreak() {
+    const today = new Date();
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const day = new Date(today);
+      day.setDate(today.getDate() - i);
+      const dateStr = day.toISOString().slice(0, 10);
+
+      const hasEntry = Object.keys(CONFIG.domains).some(d => {
+        const cats = CONFIG.domains[d].categories || {};
+        return Object.keys(cats).some(c => {
+          const data = store.state[`${d}_${c}`];
+          return Array.isArray(data) && data.some(e => (e.timestamp || '').startsWith(dateStr));
+        });
+      });
+
+      if (hasEntry) {
+        streak++;
+      } else if (i === 0) {
+        // today has no entry yet — keep counting from yesterday
+        continue;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  },
+
+  getTodayRecordedDomains() {
+    const today = new Date().toISOString().slice(0, 10);
+    return Object.keys(CONFIG.domains).filter(d => {
+      const cats = CONFIG.domains[d].categories || {};
+      return Object.keys(cats).some(c => {
+        const data = store.state[`${d}_${c}`];
+        return Array.isArray(data) && data.some(e => (e.timestamp || '').startsWith(today));
+      });
+    });
+  },
+
+  renderStreakBanner(domain) {
+    const streak = this.calculateStreak();
+    const todayDomains = this.getTodayRecordedDomains();
+    const recordedToday = todayDomains.includes(domain);
+
+    const domainChecks = Object.keys(CONFIG.domains).map(d => {
+      const done = todayDomains.includes(d);
+      const cfg = CONFIG.domains[d];
+      return `<span class="domain-check ${done ? 'domain-check-done' : ''}"
+        style="${done ? '--chk-color:' + cfg.color : ''}"
+        onclick="app.switchDomain('${d}')"
+        title="${i18n.t(d)}">${cfg.icon}</span>`;
+    }).join('');
+
+    const streakClass = streak >= 30 ? 'streak-fire' : streak >= 7 ? 'streak-hot' : '';
+
+    return `<div class="streak-banner ${streakClass}">
+      <div class="streak-left">
+        <div class="streak-num">${streak}</div>
+        <div class="streak-lbl">日連続</div>
+      </div>
+      <div class="streak-center">
+        <div class="streak-title">今日の記録状況</div>
+        <div class="domain-checks">${domainChecks}</div>
+      </div>
+      <div class="streak-right">
+        ${recordedToday
+          ? `<div class="streak-done-badge">✓ 記録済み</div>`
+          : `<button class="btn btn-sm btn-primary" onclick="app.navigate('record')">記録する</button>`}
+      </div>
+    </div>`;
+  },
+
+  renderWelcomeCard() {
+    const user = store.get('user');
+    const name = Components.escapeHtml((user?.displayName || '').split(' ')[0] || 'あなた');
+    return `<div class="welcome-card">
+      <div class="welcome-header">
+        <h2>${name}さん、ようこそ！</h2>
+        <p>LMSで人生の6領域を一緒に整えましょう。まず3つのことから始めてみましょう。</p>
+      </div>
+      <div class="welcome-steps">
+        <div class="welcome-step" onclick="app.navigate('settings')">
+          <div class="ws-num">1</div>
+          <div class="ws-body">
+            <strong>プロフィールを入力する</strong>
+            <span>年齢・健康状態を入力すると、より的確なサポートができます</span>
+          </div>
+          <span class="ws-arrow">›</span>
+        </div>
+        <div class="welcome-step" onclick="app.navigate('record')">
+          <div class="ws-num">2</div>
+          <div class="ws-body">
+            <strong>今日の記録をつける</strong>
+            <span>体調・気分・出来事をひとことでも大丈夫</span>
+          </div>
+          <span class="ws-arrow">›</span>
+        </div>
+        <div class="welcome-step" onclick="app.navigate('ask_ai')">
+          <div class="ws-num">3</div>
+          <div class="ws-body">
+            <strong>気になることを相談する</strong>
+            <span>健康・お金・人間関係など、何でも聞いてください</span>
+          </div>
+          <span class="ws-arrow">›</span>
         </div>
       </div>
     </div>`;
