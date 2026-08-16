@@ -1854,6 +1854,20 @@ body.is-admin .admin-only { display: flex; }
   font-weight: 500;
 }
 
+/* ─── Weekly Trend Widget ─── */
+.weekly-trend-widget {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg-secondary); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 18px; margin-bottom: 16px;
+  gap: 12px;
+}
+.wt-title { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+.wt-counts { display: flex; align-items: center; gap: 8px; }
+.wt-this { font-size: 20px; font-weight: 700; }
+.wt-arrow { font-size: 18px; font-weight: 700; }
+.wt-last { font-size: 13px; color: var(--text-secondary); }
+.wt-right { font-size: 13px; font-weight: 500; text-align: right; }
+
 /* ─── Onboarding Banner ─── */
 .onboarding-banner {
   display: flex;

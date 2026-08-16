@@ -97,6 +97,9 @@ var Pages = {
     html += this.renderActivityChart(domain);
     setTimeout(() => Pages.renderBarChart(domain), 80);
 
+    // Weekly trend insight
+    html += this.renderWeeklyTrend(domain);
+
     // Recent records
     html += `<div class="recent-section">
       <h3>${i18n.t('recent_records')}</h3>
@@ -326,6 +329,43 @@ var Pages = {
         maintainAspectRatio: false
       }
     });
+  },
+
+  // ─── Weekly trend insight (this week vs last week entry counts) ───
+  renderWeeklyTrend(domain) {
+    const categories = Object.keys(CONFIG.domains[domain]?.categories || {});
+    const color = CONFIG.domains[domain]?.color || '#6C63FF';
+
+    let thisWeek = 0, lastWeek = 0;
+    const today = new Date();
+    categories.forEach(cat => {
+      const entries = store.getDomainData(domain, cat, 14);
+      entries.forEach(e => {
+        if (!e.timestamp) return;
+        const daysAgo = Math.floor((today - new Date(e.timestamp)) / 86400000);
+        if (daysAgo < 7) thisWeek++;
+        else lastWeek++;
+      });
+    });
+
+    if (thisWeek === 0 && lastWeek === 0) return '';
+
+    const diff = thisWeek - lastWeek;
+    const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+    const trendColor = diff > 0 ? '#10b981' : diff < 0 ? '#ef4444' : '#94a3b8';
+    const trendLabel = diff > 0 ? `先週より${diff}件多く記録しています` : diff < 0 ? `先週より${Math.abs(diff)}件少なめです` : '先週と同じペースです';
+
+    return `<div class="weekly-trend-widget">
+      <div class="wt-left">
+        <div class="wt-title">今週の記録</div>
+        <div class="wt-counts">
+          <span class="wt-this">${thisWeek}件</span>
+          <span class="wt-arrow" style="color:${trendColor}">${arrow}</span>
+          <span class="wt-last">先週${lastWeek}件</span>
+        </div>
+      </div>
+      <div class="wt-right" style="color:${trendColor}">${trendLabel}</div>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
@@ -759,7 +799,7 @@ var Pages = {
     // Action items (todos)
     if (actions.length > 0) {
       html += `<div class="action-items">
-        <h3>📋 Action Items</h3>
+        <h3>📋 やること</h3>
         ${actions.map((a, i) => `
           <div class="action-item ${a.done ? 'done' : ''}">
             <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${a.text}</label>

@@ -741,21 +741,21 @@ var App = class App {
   }
 
   deleteDataEntry(domain, category, id) {
-    if (!confirm('この記録を削除しますか？')) return;
-    const key = `${domain}_${category}`;
-    const entries = (store.get(key) || []).filter(e => e.id !== id);
-    store.set(key, entries);
+    this.confirmModal('この記録を削除しますか？', () => {
+      const key = `${domain}_${category}`;
+      const entries = (store.get(key) || []).filter(e => e.id !== id);
+      store.set(key, entries);
 
-    // Also delete from Firestore if connected
-    if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.db) {
-      const uid = store.get('user')?.uid;
-      if (uid) {
-        FirebaseBackend.db.collection('users').doc(uid).collection(key).doc(id).delete().catch(e => console.warn(e));
+      if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.db) {
+        const uid = store.get('user')?.uid;
+        if (uid) {
+          FirebaseBackend.db.collection('users').doc(uid).collection(key).doc(id).delete().catch(e => console.warn(e));
+        }
       }
-    }
 
-    Components.showToast('削除しました', 'info');
-    this.renderApp();
+      Components.showToast('削除しました', 'info');
+      this.renderApp();
+    }, { title: '記録の削除', danger: true });
   }
 
   exportDomainData(domain) {
@@ -1908,7 +1908,7 @@ var App = class App {
   }
 
   generateDemoData() {
-    if (!confirm('デモデータを生成しますか？既存データに追加されます。')) return;
+    if (!window.confirm('デモデータを生成しますか？既存データに追加されます。')) return;
     // Generate sample entries for each domain
     const today = new Date();
     for (let i = 0; i < 7; i++) {
@@ -1922,11 +1922,13 @@ var App = class App {
   }
 
   deleteAllData() {
-    if (!confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
-    if (!confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
-    store.clearAll();
-    Components.showToast('すべてのデータを削除しました', 'info');
-    window.location.reload();
+    this.confirmModal('本当にすべてのデータを削除しますか？この操作は元に戻せません。', () => {
+      this.confirmModal('最終確認：すべてのデータを完全に削除します。よろしいですか？', () => {
+        store.clearAll();
+        Components.showToast('すべてのデータを削除しました', 'info');
+        window.location.reload();
+      }, { title: '最終確認', confirmLabel: '削除する', danger: true });
+    }, { title: 'データ削除', confirmLabel: '次へ', danger: true });
   }
 
   // ─── Sidebar toggle (未病ダイアリー方式) ───
@@ -1953,6 +1955,23 @@ var App = class App {
   closeModal() {
     const overlay = document.getElementById('modal-overlay');
     if (overlay) overlay.classList.remove('active');
+  }
+
+  // Modal-based confirm (replaces confirm() for mobile compat)
+  confirmModal(message, onConfirm, options = {}) {
+    const { title = '確認', confirmLabel = 'はい', cancelLabel = 'キャンセル', danger = false } = options;
+    const btnClass = danger ? 'btn-danger' : 'btn-primary';
+    const body = `
+      <p style="font-size:16px;line-height:1.7;margin-bottom:24px;">${Components.escapeHtml(message)}</p>
+      <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="app.closeModal()">${cancelLabel}</button>
+        <button class="btn ${btnClass}" id="confirm-ok-btn">${confirmLabel}</button>
+      </div>`;
+    this.openModal(title, body);
+    setTimeout(() => {
+      const btn = document.getElementById('confirm-ok-btn');
+      if (btn) btn.onclick = () => { this.closeModal(); onConfirm(); };
+    }, 0);
   }
 };
 
