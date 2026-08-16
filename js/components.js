@@ -118,12 +118,18 @@ var Components = {
   // ─── Markdown Formatter ───
   formatMarkdown(text) {
     if (!text) return '';
-    return text
+    // Escape HTML first, then restore markdown-derived tags
+    // This prevents user-supplied <script> etc. from executing
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return escaped
       .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      .replace(/\[([^\]]+)\]\(([\x21-\x7e]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
       .replace(/^### (.+)$/gm, '<h4>$1</h4>')
       .replace(/^## (.+)$/gm, '<h3>$1</h3>')
       .replace(/^# (.+)$/gm, '<h2>$1</h2>')
@@ -253,11 +259,11 @@ var Components = {
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';
     const time = new Date(entry.timestamp).toLocaleString();
-    const cat = entry.category ? i18n.t(entry.category) : '';
+    const cat = entry.category ? this.escapeHtml(i18n.t(entry.category)) : '';
     const summary = Object.entries(entry)
       .filter(([k]) => !['id','timestamp','domain','category','_synced'].includes(k))
       .slice(0, 3)
-      .map(([k, v]) => `${i18n.t(k)}: ${v}`)
+      .map(([k, v]) => `${this.escapeHtml(i18n.t(k))}: ${this.escapeHtml(String(v))}`)
       .join(' | ');
     return `<div class="record-item" style="border-left-color:${color}">
       <div class="record-header">
