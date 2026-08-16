@@ -531,9 +531,9 @@ var Pages = {
       const dateStr = c.nextBirthday.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
       const label = c.daysUntil === 0 ? '今日！' : `あと${c.daysUntil}日`;
       html += `<div class="birthday-item ${c.daysUntil <= 3 ? 'birthday-soon' : ''}">
-        <span class="birthday-name">${c.name}</span>
+        <span class="birthday-name">${Components.escapeHtml(c.name || '')}</span>
         <span class="birthday-date">${dateStr}（${label}）</span>
-        <span class="birthday-distance">${CONFIG.domains.relationship.distanceLevels[c.distance]?.description || ''}</span>
+        <span class="birthday-distance">${Components.escapeHtml(CONFIG.domains.relationship.distanceLevels[c.distance]?.description || '')}</span>
       </div>`;
     });
 
