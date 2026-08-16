@@ -95,7 +95,20 @@
         </div>
         <div class="top-bar-right">
           <div id="domainTabs"></div>
-          <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')">⚙️</button>
+          <div class="notif-bell-wrap" id="notif-bell-wrap">
+            <button class="btn btn-icon btn-secondary" onclick="app.toggleNotifPanel()" title="お知らせ">
+              🔔
+              <span class="notif-badge" id="notif-badge" style="display:none">0</span>
+            </button>
+            <div class="notif-panel" id="notif-panel" style="display:none">
+              <div class="notif-panel-header">
+                <strong>お知らせ</strong>
+                <button class="btn-link" onclick="app.clearNotifications()">すべて消す</button>
+              </div>
+              <div class="notif-list" id="notif-list"></div>
+            </div>
+          </div>
+          <button class="btn btn-icon btn-secondary" onclick="app.navigate('settings')" title="設定">⚙️</button>
         </div>
       </div>
 

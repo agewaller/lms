@@ -254,6 +254,101 @@ var App = class App {
     // and inline style would override the CSS class toggling.
     const isAdmin = FirebaseBackend.isAdmin();
     document.body.classList.toggle('is-admin', isAdmin);
+
+    // Check for new notifications (birthdays, streak milestones)
+    this.checkAndPushNotifications();
+    this.updateNotifBell();
+  }
+
+  // ─── Notification System ───
+
+  checkAndPushNotifications() {
+    const today = new Date().toISOString().slice(0, 10);
+    const lastCheck = localStorage.getItem('lms_notif_last_check');
+    if (lastCheck === today) return; // already checked today
+    localStorage.setItem('lms_notif_last_check', today);
+
+    const notifications = store.get('notifications') || [];
+
+    // Birthday reminders (within 3 days)
+    const contacts = store.get('relationship_contacts') || [];
+    contacts.forEach(c => {
+      if (!c.birthday || !c.name) return;
+      const bd = new Date(c.birthday);
+      const next = new Date(new Date().getFullYear(), bd.getMonth(), bd.getDate());
+      if (next < new Date()) next.setFullYear(next.getFullYear() + 1);
+      const days = Math.ceil((next - new Date()) / 86400000);
+      if (days <= 3 && days >= 0) {
+        const msg = days === 0 ? `${c.name}さんの誕生日は今日です！` : `${c.name}さんの誕生日まであと${days}日です`;
+        if (!notifications.find(n => n.key === `bday_${c.id}_${today}`)) {
+          notifications.push({ id: Date.now().toString(36), key: `bday_${c.id}_${today}`, type: 'birthday', msg, ts: new Date().toISOString(), read: false });
+        }
+      }
+    });
+
+    // Streak milestones
+    const streak = store.get('recordStreak') || 0;
+    const milestones = [3, 7, 14, 30, 60, 100];
+    milestones.forEach(m => {
+      if (streak === m) {
+        const key = `streak_${m}_${today}`;
+        if (!notifications.find(n => n.key === key)) {
+          notifications.push({ id: Date.now().toString(36) + m, key, type: 'streak', msg: `🔥 ${m}日連続記録達成！素晴らしい継続力です`, ts: new Date().toISOString(), read: false });
+        }
+      }
+    });
+
+    // Keep only last 30 notifications
+    const trimmed = notifications.slice(-30);
+    store.set('notifications', trimmed);
+    store.set('unreadCount', trimmed.filter(n => !n.read).length);
+  }
+
+  updateNotifBell() {
+    const badge = document.getElementById('notif-badge');
+    const unread = (store.get('notifications') || []).filter(n => !n.read).length;
+    if (badge) {
+      badge.textContent = unread;
+      badge.style.display = unread > 0 ? 'flex' : 'none';
+    }
+  }
+
+  toggleNotifPanel() {
+    const panel = document.getElementById('notif-panel');
+    if (!panel) return;
+    const isOpen = panel.style.display !== 'none';
+    panel.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) this.renderNotifList();
+  }
+
+  renderNotifList() {
+    const listEl = document.getElementById('notif-list');
+    if (!listEl) return;
+    const notifs = (store.get('notifications') || []).slice().reverse();
+
+    // Mark all as read
+    const updated = (store.get('notifications') || []).map(n => ({ ...n, read: true }));
+    store.set('notifications', updated);
+    store.set('unreadCount', 0);
+    this.updateNotifBell();
+
+    if (notifs.length === 0) {
+      listEl.innerHTML = '<div class="notif-empty">お知らせはありません</div>';
+      return;
+    }
+    listEl.innerHTML = notifs.map(n => `
+      <div class="notif-item ${n.read ? '' : 'notif-unread'}">
+        <div class="notif-msg">${Components.escapeHtml(n.msg)}</div>
+        <div class="notif-time">${new Date(n.ts).toLocaleDateString('ja-JP')}</div>
+      </div>`).join('');
+  }
+
+  clearNotifications() {
+    store.set('notifications', []);
+    store.set('unreadCount', 0);
+    this.updateNotifBell();
+    const listEl = document.getElementById('notif-list');
+    if (listEl) listEl.innerHTML = '<div class="notif-empty">お知らせはありません</div>';
   }
 
   // ─── Quick Input ───
