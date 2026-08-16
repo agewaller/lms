@@ -452,6 +452,43 @@ select.form-input { appearance: auto; }
 .hero-subtitle { font-size: clamp(18px, 2.5vw, 24px); color: var(--text-light); margin-bottom: 40px; line-height: 2.0; }
 .hero-icon { font-size: 64px; margin-bottom: 16px; }
 
+.hero-badge {
+  display: inline-block; background: rgba(108,99,255,0.12); color: var(--primary);
+  border: 1px solid rgba(108,99,255,0.3); border-radius: 999px;
+  padding: 6px 18px; font-size: 14px; font-weight: 600; letter-spacing: 0.04em;
+  margin-bottom: 20px;
+}
+.hero-actions {
+  display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.hero-note {
+  font-size: 13px; color: var(--text-muted); margin-top: 4px;
+}
+
+/* How it works — 3-step section */
+.steps-row {
+  display: flex; align-items: flex-start; justify-content: center;
+  gap: 0; flex-wrap: wrap; margin-top: 32px;
+}
+.step-item {
+  flex: 1; min-width: 180px; max-width: 260px; padding: 28px 20px;
+  background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow);
+  text-align: center;
+}
+.step-num {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 700; margin: 0 auto 14px;
+}
+.step-item h4 { font-size: 17px; margin-bottom: 8px; }
+.step-item p { font-size: 14px; color: var(--text-light); line-height: 1.7; }
+.step-arrow {
+  font-size: 24px; color: var(--text-muted); padding: 40px 8px 0;
+  flex-shrink: 0;
+}
+
 /* Domain-specific hero */
 .domain-hero {
   background: linear-gradient(135deg,
@@ -1784,6 +1821,10 @@ body.is-admin .admin-only { display: flex; }
 
   .lp-nav-links a:not(.btn) { display: none; }
   .login-card { padding: 24px 16px; }
+  .steps-row { flex-direction: column; align-items: center; }
+  .step-arrow { padding: 0; transform: rotate(90deg); }
+  .hero-actions { flex-direction: column; align-items: center; }
+  .hero-actions .btn { width: 100%; max-width: 320px; }
 
   /* Modal full-screen on mobile */
   .modal { width: 95%; max-height: 90vh; }
@@ -1796,6 +1837,21 @@ body.is-admin .admin-only { display: flex; }
   .sub-nav-btn span:last-child { display: none; }
   .sim-cards { grid-template-columns: 1fr; }
   .top-bar-title { font-size: 13px; }
+}
+
+/* ─── 7-day activity chart ─── */
+.activity-chart-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+.activity-chart-header {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  font-weight: 500;
 }
 
 /* ─── Onboarding Banner ─── */

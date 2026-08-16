@@ -93,6 +93,10 @@ var Pages = {
     // Render radar chart after DOM is painted
     setTimeout(() => Pages.renderRadarChart(), 50);
 
+    // 7-day activity bar chart
+    html += this.renderActivityChart(domain);
+    setTimeout(() => Pages.renderBarChart(domain), 80);
+
     // Recent records
     html += `<div class="recent-section">
       <h3>${i18n.t('recent_records')}</h3>
@@ -261,6 +265,65 @@ var Pages = {
         },
         plugins: { legend: { display: false } },
         responsive: false
+      }
+    });
+  },
+
+  // ─── 7-day activity bar chart (entries per day for current domain) ───
+  renderActivityChart(domain) {
+    const color = CONFIG.domains[domain]?.color || '#6C63FF';
+    return `<div class="activity-chart-section">
+      <div class="activity-chart-header">
+        <span>7日間の記録数</span>
+      </div>
+      <canvas id="barChart" height="70"></canvas>
+    </div>`;
+  },
+
+  renderBarChart(domain) {
+    const canvas = document.getElementById('barChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const color = CONFIG.domains[domain]?.color || '#6C63FF';
+    const categories = Object.keys(CONFIG.domains[domain]?.categories || {});
+
+    // Count entries per day for last 7 days
+    const labels = [];
+    const counts = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dayStr = d.toISOString().slice(0, 10);
+      labels.push(i === 0 ? '今日' : `${d.getMonth() + 1}/${d.getDate()}`);
+
+      let cnt = 0;
+      categories.forEach(cat => {
+        const entries = store.getDomainData(domain, cat, 365 * 10);
+        cnt += entries.filter(e => e.timestamp && e.timestamp.slice(0, 10) === dayStr).length;
+      });
+      counts.push(cnt);
+    }
+
+    if (canvas._chartInstance) canvas._chartInstance.destroy();
+
+    canvas._chartInstance = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data: counts,
+          backgroundColor: counts.map((c, i) => i === 6 ? color : color + '66'),
+          borderRadius: 4
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } },
+          x: { ticks: { font: { size: 11 } } }
+        },
+        responsive: true,
+        maintainAspectRatio: false
       }
     });
   },
