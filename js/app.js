@@ -454,6 +454,53 @@ var App = class App {
   }
 
   // ─── Diary Save ───
+  // ─── Daily Quick Check-in ───
+  openDailyCheckin() {
+    const today = new Date().toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'long' });
+    const body = `
+      <p style="text-align:center;color:var(--text-secondary);margin-bottom:20px;">${today}</p>
+      <div class="checkin-form">
+        <div class="form-group">
+          <label>今日の体調は？（1〜10）</label>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <input type="range" id="ci_condition" min="1" max="10" value="7"
+              oninput="document.getElementById('ci_condition_val').textContent=this.value" style="flex:1">
+            <span id="ci_condition_val" style="font-size:20px;font-weight:700;width:28px;text-align:right">7</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>気分・気持ち</label>
+          <select id="ci_mood" class="form-input">
+            <option value="とても良い">😄 とても良い</option>
+            <option value="良い" selected>🙂 良い</option>
+            <option value="普通">😐 普通</option>
+            <option value="少し憂うつ">😔 少し憂うつ</option>
+            <option value="つらい">😢 つらい</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>一言メモ（任意）</label>
+          <input type="text" id="ci_note" class="form-input" placeholder="今日あったこと、気になることなど">
+        </div>
+        <div style="display:flex;gap:12px;margin-top:8px;">
+          <button class="btn btn-secondary" style="flex:1" onclick="app.closeModal()">後で</button>
+          <button class="btn btn-primary" style="flex:2" onclick="app.submitDailyCheckin()">記録する</button>
+        </div>
+      </div>`;
+    this.openModal('今日の記録', body);
+  }
+
+  submitDailyCheckin() {
+    const condition = parseInt(document.getElementById('ci_condition')?.value || 7);
+    const mood = document.getElementById('ci_mood')?.value || '';
+    const note = document.getElementById('ci_note')?.value?.trim() || '';
+
+    store.addDomainEntry('health', 'symptoms', { condition_level: condition, mood, note: note || undefined });
+    this.closeModal();
+    Components.showToast('今日の記録を保存しました ✓', 'success');
+    if (store.get('currentPage') === 'home') this.renderApp();
+  }
+
   saveDiary(domain) {
     const textarea = document.getElementById('diaryText');
     if (!textarea || !textarea.value.trim()) return;

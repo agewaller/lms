@@ -1138,6 +1138,22 @@ select.form-input { appearance: auto; }
 }
 .sidebar-overlay.active { display: block; }
 
+/* ─── Floating Action Button (quick check-in) ─── */
+.fab-checkin {
+  position: fixed; bottom: 28px; right: 28px; z-index: 80;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--primary); color: #fff;
+  border: none; font-size: 24px; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(108,99,255,0.4);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.fab-checkin:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(108,99,255,0.55); }
+.fab-checkin:active { transform: scale(0.96); }
+
+/* ─── Check-in Form ─── */
+.checkin-form .form-group { margin-bottom: 16px; }
+
 /* Admin only */
 .admin-only { display: none; }
 body.is-admin .admin-only { display: flex; }
