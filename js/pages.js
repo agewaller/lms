@@ -1107,7 +1107,7 @@ var Pages = {
             <div class="form-group" style="flex:2;">
               <label>検索</label>
               <input type="text" id="dataSearch" class="form-input"
-                value="${filter.search}"
+                value="${Components.escapeHtml(filter.search || '')}"
                 placeholder="記録の中身を検索..."
                 oninput="app.filterDataBrowser('search',this.value)">
             </div>
@@ -1177,9 +1177,9 @@ var Pages = {
             </div>
             <div class="data-entry-fields">
               ${fields.map(([k, v]) => {
-                const label = i18n.t(k) || k;
-                const val = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
-                return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${val}</span></div>`;
+                const label = Components.escapeHtml(i18n.t(k) || k);
+                const raw = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
+                return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${Components.escapeHtml(raw)}</span></div>`;
               }).join('')}
             </div>
           </div>`;
