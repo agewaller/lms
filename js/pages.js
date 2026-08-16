@@ -36,6 +36,24 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>`;
 
+    // Onboarding hint for first-time users
+    const history = store.get('streakHistory') || [];
+    const totalEntries = Object.keys(CONFIG.domains).reduce((total, d) => {
+      return total + Object.keys(CONFIG.domains[d].categories || {}).reduce((s, cat) => {
+        return s + (store.getDomainData(d, cat, 365).length);
+      }, 0);
+    }, 0);
+    if (totalEntries === 0) {
+      html += `<div class="onboarding-banner">
+        <div class="ob-icon">👋</div>
+        <div class="ob-body">
+          <strong>ようこそ！まず今日の状態を記録してみましょう</strong>
+          <p>「記録する」ボタンで今日の体調・気分・出来事をメモするだけでOKです。続けると、あなた専用のアドバイスが届きます。</p>
+          <button class="btn btn-primary btn-sm" onclick="app.navigate('record')">今日の記録を始める</button>
+        </div>
+      </div>`;
+    }
+
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
       html += this.renderStockAnalysisWidget();
@@ -52,18 +70,28 @@ var Pages = {
     html += this.getDomainStats(domain);
     html += `</div></div>`;
 
-    // All domain scores overview (mini)
+    // Streak + today's check-in status
+    html += this.renderStreakWidget();
+
+    // All domain scores overview (mini) + radar chart
     html += `<div class="all-domains-overview">
       <h3>${i18n.t('holistic_analysis')}</h3>
-      <div class="domain-scores-grid">
-        ${Object.keys(CONFIG.domains).map(d => {
-          const s = store.get('domainScores')?.[d] || 0;
-          return `<div class="mini-score ${d === domain ? 'current' : ''}" onclick="app.switchDomain('${d}')">
-            ${Components.scoreGauge(s, 70, i18n.t(d))}
-          </div>`;
-        }).join('')}
+      <div class="holistic-layout">
+        <div class="domain-scores-grid">
+          ${Object.keys(CONFIG.domains).map(d => {
+            const s = store.get('domainScores')?.[d] || 0;
+            return `<div class="mini-score ${d === domain ? 'current' : ''}" onclick="app.switchDomain('${d}')">
+              ${Components.scoreGauge(s, 70, i18n.t(d))}
+            </div>`;
+          }).join('')}
+        </div>
+        <div class="radar-chart-wrapper">
+          <canvas id="radarChart" width="200" height="200"></canvas>
+        </div>
       </div>
     </div>`;
+    // Render radar chart after DOM is painted
+    setTimeout(() => Pages.renderRadarChart(), 50);
 
     // Recent records
     html += `<div class="recent-section">
@@ -158,6 +186,83 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Streak + Today's check-in status ───
+  renderStreakWidget() {
+    const streak = store.get('recordStreak') || 0;
+    const today = new Date().toISOString().slice(0, 10);
+    const history = store.get('streakHistory') || [];
+    const todayEntry = history.find(h => h.date === today);
+    const recordedToday = todayEntry?.domains || [];
+
+    const domainList = Object.keys(CONFIG.domains);
+    const allDone = domainList.every(d => recordedToday.includes(d));
+
+    const streakLabel = streak === 0 ? '今日から始めよう！'
+      : streak === 1 ? '1日連続記録中'
+      : `${streak}日連続記録中`;
+
+    const streakIcon = streak >= 30 ? '🔥🔥🔥' : streak >= 7 ? '🔥🔥' : streak >= 1 ? '🔥' : '○';
+
+    let html = `<div class="streak-widget">
+      <div class="streak-badge">
+        <span class="streak-icon">${streakIcon}</span>
+        <span class="streak-label">${streakLabel}</span>
+      </div>
+      <div class="checkin-status">
+        <span class="checkin-label">今日の記録：</span>
+        ${domainList.map(d => {
+          const done = recordedToday.includes(d);
+          const cfg = CONFIG.domains[d];
+          return `<span class="checkin-dot ${done ? 'done' : ''}" title="${i18n.t(d)}"
+            style="--domain-color:${cfg.color}" onclick="app.switchDomain('${d}');app.navigate('record')">
+            ${cfg.icon}
+          </span>`;
+        }).join('')}
+        ${allDone ? '<span class="checkin-complete">完了 ✓</span>' : ''}
+      </div>
+    </div>`;
+    return html;
+  },
+
+  // ─── Radar chart (all 6 domain scores) ───
+  renderRadarChart() {
+    const canvas = document.getElementById('radarChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    const scores = store.get('domainScores') || {};
+    const labels = Object.keys(CONFIG.domains).map(d => i18n.t(d));
+    const data = Object.keys(CONFIG.domains).map(d => scores[d] || 0);
+    const colors = Object.keys(CONFIG.domains).map(d => CONFIG.domains[d].color);
+
+    // Destroy previous chart instance if any
+    if (canvas._chartInstance) canvas._chartInstance.destroy();
+
+    canvas._chartInstance = new Chart(canvas, {
+      type: 'radar',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          borderColor: '#6C63FF',
+          backgroundColor: 'rgba(108,99,255,0.15)',
+          borderWidth: 2,
+          pointBackgroundColor: colors,
+          pointRadius: 4
+        }]
+      },
+      options: {
+        scales: {
+          r: {
+            min: 0, max: 100,
+            ticks: { stepSize: 25, font: { size: 10 } },
+            pointLabels: { font: { size: 11 } }
+          }
+        },
+        plugins: { legend: { display: false } },
+        responsive: false
+      }
+    });
   },
 
   // ─── Consciousness 7-Layer Visualization ───

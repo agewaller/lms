@@ -1797,3 +1797,90 @@ body.is-admin .admin-only { display: flex; }
   .sim-cards { grid-template-columns: 1fr; }
   .top-bar-title { font-size: 13px; }
 }
+
+/* ─── Onboarding Banner ─── */
+.onboarding-banner {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  background: linear-gradient(135deg, rgba(108,99,255,0.08), rgba(108,99,255,0.03));
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+.ob-icon { font-size: 32px; flex-shrink: 0; }
+.ob-body strong { font-size: 15px; display: block; margin-bottom: 6px; }
+.ob-body p { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
+
+/* ─── Streak Widget ─── */
+.streak-widget {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.streak-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.streak-icon { font-size: 22px; }
+.streak-label { font-size: 14px; }
+.checkin-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.checkin-label { font-size: 13px; color: var(--text-secondary); }
+.checkin-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  opacity: 0.4;
+}
+.checkin-dot.done {
+  border-color: var(--domain-color, var(--success));
+  background: rgba(var(--domain-color, 16,185,129), 0.1);
+  opacity: 1;
+}
+.checkin-dot:hover { opacity: 0.9; transform: scale(1.1); }
+.checkin-complete {
+  font-size: 13px;
+  color: var(--success);
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+/* ─── Holistic layout (scores grid + radar) ─── */
+.holistic-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.holistic-layout .domain-scores-grid { flex: 1; min-width: 200px; }
+.radar-chart-wrapper {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 600px) {
+  .radar-chart-wrapper { display: none; }
+}
