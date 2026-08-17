@@ -109,7 +109,13 @@ var Store = class Store {
 
       // Notifications
       notifications: [],
-      unreadCount: 0
+      unreadCount: 0,
+
+      // Streak & onboarding
+      streak: 0,              // consecutive days with at least one record
+      lastEntryDate: null,    // YYYY-MM-DD of most recent record
+      onboardingDone: false,  // hide onboarding card after user dismisses
+      lastWeeklyReport: null  // ISO date of last weekly report generation
     };
 
     this.listeners = new Map();
@@ -182,7 +188,9 @@ var Store = class Store {
       'conversationHistory', 'calendarEvents', 'latestFeedback',
       'cachedResearch', 'aiComments',
       'userResume', 'timeMarketplaceSettings', 'timeMarketplaceBookings',
-      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory'
+      'autoTradingSettings', 'autoTradePending', 'autoTradeHistory',
+      // Streak & onboarding
+      'streak', 'lastEntryDate', 'onboardingDone', 'lastWeeklyReport'
     ];
   }
 
@@ -224,7 +232,23 @@ var Store = class Store {
       this.notify(key, this.state[key]);
       this.saveToStorage(key, this.state[key]);
     }
+
+    this._updateStreak();
     return entry;
+  }
+
+  _updateStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    const last = this.state.lastEntryDate;
+    if (last === today) return; // already counted today
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+    const newStreak = last === yesterdayStr ? (this.state.streak || 0) + 1 : 1;
+    this.set('streak', newStreak);
+    this.set('lastEntryDate', today);
   }
 
   getDomainData(domain, category, days) {
@@ -272,7 +296,10 @@ var Store = class Store {
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // Only remove LMS keys — never localStorage.clear() (would wipe Firebase + OAuth tokens)
+    this.persistKeys.forEach(key => {
+      try { localStorage.removeItem(`lms_${key}`); } catch (e) { /* ignore */ }
+    });
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};

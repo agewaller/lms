@@ -179,7 +179,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理', data: 'データを見る', integrations: '連携' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -445,6 +445,65 @@ var App = class App {
       Components.showToast(i18n.t('saved'), 'success');
     } catch (e) {
       Components.showToast(e.message, 'error');
+    }
+  }
+
+  // ─── Weekly Report ───
+  async generateWeeklyReport() {
+    const resultEl = document.querySelector('.weekly-report-card');
+    if (resultEl) {
+      resultEl.innerHTML += Components.loading('6つの領域を振り返り中...');
+    }
+
+    // Gather a week of data across all domains
+    const summary = {};
+    Object.keys(CONFIG.domains).forEach(d => {
+      const cfg = CONFIG.domains[d];
+      let count = 0;
+      Object.keys(cfg.categories || {}).forEach(cat => {
+        count += store.getDomainData(d, cat, 7).length;
+      });
+      summary[d] = count;
+    });
+
+    const weekData = Object.entries(summary)
+      .map(([d, count]) => `${i18n.t(d)}: ${count}件`)
+      .join('、');
+
+    const profile = store.get('userProfile') || {};
+    const context = profile.age ? `${profile.age}歳` : '';
+
+    const prompt = `あなたは人生の6領域（意識・健康・時間・仕事・関係・資産）をサポートするアドバイザーです。
+以下はユーザー${context ? '（' + context + '）' : ''}の過去7日間の記録数です：
+${weekData}
+
+この1週間を温かく振り返り、以下の構成でレポートを作成してください：
+1. 今週よくできたこと（具体的に）
+2. 来週取り組むとよい1つのこと
+3. 励ましの一言
+
+専門用語は使わず、小学生でもわかる言葉で。200〜300文字程度。`;
+
+    try {
+      const result = await AIEngine.callDirect(prompt, 'weekly_report');
+      store.set('lastWeeklyReport', new Date().toISOString());
+
+      // Save to recommendations
+      const recs = [{
+        domain: 'all',
+        text: result,
+        priority: 'high',
+        timestamp: new Date().toISOString(),
+        label: '週次レポート'
+      }];
+      const existing = store.get('recommendations') || [];
+      store.set('recommendations', [...recs, ...existing].slice(0, 50));
+
+      this.renderApp();
+      Components.showToast('週次レポートを作成しました', 'success');
+    } catch (e) {
+      Components.showToast(e.message, 'error');
+      this.renderApp();
     }
   }
 

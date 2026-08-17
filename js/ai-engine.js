@@ -266,6 +266,34 @@ var AIEngine = {
     return await this.analyze(null, 'quickInput', { text });
   },
 
+  // ─── Direct call with a raw prompt (no domain template lookup) ───
+  async callDirect(prompt, label) {
+    const model = store.get('selectedModel') || 'claude-sonnet-4-6';
+    const modelConfig = CONFIG.aiModels[model];
+    if (!modelConfig) throw new Error('Unknown model: ' + model);
+
+    store.set('isAnalyzing', true);
+    try {
+      let result;
+      switch (modelConfig.provider) {
+        case 'anthropic':
+          result = await this.callAnthropic(model, '', prompt, modelConfig.maxTokens);
+          break;
+        case 'openai':
+          result = await this.callOpenAI(model, '', prompt, modelConfig.maxTokens);
+          break;
+        case 'google':
+          result = await this.callGemini(model, '', prompt, modelConfig.maxTokens);
+          break;
+        default:
+          throw new Error('Unknown provider: ' + modelConfig.provider);
+      }
+      return result;
+    } finally {
+      store.set('isAnalyzing', false);
+    }
+  },
+
   // ─── Conversation (chat) ───
   async chat(domain, userMessage) {
     const history = store.get('conversationHistory') || [];

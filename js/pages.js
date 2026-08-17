@@ -27,9 +27,16 @@ var Pages = {
     const score = store.calculateDomainScore(domain);
     const color = domainConfig?.color || '#6C63FF';
 
+    let html = `<div class="page-home">`;
+
+    // Onboarding card for new users
+    html += this.renderOnboardingCard();
+
+    // Streak + daily check-in banner
+    html += this.renderStreakBanner(domain);
+
     // Quick input bar
-    let html = `<div class="page-home">
-      <div class="quick-input-bar">
+    html += `<div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">
         <button class="btn btn-primary" onclick="app.quickInput()">${i18n.t('send')}</button>
@@ -158,6 +165,100 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Onboarding Card (first-time users) ───
+  renderOnboardingCard() {
+    if (store.get('onboardingDone')) return '';
+
+    // Count total records across all domains
+    let totalRecords = 0;
+    Object.keys(CONFIG.domains).forEach(d => {
+      const domainConfig = CONFIG.domains[d];
+      Object.keys(domainConfig.categories || {}).forEach(cat => {
+        totalRecords += store.getDomainData(d, cat, 365).length;
+      });
+    });
+
+    if (totalRecords > 5) {
+      // Auto-dismiss after user has recorded enough
+      store.set('onboardingDone', true);
+      return '';
+    }
+
+    return `<div class="onboarding-card">
+      <div class="onboarding-header">
+        <span class="onboarding-emoji">👋</span>
+        <div>
+          <h3>はじめまして</h3>
+          <p>LMSへようこそ。まず3つのことを試してみましょう。</p>
+        </div>
+        <button class="btn-close-onboarding" onclick="store.set('onboardingDone',true);app.renderApp()">×</button>
+      </div>
+      <div class="onboarding-steps">
+        <div class="onboarding-step ${totalRecords > 0 ? 'done' : ''}">
+          <span class="step-num">1</span>
+          <span class="step-text">「記録する」から今日の体調や気分を入力する</span>
+          ${totalRecords > 0 ? '<span class="step-check">✓</span>' : `<button class="btn btn-sm btn-primary" onclick="app.navigate('record')">記録する</button>`}
+        </div>
+        <div class="onboarding-step">
+          <span class="step-num">2</span>
+          <span class="step-text">「相談する」から何でも話しかけてみる</span>
+          <button class="btn btn-sm btn-secondary" onclick="app.navigate('ask_ai')">話しかける</button>
+        </div>
+        <div class="onboarding-step">
+          <span class="step-num">3</span>
+          <span class="step-text">「設定」で名前や年齢などの基本情報を登録する</span>
+          <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')">設定する</button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  // ─── Streak + Daily Check-in Banner ───
+  renderStreakBanner(domain) {
+    const streak = store.get('streak') || 0;
+    const lastEntry = store.get('lastEntryDate');
+    const today = new Date().toISOString().slice(0, 10);
+    const hasEntryToday = lastEntry === today;
+
+    let html = '';
+
+    if (streak >= 3) {
+      const emoji = streak >= 30 ? '🔥🔥🔥' : streak >= 14 ? '🔥🔥' : '🔥';
+      html += `<div class="streak-badge">
+        ${emoji} <strong>${streak}日連続</strong>で記録中！ 素晴らしい継続力です。
+      </div>`;
+    }
+
+    if (!hasEntryToday) {
+      html += `<div class="checkin-banner">
+        <span>今日はまだ記録がありません。</span>
+        <button class="btn btn-sm btn-primary" onclick="app.navigate('record')">今日を記録する</button>
+      </div>`;
+    }
+
+    return html;
+  },
+
+  // ─── Weekly Report ───
+  renderWeeklyReportWidget() {
+    const lastReport = store.get('lastWeeklyReport');
+    const today = new Date();
+    const daysSinceReport = lastReport
+      ? Math.floor((today - new Date(lastReport)) / (1000 * 60 * 60 * 24))
+      : 999;
+
+    if (daysSinceReport < 7) return '';
+
+    return `<div class="weekly-report-card">
+      <div class="weekly-report-header">
+        <h3>週次レポート</h3>
+        <span class="weekly-report-sub">${daysSinceReport >= 999 ? 'まだ作成していません' : `${daysSinceReport}日前に作成`}</span>
+      </div>
+      <p>6つの領域をまとめて振り返る週次レポートを作成します。</p>
+      <button class="btn btn-primary" onclick="app.generateWeeklyReport()">今週のレポートを作成する</button>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
@@ -561,6 +662,9 @@ var Pages = {
 
     let html = `<div class="page-actions">
       <h2>${i18n.t(domain)} - ${i18n.t('actions')}</h2>
+
+      <!-- Weekly report widget -->
+      ${this.renderWeeklyReportWidget()}
 
       <!-- Generate recommendations -->
       <div class="action-generate">
@@ -1630,7 +1734,7 @@ var Pages = {
         <div class="form-group">
           <label>Google API Key (Gemini)</label>
           <input type="password" id="apiKeyGoogle" class="form-input"
-            value="${AIEngine.getApiKey('google') ? '••••••••' : ''}" placeholder="AI...">
+            value="${AIEngine.getApiKey('google') ? '••••••••' : ''}" placeholder="AIza...">
         </div>
         <div class="form-actions">
           <button class="btn btn-primary" onclick="app.saveApiKeys();app.saveWorkerUrl()">保存</button>
