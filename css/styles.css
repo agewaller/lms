@@ -1675,6 +1675,55 @@ body.is-admin .admin-only { display: flex; }
 .toast-info { background: #3b82f6; color: #fff; }
 .toast-warning { background: #f59e0b; color: #fff; }
 
+/* Inline Confirm / Prompt Dialog */
+.lms-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.18s ease;
+}
+.lms-confirm-overlay.active { opacity: 1; visibility: visible; }
+.lms-confirm-dialog {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 24px 20px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.lms-confirm-msg {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  white-space: pre-wrap;
+}
+.lms-confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.btn-danger {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+.btn-danger:hover { background: #dc2626; }
+
 /* Modal (未病ダイアリー準拠) */
 .modal-overlay {
   position: fixed;

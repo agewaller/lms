@@ -249,6 +249,79 @@ var Components = {
     </div>`;
   },
 
+  // ─── Inline Confirm Dialog (replaces browser confirm() for iOS/Android compat) ───
+  confirm(message, onConfirm, onCancel) {
+    const existing = document.getElementById('lms-confirm-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'lms-confirm-overlay';
+    overlay.className = 'lms-confirm-overlay';
+    overlay.innerHTML = `
+      <div class="lms-confirm-dialog">
+        <p class="lms-confirm-msg">${this.escapeHtml(message)}</p>
+        <div class="lms-confirm-actions">
+          <button class="btn btn-secondary" id="lms-confirm-cancel">キャンセル</button>
+          <button class="btn btn-danger"    id="lms-confirm-ok">確認</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('active'));
+
+    const cleanup = () => {
+      overlay.classList.remove('active');
+      setTimeout(() => overlay.remove(), 200);
+    };
+
+    document.getElementById('lms-confirm-ok').onclick = () => { cleanup(); onConfirm && onConfirm(); };
+    document.getElementById('lms-confirm-cancel').onclick = () => { cleanup(); onCancel && onCancel(); };
+    overlay.onclick = (e) => { if (e.target === overlay) { cleanup(); onCancel && onCancel(); } };
+  },
+
+  // ─── Inline Prompt Dialog (replaces browser prompt() for iOS/Android compat) ───
+  prompt(message, defaultValue, onConfirm) {
+    const existing = document.getElementById('lms-prompt-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'lms-prompt-overlay';
+    overlay.className = 'lms-confirm-overlay';
+    overlay.innerHTML = `
+      <div class="lms-confirm-dialog">
+        <p class="lms-confirm-msg">${this.escapeHtml(message)}</p>
+        <input type="text" id="lms-prompt-input" class="form-input" value="${this.escapeHtml(defaultValue || '')}" style="margin-bottom:16px;">
+        <div class="lms-confirm-actions">
+          <button class="btn btn-secondary" id="lms-prompt-cancel">キャンセル</button>
+          <button class="btn btn-primary"   id="lms-prompt-ok">決定</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('active'));
+    setTimeout(() => document.getElementById('lms-prompt-input')?.focus(), 50);
+
+    const cleanup = () => {
+      overlay.classList.remove('active');
+      setTimeout(() => overlay.remove(), 200);
+    };
+
+    document.getElementById('lms-prompt-ok').onclick = () => {
+      const val = document.getElementById('lms-prompt-input')?.value?.trim();
+      cleanup();
+      onConfirm && onConfirm(val || null);
+    };
+    document.getElementById('lms-prompt-cancel').onclick = () => { cleanup(); onConfirm && onConfirm(null); };
+    overlay.onclick = (e) => { if (e.target === overlay) { cleanup(); onConfirm && onConfirm(null); } };
+    document.getElementById('lms-prompt-input').onkeydown = (e) => {
+      if (e.key === 'Enter') document.getElementById('lms-prompt-ok')?.click();
+      if (e.key === 'Escape') document.getElementById('lms-prompt-cancel')?.click();
+    };
+  },
+
+  // ─── Escape HTML (XSS prevention) ───
+  escapeHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  },
+
   // ─── Record List Item ───
   recordItem(entry, domain) {
     const color = CONFIG.domains[domain]?.color || '#666';

@@ -792,24 +792,25 @@ var Pages = {
   // ─── Resume Settings (Contribution domain) ───
   renderResumeSettings() {
     const r = store.get('userResume') || {};
+    const esc = v => Components.escapeHtml(v);
     return `<div class="settings-section">
       <h3>📄 レジュメ・職務経歴</h3>
       <p>ここに登録した内容を求人プラットフォームにワンクリックで送信できます。</p>
       <div class="form-group">
         <label>お名前</label>
-        <input type="text" id="resumeName" class="form-input" value="${r.name || ''}" placeholder="山田花子">
+        <input type="text" id="resumeName" class="form-input" value="${esc(r.name || '')}" placeholder="山田花子">
       </div>
       <div class="form-group">
         <label>職務要約・自己PR</label>
-        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${r.summary || ''}</textarea>
+        <textarea id="resumeSummary" class="form-input" rows="4" placeholder="これまでのご経験や強みを自由にお書きください">${esc(r.summary || '')}</textarea>
       </div>
       <div class="form-group">
         <label>スキル・資格（カンマ区切り）</label>
-        <input type="text" id="resumeSkills" class="form-input" value="${(r.skills || []).join(', ')}" placeholder="例：看護師免許, 英検2級, Excel">
+        <input type="text" id="resumeSkills" class="form-input" value="${esc((r.skills || []).join(', '))}" placeholder="例：看護師免許, 英検2級, Excel">
       </div>
       <div class="form-group">
         <label>職務経歴</label>
-        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${r.history || ''}</textarea>
+        <textarea id="resumeHistory" class="form-input" rows="4" placeholder="会社名、期間、役職、内容をお書きください">${esc(r.history || '')}</textarea>
       </div>
       <div class="form-group">
         <label>希望する働き方</label>
@@ -969,9 +970,9 @@ var Pages = {
             </div>
             <div class="data-entry-fields">
               ${fields.map(([k, v]) => {
-                const label = i18n.t(k) || k;
-                const val = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
-                return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${val}</span></div>`;
+                const label = Components.escapeHtml(i18n.t(k) || k);
+                const raw = typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v).slice(0, 100);
+                return `<div class="data-field"><span class="data-field-key">${label}</span><span class="data-field-val">${Components.escapeHtml(raw)}</span></div>`;
               }).join('')}
             </div>
           </div>`;
@@ -1805,28 +1806,29 @@ var Pages = {
         ${filtered.length === 0 ? `
           <p style="padding:20px;text-align:center;color:var(--text-muted);">該当するユーザーがいません</p>
         ` : filtered.map(u => {
+          const e = v => Components.escapeHtml(v || '');
           const diseaseCount = (u.diseases || []).length;
-          const initial = (u.displayName || u.email || '?').charAt(0).toUpperCase();
+          const initial = e((u.displayName || u.email || '?').charAt(0).toUpperCase());
           const meta = [];
           if (u.age) meta.push(u.age + '歳');
           if (u.gender) meta.push(u.gender === 'male' ? '男性' : u.gender === 'female' ? '女性' : 'その他');
-          if (u.location) meta.push(u.location);
+          if (u.location) meta.push(e(u.location));
           const metaText = meta.join(' · ');
 
-          return `<div class="admin-user-item clickable" onclick="app.showUserDetail('${u.uid}')">
+          return `<div class="admin-user-item clickable" onclick="app.showUserDetail('${e(u.uid)}')">
             <div class="admin-user-info">
               <div class="admin-user-avatar">${initial}</div>
               <div>
-                <div class="admin-user-email">${u.displayName || u.email || '不明'}</div>
+                <div class="admin-user-email">${e(u.displayName || u.email || '不明')}</div>
                 <div class="admin-user-role">
-                  ${u.email ? u.email + '<br>' : ''}${metaText || 'プロフィール未設定'}
+                  ${u.email ? e(u.email) + '<br>' : ''}${metaText || 'プロフィール未設定'}
                   ${u.lastActive ? ' · 最終: ' + new Date(u.lastActive).toLocaleDateString('ja-JP') : ''}
                 </div>
               </div>
             </div>
             <div class="admin-user-stats">
               ${diseaseCount > 0 ? `<span class="stat-chip">持病${diseaseCount}</span>` : ''}
-              ${u.subscription && u.subscription !== 'free' ? `<span class="stat-chip">${u.subscription}</span>` : ''}
+              ${u.subscription && u.subscription !== 'free' ? `<span class="stat-chip">${e(u.subscription)}</span>` : ''}
               ${adminEmails.includes(u.email) ? '<span class="status-badge">管理者</span>' : ''}
             </div>
           </div>`;
@@ -1901,7 +1903,7 @@ var Pages = {
       <div class="card-body">
         <div class="admin-user-item">
           <div>
-            <strong>${user?.email || '未ログイン'}</strong>
+            <strong>${Components.escapeHtml(user?.email || '未ログイン')}</strong>
             <span class="status-badge">オーナー</span>
           </div>
         </div>
