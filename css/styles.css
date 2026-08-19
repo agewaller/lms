@@ -451,6 +451,7 @@ select.form-input { appearance: auto; }
 .hero-content h1 { font-size: clamp(32px, 5vw, 56px); margin-bottom: 16px; }
 .hero-subtitle { font-size: clamp(18px, 2.5vw, 24px); color: var(--text-light); margin-bottom: 40px; line-height: 2.0; }
 .hero-icon { font-size: 64px; margin-bottom: 16px; }
+.hero-note { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
 
 /* Domain-specific hero */
 .domain-hero {
@@ -531,6 +532,23 @@ select.form-input { appearance: auto; }
 .login-divider::before, .login-divider::after {
   content: ''; flex: 1; height: 1px; background: var(--border);
 }
+
+/* Testimonials */
+.lp-testimonials { background: #f8f7ff; max-width: 100%; padding: 60px 40px; }
+.lp-testimonials h2 { max-width: 900px; margin: 0 auto 32px; }
+.testimonial-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px; max-width: 1100px; margin: 0 auto;
+}
+.testimonial-card {
+  background: #fff; border-radius: var(--radius); padding: 24px;
+  box-shadow: var(--shadow); text-align: left;
+}
+.testimonial-text {
+  font-size: 16px; line-height: 1.9; color: var(--text);
+  margin-bottom: 16px; font-style: italic;
+}
+.testimonial-author { font-size: 14px; color: var(--text-muted); font-weight: 600; }
 
 /* Footer */
 .lp-footer { text-align: center; padding: 32px; color: var(--text-muted); font-size: 14px; }
@@ -1796,4 +1814,65 @@ body.is-admin .admin-only { display: flex; }
   .sub-nav-btn span:last-child { display: none; }
   .sim-cards { grid-template-columns: 1fr; }
   .top-bar-title { font-size: 13px; }
+}
+
+/* ─── Today Status Widget ─── */
+.today-status-widget {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 16px 20px; margin-bottom: 20px; box-shadow: var(--shadow);
+}
+.today-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.today-title { font-size: 14px; font-weight: 600; color: var(--text-light); }
+.streak-badge {
+  background: linear-gradient(135deg, #FF6B35, #FF9500);
+  color: #fff; border-radius: 20px; padding: 3px 12px;
+  font-size: 13px; font-weight: 700;
+}
+.domain-checklist {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;
+}
+.domain-check-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 20px;
+  background: var(--bg); cursor: pointer; font-size: 13px;
+  border: 2px solid transparent; transition: all 0.2s;
+}
+.domain-check-item:hover { border-color: var(--primary); }
+.domain-check-item.done {
+  background: color-mix(in srgb, var(--check-color, #27AE60) 12%, var(--bg-card));
+  border-color: var(--check-color, #27AE60);
+}
+.domain-check-item.done .check-icon { color: var(--check-color, #27AE60); }
+.check-icon { font-size: 14px; font-weight: 700; }
+.check-label { font-weight: 500; }
+.today-cta { font-size: 13px; color: var(--text-muted); margin: 0; }
+.today-complete {
+  font-size: 14px; font-weight: 600; color: #27AE60; text-align: center; margin: 0;
+}
+
+/* ─── Onboarding Modal ─── */
+.onboarding-welcome { text-align: center; }
+.onboarding-greeting { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.onboarding-welcome > p:last-of-type { color: var(--text-light); margin-bottom: 20px; font-size: 15px; }
+.onboarding-domains {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 16px;
+}
+.onboarding-domain-btn {
+  display: flex; flex-direction: column; align-items: flex-start;
+  padding: 14px 16px; border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--ob-color, var(--primary)) 10%, var(--bg-card));
+  border: 2px solid color-mix(in srgb, var(--ob-color, var(--primary)) 30%, transparent);
+  cursor: pointer; transition: all 0.2s; text-align: left;
+}
+.onboarding-domain-btn:hover {
+  background: color-mix(in srgb, var(--ob-color, var(--primary)) 20%, var(--bg-card));
+  border-color: var(--ob-color, var(--primary)); transform: translateY(-2px);
+}
+.ob-label { font-weight: 700; font-size: 16px; color: var(--ob-color, var(--primary)); }
+.ob-desc { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+@media (max-width: 480px) {
+  .onboarding-domains { grid-template-columns: 1fr; }
 }

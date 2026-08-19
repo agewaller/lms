@@ -4,6 +4,48 @@
    ============================================================ */
 var Pages = {
 
+  // ─── Today status widget (shown at top of every home page) ───
+  renderTodayStatus() {
+    const status = store.getTodayStatus();
+    const streak = store.getStreak();
+    const completed = Object.values(status).filter(v => v).length;
+    const domainInfo = {
+      consciousness: { label: '意識', color: '#6C63FF' },
+      health:        { label: '健康', color: '#10b981' },
+      time:          { label: '時間', color: '#f59e0b' },
+      work:          { label: '仕事', color: '#3b82f6' },
+      relationship:  { label: '関係', color: '#ef4444' },
+      assets:        { label: '資産', color: '#d97706' }
+    };
+
+    let html = `<div class="today-status-widget">
+      <div class="today-header">
+        <div class="today-title">今日の記録状況（${completed}/6）</div>
+        ${streak > 0 ? `<div class="streak-badge">🔥 ${streak}日連続</div>` : ''}
+      </div>
+      <div class="domain-checklist">`;
+
+    Object.entries(domainInfo).forEach(([id, info]) => {
+      const done = status[id];
+      html += `<div class="domain-check-item ${done ? 'done' : ''}"
+        onclick="app.switchDomain('${id}');app.navigate('record')"
+        style="${done ? '--check-color:' + info.color : ''}">
+        <span class="check-icon">${done ? '✓' : '○'}</span>
+        <span class="check-label">${info.label}</span>
+      </div>`;
+    });
+
+    html += `</div>`;
+    if (completed === 6) {
+      html += `<div class="today-complete">今日の全領域を記録しました！</div>`;
+    } else {
+      const remaining = 6 - completed;
+      html += `<p class="today-cta">あと${remaining}つの領域を記録しましょう</p>`;
+    }
+    html += `</div>`;
+    return html;
+  },
+
   // ─── Main render dispatcher ───
   render(page, domain) {
     switch (page) {
@@ -29,6 +71,7 @@ var Pages = {
 
     // Quick input bar
     let html = `<div class="page-home">
+      ${this.renderTodayStatus()}
       <div class="quick-input-bar">
         <input type="text" id="quickInput" class="form-input" placeholder="${i18n.t('quick_input_placeholder')}"
           onkeydown="if(event.key==='Enter')app.quickInput()">

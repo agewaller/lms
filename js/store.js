@@ -269,10 +269,67 @@ var Store = class Store {
     return score;
   }
 
+  // ─── Streak & Today Status ───
+
+  hasDataToday(domain) {
+    const today = new Date().toISOString().slice(0, 10);
+    return Object.keys(this.state)
+      .filter(k => k.startsWith(domain + '_'))
+      .some(k => {
+        const arr = this.state[k];
+        return Array.isArray(arr) && arr.some(e => e.timestamp && e.timestamp.startsWith(today));
+      });
+  }
+
+  getTodayStatus() {
+    const domains = ['consciousness', 'health', 'time', 'work', 'relationship', 'assets'];
+    const status = {};
+    domains.forEach(d => { status[d] = this.hasDataToday(d); });
+    return status;
+  }
+
+  getStreak() {
+    const allDomainKeys = ['consciousness', 'health', 'time', 'work', 'relationship', 'assets']
+      .flatMap(domain => Object.keys(this.state).filter(k => k.startsWith(domain + '_')));
+
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const hasData = allDomainKeys.some(k => {
+        const arr = this.state[k];
+        return Array.isArray(arr) && arr.some(e => e.timestamp && e.timestamp.startsWith(dateStr));
+      });
+      if (!hasData) {
+        if (i === 0) continue; // today has no data yet — don't break streak
+        break;
+      }
+      streak++;
+    }
+    return streak;
+  }
+
+  isNewUser() {
+    const profile = this.state.userProfile || {};
+    const hasProfile = profile.name || profile.age || profile.gender;
+    if (hasProfile) return false;
+    const domains = ['consciousness', 'health', 'time', 'work', 'relationship', 'assets'];
+    return !domains.some(d => this.hasDataToday(d)) &&
+      !domains.some(d => {
+        return Object.keys(this.state)
+          .filter(k => k.startsWith(d + '_'))
+          .some(k => Array.isArray(this.state[k]) && this.state[k].length > 0);
+      });
+  }
+
   // ─── Clear ───
 
   clearAll() {
-    localStorage.clear();
+    // Only remove lms_* keys — preserves Firebase auth tokens and OAuth data
+    this.persistKeys.forEach(key => {
+      localStorage.removeItem(`lms_${key}`);
+    });
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};

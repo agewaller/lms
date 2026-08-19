@@ -179,7 +179,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -195,6 +195,9 @@ var App = class App {
 
     // Render page content
     mainContent.innerHTML = Pages.render(page, domain);
+
+    // Show onboarding for brand-new users
+    if (page === 'home') this.checkOnboarding();
 
     // Auto-close sidebar on mobile after navigation
     if (window.innerWidth <= 768) {
@@ -1938,6 +1941,39 @@ var App = class App {
     const isOpen = sidebar.classList.contains('open');
     sidebar.classList.toggle('open', !isOpen);
     if (overlay) overlay.classList.toggle('active', !isOpen);
+  }
+
+  // ─── Onboarding ───
+  checkOnboarding() {
+    if (!store.isNewUser()) return;
+    const user = store.get('user');
+    const name = user?.displayName || 'ようこそ';
+    const body = `
+      <div class="onboarding-welcome">
+        <p class="onboarding-greeting">こんにちは、${Components.escapeHtml(name)} さん！</p>
+        <p>LMSは、あなたの人生の6つの領域をまるごとサポートします。<br>まず、どの領域から始めますか？</p>
+        <div class="onboarding-domains">
+          ${[
+            { id: 'consciousness', label: '意識', desc: '心の健康・瞑想・感謝', color: '#6C63FF' },
+            { id: 'health',        label: '健康', desc: '体調・睡眠・食事の記録', color: '#10b981' },
+            { id: 'time',          label: '時間', desc: '日々の過ごし方・習慣', color: '#f59e0b' },
+            { id: 'work',          label: '仕事', desc: '生きがい・スキル・副業', color: '#3b82f6' },
+            { id: 'relationship',  label: '関係', desc: '大切な人との絆', color: '#ef4444' },
+            { id: 'assets',        label: '資産', desc: '投資・収支の見える化', color: '#d97706' }
+          ].map(d => `<button class="onboarding-domain-btn" style="--ob-color:${d.color}"
+              onclick="app.startOnboarding('${d.id}')">
+              <span class="ob-label">${d.label}</span>
+              <span class="ob-desc">${d.desc}</span>
+            </button>`).join('')}
+        </div>
+      </div>`;
+    this.openModal('はじめましょう', body);
+  }
+
+  startOnboarding(domain) {
+    this.closeModal();
+    store.set('currentDomain', domain);
+    store.set('currentPage', 'record');
   }
 
   // ─── Modal ───
