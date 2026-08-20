@@ -59,7 +59,8 @@ var FirebaseBackend = {
     if (!this.auth) {
       // Local-only mode fallback (Firebase not configured).
       // Prompt for email so that admin (agewaller@gmail.com) can still log in.
-      const email = (prompt('メールアドレスを入力してください', '') || '').trim().toLowerCase();
+      const raw = await Components.promptDialog('メールアドレスを入力してください', 'example@email.com');
+      const email = (raw || '').trim().toLowerCase();
       if (!email) return;
       store.update({
         user: {

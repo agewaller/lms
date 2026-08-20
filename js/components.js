@@ -132,6 +132,56 @@ var Components = {
       .replace(/\n/g, '<br>');
   },
 
+  // ─── Confirm Dialog (iOS-safe, replaces native confirm()) ───
+  confirmDialog(message, confirmLabel, cancelLabel) {
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay active';
+      overlay.innerHTML = `
+        <div class="modal" style="max-width:360px">
+          <div class="modal-body" style="text-align:center;padding:28px 24px">
+            <p style="font-size:16px;line-height:1.6;margin:0 0 20px">${this.escapeHtml(message)}</p>
+            <div style="display:flex;gap:10px;justify-content:center">
+              <button class="btn btn-secondary" id="_cdCancel">${cancelLabel || 'キャンセル'}</button>
+              <button class="btn btn-danger" id="_cdConfirm">${confirmLabel || '削除する'}</button>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      const done = val => { overlay.remove(); resolve(val); };
+      overlay.querySelector('#_cdConfirm').onclick = () => done(true);
+      overlay.querySelector('#_cdCancel').onclick = () => done(false);
+      overlay.addEventListener('click', e => { if (e.target === overlay) done(false); });
+    });
+  },
+
+  // ─── Prompt Dialog (iOS-safe, replaces native prompt()) ───
+  promptDialog(message, placeholder) {
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay active';
+      overlay.innerHTML = `
+        <div class="modal" style="max-width:400px">
+          <div class="modal-body" style="padding:28px 24px">
+            <p style="font-size:15px;margin:0 0 14px">${this.escapeHtml(message)}</p>
+            <input id="_pdInput" class="form-input" type="text" placeholder="${this.escapeHtml(placeholder || '')}" style="width:100%;margin-bottom:16px">
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+              <button class="btn btn-secondary" id="_pdCancel">キャンセル</button>
+              <button class="btn btn-primary" id="_pdOk">OK</button>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      const input = overlay.querySelector('#_pdInput');
+      input.focus();
+      const done = val => { overlay.remove(); resolve(val); };
+      overlay.querySelector('#_pdOk').onclick = () => done(input.value || null);
+      overlay.querySelector('#_pdCancel').onclick = () => done(null);
+      overlay.addEventListener('click', e => { if (e.target === overlay) done(null); });
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') done(input.value || null); if (e.key === 'Escape') done(null); });
+    });
+  },
+
   // ─── Toast Notification (未病ダイアリー方式) ───
   showToast(message, type = 'info') {
     const container = document.getElementById('toast-container') || document.body;

@@ -179,7 +179,7 @@ var App = class App {
     // Update top bar title
     const titleEl = document.getElementById('top-bar-title');
     const domainConfig = CONFIG.domains[domain];
-    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: 'AIに相談', settings: '設定', admin: '管理' };
+    const pageNames = { home: 'ホーム', record: '記録する', actions: 'アクション', ask_ai: '相談する', settings: '設定', admin: '管理' };
     if (titleEl) titleEl.textContent = `${domainConfig?.icon || ''} ${i18n.t(domain)} - ${pageNames[page] || page}`;
 
     // Update sidebar nav active states
@@ -502,7 +502,7 @@ var App = class App {
 
       if (resultEl) {
         resultEl.innerHTML = `<div class="stock-result">
-          <h3>${ticker} の分析結果</h3>
+          <h3>${Components.escapeHtml(ticker)} の分析結果</h3>
           <div class="analysis-content">${Components.formatMarkdown(result)}</div>
           <div class="disclaimer">${i18n.t('disclaimer_assets')}</div>
         </div>`;
@@ -740,8 +740,8 @@ var App = class App {
     this.renderApp();
   }
 
-  deleteDataEntry(domain, category, id) {
-    if (!confirm('この記録を削除しますか？')) return;
+  async deleteDataEntry(domain, category, id) {
+    if (!await Components.confirmDialog('この記録を削除しますか？')) return;
     const key = `${domain}_${category}`;
     const entries = (store.get(key) || []).filter(e => e.id !== id);
     store.set(key, entries);
@@ -823,8 +823,8 @@ var App = class App {
     gmailIntegration.connect();
   }
 
-  fitbitDisconnect() {
-    if (!confirm('Fitbit接続を解除しますか？')) return;
+  async fitbitDisconnect() {
+    if (!await Components.confirmDialog('Fitbit接続を解除しますか？', '解除する')) return;
     if (typeof fitbit !== 'undefined') fitbit.disconnect();
     Components.showToast('接続を解除しました', 'info');
     this.renderApp();
@@ -873,8 +873,8 @@ var App = class App {
     }
   }
 
-  gcalDisconnect() {
-    if (!confirm('Googleカレンダー接続を解除しますか？')) return;
+  async gcalDisconnect() {
+    if (!await Components.confirmDialog('Googleカレンダー接続を解除しますか？', '解除する')) return;
     if (typeof googleCalendar !== 'undefined') googleCalendar.disconnect();
     Components.showToast('接続を解除しました', 'info');
     this.renderApp();
@@ -908,8 +908,8 @@ var App = class App {
     }
   }
 
-  outlookDisconnect() {
-    if (!confirm('Outlook接続を解除しますか？')) return;
+  async outlookDisconnect() {
+    if (!await Components.confirmDialog('Outlook接続を解除しますか？', '解除する')) return;
     if (typeof outlookCalendar !== 'undefined') outlookCalendar.disconnect();
     Components.showToast('接続を解除しました', 'info');
     this.renderApp();
@@ -943,8 +943,8 @@ var App = class App {
     }
   }
 
-  gmailDisconnect() {
-    if (!confirm('Gmail接続を解除しますか？')) return;
+  async gmailDisconnect() {
+    if (!await Components.confirmDialog('Gmail接続を解除しますか？', '解除する')) return;
     if (typeof gmailIntegration !== 'undefined') gmailIntegration.disconnect();
     Components.showToast('接続を解除しました', 'info');
     this.renderApp();
@@ -1106,7 +1106,7 @@ var App = class App {
     const textarea = document.getElementById('transcriptText');
     const source = document.getElementById('transcriptSource')?.value || 'manual';
     if (!textarea || !textarea.value.trim()) {
-      Components.showToast('文字起こしの��容を入力してください', 'info');
+      Components.showToast('文字起こしの内容を入力してください', 'info');
       return;
     }
 
@@ -1123,7 +1123,6 @@ var App = class App {
     if (resultEl) resultEl.innerHTML = Components.loading('七つのレイヤーで分析中...');
 
     try {
-      const prompt = CONFIG.prompts.consciousness.transcript_analysis || CONFIG.prompts.consciousness.daily;
       const result = await AIEngine.analyze('consciousness', 'transcript_analysis', {
         text: `<<<TRANSCRIPT_START\n${text}\nTRANSCRIPT_END>>>`
       });
@@ -1387,7 +1386,7 @@ var App = class App {
 
     // Save to Firestore if available
     if (Object.keys(keys).length > 0) {
-      FirebaseBackend.saveApiKeys({ ...AIEngine.getApiKey, ...keys });
+      FirebaseBackend.saveApiKeys(keys);
     }
 
     Components.showToast(i18n.t('saved'), 'success');
@@ -1478,8 +1477,8 @@ var App = class App {
     this.renderApp();
   }
 
-  deletePrompt(key) {
-    if (!confirm('このプロンプトを削除しますか？')) return;
+  async deletePrompt(key) {
+    if (!await Components.confirmDialog('このプロンプトを削除しますか？')) return;
     delete CONFIG.prompts[key];
     const custom = store.get('customPrompts') || {};
     delete custom[key];
@@ -1488,8 +1487,8 @@ var App = class App {
     this.renderApp();
   }
 
-  addNewPrompt() {
-    const key = prompt('プロンプトのキー名を入力（例: work_custom）');
+  async addNewPrompt() {
+    const key = await Components.promptDialog('プロンプトのキー名を入力', '例: work_custom');
     if (!key) return;
     if (CONFIG.prompts[key]) {
       Components.showToast('そのキーは既に存在します', 'error');
@@ -1523,8 +1522,8 @@ var App = class App {
     }
   }
 
-  clearApiKeys() {
-    if (!confirm('すべてのAPIキーを削除しますか？')) return;
+  async clearApiKeys() {
+    if (!await Components.confirmDialog('すべてのAPIキーを削除しますか？')) return;
     ['anthropic', 'openai', 'google'].forEach(p => {
       localStorage.removeItem('lms_apikey_' + p);
     });
@@ -1558,8 +1557,8 @@ var App = class App {
     Components.showToast('保存しました（再読み込みが必要です）', 'success');
   }
 
-  clearFirebaseConfig() {
-    if (!confirm('Firebase設定を削除しますか？')) return;
+  async clearFirebaseConfig() {
+    if (!await Components.confirmDialog('Firebase設定を削除しますか？')) return;
     localStorage.removeItem('lms_firebaseConfig');
     Components.showToast('削除しました（再読み込みが必要です）', 'info');
   }
@@ -1649,7 +1648,7 @@ var App = class App {
 
   // ─── Admin User Management ───
   async addAdminEmail() {
-    const email = prompt('管理者として追加するメールアドレスを入力してください');
+    const email = await Components.promptDialog('管理者として追加するメールアドレスを入力してください', 'admin@example.com');
     if (!email || !email.trim()) return;
 
     const trimmed = email.trim().toLowerCase();
@@ -1687,7 +1686,7 @@ var App = class App {
       Components.showToast('オーナーアカウントは削除できません', 'error');
       return;
     }
-    if (!confirm(`${email} を管理者から外しますか？`)) return;
+    if (!await Components.confirmDialog(`${email} を管理者から外しますか？`, '外す')) return;
 
     const list = (store.get('adminEmails') || ['agewaller@gmail.com']).filter(e => e !== email);
     store.set('adminEmails', list);
@@ -1864,31 +1863,31 @@ var App = class App {
       <div class="user-detail">
         <div class="user-detail-section">
           <h4>基本情報</h4>
-          <p><strong>お名前:</strong> ${user.displayName || '-'}</p>
-          <p><strong>メール:</strong> ${user.email || '-'}</p>
-          <p><strong>年齢:</strong> ${user.age || '-'}</p>
-          <p><strong>性別:</strong> ${user.gender || '-'}</p>
-          <p><strong>居住地:</strong> ${user.location || '-'}</p>
-          <p><strong>職業:</strong> ${user.occupation || '-'}</p>
+          <p><strong>お名前:</strong> ${Components.escapeHtml(user.displayName || '-')}</p>
+          <p><strong>メール:</strong> ${Components.escapeHtml(user.email || '-')}</p>
+          <p><strong>年齢:</strong> ${Components.escapeHtml(String(user.age || '-'))}</p>
+          <p><strong>性別:</strong> ${Components.escapeHtml(user.gender || '-')}</p>
+          <p><strong>居住地:</strong> ${Components.escapeHtml(user.location || '-')}</p>
+          <p><strong>職業:</strong> ${Components.escapeHtml(user.occupation || '-')}</p>
         </div>
 
         <div class="user-detail-section">
           <h4>健康</h4>
-          <p><strong>持病・症状:</strong> ${user.diseases.length > 0 ? user.diseases.join(', ') : 'なし'}</p>
-          <p><strong>服薬:</strong> ${user.medications || 'なし'}</p>
+          <p><strong>持病・症状:</strong> ${user.diseases.length > 0 ? user.diseases.map(d => Components.escapeHtml(d)).join(', ') : 'なし'}</p>
+          <p><strong>服薬:</strong> ${Components.escapeHtml(user.medications || 'なし')}</p>
         </div>
 
         <div class="user-detail-section">
           <h4>資産・収入</h4>
-          <p><strong>月収:</strong> ${user.monthlyIncome || '-'}</p>
-          <p><strong>貯蓄:</strong> ${user.savings || '-'}</p>
-          <p><strong>プラン:</strong> ${user.subscription}</p>
+          <p><strong>月収:</strong> ${Components.escapeHtml(String(user.monthlyIncome || '-'))}</p>
+          <p><strong>貯蓄:</strong> ${Components.escapeHtml(String(user.savings || '-'))}</p>
+          <p><strong>プラン:</strong> ${Components.escapeHtml(user.subscription || '-')}</p>
         </div>
 
         <div class="user-detail-section">
           <h4>人生目標・悩み</h4>
-          <p><strong>目標:</strong> ${user.lifeGoals || '-'}</p>
-          <p><strong>悩み:</strong> ${user.concerns || '-'}</p>
+          <p><strong>目標:</strong> ${Components.escapeHtml(user.lifeGoals || '-')}</p>
+          <p><strong>悩み:</strong> ${Components.escapeHtml(user.concerns || '-')}</p>
         </div>
 
         ${scoreHtml ? `
@@ -1898,7 +1897,7 @@ var App = class App {
         </div>` : ''}
 
         <div class="user-detail-section" style="font-size:11px;color:var(--text-muted);">
-          UID: ${user.uid}<br>
+          UID: ${Components.escapeHtml(user.uid || '')}<br>
           最終アクティビティ: ${user.lastActive ? new Date(user.lastActive).toLocaleString('ja-JP') : '-'}
         </div>
       </div>
@@ -1907,8 +1906,8 @@ var App = class App {
     this.openModal(user.displayName || user.email || 'ユーザー詳細', body);
   }
 
-  generateDemoData() {
-    if (!confirm('デモデータを生成しますか？既存データに追加されます。')) return;
+  async generateDemoData() {
+    if (!await Components.confirmDialog('デモデータを生成しますか？既存データに追加されます。', '生成する')) return;
     // Generate sample entries for each domain
     const today = new Date();
     for (let i = 0; i < 7; i++) {
@@ -1921,9 +1920,9 @@ var App = class App {
     this.renderApp();
   }
 
-  deleteAllData() {
-    if (!confirm('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
-    if (!confirm('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
+  async deleteAllData() {
+    if (!await Components.confirmDialog('本当にすべてのデータを削除しますか？この操作は元に戻せません。')) return;
+    if (!await Components.confirmDialog('最終確認：すべてのデータを完全に削除します。よろしいですか？')) return;
     store.clearAll();
     Components.showToast('すべてのデータを削除しました', 'info');
     window.location.reload();
