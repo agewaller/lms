@@ -4,6 +4,20 @@
    ============================================================ */
 var AIEngine = {
 
+  // ─── Model ID resolution: CONFIG id → API datestamped id ───
+  // Anthropic rotates datestamped IDs; always go through this map.
+  MODEL_MAP: {
+    'claude-opus-4-6':   'claude-opus-4-6-20260201',
+    'claude-sonnet-4-6': 'claude-sonnet-4-6-20260101',
+    'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+    'gpt-4o':            'gpt-4o-2024-11-20',
+    'gemini-pro':        'gemini-2.0-flash'
+  },
+
+  resolveModelId(configId) {
+    return this.MODEL_MAP[configId] || configId;
+  },
+
   // ─── Main analysis entry point ───
   async analyze(domain, promptType, userData, options = {}) {
     const model = options.model || store.get('selectedModel') || 'claude-sonnet-4-6';
@@ -169,7 +183,7 @@ var AIEngine = {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: model,
+          model: this.resolveModelId(model),
           max_tokens: maxTokens,
           system: system,
           messages: [{ role: 'user', content: userMsg }]
@@ -207,7 +221,7 @@ var AIEngine = {
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: model,
+        model: this.resolveModelId(model),
         max_tokens: maxTokens,
         messages: [
           { role: 'system', content: system },
@@ -228,7 +242,7 @@ var AIEngine = {
     const apiKey = this.getApiKey('google');
     if (!apiKey) throw new Error('Google API key not set');
 
-    const url = `${CONFIG.endpoints.google}/${model}:generateContent?key=${apiKey}`;
+    const url = `${CONFIG.endpoints.google}/${this.resolveModelId(model)}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -3,8 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LMS - Life Management System</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <title>LMS - 人生を6つの領域でまるごとサポート</title>
+  <meta name="description" content="意識・健康・時間・仕事・関係・資産。6つの領域を統合的に管理し、65歳からの人生をより豊かに。無料で始められます。">
+  <meta name="keywords" content="ライフマネジメント,健康管理,資産管理,シニア,65歳,人生設計">
+  <!-- OGP -->
+  <meta property="og:title" content="LMS - 人生を6つの領域でまるごとサポート">
+  <meta property="og:description" content="意識・健康・時間・仕事・関係・資産を統合管理。65歳からの人生をより豊かに。無料で始められます。">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://agewaller.github.io/lms/og-image.png">
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="LMS - 人生を6つの領域でまるごとサポート">
+  <meta name="twitter:description" content="意識・健康・時間・仕事・関係・資産を統合管理。無料で始められます。">
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#6C63FF">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/styles.css?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
@@ -25,77 +40,78 @@
     </nav>
 
     <div class="hero-content">
-      <h1>Life Management System</h1>
-      <p class="hero-subtitle">年金だけでは足りない時代。<br>意識・健康・時間・仕事・関係・資産<br>6つの領域を、まるごとサポート</p>
+      <h1>人生を、もっとゆたかに</h1>
+      <p class="hero-subtitle">体、心、お金、つながり、時間、仕事。<br>6つの大切なことを、まるごとサポートします。<br>データを入れるだけで、次の一手がわかります。</p>
       <a href="#login" class="btn btn-lg btn-primary">無料で始める</a>
+      <p class="hero-note">登録はメールアドレスだけ。60秒で使えます。</p>
     </div>
   </header>
 
   <!-- Domain Cards -->
   <section id="domains" class="lp-section">
-    <h2>6つのライフドメイン</h2>
-    <p class="section-sub">それぞれの領域をやさしくサポートし、あなたに合ったアドバイスをお届けします</p>
+    <h2>6つの大切な領域</h2>
+    <p class="section-sub">どれか一つでも気になるところから始めてください。続けるうちに、6つがつながってきます</p>
     <div class="domain-cards">
       <a href="consciousness.html" class="domain-card" style="--domain-color:#9B59B6">
-        <div class="dc-icon">🧠</div>
+        <div class="dc-num">一</div>
         <h3>意識</h3>
-        <p>心の健康・瞑想・感謝の気持ち</p>
+        <p>心の調子・ものの見方・毎日の気づきを記録する</p>
       </a>
       <a href="health.html" class="domain-card" style="--domain-color:#27AE60">
-        <div class="dc-icon">💚</div>
+        <div class="dc-num">二</div>
         <h3>健康</h3>
-        <p>体調の記録・お薬の管理・元気な毎日</p>
+        <p>体調・睡眠・お薬・血圧。気になることを書き留める</p>
       </a>
-      <a href="time.html" class="domain-card" style="--domain-color:#E67E22">
-        <div class="dc-icon">⏰</div>
+      <a href="time.html" class="domain-card" style="--domain-color:#f59e0b">
+        <div class="dc-num">三</div>
         <h3>時間</h3>
-        <p>日々の過ごし方・趣味・心豊かな時間</p>
+        <p>一日の使い方を見直し、やりたいことに時間を使う</p>
       </a>
-      <a href="work.html" class="domain-card" style="--domain-color:#2980B9">
-        <div class="dc-icon">💼</div>
+      <a href="work.html" class="domain-card" style="--domain-color:#3b82f6">
+        <div class="dc-num">四</div>
         <h3>仕事</h3>
-        <p>生きがい・経験を活かす・社会とのつながり</p>
+        <p>生きがい・経験を活かす・社会とのつながりを続ける</p>
       </a>
-      <a href="relationship.html" class="domain-card" style="--domain-color:#E74C3C">
-        <div class="dc-icon">🤝</div>
+      <a href="relationship.html" class="domain-card" style="--domain-color:#ef4444">
+        <div class="dc-num">五</div>
         <h3>関係</h3>
-        <p>大切な人との関係・ご縁を大切に</p>
+        <p>大切な人との関係・孤立しない・ご縁を大切にする</p>
       </a>
-      <a href="assets.html" class="domain-card" style="--domain-color:#F1C40F">
-        <div class="dc-icon">💰</div>
+      <a href="assets.html" class="domain-card" style="--domain-color:#d97706">
+        <div class="dc-num">六</div>
         <h3>資産</h3>
-        <p>安心の資産管理・株式投資・収支の把握</p>
+        <p>老後のお金・NISA・収支の把握で安心を手に入れる</p>
       </a>
     </div>
   </section>
 
   <!-- Features -->
   <section id="features" class="lp-section lp-section-alt">
-    <h2>主な特徴</h2>
+    <h2>なぜ LMS なのか</h2>
     <div class="feature-grid">
       <div class="feature-item">
-        <h3>深い分析</h3>
-        <p>あなたの記録を丁寧に読み解き、気づきと最適な打ち手をお届けします</p>
+        <h3>書くだけで次の一手がわかる</h3>
+        <p>今日の体調・気分・お金の動きを記録するだけ。「どうすればよいか」を自動でお知らせします</p>
       </div>
       <div class="feature-item">
-        <h3>領域横断の洞察</h3>
-        <p>6つの領域の相互作用を考慮した、統合的なアドバイス</p>
+        <h3>6つをまとめて把握できる</h3>
+        <p>健康と関係とお金は全部つながっています。バラバラに管理せず、一か所でまとめて見られます</p>
       </div>
       <div class="feature-item">
-        <h3>自動アクション</h3>
-        <p>おすすめに基づく自動実行（投資、予約、購入など）</p>
+        <h3>難しい操作は一切なし</h3>
+        <p>文字を打って「保存」するだけ。スマートフォンでも、パソコンでも同じように使えます</p>
       </div>
       <div class="feature-item">
-        <h3>多言語対応</h3>
-        <p>日本語・英語・中国語・韓国語に対応</p>
+        <h3>あなたのデータはあなたのもの</h3>
+        <p>Googleのセキュリティで守られた安全な保管場所。家族には見えません</p>
       </div>
       <div class="feature-item">
-        <h3>安心のデータ管理</h3>
-        <p>Google認証 + Firebase によるセキュアなデータ同期</p>
+        <h3>続けると蓄積が力になる</h3>
+        <p>毎日の小さな記録が積み重なり、3か月後には「自分の取扱説明書」ができあがります</p>
       </div>
       <div class="feature-item">
-        <h3>専門家連携</h3>
-        <p>必要に応じて専門家によるメンタリング・コーチングにも対応</p>
+        <h3>無料で全機能が使える</h3>
+        <p>登録してすぐ全機能が使えます。クレジットカード不要。いつでも退会できます</p>
       </div>
     </div>
   </section>
@@ -193,20 +209,20 @@
   </footer>
 
   <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
   <!-- LMS Scripts -->
-  <script src="js/config.js"></script>
-  <script src="js/store.js"></script>
-  <script src="js/i18n.js"></script>
-  <script src="js/components.js"></script>
-  <script src="js/ai-engine.js"></script>
-  <script src="js/firebase-backend.js"></script>
-  <script src="js/affiliate.js"></script>
-  <script src="js/pages.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/config.js?v=2"></script>
+  <script src="js/store.js?v=2"></script>
+  <script src="js/i18n.js?v=2"></script>
+  <script src="js/components.js?v=2"></script>
+  <script src="js/ai-engine.js?v=2"></script>
+  <script src="js/firebase-backend.js?v=2"></script>
+  <script src="js/affiliate.js?v=2"></script>
+  <script src="js/pages.js?v=2"></script>
+  <script src="js/app.js?v=2"></script>
 
   <script>
     // On login success, redirect to dashboard

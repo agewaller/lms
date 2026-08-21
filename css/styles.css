@@ -479,12 +479,20 @@ select.form-input { appearance: auto; }
 }
 .domain-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 .dc-icon { font-size: 40px; margin-bottom: 12px; }
+.dc-num {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--domain-color, var(--accent));
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; margin-bottom: 14px;
+}
 .domain-card h3 { font-size: 20px; margin-bottom: 8px; }
 .domain-card p { font-size: 16px; color: var(--text-light); line-height: 1.8; }
 .domain-cards-sm { gap: 16px; }
 .domain-cards-sm .domain-card { padding: 20px 16px; }
 .domain-cards-sm .dc-icon { font-size: 28px; }
+.domain-cards-sm .dc-num { width: 36px; height: 36px; font-size: 16px; }
 .domain-cards-sm .domain-card h3 { font-size: 16px; }
+.hero-note { font-size: 14px; color: var(--text-muted); margin-top: 12px; }
 
 /* Features */
 .feature-grid {
