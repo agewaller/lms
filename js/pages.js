@@ -36,6 +36,9 @@ var Pages = {
       </div>
       <div id="quickResponse"></div>`;
 
+    // Daily check-in status card
+    html += this.renderDailyCheckIn(domain);
+
     // Assets domain: Show stock analysis at the very top
     if (domain === 'assets') {
       html += this.renderStockAnalysisWidget();
@@ -104,7 +107,7 @@ var Pages = {
       html += `<div class="analysis-section">
         <h3>分析結果</h3>
         <div class="analysis-content">${Components.formatMarkdown(latest.response)}</div>
-        <div class="analysis-meta">${latest.model} | ${new Date(latest.timestamp).toLocaleString()}</div>
+        <div class="analysis-meta">${new Date(latest.timestamp).toLocaleString()}</div>
       </div>`;
     }
 
@@ -158,6 +161,52 @@ var Pages = {
 
     html += `</div>`;
     return html;
+  },
+
+  // ─── Daily Check-in Status Card ───
+  renderDailyCheckIn(domain) {
+    const categories = Object.keys(CONFIG.domains[domain]?.categories || {});
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    // Check if there's any entry today
+    let todayCount = 0;
+    categories.forEach(cat => {
+      const data = store.getDomainData(domain, cat, 1);
+      if (data.some(e => e.timestamp && e.timestamp.startsWith(todayStr))) todayCount++;
+    });
+
+    // Calculate streak (consecutive days with at least 1 entry)
+    let streak = 0;
+    const check = new Date();
+    for (let i = 0; i < 30; i++) {
+      const dayStr = check.toISOString().slice(0, 10);
+      let found = false;
+      for (const cat of categories) {
+        const data = store.getDomainData(domain, cat, 60);
+        if (data.some(e => e.timestamp && e.timestamp.startsWith(dayStr))) { found = true; break; }
+      }
+      if (!found) break;
+      streak++;
+      check.setDate(check.getDate() - 1);
+    }
+
+    const domainColor = CONFIG.domains[domain]?.color || '#6C63FF';
+
+    if (todayCount > 0) {
+      return `<div class="daily-checkin done" style="border-color:${domainColor}">
+        <span class="checkin-icon">✓</span>
+        <span class="checkin-text">今日の記録 完了</span>
+        ${streak > 1 ? `<span class="checkin-streak">${streak}日連続</span>` : ''}
+        <button class="btn btn-sm btn-secondary" onclick="app.navigate('record')">追加する</button>
+      </div>`;
+    }
+
+    return `<div class="daily-checkin pending" style="border-color:${domainColor}">
+      <span class="checkin-icon">○</span>
+      <span class="checkin-text">今日まだ記録していません</span>
+      ${streak > 0 ? `<span class="checkin-streak">${streak}日連続中</span>` : ''}
+      <button class="btn btn-sm btn-primary" onclick="app.navigate('record')" style="background:${domainColor};border-color:${domainColor}">今日を記録する</button>
+    </div>`;
   },
 
   // ─── Consciousness 7-Layer Visualization ───
@@ -287,7 +336,7 @@ var Pages = {
       html += `<div class="graph-ring ring-${level}" style="--ring-color: ${levels[level].color}">
         <div class="ring-label">${levels[level].description}（${people.length}人）</div>
         <div class="ring-people">
-          ${people.slice(0, 8).map(p => `<span class="ring-person" title="${p.name}">${(p.name || '').substring(0, 3)}</span>`).join('')}
+          ${people.slice(0, 8).map(p => `<span class="ring-person" title="${Components.escapeHtml(p.name)}">${Components.escapeHtml((p.name || '').substring(0, 3))}</span>`).join('')}
           ${people.length > 8 ? `<span class="ring-more">+${people.length - 8}</span>` : ''}
         </div>
       </div>`;
@@ -323,7 +372,7 @@ var Pages = {
       const dateStr = c.nextBirthday.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
       const label = c.daysUntil === 0 ? '今日！' : `あと${c.daysUntil}日`;
       html += `<div class="birthday-item ${c.daysUntil <= 3 ? 'birthday-soon' : ''}">
-        <span class="birthday-name">${c.name}</span>
+        <span class="birthday-name">${Components.escapeHtml(c.name)}</span>
         <span class="birthday-date">${dateStr}（${label}）</span>
         <span class="birthday-distance">${CONFIG.domains.relationship.distanceLevels[c.distance]?.description || ''}</span>
       </div>`;
@@ -366,9 +415,9 @@ var Pages = {
     return `<div class="resume-widget">
       <h3>📄 レジュメ</h3>
       <div class="resume-summary">
-        <p><strong>${resume.name || ''}</strong></p>
-        <p>${resume.summary || ''}</p>
-        <p>スキル: ${(resume.skills || []).join(', ')}</p>
+        <p><strong>${Components.escapeHtml(resume.name)}</strong></p>
+        <p>${Components.escapeHtml(resume.summary)}</p>
+        <p>スキル: ${(resume.skills || []).map(s => Components.escapeHtml(s)).join(', ')}</p>
       </div>
       <div class="resume-actions">
         <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')">編集</button>
@@ -594,7 +643,7 @@ var Pages = {
         <h3>📋 Action Items</h3>
         ${actions.map((a, i) => `
           <div class="action-item ${a.done ? 'done' : ''}">
-            <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${a.text}</label>
+            <label><input type="checkbox" ${a.done ? 'checked' : ''} onchange="app.toggleAction(${i})"> ${Components.escapeHtml(a.text)}</label>
             <span class="action-domain" style="background:${CONFIG.domains[a.domain]?.color || '#666'}">${CONFIG.domains[a.domain]?.icon || ''}</span>
           </div>
         `).join('')}

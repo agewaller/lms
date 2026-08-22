@@ -1111,6 +1111,23 @@ body.is-admin .admin-only { display: flex; }
 .quick-input-bar { display: flex; gap: 10px; margin-bottom: 20px; }
 .quick-input-bar .form-input { flex: 1; }
 #quickResponse { margin-bottom: 20px; }
+
+/* Daily check-in status card */
+.daily-checkin {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 16px; margin-bottom: 20px;
+  background: var(--bg-card); border-radius: var(--radius);
+  border-left: 4px solid var(--accent); box-shadow: var(--shadow-sm);
+}
+.daily-checkin.done { opacity: 0.85; }
+.daily-checkin.pending { background: var(--bg-secondary); }
+.checkin-icon { font-size: 20px; flex-shrink: 0; }
+.checkin-text { flex: 1; font-size: 15px; font-weight: 500; color: var(--text-primary); }
+.checkin-streak {
+  font-size: 12px; font-weight: 600; color: var(--accent);
+  background: rgba(108, 99, 255, 0.12);
+  padding: 2px 8px; border-radius: 12px; white-space: nowrap;
+}
 .quick-response {
   background: var(--bg-card); border-radius: var(--radius);
   padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px;
