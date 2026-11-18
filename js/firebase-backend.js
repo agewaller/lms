@@ -210,15 +210,22 @@ var FirebaseBackend = {
           }
         }
 
-        // Load admin API keys (shared across all users)
-        const adminSecretsDoc = await this.db.collection('admin').doc('secrets').get();
-        if (adminSecretsDoc.exists) {
-          const keys = adminSecretsDoc.data();
-          store.state._apiKeys = keys;
-          // Cache in localStorage for offline use
-          if (keys.anthropic) localStorage.setItem('lms_apikey_anthropic', keys.anthropic);
-          if (keys.openai) localStorage.setItem('lms_apikey_openai', keys.openai);
-          if (keys.google) localStorage.setItem('lms_apikey_google', keys.google);
+        // Load admin API keys — ADMIN ONLY.
+        // 以前は全員がこれを読み、localStorage にも写していた。鍵はほかの
+        // プロダクトと共有しているので、登録できる人は誰でも持ち出せる状態だった。
+        // 一般の方の AI は、鍵をサーバ側に置いた中継 (worker/anthropic-proxy.js) を
+        // 通して動かす。鍵をブラウザへ配って回すのはやめる。
+        if (this.isAdmin()) {
+          const adminSecretsDoc = await this.db.collection('admin').doc('secrets').get();
+          if (adminSecretsDoc.exists) {
+            store.state._apiKeys = adminSecretsDoc.data();
+          }
+        } else {
+          // 以前の版が書き込んだ写しが端末に残っているので、ここで消しておく
+          // (localStorage.clear() は設定ごと消すので使わない)
+          ['anthropic', 'openai', 'google'].forEach((p) => {
+            try { localStorage.removeItem('lms_apikey_' + p); } catch (e) { /* 消せなくても進む */ }
+          });
         }
       } catch (e) {
         console.warn('Admin config load error:', e);

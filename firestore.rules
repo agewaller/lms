@@ -37,15 +37,21 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Admin secrets (API keys): readable by all authenticated users
+    // Admin secrets (API keys): ADMIN ONLY.
+    // 以前は「サインインした人なら誰でも読める」になっていた。ここには Anthropic /
+    // OpenAI / Google の API キーの生の値が入っていて、しかもその鍵はほかの
+    // プロダクトと共有している。登録できる人は誰でも読み出せる状態だったので閉じた。
     match /admin/secrets {
-      allow read: if request.auth != null;
+      allow read: if isAdmin();
       allow write: if isAdmin();
     }
 
     // Other admin docs (prompts history, etc.)
+    // 重要: Firestore の規則は「どれかが許せば許す」(OR) なので、この受け皿が
+    // /admin/secrets にも当たる。secrets をここから必ず外しておかないと、
+    // 上の admin 限定が効かない。
     match /admin/{docId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && docId != 'secrets';
       allow write: if isAdmin();
     }
   }
